@@ -11,9 +11,6 @@
 
 <!-- Badges Section -->
 <p align="center">
-  <a href="https://github.com/Youssef-Laaroussi/MLOpsLite/tree/dev">
-    <img src="https://img.shields.io/badge/Active%20Branch-dev-FF6B6B?style=for-the-badge&logo=git&logoColor=white" alt="Branch: dev" />
-  </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-Apache%202.0-2EA44F?style=for-the-badge&logo=apache&logoColor=white" alt="License: Apache 2.0" />
   </a>
@@ -22,6 +19,9 @@
   </a>
   <a href="docker-compose.yml">
     <img src="https://img.shields.io/badge/Docker-Compose%20v2-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose" />
+  </a>
+  <a href="CONTRIBUTING.md">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" />
   </a>
 </p>
 
@@ -36,7 +36,6 @@
 </p>
 
 <p align="center">
-  <a href="#-active-development-branch--dev">🚧 Branch Notice</a> •
   <a href="#-quick-start">🚀 Quick Start</a> •
   <a href="#-why-mlite">💡 Why MLite?</a> •
   <a href="#-architecture">🏗️ Architecture</a> •
@@ -48,15 +47,6 @@
 </div>
 
 ---
-
-> [!IMPORTANT]
-> ### 🚧 Active Development Branch: `dev`
-> You are currently on the **`dev` branch** of **MLite**.  
-> This branch contains active, unreleased engineering iterations. All new features and pull requests should target `dev` before being stabilized and merged into [`main`](https://github.com/Youssef-Laaroussi/MLOpsLite/tree/main).
-> 
-> - **Current Target**: Milestone 0 (`M0 — Project Setup`)
-> - **Primary Workspace**: Monorepo layout & Docker Compose orchestration
-> - **Maintainer**: [@Youssef-Laaroussi](https://github.com/Youssef-Laaroussi)
 
 ---
 

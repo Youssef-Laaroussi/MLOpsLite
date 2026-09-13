@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/Youssef-Laaroussi/MLOpsLite/discussions
+    about: Ask questions, share ideas, and connect with the MLite community.
+  - name: 🗺️ Roadmap & Issues Index
+    url: https://github.com/Youssef-Laaroussi/MLOpsLite/blob/main/ROADMAP.md
+    about: Explore our 10 Milestones and 40 organized core issues.

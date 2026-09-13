@@ -1,0 +1,61 @@
+name: 🐛 Bug Report
+description: Create a report to help us improve MLite
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue in MLite! Please provide as much detail as possible.
+  - type: input
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of MLite is affected? (e.g. CLI, API, MLflow, Docker Serving, Monitoring, React Dashboard)
+      placeholder: e.g., apps/cli, Docker deployment
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+      placeholder: When executing `mlite deploy ...`, the container fails to bind to port 8000...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      value: |
+        1. Run `mlite init my-project`
+        2. Execute `...`
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: Relevant versions of OS, Docker, Python, MLite.
+      value: |
+        - OS: [e.g. Ubuntu 24.04, macOS Sonoma, WSL2]
+        - Python version: [e.g. 3.12.3]
+        - Docker version: [e.g. 26.1.0]
+        - MLite version or commit: [e.g. 0.1.0]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Please copy and paste any relevant logs or stack traces.
+      render: shell

@@ -36,17 +36,15 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-start">🚀 Quick Start</a> •
   <a href="#-why-mlite">💡 Why MLite?</a> •
-  <a href="#-architecture">🏗️ Architecture</a> •
   <a href="#-core-lifecycle-pipeline">🔄 Lifecycle</a> •
-  <a href="ROADMAP.md">🗺️ Roadmap</a> •
+  <a href="#-quick-start">🚀 Quick Start</a> •
+  <a href="#-architecture">🏗️ Architecture</a> •
+  <a href="#-tech-stack">🛠️ Tech Stack</a> •
   <a href="CONTRIBUTING.md">🤝 Contributing</a>
 </p>
 
 </div>
-
----
 
 ---
 
@@ -222,23 +220,6 @@ curl -X POST http://localhost:8000/predict \
                                     Alerting Engine
                              (Webhooks, Slack, Auto-Rollback)
 ```
-
----
-
-## 🗺️ Project Milestones & Roadmap
-
-MLite is community-driven. All architectural milestones are documented in **[ROADMAP.md](ROADMAP.md)**:
-
-- **`M0` — Project Setup**: Monorepo layout, Docker Compose, PostgreSQL, MLflow, MinIO, FastAPI skeleton
-- **`M1` — Core MLOps**: Project management API, Typer CLI, experiment tracking, model registry
-- **`M2` — Deployment**: Docker model packaging, `/predict` API, health check probes
-- **`M3` — Dashboard & Data**: React 18 frontend, dataset schema inspection, DVC integration
-- **`M4` — Monitoring & Alerting**: Data quality, Evidently AI drift analysis, Slack/Webhook alerts
-- **`M5` — Reliability & Rollback**: Controlled zero-downtime model rollback & automatic recovery
-- **`M6` — Security & Governance**: JWT authentication, RBAC (4 roles), immutable audit logs
-- **`M7` — Quality & CI/CD**: Pytest (80%+ coverage), integration tests, GitHub Actions CI
-- **`M8` — Documentation & Examples**: Quickstart guides, Iris, Fraud Detection, Demand Forecasting
-- **`M9` — Releases**: v0.1.0 MVP and v1.0.0 General Availability
 
 ---
 

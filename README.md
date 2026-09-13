@@ -58,7 +58,8 @@ Enterprise MLOps platforms often demand complex Kubernetes clusters, expensive c
 Data ──► Versioning ──► Experiment ──► Registry ──► Deployment ──► Monitoring ──► Alerting ──► Rollback
 ```
 
-> 🌟 **The MLite Promise**: *Run your entire machine learning lifecycle on your own VPS or local server with a single Docker Compose command and a unified CLI.*
+> [!TIP]
+> **The MLite Promise**: Run your entire machine learning lifecycle on your own VPS or local workstation with a single Docker Compose command and a unified CLI.
 
 ---
 
@@ -247,7 +248,6 @@ We welcome community contributions! Please read our guidelines before opening pu
 
 1. **[Contributing Guide](CONTRIBUTING.md)**: Branch conventions, environment setup, PR checklist.
 2. **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community standards.
-3. **[Security Policy](SECURITY.md)**: Vulnerability disclosure procedure.
 
 ---
 

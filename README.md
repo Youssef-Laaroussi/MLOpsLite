@@ -2,7 +2,7 @@
 
 <img src="assets/logo.jpg" alt="MLite Logo" width="140" style="border-radius: 28px;" />
 
-# ⚡ MLite
+# MLite
 
 ### *Lightweight Self-Hosted MLOps Platform*
 

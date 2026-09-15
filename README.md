@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.jpg" alt="MLite Logo" width="140" style="border-radius: 28px;" />
+<img src="assets/logo.png" alt="MLite Logo" width="140" />
 
 # MLite
 

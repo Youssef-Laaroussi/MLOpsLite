@@ -251,6 +251,9 @@ We welcome community contributions! Please read our guidelines before opening pu
 1. **[Contributing Guide](CONTRIBUTING.md)**: Branch conventions, environment setup, PR checklist.
 2. **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community standards.
 
+> [!IMPORTANT]
+> **Branch Strategy**: All pull requests must target the **`dev`** branch (`feature/*` ➔ `dev`). The **`main`** branch is protected and strictly reserved for stable production releases.
+
 ---
 
 ## 📄 License

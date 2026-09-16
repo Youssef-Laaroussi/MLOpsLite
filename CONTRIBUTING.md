@@ -95,7 +95,7 @@ We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### 6. Submitting a Pull Request (PR)
 - Push your changes to your fork.
-- Open a PR targeting the `main` branch of `Youssef-Laaroussi/MLOpsLite`.
+- Open a PR targeting the `dev` branch of `Youssef-Laaroussi/MLOpsLite` (do NOT target `main` directly).
 - Reference the related issue (e.g., `Closes #12`).
 - Fill out the PR template completely with test results and verification steps.
 - Ensure all GitHub Actions CI checks pass.

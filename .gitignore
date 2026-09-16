@@ -108,3 +108,11 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Internal Project Specs, Issue Catalogs & Planning (Local Only)
+.github/issues/
+.github/ISSUE_TEMPLATE/
+scripts/issues_data/
+scripts/generate_all_issues.py
+scripts/sync_github_issues.py
+ROADMAP.md

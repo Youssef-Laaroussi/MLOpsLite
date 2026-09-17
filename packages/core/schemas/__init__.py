@@ -6,10 +6,20 @@ from packages.core.schemas.project import (
     ProjectResponse,
     ProjectListResponse,
 )
+from packages.core.schemas.deployment import (
+    DeploymentCreate,
+    DeploymentResponse,
+    DeploymentListResponse,
+    DeploymentMetricResponse,
+)
 
 __all__ = [
     "ProjectCreate",
     "ProjectUpdate",
     "ProjectResponse",
     "ProjectListResponse",
+    "DeploymentCreate",
+    "DeploymentResponse",
+    "DeploymentListResponse",
+    "DeploymentMetricResponse",
 ]

@@ -4,21 +4,18 @@ Command hierarchy:
   mlite init <project-name>
   mlite config [view|set|get]
   mlite status
-  mlite experiment run <script>
-  mlite experiment list
-  mlite model list
-  mlite model register
-  mlite model promote
-  mlite model compare
+  mlite experiment [run|list]
+  mlite model [list|register|promote|compare]
   mlite deploy <model> --version <v> [--port <p>]
   mlite deployment [list|stop|status]
+  mlite data [add|list|info|dvc-init|push|pull|checkout]
 """
 
 import typer
 from rich.console import Console
 
 from apps.cli.commands import init_cmd, config_cmd, status_cmd
-from apps.cli.commands import experiment_cmd, model_cmd, deploy_cmd
+from apps.cli.commands import experiment_cmd, model_cmd, deploy_cmd, data_cmd
 
 console = Console()
 
@@ -37,6 +34,7 @@ app.add_typer(config_cmd.app, name="config", help="View and manage CLI configura
 app.add_typer(experiment_cmd.app, name="experiment", help="Manage experiments and training runs")
 app.add_typer(model_cmd.app, name="model", help="Manage model registry and promotions")
 app.add_typer(deploy_cmd.app, name="deployment", help="Manage active model deployments")
+app.add_typer(data_cmd.app, name="data", help="Manage datasets, schemas, and DVC sync")
 
 
 if __name__ == "__main__":

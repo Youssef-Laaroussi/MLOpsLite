@@ -1,62 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MLite Dashboard</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 40px;
-      max-width: 500px;
-      text-align: center;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    h1 { margin: 0 0 16px; font-size: 28px; color: #38bdf8; }
-    p { color: #94a3b8; line-height: 1.6; font-size: 15px; margin: 0 0 24px; }
-    .badge {
-      display: inline-block;
-      background: #0ea5e9;
-      color: white;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin-bottom: 20px;
-    }
-    .links a {
-      color: #38bdf8;
-      text-decoration: none;
-      margin: 0 10px;
-      font-weight: 500;
-      font-size: 14px;
-    }
-    .links a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="badge">MLite v0.1.0 • Infrastructure Online</div>
-    <h1>MLite Dashboard</h1>
-    <p>Self-Hosted MLOps Platform. Backend API, MLflow Tracking, PostgreSQL, and MinIO Storage are active.</p>
-    <div class="links">
-      <a href="http://localhost:8000/docs" target="_blank">API Docs (/docs)</a> •
-      <a href="http://localhost:5000" target="_blank">MLflow Server</a> •
-      <a href="http://localhost:9001" target="_blank">MinIO Console</a>
-    </div>
-  </div>
-</body>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MLite — Unified MLOps Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#0b1120] text-slate-100 font-sans antialiased selection:bg-sky-500 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

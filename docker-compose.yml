@@ -1,0 +1,183 @@
+name: mlite
+
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database (mlite_db and mlflow_db)
+  # ----------------------------------------------------------------------------
+  mlite-db:
+    image: postgres:16-alpine
+    container_name: mlite-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlite_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mlite_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mlite_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-mlite_db,mlflow_db}
+    volumes:
+      - mlite_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - mlite-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-mlite_user} -d $${POSTGRES_DB:-mlite_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # MinIO S3-Compatible Object Storage
+  # ----------------------------------------------------------------------------
+  mlite-storage:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: mlite-storage
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlite_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlite_minio_password}
+    volumes:
+      - mlite_minio_data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - mlite-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # MinIO Bucket Auto-Provisioner (Creates default buckets on launch)
+  # ----------------------------------------------------------------------------
+  minio-create-buckets:
+    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
+    container_name: minio-create-buckets
+    depends_on:
+      mlite-storage:
+        condition: service_healthy
+    networks:
+      - mlite-network
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set localminio http://mlite-storage:9000 ${MINIO_ROOT_USER:-mlite_minio_admin} ${MINIO_ROOT_PASSWORD:-mlite_minio_password};
+      /usr/bin/mc mb --ignore-existing localminio/${MINIO_DATASETS_BUCKET:-mlite-datasets};
+      /usr/bin/mc mb --ignore-existing localminio/${MINIO_MLFLOW_BUCKET:-mlflow-artifacts};
+      /usr/bin/mc mb --ignore-existing localminio/${MINIO_EVALUATIONS_BUCKET:-mlite-evaluations};
+      echo 'MinIO buckets initialized successfully.';
+      exit 0;
+      "
+
+  # ----------------------------------------------------------------------------
+  # MLflow Tracking Server
+  # ----------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.15.0
+    container_name: mlflow
+    restart: unless-stopped
+    depends_on:
+      mlite-db:
+        condition: service_healthy
+      mlite-storage:
+        condition: service_healthy
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://mlite-storage:9000
+      MLFLOW_S3_IGNORE_TLS: "true"
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlite_minio_admin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlite_minio_password}
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - mlite_mlflow_data:/mlflow
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    networks:
+      - mlite-network
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://${POSTGRES_USER:-mlite_user}:${POSTGRES_PASSWORD:-mlite_secure_password}@mlite-db:5432/mlflow_db
+      --default-artifact-root s3://${MINIO_MLFLOW_BUCKET:-mlflow-artifacts}/
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # MLite FastAPI Backend
+  # ----------------------------------------------------------------------------
+  mlite-api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: mlite-api
+    restart: unless-stopped
+    depends_on:
+      mlite-db:
+        condition: service_healthy
+      mlite-storage:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mlite_user}:${POSTGRES_PASSWORD:-mlite_secure_password}@mlite-db:5432/${POSTGRES_DB:-mlite_db}
+      MINIO_ENDPOINT: http://mlite-storage:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlite_minio_admin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlite_minio_password}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      SECRET_KEY: ${SECRET_KEY:-mlite_dev_secret_key_change_in_production_32bytes!}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    networks:
+      - mlite-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # MLite React Dashboard Web UI
+  # ----------------------------------------------------------------------------
+  mlite-ui:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: mlite-ui
+    restart: unless-stopped
+    depends_on:
+      - mlite-api
+    ports:
+      - "${UI_PORT:-3000}:3000"
+    networks:
+      - mlite-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# ------------------------------------------------------------------------------
+# Networks & Persistent Volumes
+# ------------------------------------------------------------------------------
+networks:
+  mlite-network:
+    name: mlite-network
+    driver: bridge
+
+volumes:
+  mlite_postgres_data:
+    name: mlite_postgres_data
+  mlite_minio_data:
+    name: mlite_minio_data
+  mlite_mlflow_data:
+    name: mlite_mlflow_data

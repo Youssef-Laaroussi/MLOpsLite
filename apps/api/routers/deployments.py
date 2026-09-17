@@ -133,3 +133,33 @@ async def get_deployment_metrics(
 
     metrics = await service.get_metrics(deployment_id, limit=limit)
     return metrics
+
+
+@router.post("/{deployment_id}/feedback", status_code=status.HTTP_201_CREATED)
+async def ingest_prediction_feedback(
+    deployment_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    service: DeploymentService = Depends(_get_service),
+) -> dict[str, Any]:
+    """Ingest delayed ground-truth feedback for a prediction (Issue #20)."""
+    from packages.monitoring.model_monitor import ModelPerformanceMonitor
+
+    deployment = await service.get_deployment(deployment_id)
+    if deployment is None:
+        raise NotFoundError("Deployment", deployment_id)
+
+    monitor = ModelPerformanceMonitor(session=db)
+    feedback = await monitor.ingest_feedback(
+        deployment_id=deployment_id,
+        prediction_id=payload.get("prediction_id", "pred-unknown"),
+        ground_truth=payload.get("ground_truth"),
+        predicted_value=payload.get("predicted_value"),
+        latency_ms=payload.get("latency_ms"),
+    )
+    return {
+        "id": feedback.id,
+        "deployment_id": deployment_id,
+        "prediction_id": feedback.prediction_id,
+        "status": "ingested",
+    }

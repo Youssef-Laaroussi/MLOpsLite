@@ -125,3 +125,52 @@ async def list_dataset_versions(
 
     versions = await service.get_versions(dataset_id)
     return versions
+
+
+@router.post("/{dataset_id}/validate", response_model=DataQualityReportResponse, status_code=status.HTTP_201_CREATED)
+async def validate_dataset(
+    dataset_id: str,
+    file_path: Optional[str] = Query(None, description="Optional explicit file path to validate"),
+    max_null_pct: float = Query(5.0, ge=0.0, le=100.0),
+    max_dup_pct: float = Query(1.0, ge=0.0, le=100.0),
+    service: DatasetService = Depends(_get_service),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Run automated data quality checks and persist validation report."""
+    from packages.core.models.monitoring import DataQualityReport, DataQualityStatus
+    from packages.monitoring.quality import DataQualityEngine
+
+    dataset = await service.get_dataset(dataset_id)
+    if dataset is None:
+        raise NotFoundError("Dataset", dataset_id)
+
+    # Use specified file_path or locate latest version
+    target_file = file_path
+    if not target_file:
+        versions = await service.get_versions(dataset_id)
+        if not versions:
+            raise HTTPException(status_code=400, detail="No versions available to validate")
+        # In a real environment, download artifact or check s3_key
+        target_file = f"/tmp/{dataset.name}.csv"
+
+    eval_result = DataQualityEngine.evaluate(
+        file_path=target_file,
+        max_null_pct=max_null_pct,
+        max_dup_pct=max_dup_pct,
+    )
+
+    report = DataQualityReport(
+        dataset_id=dataset.id,
+        score=eval_result["score"],
+        status=DataQualityStatus(eval_result["status"]),
+        rows_count=eval_result["rows_count"],
+        cols_count=eval_result["cols_count"],
+        null_percentage=eval_result["null_percentage"],
+        duplicate_percentage=eval_result["duplicate_percentage"],
+        failed_constraints=eval_result["failed_constraints"],
+        report_json=eval_result,
+    )
+    db.add(report)
+    await db.flush()
+    await db.refresh(report)
+    return report

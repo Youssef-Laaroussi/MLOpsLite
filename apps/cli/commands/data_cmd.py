@@ -153,6 +153,63 @@ def inspect_file_cli(
         raise typer.Exit(code=1)
 
 
+@app.command("validate")
+def validate_dataset_cli(
+    file_path: str = typer.Argument(..., help="Local tabular file path to validate"),
+    max_null_pct: float = typer.Option(5.0, "--max-null", help="Max allowed null percentage per column"),
+    max_dup_pct: float = typer.Option(1.0, "--max-dup", help="Max allowed duplicate row percentage"),
+) -> None:
+    """Run automated data quality checks and output score & constraint violations."""
+    from packages.monitoring.quality import DataQualityEngine
+
+    path = Path(file_path).resolve()
+    if not path.is_file():
+        console.print(f"[red]Error:[/red] File not found: {file_path}")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold cyan]Validating data quality[/bold cyan] for '{path.name}'...")
+    try:
+        res = DataQualityEngine.evaluate(
+            file_path=path,
+            max_null_pct=max_null_pct,
+            max_dup_pct=max_dup_pct,
+        )
+
+        status_colors = {"PASS": "green", "WARN": "yellow", "FAIL": "red"}
+        st = res.get("status", "FAIL")
+        color = status_colors.get(st, "white")
+
+        console.print(
+            Panel.fit(
+                f"[bold]Quality Score:[/bold] [{color}]{res.get('score')} / 100[/{color}] "
+                f"([{color}]{st}[/{color}])\n\n"
+                f"[bold]Rows:[/bold] {res.get('rows_count'):,} | [bold]Columns:[/bold] {res.get('cols_count')}\n"
+                f"[bold]Overall Nulls:[/bold] {res.get('null_percentage')}%\n"
+                f"[bold]Duplicate Rows:[/bold] {res.get('duplicate_percentage')}%\n"
+                f"[bold]Failed Constraints:[/bold] {len(res.get('failed_constraints', []))}",
+                title=f"📋 Data Quality Report",
+                border_style=color,
+            )
+        )
+
+        if res.get("failed_constraints"):
+            table = Table(title="Failed Constraints", header_style="bold red")
+            table.add_column("Rule")
+            table.add_column("Column / Detail")
+            table.add_column("Message")
+            for fc in res.get("failed_constraints"):
+                table.add_row(fc.get("rule"), fc.get("column", "—"), fc.get("message"))
+            console.print(table)
+
+        if st == "FAIL":
+            raise typer.Exit(code=1)
+    except Exception as exc:
+        if isinstance(exc, typer.Exit):
+            raise exc
+        console.print(f"[red]Validation failed:[/red] {exc}")
+        raise typer.Exit(code=1)
+
+
 # ── DVC commands ───────────────────────────────────────────
 
 

@@ -20,6 +20,19 @@ from packages.core.schemas.dataset import (
     DatasetVersionResponse,
     DatasetInspectionResponse,
 )
+from packages.core.schemas.monitoring import (
+    DataQualityRuleConfig,
+    DataQualityReportResponse,
+    DriftCheckRequest,
+    DriftEvaluationResponse,
+    FeedbackRequest,
+    ModelPerformanceResponse,
+)
+from packages.core.schemas.alert import (
+    AlertCreate,
+    AlertResponse,
+    AlertListResponse,
+)
 
 __all__ = [
     "ProjectCreate",
@@ -36,4 +49,13 @@ __all__ = [
     "DatasetVersionCreate",
     "DatasetVersionResponse",
     "DatasetInspectionResponse",
+    "DataQualityRuleConfig",
+    "DataQualityReportResponse",
+    "DriftCheckRequest",
+    "DriftEvaluationResponse",
+    "FeedbackRequest",
+    "ModelPerformanceResponse",
+    "AlertCreate",
+    "AlertResponse",
+    "AlertListResponse",
 ]

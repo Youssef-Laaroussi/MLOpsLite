@@ -12,6 +12,14 @@ from packages.core.schemas.deployment import (
     DeploymentListResponse,
     DeploymentMetricResponse,
 )
+from packages.core.schemas.dataset import (
+    DatasetCreate,
+    DatasetResponse,
+    DatasetListResponse,
+    DatasetVersionCreate,
+    DatasetVersionResponse,
+    DatasetInspectionResponse,
+)
 
 __all__ = [
     "ProjectCreate",
@@ -22,4 +30,10 @@ __all__ = [
     "DeploymentResponse",
     "DeploymentListResponse",
     "DeploymentMetricResponse",
+    "DatasetCreate",
+    "DatasetResponse",
+    "DatasetListResponse",
+    "DatasetVersionCreate",
+    "DatasetVersionResponse",
+    "DatasetInspectionResponse",
 ]

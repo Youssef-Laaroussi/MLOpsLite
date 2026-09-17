@@ -1,11 +1,12 @@
 """Unit tests for FastAPI core application (Issue #6).
 
 Tests the application factory, modular routing, middleware,
-exception handlers, and OpenAPI schema without running any
+exception handlers, CORS, and OpenAPI schema without running any
 external dependencies (DB, MinIO, MLflow).
 """
 
 import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -14,26 +15,11 @@ from apps.api.errors import MLiteAPIError, NotFoundError, ConflictError
 from apps.api.main import create_app
 
 
-# ── Fixtures ────────────────────────────────────────────────
-
-
-@pytest.fixture
-def app():
-    """Create a fresh FastAPI instance for each test."""
-    return create_app()
-
-
-@pytest.fixture
-def client(app):
-    """Sync wrapper that returns an async client context manager helper."""
-    return app
-
-
 # ── Helpers ─────────────────────────────────────────────────
 
 
 def _run(coro):
-    """Run a coroutine in a new event loop (pytest-asyncio 1.x compat)."""
+    """Run a coroutine in a new event loop (pytest-asyncio compat)."""
     loop = asyncio.new_event_loop()
     try:
         return loop.run_until_complete(coro)
@@ -46,6 +32,22 @@ async def _get(app, path, headers=None):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         return await ac.get(path, headers=headers or {})
+
+
+async def _options(app, path, headers=None):
+    """Perform an async OPTIONS request against the test app."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        return await ac.options(path, headers=headers or {})
+
+
+# ── Fixtures ────────────────────────────────────────────────
+
+
+@pytest.fixture
+def app():
+    """Create a fresh FastAPI instance for each test."""
+    return create_app()
 
 
 # ── Application factory tests ──────────────────────────────
@@ -76,16 +78,16 @@ class TestAppFactory:
 class TestHealthEndpoints:
     """Test /api/v1/health, /api/v1/ready, /api/v1/info."""
 
-    def test_health_check(self, client):
-        resp = _run(_get(client, "/api/v1/health"))
+    def test_health_check(self, app):
+        resp = _run(_get(app, "/api/v1/health"))
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "healthy"
         assert data["version"] == "0.1.0"
         assert "timestamp" in data
 
-    def test_readiness_check(self, client):
-        resp = _run(_get(client, "/api/v1/ready"))
+    def test_readiness_check(self, app):
+        resp = _run(_get(app, "/api/v1/ready"))
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ready"
@@ -93,22 +95,21 @@ class TestHealthEndpoints:
         for service in ("database", "storage", "tracking"):
             assert data["checks"][service] == "ok"
 
-    def test_app_info(self, client):
-        resp = _run(_get(client, "/api/v1/info"))
+    def test_app_info(self, app):
+        resp = _run(_get(app, "/api/v1/info"))
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "MLite API"
         assert data["version"] == "0.1.0"
         assert data["docs_url"] == "/docs"
 
-    def test_legacy_health(self, client):
-        """Backward-compat root /health still works."""
-        resp = _run(_get(client, "/health"))
+    def test_legacy_health(self, app):
+        resp = _run(_get(app, "/health"))
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
 
-    def test_legacy_ready(self, client):
-        resp = _run(_get(client, "/ready"))
+    def test_legacy_ready(self, app):
+        resp = _run(_get(app, "/ready"))
         assert resp.status_code == 200
         assert resp.json()["status"] == "ready"
 
@@ -117,22 +118,42 @@ class TestHealthEndpoints:
 
 
 class TestScaffoldRouters:
-    """Verify that placeholder routers respond correctly."""
+    """Verify that all placeholder routers respond correctly."""
 
-    def test_list_projects(self, client):
-        resp = _run(_get(client, "/api/v1/projects/"))
+    def test_list_projects(self, app):
+        resp = _run(_get(app, "/api/v1/projects/"))
         assert resp.status_code == 200
         assert resp.json() == {"projects": [], "total": 0}
 
-    def test_list_datasets(self, client):
-        resp = _run(_get(client, "/api/v1/datasets/"))
+    def test_list_datasets(self, app):
+        resp = _run(_get(app, "/api/v1/datasets/"))
         assert resp.status_code == 200
         assert resp.json() == {"datasets": [], "total": 0}
 
-    def test_list_experiments(self, client):
-        resp = _run(_get(client, "/api/v1/experiments/"))
+    def test_list_experiments(self, app):
+        resp = _run(_get(app, "/api/v1/experiments/"))
         assert resp.status_code == 200
         assert resp.json() == {"experiments": [], "total": 0}
+
+    def test_list_models(self, app):
+        resp = _run(_get(app, "/api/v1/models/"))
+        assert resp.status_code == 200
+        assert resp.json() == {"models": [], "total": 0}
+
+    def test_list_deployments(self, app):
+        resp = _run(_get(app, "/api/v1/deployments/"))
+        assert resp.status_code == 200
+        assert resp.json() == {"deployments": [], "total": 0}
+
+    def test_list_monitoring(self, app):
+        resp = _run(_get(app, "/api/v1/monitoring/"))
+        assert resp.status_code == 200
+        assert resp.json() == {"reports": [], "total": 0}
+
+    def test_list_alerts(self, app):
+        resp = _run(_get(app, "/api/v1/alerts/"))
+        assert resp.status_code == 200
+        assert resp.json() == {"alerts": [], "total": 0}
 
 
 # ── OpenAPI schema ─────────────────────────────────────────
@@ -141,34 +162,44 @@ class TestScaffoldRouters:
 class TestOpenAPISchema:
     """Verify the OpenAPI specification is correctly generated."""
 
-    def test_openapi_json(self, client):
-        resp = _run(_get(client, "/openapi.json"))
+    def test_openapi_json(self, app):
+        resp = _run(_get(app, "/openapi.json"))
         assert resp.status_code == 200
         schema = resp.json()
         assert schema["info"]["title"] == "MLite API"
         assert schema["info"]["version"] == "0.1.0"
 
-    def test_openapi_paths_include_routers(self, client):
-        resp = _run(_get(client, "/openapi.json"))
+    def test_openapi_paths_include_all_routers(self, app):
+        resp = _run(_get(app, "/openapi.json"))
         paths = resp.json()["paths"]
-        assert "/api/v1/health" in paths
-        assert "/api/v1/ready" in paths
-        assert "/api/v1/info" in paths
-        assert "/api/v1/projects/" in paths
-        assert "/api/v1/datasets/" in paths
-        assert "/api/v1/experiments/" in paths
+        expected = [
+            "/api/v1/health",
+            "/api/v1/ready",
+            "/api/v1/info",
+            "/api/v1/projects/",
+            "/api/v1/datasets/",
+            "/api/v1/experiments/",
+            "/api/v1/models/",
+            "/api/v1/deployments/",
+            "/api/v1/monitoring/",
+            "/api/v1/alerts/",
+        ]
+        for path in expected:
+            assert path in paths, f"Missing path: {path}"
 
-    def test_openapi_tags(self, client):
-        resp = _run(_get(client, "/openapi.json"))
+    def test_openapi_tags(self, app):
+        resp = _run(_get(app, "/openapi.json"))
         schema = resp.json()
-        # All expected tags should appear in at least one path
         tag_names = set()
         for path_item in schema["paths"].values():
             for operation in path_item.values():
                 if isinstance(operation, dict) and "tags" in operation:
                     tag_names.update(operation["tags"])
-        for expected in ("System", "Projects", "Datasets", "Experiments"):
-            assert expected in tag_names
+        for expected in (
+            "System", "Projects", "Datasets", "Experiments",
+            "Models", "Deployments", "Monitoring", "Alerts",
+        ):
+            assert expected in tag_names, f"Missing tag: {expected}"
 
 
 # ── Middleware ──────────────────────────────────────────────
@@ -177,14 +208,41 @@ class TestOpenAPISchema:
 class TestMiddleware:
     """Verify custom middleware behaviour."""
 
-    def test_request_id_header_auto_generated(self, client):
-        resp = _run(_get(client, "/api/v1/health"))
+    def test_request_id_header_auto_generated(self, app):
+        resp = _run(_get(app, "/api/v1/health"))
         assert "x-request-id" in resp.headers
 
-    def test_request_id_echoed_back(self, client):
+    def test_request_id_echoed_back(self, app):
         custom_id = "test-req-42"
-        resp = _run(_get(client, "/api/v1/health", headers={"X-Request-ID": custom_id}))
+        resp = _run(_get(app, "/api/v1/health", headers={"X-Request-ID": custom_id}))
         assert resp.headers["x-request-id"] == custom_id
+
+
+# ── CORS ────────────────────────────────────────────────────
+
+
+class TestCORS:
+    """Verify CORS preflight requests are handled correctly."""
+
+    def test_cors_preflight(self, app):
+        resp = _run(
+            _options(
+                app,
+                "/api/v1/health",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "Access-Control-Request-Method": "GET",
+                },
+            )
+        )
+        assert resp.status_code == 200
+        assert "access-control-allow-origin" in resp.headers
+
+    def test_cors_allows_any_origin(self, app):
+        resp = _run(
+            _get(app, "/api/v1/health", headers={"Origin": "http://example.com"})
+        )
+        assert resp.headers.get("access-control-allow-origin") in ("*", "http://example.com")
 
 
 # ── Error handling ─────────────────────────────────────────
@@ -193,8 +251,8 @@ class TestMiddleware:
 class TestErrorHandling:
     """Verify exception handler wiring."""
 
-    def test_404_for_unknown_route(self, client):
-        resp = _run(_get(client, "/api/v1/nonexistent"))
+    def test_404_for_unknown_route(self, app):
+        resp = _run(_get(app, "/api/v1/nonexistent"))
         assert resp.status_code in (404, 405)
 
     def test_mlite_api_error_defaults(self):
@@ -226,7 +284,6 @@ class TestSettings:
         assert s.port == 8000
 
     def test_get_settings_returns_same_instance(self):
-        # lru_cache ensures a singleton
         a = get_settings()
         b = get_settings()
         assert a is b

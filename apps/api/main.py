@@ -20,7 +20,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from apps.api.config import get_settings
 from apps.api.errors import register_exception_handlers
 from apps.api.middleware import register_middleware
-from apps.api.routers import health, projects, datasets, experiments
+from apps.api.routers import (
+    health,
+    projects,
+    datasets,
+    experiments,
+    models,
+    deployments,
+    monitoring,
+    alerts,
+)
 
 logger = logging.getLogger("mlite.api")
 
@@ -88,6 +97,10 @@ def create_app() -> FastAPI:
     app.include_router(projects.router)
     app.include_router(datasets.router)
     app.include_router(experiments.router)
+    app.include_router(models.router)
+    app.include_router(deployments.router)
+    app.include_router(monitoring.router)
+    app.include_router(alerts.router)
 
     # ── Legacy root health (backward-compat) ────────────────
     @app.get("/health", tags=["Health"], include_in_schema=False)

@@ -56,9 +56,15 @@ nav:
       - 5-Min Quickstart: getting-started/quickstart.md
       - Troubleshooting: getting-started/troubleshooting.md
   - Tutorials & Examples:
-      - Iris Starter: ../examples/iris/README.md
+      - Iris Starter: tutorials/iris.md
       - Fraud Detection & Rollback: tutorials/fraud_detection.md
       - Demand Forecasting: tutorials/demand_forecasting.md
+  - Releases & Production:
+      - v1.0.0 GA Release: releases/v1.0.0.md
+      - v0.1.0 MVP Release: releases/v0.1.0.md
+      - Readiness Checklist: releases/readiness_checklist.md
+      - Production Deployment: deployment/production.md
+      - Docker Images: deployment/docker_images.md
   - Reliability & Rollback:
       - Controlled Rollback: reliability/rollback.md
       - Auto-Rollback Policies: reliability/auto_rollback_policies.md

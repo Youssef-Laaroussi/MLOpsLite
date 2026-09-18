@@ -24,18 +24,18 @@ M6: Security (#25 - #27) ────────► M7: Quality & CI/CD (#28 - 
 M9: Release (#39 - #40)   ◄─────── M8: Docs & Examples (#33 - #38)
 ```
 
-| Milestone | Title | Priority Focus | Issues | Description |
-| :--- | :--- | :---: | :---: | :--- |
-| **M0** | [M0 — Project Setup](#m0-project-setup) | P0/P1 | `#1 → #6` | Foundational repository structure, Docker Compose orchestration, PostgreSQL, MLflow, MinIO, and FastAPI core. |
-| **M1** | [M1 — Core MLOps](#m1-core-mlops) | P0/P1 | `#7 → #10` | Project management API, developer CLI with Typer, MLflow experiment tracking integration, and model registry. |
-| **M2** | [M2 — Deployment](#m2-deployment) | P0/P1 | `#11 → #13` | Docker containerized model deployment, standardized REST prediction endpoints, and health monitoring probes. |
-| **M3** | [M3 — Dashboard & Data](#m3-dashboard) | P0/P1 | `#14 → #16` | React single-pane dashboard with Tailwind CSS, tabular dataset management, and Git-compatible DVC integration. |
-| **M4** | [M4 — Monitoring & Alerting](#m4-monitoring) | P0/P1 | `#17 → #22` | Data quality profiling, Evidently AI integration, feature drift detection, delayed feedback monitoring, and multi-channel alerting. |
-| **M5** | [M5 — Reliability & Rollback](#m5-reliability) | P0/P1 | `#23 → #24` | Instant controlled traffic rollback to stable model versions and automated policy-driven degradation recovery. |
-| **M6** | [M6 — Security & Governance](#m6-security) | P0/P1 | `#25 → #27` | JWT authentication, API keys, Role-Based Access Control (Admin, Maintainer, Developer, Viewer), and append-only audit logging. |
-| **M7** | [M7 — Quality & CI/CD](#m7-quality-cicd) | P0/P1 | `#28 → #32` | Unit tests (>=80% coverage), integration test suite, E2E full lifecycle testing, GitHub Actions CI, and multi-arch Docker image publishing. |
-| **M8** | [M8 — Documentation & Examples](#m8-docs-examples) | P0/P1 | `#33 → #38` | Comprehensive installation guide, CLI reference, OpenAPI documentation, and starter examples (Iris, Fraud Detection, Demand Forecasting). |
-| **M9** | [M9 — Release](#m9-release) | P0/P1 | `#39 → #40` | v0.1.0 MVP community release package and v1.0.0 General Availability production release. |
+| Milestone | Title | Priority Focus | Issues | Status | Description |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **M0** | [M0 — Project Setup](#m0-project-setup) | P0/P1 | `#1 → #6` | `DONE (100%)` | Foundational repository structure, Docker Compose orchestration, PostgreSQL, MLflow, MinIO, and FastAPI core. |
+| **M1** | [M1 — Core MLOps](#m1-core-mlops) | P0/P1 | `#7 → #10` | `DONE (100%)` | Project management API, developer CLI with Typer, MLflow experiment tracking integration, and model registry. |
+| **M2** | [M2 — Deployment](#m2-deployment) | P0/P1 | `#11 → #13` | `DONE (100%)` | Docker containerized model deployment, standardized REST prediction endpoints, and health monitoring probes. |
+| **M3** | [M3 — Dashboard & Data](#m3-dashboard) | P0/P1 | `#14 → #16` | `DONE (100%)` | React single-pane dashboard with Tailwind CSS, tabular dataset management, and Git-compatible DVC integration. |
+| **M4** | [M4 — Monitoring & Alerting](#m4-monitoring) | P0/P1 | `#17 → #22` | `DONE (100%)` | Data quality profiling, Evidently AI integration, feature drift detection, delayed feedback monitoring, and multi-channel alerting. |
+| **M5** | [M5 — Reliability & Rollback](#m5-reliability) | P0/P1 | `#23 → #24` | `DONE (100%)` | Instant controlled traffic rollback to stable model versions and automated policy-driven degradation recovery. |
+| **M6** | [M6 — Security & Governance](#m6-security) | P0/P1 | `#25 → #27` | `DONE (100%)` | JWT authentication, API keys, Role-Based Access Control (Admin, Maintainer, Developer, Viewer), and append-only audit logging. |
+| **M7** | [M7 — Quality & CI/CD](#m7-quality-cicd) | P0/P1 | `#28 → #32` | `DONE (100%)` | Unit tests (>=80% coverage), integration test suite, E2E full lifecycle testing, GitHub Actions CI, and multi-arch Docker image publishing. |
+| **M8** | [M8 — Documentation & Examples](#m8-docs-examples) | P0/P1 | `#33 → #38` | `DONE (100%)` | Comprehensive installation guide, CLI reference, OpenAPI documentation, and starter examples (Iris, Fraud Detection, Demand Forecasting). |
+| **M9** | [M9 — Release](#m9-release) | P0/P1 | `#39 → #40` | `DONE (100%)` | v0.1.0 MVP community release package and v1.0.0 General Availability production release. |
 
 ---
 

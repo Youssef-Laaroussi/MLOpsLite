@@ -32,6 +32,10 @@ RUN pip install --no-cache-dir \
 # Copy serving server implementation
 COPY packages/deployment/server /app/server
 
+# Create and switch to non-root user
+RUN useradd -m -u 1000 -s /bin/bash mlite && chown -R mlite:mlite /app
+USER mlite
+
 # Expose container default serving port
 EXPOSE 8000
 

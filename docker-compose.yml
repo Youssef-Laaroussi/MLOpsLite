@@ -114,6 +114,7 @@ services:
   # MLite FastAPI Backend
   # ----------------------------------------------------------------------------
   mlite-api:
+    image: ${MLITE_API_IMAGE:-ghcr.io/youssef-laaroussi/mlops-lite/mlite-api:latest}
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -148,6 +149,7 @@ services:
   # MLite React Dashboard Web UI
   # ----------------------------------------------------------------------------
   mlite-ui:
+    image: ${MLITE_UI_IMAGE:-ghcr.io/youssef-laaroussi/mlops-lite/mlite-ui:latest}
     build:
       context: .
       dockerfile: apps/web/Dockerfile

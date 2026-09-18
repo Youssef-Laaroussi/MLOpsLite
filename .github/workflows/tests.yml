@@ -1,0 +1,89 @@
+name: Tests & Coverage
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-suite:
+    name: Pytest & Coverage (Python 3.12)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: mlite_test_db
+          POSTGRES_USER: mlite_user
+          POSTGRES_PASSWORD: mlite_secure_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      minio:
+        image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+        env:
+          MINIO_ROOT_USER: mlite_minio_admin
+          MINIO_ROOT_PASSWORD: mlite_minio_password
+        ports:
+          - 9000:9000
+        options: >-
+          server /data
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://mlite_user:mlite_secure_password@localhost:5432/mlite_test_db
+      MINIO_ENDPOINT: http://localhost:9000
+      MINIO_ROOT_USER: mlite_minio_admin
+      MINIO_ROOT_PASSWORD: mlite_minio_password
+      MLITE_JWT_SECRET_KEY: test-ci-secret-key-32bytes-long!!
+      MLFLOW_TRACKING_URI: http://localhost:5000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          pytest tests/unit \
+            --cov=packages \
+            --cov=apps \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=80
+
+      - name: Run Integration Tests
+        run: |
+          pytest tests/integration -v
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-coverage-report
+          path: coverage.xml
+          retention-days: 14

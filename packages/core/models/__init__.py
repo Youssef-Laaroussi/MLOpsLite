@@ -19,6 +19,8 @@ from packages.core.models.rollback import (
     RollbackStatus,
     RollbackTrigger,
 )
+from packages.core.models.user import User, ApiKey, UserRole
+from packages.core.models.audit import AuditLog, AuditAction
 
 __all__ = [
     "Project",
@@ -45,4 +47,9 @@ __all__ = [
     "RollbackPolicy",
     "RollbackStatus",
     "RollbackTrigger",
+    "User",
+    "ApiKey",
+    "UserRole",
+    "AuditLog",
+    "AuditAction",
 ]

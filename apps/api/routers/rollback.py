@@ -5,11 +5,13 @@ Manual rollback operations, rollback history, and auto-rollback policy managemen
 
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
+from packages.core.models.audit import AuditAction
+from packages.core.models.user import User
 from packages.core.schemas.rollback import (
     RollbackRequest,
     RollbackResponse,
@@ -19,6 +21,9 @@ from packages.core.schemas.rollback import (
     PolicyListResponse,
 )
 from packages.core.models.rollback import RollbackTrigger
+from packages.core.security.audit import AuditService
+from packages.core.security.dependencies import require_permission, get_current_user
+from packages.core.security.rbac import Permission
 from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 from packages.rollback.policies import AutoRollbackEvaluator
 
@@ -40,11 +45,14 @@ def _get_evaluator(session: AsyncSession = Depends(get_db)) -> AutoRollbackEvalu
     "/deployments/{deployment_id}/rollback",
     response_model=RollbackResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(Permission.DEPLOYMENT_ROLLBACK))],
 )
 async def rollback_deployment(
     deployment_id: str,
     payload: RollbackRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Any:
     """Initiate a rollback for a specific deployment.
 
@@ -67,8 +75,25 @@ async def rollback_deployment(
             target_version=payload.target_version,
             reason=payload.reason,
             trigger=RollbackTrigger.API,
-            initiated_by="api-user",
+            initiated_by=current_user.email or current_user.username,
         )
+
+        audit = AuditService(session=db)
+        await audit.log(
+            action=AuditAction.DEPLOYMENT_ROLLBACK,
+            resource_type="deployment",
+            resource_id=deployment_id,
+            resource_name=deployment.model_name,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            ip_address=request.client.host if request.client else None,
+            changes={
+                "target_version": payload.target_version,
+                "reason": payload.reason,
+                "record_id": record.id,
+            },
+        )
+
         return record
     except RollbackError as exc:
         from fastapi import HTTPException
@@ -83,10 +108,14 @@ async def rollback_deployment(
     "/models/{model_name}/rollback",
     response_model=RollbackResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(Permission.DEPLOYMENT_ROLLBACK))],
 )
 async def rollback_model(
     model_name: str,
     payload: RollbackRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     coordinator: RollbackCoordinator = Depends(_get_coordinator),
 ) -> Any:
     """Initiate a rollback by model name.
@@ -100,8 +129,25 @@ async def rollback_model(
             target_version=payload.target_version,
             reason=payload.reason,
             trigger=RollbackTrigger.API,
-            initiated_by="api-user",
+            initiated_by=current_user.email or current_user.username,
         )
+
+        audit = AuditService(session=db)
+        await audit.log(
+            action=AuditAction.DEPLOYMENT_ROLLBACK,
+            resource_type="model",
+            resource_id=record.id,
+            resource_name=model_name,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            ip_address=request.client.host if request.client else None,
+            changes={
+                "target_version": payload.target_version,
+                "reason": payload.reason,
+                "record_id": record.id,
+            },
+        )
+
         return record
     except RollbackError as exc:
         from fastapi import HTTPException

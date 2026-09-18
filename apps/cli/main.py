@@ -19,6 +19,7 @@ from rich.console import Console
 from apps.cli.commands import init_cmd, config_cmd, status_cmd
 from apps.cli.commands import experiment_cmd, model_cmd, deploy_cmd, data_cmd
 from apps.cli.commands import monitor_cmd, alert_cmd, rollback_cmd
+from apps.cli.commands import auth_cmd, audit_cmd
 
 console = Console()
 
@@ -32,6 +33,9 @@ app = typer.Typer(
 # ── Register sub-commands ───────────────────────────────────
 app.command("init")(init_cmd.init)
 app.command("status")(status_cmd.status)
+app.command("login", help="Log in to MLite and store credentials locally")(auth_cmd.login)
+app.command("logout", help="Log out and clear stored credentials")(auth_cmd.logout)
+app.command("whoami", help="Display authenticated user profile and permissions")(auth_cmd.whoami)
 app.command("deploy", help="Deploy a registered model version to Docker container")(deploy_cmd.deploy_model_action)
 app.add_typer(config_cmd.app, name="config", help="View and manage CLI configuration")
 app.add_typer(experiment_cmd.app, name="experiment", help="Manage experiments and training runs")
@@ -42,6 +46,9 @@ app.add_typer(monitor_cmd.app, name="monitor", help="Monitor feature drift and m
 app.add_typer(alert_cmd.app, name="alert", help="Manage alerts and incident notifications")
 app.command("rollback", help="Roll back a model to a previous version")(rollback_cmd.rollback)
 app.add_typer(rollback_cmd.app, name="rollback-policy", help="Manage auto-rollback policies")
+app.add_typer(auth_cmd.api_key_app, name="api-key", help="Manage API keys for CI/CD and automation")
+app.add_typer(auth_cmd.user_app, name="user", help="Manage user accounts (Admin only)")
+app.add_typer(audit_cmd.app, name="audit", help="Inspect immutable compliance and operational audit logs")
 
 
 if __name__ == "__main__":

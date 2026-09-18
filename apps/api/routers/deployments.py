@@ -6,18 +6,23 @@ CRUD, lifecycle control, and real-time health monitoring for container deploymen
 from typing import Any, Optional
 
 import httpx
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
+from packages.core.models.audit import AuditAction
 from packages.core.models.deployment import DeploymentStatus
+from packages.core.models.user import User
 from packages.core.schemas.deployment import (
     DeploymentCreate,
     DeploymentResponse,
     DeploymentListResponse,
     DeploymentMetricResponse,
 )
+from packages.core.security.audit import AuditService
+from packages.core.security.dependencies import require_permission, get_current_user
+from packages.core.security.rbac import Permission
 from packages.deployment.service import DeploymentService
 
 router = APIRouter(prefix="/api/v1/deployments", tags=["Deployments"])
@@ -27,9 +32,17 @@ def _get_service(session: AsyncSession = Depends(get_db)) -> DeploymentService:
     return DeploymentService(session)
 
 
-@router.post("/", response_model=DeploymentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=DeploymentResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(Permission.DEPLOYMENT_CREATE))],
+)
 async def create_deployment(
     payload: DeploymentCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     service: DeploymentService = Depends(_get_service),
 ) -> Any:
     """Deploy a registered model version into an isolated inference container."""
@@ -40,6 +53,23 @@ async def create_deployment(
         project_id=payload.project_id,
         config=payload.config,
     )
+
+    audit = AuditService(session=db)
+    await audit.log(
+        action=AuditAction.DEPLOYMENT_CREATE,
+        resource_type="deployment",
+        resource_id=deployment.id,
+        resource_name=f"{payload.model_name}:v{payload.model_version}",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        changes={
+            "model_name": payload.model_name,
+            "model_version": payload.model_version,
+            "port": deployment.port,
+        },
+    )
+
     return deployment
 
 
@@ -69,15 +99,35 @@ async def get_deployment(
     return deployment
 
 
-@router.post("/{deployment_id}/stop", response_model=DeploymentResponse)
+@router.post(
+    "/{deployment_id}/stop",
+    response_model=DeploymentResponse,
+    dependencies=[Depends(require_permission(Permission.DEPLOYMENT_STOP))],
+)
 async def stop_deployment(
     deployment_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     service: DeploymentService = Depends(_get_service),
 ) -> Any:
     """Halt and remove the deployment container, releasing its allocated port."""
     deployment = await service.stop_deployment(deployment_id)
     if deployment is None:
         raise NotFoundError("Deployment", deployment_id)
+
+    audit = AuditService(session=db)
+    await audit.log(
+        action=AuditAction.DEPLOYMENT_STOP,
+        resource_type="deployment",
+        resource_id=deployment.id,
+        resource_name=f"{deployment.model_name}:v{deployment.model_version}",
+        user_id=current_user.id,
+        user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        changes={"status": "STOPPED"},
+    )
+
     return deployment
 
 

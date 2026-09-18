@@ -30,6 +30,8 @@ from apps.api.routers import (
     monitoring,
     alerts,
     rollback,
+    auth,
+    audit,
 )
 
 logger = logging.getLogger("mlite.api")
@@ -50,6 +52,36 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         settings.app_version,
         settings.debug,
     )
+
+    # Bootstrap default admin account (Issue #26)
+    try:
+        from packages.core.db.session import async_session_factory
+        from packages.core.models.user import User, UserRole
+        from packages.core.security.auth import hash_password
+        from sqlalchemy import select
+
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(User).where(
+                    (User.username == settings.admin_user) | (User.email == settings.admin_email)
+                )
+            )
+            admin = result.scalar_one_or_none()
+            if admin is None:
+                new_admin = User(
+                    username=settings.admin_user,
+                    email=settings.admin_email,
+                    hashed_password=hash_password(settings.admin_password),
+                    full_name="Default Administrator",
+                    role=UserRole.ADMIN,
+                    is_active=True,
+                )
+                session.add(new_admin)
+                await session.commit()
+                logger.info("🔑 Created default bootstrap admin user '%s'", settings.admin_user)
+    except Exception as exc:
+        logger.debug("Admin bootstrap skipped or deferred: %s", exc)
+
     yield
     logger.info("🛑  %s shutting down", settings.app_name)
 
@@ -103,6 +135,8 @@ def create_app() -> FastAPI:
     app.include_router(monitoring.router)
     app.include_router(alerts.router)
     app.include_router(rollback.router)
+    app.include_router(auth.router)
+    app.include_router(audit.router)
 
     # ── Legacy root health (backward-compat) ────────────────
     @app.get("/health", tags=["Health"], include_in_schema=False)

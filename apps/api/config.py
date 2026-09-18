@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     # ── MLflow ───────────────────────────────────────────────
     mlflow_tracking_uri: str = "http://localhost:5000"
 
+    # ── Security & Authentication (Issues #25, #26) ───────────
+    jwt_secret_key: str = "mlite-dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60
+    jwt_refresh_token_expire_days: int = 7
+    admin_user: str = "admin"
+    admin_email: str = "admin@mlite.local"
+    admin_password: str = "admin123456"
+
 
 @lru_cache
 def get_settings() -> Settings:

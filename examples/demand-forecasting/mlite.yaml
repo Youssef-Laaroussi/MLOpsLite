@@ -1,0 +1,24 @@
+project:
+  name: demand-forecasting
+  slug: demand-forecasting
+  description: "Retail daily store-item demand forecasting with delayed ground-truth feedback"
+
+data:
+  train_path: data/daily_sales_train.csv
+  test_path: data/daily_sales_test.csv
+
+model:
+  name: demand-forecaster
+  framework: scikit-learn
+  task: regression
+  target: sales
+  metrics:
+    - rmse
+    - mae
+    - r2_score
+
+monitoring:
+  feedback_tracking: true
+  metric_threshold:
+    rmse: 25.0
+    mae: 18.0

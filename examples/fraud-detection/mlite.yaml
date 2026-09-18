@@ -1,0 +1,21 @@
+project:
+  name: fraud-detection
+  slug: fraud-detection
+  description: "Production fraud detection with drift monitoring and auto-rollback"
+
+data:
+  baseline_path: data/baseline_transactions.csv
+  shifted_path: data/shifted_transactions.csv
+
+model:
+  name: fraud-detector
+  framework: scikit-learn
+  metrics:
+    - roc_auc
+    - pr_auc
+    - f1_score
+
+monitoring:
+  drift_metric: kolmogorov_smirnov
+  threshold: 0.05
+  alert_severity: HIGH

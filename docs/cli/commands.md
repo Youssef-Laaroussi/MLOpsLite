@@ -1,163 +1,221 @@
-# MLite CLI — Commands Reference
+# ⌨️ MLite CLI Complete Command Reference
 
-## `mlite init`
+> **Command Prefix:** `mlite`  
+> **Milestone:** M8 — Documentation & Examples (Issue #34)  
+> **Exit Codes:** `0` = Success, `1` = Operational Error, `2` = Validation Error, `130` = Aborted by User
 
-Initialize a new ML project with standard directory structure.
+---
+
+## Command Hierarchy
 
 ```
-mlite init <project-name> [OPTIONS]
-
-Arguments:
-  PROJECT_NAME    Name of the ML project to create (required)
-
-Options:
-  -d, --description TEXT   Project description
-  -g, --git-url TEXT       Git repository URL
-  --dir TEXT               Parent directory (default: current)
-  --help                   Show help
-```
-
-**Creates:**
-```
-<project-name>/
-├── data/raw/
-├── data/processed/
-├── src/__init__.py
-├── models/
-├── tests/__init__.py
-├── notebooks/
-├── configs/
-├── mlite.yaml
-├── .mlite/config.json
-└── .gitignore
+mlite
+├── init <project-name>
+├── status
+├── login [-u username] [-p password]
+├── logout
+├── whoami
+├── config [view | set | get]
+├── data [add | list | info | validate | dvc-init | push | pull | checkout]
+├── experiment [run | list]
+├── model [list | register | promote | compare]
+├── deploy <model> --version <v> [--port <p>]
+├── deployment [list | stop | status]
+├── monitor [drift | performance]
+├── alert [list | ack | resolve]
+├── rollback <model> [--to <version>] [--reason <text>]
+├── rollback-policy [list | create | enable | disable | delete | evaluate]
+├── api-key [create | list | revoke]
+├── user [list | create]
+└── audit [list]
 ```
 
 ---
 
-## `mlite status`
+## 1. Project Management
 
-Check the status of all platform services.
-
+### `mlite init`
+Initialize a new ML project with standard directory structure and `.mlite/` workspace configuration.
+```bash
+mlite init <project-name> [--path <dir>] [--description <text>]
 ```
-mlite status [OPTIONS]
-
-Options:
-  --api-url TEXT      MLite API URL (default: http://localhost:8000)
-  --mlflow-url TEXT   MLflow tracking URL (default: http://localhost:5000)
-  --minio-url TEXT    MinIO endpoint URL (default: http://localhost:9000)
+**Example:**
+```bash
+mlite init credit-risk --description "Credit risk default scoring model"
 ```
 
----
-
-## `mlite config`
-
-### `mlite config view`
-Display current CLI configuration as a table.
-
-### `mlite config set <key> <value>`
-Set a configuration value in `.mlite/config.json`.
-
-### `mlite config get <key>`
-Get a configuration value.
-
----
-
-## `mlite experiment run`
-
-Execute a training script with automatic MLflow tracking.
-
-```
-mlite experiment run <script> [OPTIONS]
-
-Arguments:
-  SCRIPT    Path to the Python training script (required)
-
-Options:
-  -p, --project TEXT   Project slug
-  -n, --name TEXT      Experiment name
-  --api-url TEXT       MLite API URL
+### `mlite status`
+Query health and operational status of all platform services (FastAPI, PostgreSQL, MinIO, MLflow).
+```bash
+mlite status [--api-url http://localhost:8000]
 ```
 
 ---
 
-## `mlite experiment list`
+## 2. Authentication & Governance
 
-List recent experiments and training runs.
-
-```
-mlite experiment list [OPTIONS]
-
-Options:
-  -p, --project TEXT   Filter by project slug
-  -l, --limit INT      Number of experiments (default: 20)
-  --api-url TEXT       MLite API URL
+### `mlite login`
+Authenticate using username/email and password, saving JWT session token to `~/.mlite/credentials` (0600 permissions).
+```bash
+mlite login [-u username] [-p password]
 ```
 
----
-
-## `mlite model list`
-
-List registered models in the registry.
-
-```
-mlite model list [OPTIONS]
-
-Options:
-  -p, --project TEXT   Filter by project slug
-  -s, --stage TEXT     Filter by stage (DEVELOPMENT|CANDIDATE|STAGING|PRODUCTION|ARCHIVED)
-  --api-url TEXT       MLite API URL
+### `mlite logout`
+Log out and securely clear local stored session credentials.
+```bash
+mlite logout
 ```
 
----
-
-## `mlite model register`
-
-Register a model from an MLflow run.
-
+### `mlite whoami`
+Display the currently authenticated user identity, role (`ADMIN`, `MAINTAINER`, `DEVELOPER`, `VIEWER`), and granted permissions.
+```bash
+mlite whoami
 ```
-mlite model register <name> [OPTIONS]
 
-Arguments:
-  NAME    Model name (required)
+### `mlite api-key`
+Manage long-lived headless API keys for CI/CD and automation scripts:
+```bash
+# Generate a new API key (key only displayed once)
+mlite api-key create "GitHub-Actions-CI"
 
-Options:
-  -r, --run-id TEXT    MLflow run ID (required)
-  -p, --project TEXT   Project slug
-  --api-url TEXT       MLite API URL
+# List caller's active API keys
+mlite api-key list
+
+# Immediately invalidate an API key
+mlite api-key revoke <key-id>
+```
+
+### `mlite user` (Admin only)
+Manage platform user accounts:
+```bash
+# List all registered accounts
+mlite user list
+
+# Create a new user with specific role
+mlite user create engineer@mlite.local alex --role MAINTAINER --name "Alex Doe"
 ```
 
 ---
 
-## `mlite model promote`
+## 3. Data & Datasets
 
-Promote a model version to a new stage.
-
+### `mlite data add`
+Upload a tabular dataset (`.csv`, `.parquet`) to MinIO and register dataset metadata:
+```bash
+mlite data add <file-path> --name <dataset-name> [--description <text>]
 ```
-mlite model promote <name> [OPTIONS]
 
-Arguments:
-  NAME    Model name (required)
+### `mlite data list`
+List registered datasets and latest version hashes:
+```bash
+mlite data list
+```
 
-Options:
-  -v, --version INT    Model version (required)
-  -s, --stage TEXT     Target stage (required)
-  --api-url TEXT       MLite API URL
+### `mlite data validate`
+Run automated data quality checks (missing values, types, null rates):
+```bash
+mlite data validate <file-path>
 ```
 
 ---
 
-## `mlite model compare`
+## 4. Experiments & MLflow Tracking
 
-Compare two model versions side by side.
-
+### `mlite experiment run`
+Execute a training script with automatic tracking environment variables set:
+```bash
+mlite experiment run <script.py> [--name <experiment-name>]
 ```
-mlite model compare <name> [OPTIONS]
 
-Arguments:
-  NAME    Model name (required)
+### `mlite experiment list`
+List tracked experiments and recent training runs:
+```bash
+mlite experiment list [--limit 20]
+```
 
-Options:
-  --v1 INT    First version (required)
-  --v2 INT    Second version (required)
-  --api-url TEXT       MLite API URL
+---
+
+## 5. Model Registry & Deployment
+
+### `mlite model list`
+List registered models and their current stage (`STAGING`, `PRODUCTION`, `ARCHIVED`):
+```bash
+mlite model list
+```
+
+### `mlite model promote`
+Promote a model version to a target stage:
+```bash
+mlite model promote <model-name> --version <int> --stage PRODUCTION
+```
+
+### `mlite deploy`
+Deploy a registered model into an isolated inference container:
+```bash
+mlite deploy <model-name> --version <int> [--port 8100]
+```
+
+### `mlite deployment list`
+List running inference containers, ports, and container IDs:
+```bash
+mlite deployment list
+```
+
+### `mlite deployment stop`
+Halt and decommission an inference container:
+```bash
+mlite deployment stop <deployment-id>
+```
+
+---
+
+## 6. Monitoring, Drift & Alerting
+
+### `mlite monitor drift`
+Evaluate Kolmogorov-Smirnov / Wasserstein drift between baseline and current dataset:
+```bash
+mlite monitor drift --model <model-name> --reference <ref-dataset-id> --current <cur-dataset-id>
+```
+
+### `mlite alert list`
+List open, acknowledged, and resolved alerts:
+```bash
+mlite alert list [--status OPEN] [--severity HIGH]
+```
+
+### `mlite alert ack` & `mlite alert resolve`
+Acknowledge or resolve an active alert incident:
+```bash
+mlite alert ack <alert-id>
+mlite alert resolve <alert-id>
+```
+
+---
+
+## 7. Reliability, Rollback & Audit Logs
+
+### `mlite rollback`
+Execute an instant controlled rollback to a previous model version with zero downtime:
+```bash
+mlite rollback <model-name> [--to <version>] [--reason "High error rate"]
+```
+
+### `mlite rollback-policy`
+Manage automated policy triggers for degradation-based rollback:
+```bash
+# List policies
+mlite rollback-policy list
+
+# Create a policy triggering on error rate > 5%
+mlite rollback-policy create --model fraud-detector --metric error_rate --threshold 0.05 --operator GREATER_THAN
+```
+
+### `mlite audit list`
+Query immutable operational and compliance audit logs:
+```bash
+# View latest 50 entries
+mlite audit list
+
+# Filter by resource type and action
+mlite audit list --resource model --action MODEL_PROMOTE --limit 20
 ```

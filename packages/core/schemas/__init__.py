@@ -33,6 +33,14 @@ from packages.core.schemas.alert import (
     AlertResponse,
     AlertListResponse,
 )
+from packages.core.schemas.rollback import (
+    RollbackRequest,
+    RollbackResponse,
+    RollbackListResponse,
+    PolicyCreate,
+    PolicyResponse,
+    PolicyListResponse,
+)
 
 __all__ = [
     "ProjectCreate",
@@ -58,4 +66,10 @@ __all__ = [
     "AlertCreate",
     "AlertResponse",
     "AlertListResponse",
+    "RollbackRequest",
+    "RollbackResponse",
+    "RollbackListResponse",
+    "PolicyCreate",
+    "PolicyResponse",
+    "PolicyListResponse",
 ]

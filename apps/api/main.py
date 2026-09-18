@@ -29,6 +29,7 @@ from apps.api.routers import (
     deployments,
     monitoring,
     alerts,
+    rollback,
 )
 
 logger = logging.getLogger("mlite.api")
@@ -101,6 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(deployments.router)
     app.include_router(monitoring.router)
     app.include_router(alerts.router)
+    app.include_router(rollback.router)
 
     # ── Legacy root health (backward-compat) ────────────────
     @app.get("/health", tags=["Health"], include_in_schema=False)

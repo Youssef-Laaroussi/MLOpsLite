@@ -18,7 +18,7 @@ from rich.console import Console
 
 from apps.cli.commands import init_cmd, config_cmd, status_cmd
 from apps.cli.commands import experiment_cmd, model_cmd, deploy_cmd, data_cmd
-from apps.cli.commands import monitor_cmd, alert_cmd
+from apps.cli.commands import monitor_cmd, alert_cmd, rollback_cmd
 
 console = Console()
 
@@ -40,6 +40,8 @@ app.add_typer(deploy_cmd.app, name="deployment", help="Manage active model deplo
 app.add_typer(data_cmd.app, name="data", help="Manage datasets, schemas, and DVC sync")
 app.add_typer(monitor_cmd.app, name="monitor", help="Monitor feature drift and model performance")
 app.add_typer(alert_cmd.app, name="alert", help="Manage alerts and incident notifications")
+app.command("rollback", help="Roll back a model to a previous version")(rollback_cmd.rollback)
+app.add_typer(rollback_cmd.app, name="rollback-policy", help="Manage auto-rollback policies")
 
 
 if __name__ == "__main__":

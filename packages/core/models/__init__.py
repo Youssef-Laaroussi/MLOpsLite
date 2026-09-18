@@ -13,6 +13,12 @@ from packages.core.models.monitoring import (
     PredictionFeedback,
 )
 from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
+from packages.core.models.rollback import (
+    RollbackRecord,
+    RollbackPolicy,
+    RollbackStatus,
+    RollbackTrigger,
+)
 
 __all__ = [
     "Project",
@@ -35,4 +41,8 @@ __all__ = [
     "Alert",
     "AlertSeverity",
     "AlertStatus",
+    "RollbackRecord",
+    "RollbackPolicy",
+    "RollbackStatus",
+    "RollbackTrigger",
 ]

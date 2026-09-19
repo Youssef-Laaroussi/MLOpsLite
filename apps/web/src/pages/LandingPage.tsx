@@ -122,8 +122,8 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
         <div className="max-w-7xl mx-auto px-6 h-18 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl border border-slate-200/90 shadow-xs p-1.5 transition-all group-hover:border-[#3BB48C]/50 group-hover:shadow-sm">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-11 h-11 flex items-center justify-center bg-slate-50/90 rounded-2xl border border-slate-200/90 shadow-xs p-2 transition-all group-hover:border-[#3BB48C]/50 group-hover:bg-white group-hover:shadow-sm">
                 <img
                   src="/logo.png"
                   alt="MLite Logo"
@@ -171,34 +171,26 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ── Hero Section (Split 2-Column: Text Left "A GAUCHE" / Terminal Graphic Right) ── */}
-      <section className="relative pt-12 pb-20 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/60 via-white to-white border-b border-slate-100">
+      <section className="relative pt-10 pb-20 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/80 via-white to-white border-b border-slate-100">
+        {/* Animated ambient glow spheres for vibrancy */}
+        <div className="absolute -top-20 left-1/4 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/20 to-teal-200/30 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
+        <div className="absolute top-24 right-10 w-80 h-80 bg-gradient-to-br from-emerald-100/40 to-[#3BB48C]/15 rounded-full blur-3xl pointer-events-none -z-10" />
+
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* ── Left Column ("A GAUCHE") ── */}
-            <div className="lg:col-span-6 space-y-6 text-left">
-              {/* Operational Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] shadow-xs">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3BB48C] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3BB48C]"></span>
-                </span>
-                <span>ENTERPRISE SELF-HOSTED MLOPS ENGINE</span>
-              </div>
-
+            <div className="lg:col-span-6 space-y-5 text-left">
               {/* High-Impact Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12]">
-                Deploy & Monitor ML Models with{" "}
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.08]">
+                Deploy &amp; Monitor ML. <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-[#2FA07B]">
-                  Production Rigor.
-                </span>{" "}
-                Zero Cloud Lock-In.
+                  Zero Cloud Lock-In.
+                </span>
               </h1>
 
-              {/* Persuasive Description */}
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
-                Run your complete machine learning lifecycle on your own VPS or bare-metal server.
-                A single Docker Compose stack orchestrating SHA-256 data lineage, sub-50ms container serving,
-                Evidently AI statistical drift monitoring, and automated zero-downtime rollback.
+              {/* Punchy, Short Subtitle */}
+              <p className="text-base sm:text-lg text-slate-600 max-w-lg leading-relaxed font-normal">
+                The lightweight, self-hosted platform for Python. Track models, deploy in sub-50ms Docker containers, and detect drift on your own servers.
               </p>
 
               {/* Quickstart Command Box */}
@@ -629,7 +621,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-5xl mx-auto px-6">
           <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-[#EBF8F4] via-[#F0FDF9] to-white border border-[#BCE9DA] shadow-xl text-center space-y-6 relative overflow-hidden">
             {/* White squircle framed logo */}
-            <div className="w-16 h-16 mx-auto bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200/90 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto bg-slate-50/90 rounded-2xl p-3 shadow-sm border border-slate-200/90 flex items-center justify-center">
               <img
                 src="/logo.png"
                 alt="MLite"
@@ -654,132 +646,93 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Senior-Engineer Multi-Column Enterprise Footer ── */}
-      <footer className="bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800">
+      {/* ── Minimalist, Senior-Grade Clean Footer (Light & Breathable) ── */}
+      <footer className="bg-[#F8FAFC] text-slate-600 pt-12 pb-10 border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Main Footer Grid (5 Columns) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-slate-800">
-            {/* Column 1: Brand & Sovereignty (Col Span 4) */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 flex items-center justify-center bg-white rounded-xl border border-slate-700/60 p-1.5 shadow-xs">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-10 border-b border-slate-200/70">
+            {/* Left: Brand, Tagline & Live Status */}
+            <div className="space-y-3 max-w-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 flex items-center justify-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-xs">
                   <img src="/logo.png" alt="MLite Logo" className="w-full h-full object-contain" />
                 </div>
-                <span className="font-black text-white text-xl tracking-tight">MLite</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                <span className="font-display font-black text-slate-900 text-xl tracking-tight">MLite</span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
                   v1.0.0
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pr-6">
-                Lightweight, open-source MLOps platform engineered for teams who demand complete data sovereignty,
-                sub-50ms Docker serving, and automated drift protection without cloud vendor lock-in.
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Lightweight, self-hosted MLOps platform for Python. Track, deploy in Docker, and monitor models with complete sovereignty.
               </p>
-
-              {/* Live System Operational Status Badge */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <a
                   href="http://localhost:8000/health"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-xs font-semibold text-emerald-300 hover:border-emerald-600 transition"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-emerald-200 text-xs font-semibold text-emerald-700 shadow-xs hover:border-emerald-400 transition"
                 >
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
-                  <span>All Systems Operational • 99.98% Uptime</span>
+                  <span>All Systems Operational</span>
                 </a>
               </div>
             </div>
 
-            {/* Column 2: Platform Engine (Col Span 2) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Platform</div>
-              <ul className="space-y-2">
-                <li><Link to="/app/models" className="hover:text-white transition">Model Registry</Link></li>
-                <li><Link to="/app/deployments" className="hover:text-white transition">Container Serving</Link></li>
-                <li><Link to="/app/monitoring" className="hover:text-white transition">Drift Monitoring</Link></li>
-                <li><Link to="/app/monitoring" className="hover:text-white transition">Auto-Rollback</Link></li>
-                <li><Link to="/app/alerts" className="hover:text-white transition">Smart Alerting</Link></li>
-                <li><Link to="/app/datasets" className="hover:text-white transition">Dataset Lineage</Link></li>
-              </ul>
-            </div>
-
-            {/* Column 3: Architecture & Core (Col Span 2) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Architecture</div>
-              <ul className="space-y-2">
-                <li><span className="text-slate-300 font-medium">FastAPI</span> Async Core</li>
-                <li><span className="text-slate-300 font-medium">PostgreSQL 16</span> Store</li>
-                <li><span className="text-slate-300 font-medium">MinIO S3</span> Buckets</li>
-                <li><span className="text-slate-300 font-medium">MLflow 2.15</span> Server</li>
-                <li><span className="text-slate-300 font-medium">Docker</span> Containers</li>
-                <li><span className="text-slate-300 font-medium">Evidently AI</span> Stats</li>
-              </ul>
-            </div>
-
-            {/* Column 4: Developers & Docs (Col Span 2) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Developers</div>
-              <ul className="space-y-2">
-                <li>
-                  <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-white transition flex items-center gap-1">
-                    Swagger API <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:8000/redoc" target="_blank" rel="noreferrer" className="hover:text-white transition flex items-center gap-1">
-                    ReDoc Spec <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-white transition flex items-center gap-1">
-                    GitHub Repo <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:5000" target="_blank" rel="noreferrer" className="hover:text-white transition flex items-center gap-1">
-                    MLflow UI <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:9001" target="_blank" rel="noreferrer" className="hover:text-white transition flex items-center gap-1">
-                    MinIO Console <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 5: Security & Compliance (Col Span 2) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#3BB48C]" />
-                Security
+            {/* Right: Clean, Airy Link Columns */}
+            <div className="grid grid-cols-3 gap-8 sm:gap-12 text-xs">
+              <div className="space-y-2.5">
+                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">Platform</div>
+                <ul className="space-y-2 text-slate-500">
+                  <li><Link to="/app" className="hover:text-[#3BB48C] transition">Console</Link></li>
+                  <li><Link to="/app/models" className="hover:text-[#3BB48C] transition">Models</Link></li>
+                  <li><Link to="/app/deployments" className="hover:text-[#3BB48C] transition">Deployments</Link></li>
+                  <li><Link to="/app/monitoring" className="hover:text-[#3BB48C] transition">Drift Guard</Link></li>
+                </ul>
               </div>
-              <ul className="space-y-2">
-                <li className="text-slate-300">Air-Gapped Ready</li>
-                <li className="text-slate-300">RBAC Token Auth</li>
-                <li className="text-slate-300">Container Sandbox</li>
-                <li className="text-slate-300">SHA-256 Checksums</li>
-                <li className="text-slate-300">Security Headers</li>
-                <li className="text-slate-300">Audit Trail Active</li>
-              </ul>
+
+              <div className="space-y-2.5">
+                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">Docs &amp; Code</div>
+                <ul className="space-y-2 text-slate-500">
+                  <li>
+                    <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
+                      Swagger API <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
+                      GitHub <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </a>
+                  </li>
+                  <li><a href="http://localhost:5000" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition">MLflow</a></li>
+                  <li><a href="http://localhost:9001" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition">MinIO</a></li>
+                </ul>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">Security</div>
+                <ul className="space-y-2 text-slate-500">
+                  <li><span className="text-slate-600">Air-Gapped</span></li>
+                  <li><span className="text-slate-600">RBAC Auth</span></li>
+                  <li><span className="text-slate-600">SHA-256</span></li>
+                  <li><span className="text-slate-600">Apache 2.0</span></li>
+                </ul>
+              </div>
             </div>
           </div>
 
-          {/* Sub-Footer Bar */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>© 2026 MLite Project. Created by Youssef Laaroussi.</span>
-              <span>•</span>
-              <span className="text-slate-400">Apache 2.0 Open Source License</span>
+          {/* Sub-Footer */}
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <div>
+              © 2026 MLite Project. Open source under Apache 2.0 License.
             </div>
             <div className="flex items-center gap-6">
-              <a href="https://github.com/Youssef-Laaroussi/MLOpsLite/blob/dev/SECURITY.md" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition">
-                Security Advisory
+              <a href="https://github.com/Youssef-Laaroussi/MLOpsLite/blob/dev/SECURITY.md" target="_blank" rel="noreferrer" className="hover:text-slate-600 transition">
+                Security Policy
               </a>
-              <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-slate-300 transition">
-                Repository
+              <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-slate-600 transition">
+                GitHub Repository
               </a>
               <Link to="/app" className="text-[#3BB48C] font-semibold hover:underline">
                 Open Console →

@@ -35,7 +35,7 @@ export const Sidebar: React.FC = () => {
           <Link
             to="/"
             title="Go to Landing Page"
-            className="w-9 h-9 flex items-center justify-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-sm transition-all"
+            className="w-10 h-10 flex items-center justify-center bg-slate-50/90 rounded-2xl border border-slate-200/90 p-2 shadow-xs hover:border-[#3BB48C]/60 hover:bg-white hover:shadow-sm transition-all"
           >
             <img src="/logo.png" alt="MLite Logo" className="w-full h-full object-contain" />
           </Link>

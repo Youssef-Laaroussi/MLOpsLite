@@ -1,4 +1,4 @@
-# 💳 Production Fraud Detection with Drift & Auto-Rollback
+# Production Fraud Detection with Drift & Auto-Rollback
 
 > **Component:** `examples/fraud-detection/`  
 > **Milestone:** M8 — Documentation & Examples (Issue #37)

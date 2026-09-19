@@ -1,4 +1,4 @@
-# 🌺 Iris Classification Starter Example
+# Iris Classification Starter Example
 
 > **Component:** `examples/iris/`  
 > **Milestone:** M8 — Documentation & Examples (Issue #36)  
@@ -47,7 +47,7 @@ python src/train.py
 Output:
 ```
 ==================================================
-🌺 Iris Classification Training Complete!
+Iris Classification Training Complete!
    MLflow Run ID: 8bf246a382d5471e98d98d896173a1ef
    Accuracy:      0.9667
    F1-Score:      0.9666

@@ -38,19 +38,19 @@
 </p>
 
 <p align="center">
-  <a href="#-why-mlite">💡 Why MLite?</a> •
-  <a href="#-core-lifecycle-pipeline">🔄 Lifecycle</a> •
-  <a href="#-quick-start">🚀 Quick Start</a> •
-  <a href="#-architecture">🏗️ Architecture</a> •
-  <a href="#-tech-stack">🛠️ Tech Stack</a> •
-  <a href="CONTRIBUTING.md">🤝 Contributing</a>
+  <a href="#why-mlite">Why MLite?</a> •
+  <a href="#core-lifecycle-pipeline">Lifecycle</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 </div>
 
 ---
 
-## 🎯 Vision
+## Vision
 
 **MLite** is an open-source, lightweight, and self-hosted MLOps platform engineered specifically for **AI startups, data labs, researchers, and small data science teams**.
 
@@ -65,9 +65,9 @@ Data ──► Versioning ──► Experiment ──► Registry ──► Depl
 
 ---
 
-## 💡 Why MLite?
+## Why MLite?
 
-| Feature | 🔴 Traditional Heavyweight MLOps | 🟢 The MLite Approach |
+| Feature | Traditional Heavyweight MLOps | The MLite Approach |
 | :--- | :--- | :--- |
 | **Infrastructure** | Kubernetes, Helm, Cloud VPCs, IAM Roles | **Docker Compose v2** (`docker compose up -d`) |
 | **Cloud Dependency** | Vendor lock-in (AWS S3, SageMaker, Vertex AI) | **100% Self-Hosted** (Local disk, MinIO, PostgreSQL) |
@@ -79,7 +79,7 @@ Data ──► Versioning ──► Experiment ──► Registry ──► Depl
 
 ---
 
-## 🔄 Core Lifecycle Pipeline
+## Core Lifecycle Pipeline
 
 ```
  ┌────────────────────────────────────────────────────────────────────────┐
@@ -104,17 +104,17 @@ Data ──► Versioning ──► Experiment ──► Registry ──► Depl
 
 | Lifecycle Stage | Underlying Technology | Key Capabilities |
 | :--- | :---: | :--- |
-| 📊 **1. Data Versioning** | `DVC` + `MinIO` | SHA-256 data hashing, schema profiling, remote S3 sync |
-| 🧪 **2. Experiment Tracking** | `MLflow` | Hyperparameters, metrics, Git commit SHA, training artifacts |
-| 🏷️ **3. Model Registry** | `PostgreSQL` | Formal stages: `Development` → `Candidate` → `Staging` → `Production` |
-| 🚀 **4. Container Serving** | `Docker` + `FastAPI` | Instant REST serving container (`POST /predict`, health probes) |
-| 👁️ **5. Quality & Drift** | `Evidently AI` | Automated data drift tests, concept drift, feature distribution |
-| 🔔 **6. Multi-channel Alerts**| `Webhooks` | Slack, Discord, Email, and HTTP webhooks on anomalies |
-| 🔄 **7. Controlled Rollback** | `MLite Engine` | Zero-downtime cutover back to the last verified stable model |
+| **1. Data Versioning** | `DVC` + `MinIO` | SHA-256 data hashing, schema profiling, remote S3 sync |
+| **2. Experiment Tracking** | `MLflow` | Hyperparameters, metrics, Git commit SHA, training artifacts |
+| **3. Model Registry** | `PostgreSQL` | Formal stages: `Development` → `Candidate` → `Staging` → `Production` |
+| **4. Container Serving** | `Docker` + `FastAPI` | Instant REST serving container (`POST /predict`, health probes) |
+| **5. Quality & Drift** | `Evidently AI` | Automated data drift tests, concept drift, feature distribution |
+| **6. Multi-channel Alerts**| `Webhooks` | Slack, Discord, Email, and HTTP webhooks on anomalies |
+| **7. Controlled Rollback** | `MLite Engine` | Zero-downtime cutover back to the last verified stable model |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Launch Platform Infrastructure
 On your server or local machine:
@@ -177,7 +177,7 @@ curl -X POST http://localhost:8000/predict \
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
                                  USER / DATA SCIENTIST
@@ -226,7 +226,7 @@ curl -X POST http://localhost:8000/predict \
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ```text
 Language:             Python 3.12+
@@ -244,7 +244,7 @@ Testing & Quality:    Pytest, Ruff, MyPy
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome community contributions! Please read our guidelines before opening pull requests:
 
@@ -252,10 +252,10 @@ We welcome community contributions! Please read our guidelines before opening pu
 2. **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community standards.
 
 > [!IMPORTANT]
-> **Branch Strategy**: All pull requests must target the **`dev`** branch (`feature/*` ➔ `dev`). The **`main`** branch is protected and strictly reserved for stable production releases.
+> **Branch Strategy**: All pull requests must target the **`dev`** branch (`feature/*` -> `dev`). The **`main`** branch is protected and strictly reserved for stable production releases.
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **[Apache License 2.0](LICENSE)**.

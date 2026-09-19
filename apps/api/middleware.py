@@ -38,8 +38,22 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Inject industry-standard HTTP security hardening headers to protect API clients."""
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        return response
+
+
 def register_middleware(app: FastAPI) -> None:
     """Register all custom middleware layers on the application instance."""
     # Outermost first – order matters
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(RequestLoggingMiddleware)

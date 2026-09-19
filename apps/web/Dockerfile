@@ -19,9 +19,14 @@ FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Configure Nginx to listen on port 3000 and support SPA HTML5 routing
+# Configure Nginx to listen on port 3000, enforce security headers, and support SPA HTML5 routing
 RUN printf 'server {\n\
     listen 3000;\n\
+    server_tokens off;\n\
+    add_header X-Frame-Options "SAMEORIGIN" always;\n\
+    add_header X-Content-Type-Options "nosniff" always;\n\
+    add_header X-XSS-Protection "1; mode=block" always;\n\
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;\n\
     location / {\n\
         root /usr/share/nginx/html;\n\
         index index.html index.htm;\n\

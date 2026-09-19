@@ -4,20 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-[#071018] text-slate-100 min-h-screen font-sans;
+    @apply bg-white text-slate-900 min-h-screen font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Sleek custom scrollbars */
+  /* Custom scrollbars for clean light UI */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #071018;
+    background: #F8FAFC;
   }
   ::-webkit-scrollbar-thumb {
-    background: #19364C;
+    background: #CBD5E1;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -25,17 +25,12 @@
   }
 }
 
-/* Glassmorphism tuned to MLite Obsidian and Mint */
-.glass {
-  background: rgba(13, 31, 45, 0.75);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(59, 180, 140, 0.15);
+.emerald-glow {
+  box-shadow: 0 4px 20px -2px rgba(59, 180, 140, 0.25);
 }
 
-.brand-glow {
-  box-shadow: 0 0 25px -5px rgba(59, 180, 140, 0.3);
-}
-
-.brand-gradient {
-  background: linear-gradient(135deg, #3BB48C 0%, #20775B 100%);
+.emerald-badge {
+  background-color: #EBF8F4;
+  color: #1A7456;
+  border: 1px solid #BCE9DA;
 }

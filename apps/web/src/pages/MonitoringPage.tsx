@@ -6,8 +6,8 @@ export const MonitoringPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h2 className="text-xl font-bold text-white tracking-tight">Model Monitoring & Drift</h2>
-        <p className="text-sm text-slate-400">
+        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Model Monitoring & Drift</h2>
+        <p className="text-sm text-slate-500">
           Continuous evaluation of production data drift (Evidently AI, PSI score) and inference latency
         </p>
       </div>
@@ -36,9 +36,9 @@ export const MonitoringPage: React.FC = () => {
         />
       </div>
 
-      <div className="bg-[#0D1F2D] border border-[#19364C] rounded-xl p-6 shadow-md">
-        <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#3BB48C]"></span>
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]"></span>
           Feature Distribution & Drift Scores (Evidently AI)
         </h3>
         <div className="space-y-3">
@@ -48,12 +48,12 @@ export const MonitoringPage: React.FC = () => {
             { feature: "card_age_months", stat_test: "KS Test", p_val: 0.95, drift: false },
             { feature: "daily_txn_count", stat_test: "Chi-Square", p_val: 0.62, drift: false },
           ].map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3.5 rounded-lg bg-[#071018] border border-[#19364C]">
+            <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-[#F8FAFC] border border-slate-200">
               <div>
-                <div className="font-semibold text-white text-sm">{item.feature}</div>
-                <div className="text-xs text-slate-400 font-mono mt-0.5">Test: {item.stat_test} • p-value: {item.p_val}</div>
+                <div className="font-bold text-slate-900 text-sm">{item.feature}</div>
+                <div className="text-xs text-slate-500 font-mono mt-0.5">Test: {item.stat_test} • p-value: {item.p_val}</div>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0D3326] text-[#3BB48C] border border-[#1A7456]">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
                 Stable (No Drift)
               </span>
             </div>

@@ -7,13 +7,13 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const upper = status.toUpperCase();
 
-  let colors = "bg-slate-700/60 text-slate-300 border-slate-600";
+  let colors = "bg-slate-100 text-slate-700 border-slate-200";
   if (["RUNNING", "ACTIVE", "PRODUCTION", "HEALTHY"].includes(upper)) {
-    colors = "bg-emerald-950/60 text-emerald-400 border-emerald-800/80";
+    colors = "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]";
   } else if (["STAGING", "CANDIDATE", "PENDING"].includes(upper)) {
-    colors = "bg-amber-950/60 text-amber-400 border-amber-800/80";
+    colors = "bg-amber-50 text-amber-800 border-amber-200";
   } else if (["FAILED", "ERROR", "STOPPED", "ARCHIVED"].includes(upper)) {
-    colors = "bg-rose-950/60 text-rose-400 border-rose-800/80";
+    colors = "bg-rose-50 text-rose-700 border-rose-200";
   }
 
   return (

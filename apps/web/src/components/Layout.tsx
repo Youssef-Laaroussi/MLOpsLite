@@ -8,6 +8,14 @@ export const Layout: React.FC = () => {
 
   const titleMap: Record<string, string> = {
     "/": "System Overview",
+    "/app": "System Overview",
+    "/app/projects": "Project Management",
+    "/app/datasets": "Datasets & Lineage",
+    "/app/experiments": "Experiment Tracking",
+    "/app/models": "Model Registry & Stages",
+    "/app/deployments": "Inference Deployments",
+    "/app/monitoring": "Model Monitoring & Drift",
+    "/app/alerts": "Alerts & Webhooks",
     "/projects": "Project Management",
     "/datasets": "Datasets & Lineage",
     "/experiments": "Experiment Tracking",
@@ -20,11 +28,11 @@ export const Layout: React.FC = () => {
   const title = titleMap[location.pathname] || "MLite Dashboard";
 
   return (
-    <div className="flex min-h-screen bg-[#071018] text-slate-100">
+    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header title={title} />
-        <main className="p-8 flex-1 overflow-y-auto bg-[#071018]">
+        <main className="p-8 flex-1 overflow-y-auto bg-[#F8FAFC]">
           <Outlet />
         </main>
       </div>

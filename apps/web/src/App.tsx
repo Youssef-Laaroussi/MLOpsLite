@@ -25,20 +25,38 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Main Landing Page */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/" element={<Layout />}>
+
+          {/* Dashboard Application under /app */}
+          <Route path="/app" element={<Layout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="overview" element={<DashboardOverview />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="datasets" element={<DatasetsPage />} />
-            <Route path="experiments" element={<Navigate to="/" replace />} />
+            <Route path="experiments" element={<Navigate to="/app" replace />} />
             <Route path="models" element={<ModelsPage />} />
             <Route path="deployments" element={<DeploymentsPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="alerts" element={<AlertsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+
+          {/* Direct convenience routes (e.g. /deployments, /projects) */}
+          <Route element={<Layout />}>
+            <Route path="dashboard" element={<DashboardOverview />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="datasets" element={<DatasetsPage />} />
+            <Route path="experiments" element={<Navigate to="/app" replace />} />
+            <Route path="models" element={<ModelsPage />} />
+            <Route path="deployments" element={<DeploymentsPage />} />
+            <Route path="monitoring" element={<MonitoringPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
+          </Route>
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

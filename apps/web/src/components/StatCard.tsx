@@ -19,25 +19,25 @@ export const StatCard: React.FC<StatCardProps> = ({
   color = "brand",
 }) => {
   const colorMap = {
-    brand: "text-[#3BB48C] bg-[#0D3326] border-[#1A7456]",
-    emerald: "text-[#3BB48C] bg-[#0D3326] border-[#1A7456]",
-    amber: "text-amber-400 bg-amber-950/50 border-amber-800/60",
-    rose: "text-rose-400 bg-rose-950/50 border-rose-800/60",
-    blue: "text-sky-400 bg-sky-950/50 border-sky-800/60",
+    brand: "text-[#1A7456] bg-[#EBF8F4] border-[#BCE9DA]",
+    emerald: "text-[#1A7456] bg-[#EBF8F4] border-[#BCE9DA]",
+    amber: "text-amber-800 bg-amber-50 border-amber-200",
+    rose: "text-rose-700 bg-rose-50 border-rose-200",
+    blue: "text-sky-700 bg-sky-50 border-sky-200",
   };
 
   return (
-    <div className="bg-[#0D1F2D] border border-[#19364C] rounded-xl p-5 hover:border-[#3BB48C]/40 transition-all shadow-md">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-[#3BB48C]/50 hover:shadow-md transition-all shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-slate-400">{title}</span>
-        <div className={`p-2.5 rounded-lg border ${colorMap[color]}`}>
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+        <div className={`p-2.5 rounded-xl border ${colorMap[color]}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <div className="text-3xl font-extrabold text-white tracking-tight">{value}</div>
+      <div className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</div>
       {(subtitle || trend) && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-          {trend && <span className="text-[#3BB48C] font-semibold">{trend}</span>}
+        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+          {trend && <span className="text-[#1A7456] font-bold">{trend}</span>}
           {subtitle && <span>{subtitle}</span>}
         </div>
       )}

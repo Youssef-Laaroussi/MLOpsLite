@@ -9,6 +9,7 @@ import { DeploymentsPage } from "./pages/DeploymentsPage";
 import { DatasetsPage } from "./pages/DatasetsPage";
 import { MonitoringPage } from "./pages/MonitoringPage";
 import { AlertsPage } from "./pages/AlertsPage";
+import { LandingPage } from "./pages/LandingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,8 +25,11 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/welcome" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<DashboardOverview />} />
+            <Route path="overview" element={<DashboardOverview />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="datasets" element={<DatasetsPage />} />
             <Route path="experiments" element={<Navigate to="/" replace />} />

@@ -4,14 +4,38 @@
 
 @layer base {
   body {
-    @apply bg-[#0b1120] text-slate-100 min-h-screen;
+    @apply bg-[#071018] text-slate-100 min-h-screen font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Sleek custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #071018;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #19364C;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3BB48C;
   }
 }
 
-/* Glassmorphism utility */
+/* Glassmorphism tuned to MLite Obsidian and Mint */
 .glass {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 31, 45, 0.75);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(59, 180, 140, 0.15);
+}
+
+.brand-glow {
+  box-shadow: 0 0 25px -5px rgba(59, 180, 140, 0.3);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, #3BB48C 0%, #20775B 100%);
 }

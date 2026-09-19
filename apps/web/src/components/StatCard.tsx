@@ -7,7 +7,7 @@ interface StatCardProps {
   subtitle?: string;
   icon: LucideIcon;
   trend?: string;
-  color?: "blue" | "emerald" | "amber" | "rose" | "purple";
+  color?: "brand" | "emerald" | "amber" | "rose" | "blue";
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -16,28 +16,28 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtitle,
   icon: Icon,
   trend,
-  color = "blue",
+  color = "brand",
 }) => {
   const colorMap = {
-    blue: "text-sky-400 bg-sky-950/40 border-sky-800/40",
-    emerald: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40",
-    amber: "text-amber-400 bg-amber-950/40 border-amber-800/40",
-    rose: "text-rose-400 bg-rose-950/40 border-rose-800/40",
-    purple: "text-purple-400 bg-purple-950/40 border-purple-800/40",
+    brand: "text-[#3BB48C] bg-[#0D3326] border-[#1A7456]",
+    emerald: "text-[#3BB48C] bg-[#0D3326] border-[#1A7456]",
+    amber: "text-amber-400 bg-amber-950/50 border-amber-800/60",
+    rose: "text-rose-400 bg-rose-950/50 border-rose-800/60",
+    blue: "text-sky-400 bg-sky-950/50 border-sky-800/60",
   };
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 hover:border-slate-700 transition-all shadow-sm">
+    <div className="bg-[#0D1F2D] border border-[#19364C] rounded-xl p-5 hover:border-[#3BB48C]/40 transition-all shadow-md">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-slate-400">{title}</span>
         <div className={`p-2.5 rounded-lg border ${colorMap[color]}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <div className="text-3xl font-bold text-white tracking-tight">{value}</div>
+      <div className="text-3xl font-extrabold text-white tracking-tight">{value}</div>
       {(subtitle || trend) && (
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-          {trend && <span className="text-emerald-400 font-medium">{trend}</span>}
+          {trend && <span className="text-[#3BB48C] font-semibold">{trend}</span>}
           {subtitle && <span>{subtitle}</span>}
         </div>
       )}

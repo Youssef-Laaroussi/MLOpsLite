@@ -8,15 +8,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#0f172a",
-        surface: "#1e293b",
-        "surface-border": "#334155",
+        background: "#071018",
+        surface: "#0D1F2D",
+        "surface-card": "#112738",
+        "surface-border": "#19364C",
+        "surface-hover": "#153046",
         brand: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
+          50: "#ecfdf5",
+          100: "#d1fae5",
+          200: "#a7f3d0",
+          300: "#6ee7b7",
+          400: "#3BB48C", // Official MLite Mint/Teal
+          500: "#2EB88A",
+          600: "#249670",
+          700: "#1A7456",
+          800: "#13523D",
+          900: "#0D3326",
+          950: "#071F17",
         },
       },
     },

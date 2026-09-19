@@ -20,11 +20,11 @@ export const Layout: React.FC = () => {
   const title = titleMap[location.pathname] || "MLite Dashboard";
 
   return (
-    <div className="flex min-h-screen bg-[#0b1120] text-slate-100">
+    <div className="flex min-h-screen bg-[#071018] text-slate-100">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header title={title} />
-        <main className="p-8 flex-1 overflow-y-auto">
+        <main className="p-8 flex-1 overflow-y-auto bg-[#071018]">
           <Outlet />
         </main>
       </div>

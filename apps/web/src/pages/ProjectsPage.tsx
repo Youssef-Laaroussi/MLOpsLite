@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FolderGit2, Plus, ExternalLink, Calendar, GitBranch } from "lucide-react";
+import { FolderGit2, Plus, Calendar, GitBranch } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { fetchProjects, createProject } from "../api/client";
 import { Project } from "../api/types";
@@ -50,24 +50,24 @@ export const ProjectsPage: React.FC = () => {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-medium text-sm transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3BB48C] hover:bg-[#34A47F] text-[#071018] font-bold text-sm transition shadow-md shadow-[#3BB48C]/20"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
           New Project
         </button>
       </div>
 
       {/* Grid of Projects */}
       {projects.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/40 border border-slate-800 rounded-xl">
-          <FolderGit2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-300">No Projects Found</h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+        <div className="text-center py-16 bg-[#0D1F2D] border border-[#19364C] rounded-xl shadow-lg">
+          <FolderGit2 className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-slate-200">No Projects Found</h3>
+          <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
             Get started by initializing a project via CLI (`mlite init &lt;name&gt;`) or click below.
           </p>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-lg text-sm font-medium transition"
+            className="mt-4 px-4 py-2 bg-[#3BB48C] hover:bg-[#34A47F] text-[#071018] rounded-lg text-sm font-bold transition shadow-md shadow-[#3BB48C]/20"
           >
             Create First Project
           </button>
@@ -77,11 +77,11 @@ export const ProjectsPage: React.FC = () => {
           {projects.map((proj) => (
             <div
               key={proj.id}
-              className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700 transition"
+              className="bg-[#0D1F2D] border border-[#19364C] rounded-xl p-5 flex flex-col justify-between hover:border-[#3BB48C]/40 transition shadow-md"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                  <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#071018] text-[#3BB48C] border border-[#19364C]">
                     {proj.slug}
                   </span>
                   <StatusBadge status={proj.status} />
@@ -92,9 +92,9 @@ export const ProjectsPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+              <div className="pt-3 border-t border-[#19364C] flex items-center justify-between text-xs text-slate-400">
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
+                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   {proj.created_at.slice(0, 10)}
                 </span>
                 {proj.git_url && (
@@ -102,7 +102,7 @@ export const ProjectsPage: React.FC = () => {
                     href={proj.git_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sky-400 hover:underline flex items-center gap-1"
+                    className="text-[#3BB48C] hover:underline flex items-center gap-1 font-mono"
                   >
                     <GitBranch className="w-3.5 h-3.5" />
                     Git
@@ -116,9 +116,12 @@ export const ProjectsPage: React.FC = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white">Create New Project</h3>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#0D1F2D] border border-[#19364C] rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#3BB48C]"></span>
+              Create New Project
+            </h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Project Name</label>
@@ -128,7 +131,7 @@ export const ProjectsPage: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Fraud Detection"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[#071018] border border-[#19364C] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#3BB48C] focus:ring-1 focus:ring-[#3BB48C]"
                 />
               </div>
               <div>
@@ -138,7 +141,7 @@ export const ProjectsPage: React.FC = () => {
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="fraud-detection"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[#071018] border border-[#19364C] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#3BB48C] focus:ring-1 focus:ring-[#3BB48C]"
                 />
               </div>
               <div>
@@ -147,20 +150,20 @@ export const ProjectsPage: React.FC = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[#071018] border border-[#19364C] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#3BB48C] focus:ring-1 focus:ring-[#3BB48C]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-sm hover:bg-slate-700"
+                  className="px-4 py-2 rounded-lg bg-[#071018] text-slate-300 text-sm hover:bg-[#112738] border border-[#19364C]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-sm font-medium"
+                  className="px-4 py-2 rounded-lg bg-[#3BB48C] hover:bg-[#34A47F] text-[#071018] text-sm font-bold shadow-md shadow-[#3BB48C]/20"
                 >
                   Create
                 </button>

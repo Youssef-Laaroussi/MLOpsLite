@@ -200,13 +200,19 @@ export const LandingPage: React.FC = () => {
 
           <div className="flex items-center gap-2.5">
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200">
                   <div className="w-6 h-6 rounded-lg bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center">
                     {user.username.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-xs font-bold text-slate-800">{user.full_name || user.username}</span>
                 </div>
+                <Link
+                  to="/app"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs sm:text-sm transition shadow-md shadow-[#3BB48C]/25 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  Dashboard Console <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </Link>
                 <button
                   onClick={logout}
                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
@@ -225,19 +231,12 @@ export const LandingPage: React.FC = () => {
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-sm hover:-translate-y-0.5 active:translate-y-0"
+                  className="px-5 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Sign Up
                 </Link>
               </div>
             )}
-
-            <Link
-              to="/app"
-              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs sm:text-sm transition shadow-md shadow-[#3BB48C]/25 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Dashboard Console <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-            </Link>
           </div>
         </div>
       </header>
@@ -739,22 +738,6 @@ export const LandingPage: React.FC = () => {
                 Lightweight, open-source MLOps platform engineered for teams who demand complete data sovereignty,
                 sub-50ms Docker serving, and automated drift protection without cloud vendor lock-in.
               </p>
-
-              {/* Live System Operational Status Badge */}
-              <div className="pt-2">
-                <a
-                  href="http://localhost:8000/health"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-xs font-semibold text-emerald-300 hover:border-[#3BB48C] transition shadow-xs"
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3BB48C] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3BB48C]"></span>
-                  </span>
-                  <span>All Systems Operational • 99.98% Uptime</span>
-                </a>
-              </div>
             </div>
 
             {/* Column 2: Platform Engine (Col Span 2) */}

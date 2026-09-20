@@ -16,6 +16,8 @@ import { LandingPage } from "./pages/LandingPage";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 
+import { AIAgentWidget } from "./components/AIAgentWidget";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -85,6 +87,9 @@ export const App: React.FC = () => {
             {/* ── Catch-all ── */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+
+          {/* ── Global Autonomous AI Agent Copilot ── */}
+          <AIAgentWidget />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

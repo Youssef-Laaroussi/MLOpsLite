@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Server,
   Database,
@@ -34,10 +34,22 @@ import { useAuth } from "../context/AuthContext";
 
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [activeTab, setActiveTab] = useState<"deploy" | "drift" | "curl">("deploy");
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [mouseCoord, setMouseCoord] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const handleCardMouseMove = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredCard(index);
+    setMouseCoord({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
   const [activeCategory, setActiveCategory] = useState<"all" | "pipeline" | "serving" | "governance">("all");
 
   // Scroll-reveal observer for animating cards on viewport entry
@@ -83,49 +95,49 @@ export const LandingPage: React.FC = () => {
       category: "pipeline",
       icon: Database,
       iconColor: "text-emerald-600 bg-emerald-50 border-emerald-200",
-      tag: "SHA-256 Verified",
       title: "Data Versioning & Lineage",
-      desc: "Track every dataset evolution with SHA-256 cryptographic hashes and local MinIO S3 sync. Complete reproducibility without cloud storage fees.",
+      desc: "Track every dataset evolution with cryptographic integrity and local MinIO S3 sync. Complete reproducibility without cloud storage fees.",
+      path: "/app/datasets",
     },
     {
       category: "pipeline",
       icon: Boxes,
       iconColor: "text-teal-600 bg-teal-50 border-teal-200",
-      tag: "MLflow 2.15+",
       title: "Native Experiment Tracking",
-      desc: "Full MLflow experiment engine tracking metrics, hyperparameter grids, learning curves, and model artifacts directly to PostgreSQL and S3.",
+      desc: "Full experiment engine tracking metrics, hyperparameter grids, learning curves, and model artifacts directly to PostgreSQL and S3.",
+      path: "/app/experiments",
     },
     {
       category: "pipeline",
       icon: ShieldCheck,
       iconColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
-      tag: "Stage Promotion",
       title: "Centralized Model Registry",
       desc: "Enforce strict governance across Development, Staging, and Production stages with input/output signature validation and metadata tracking.",
+      path: "/app/models",
     },
     {
       category: "serving",
       icon: Server,
       iconColor: "text-cyan-600 bg-cyan-50 border-cyan-200",
-      tag: "Sub-50ms Latency",
       title: "Isolated Container Serving",
       desc: "Auto-scaffold dedicated Docker serving containers with dynamic port allocation, FastAPI runtime, and sub-second container cold-starts.",
+      path: "/app/deployments",
     },
     {
       category: "governance",
       icon: LineChart,
       iconColor: "text-emerald-600 bg-emerald-50 border-emerald-200",
-      tag: "KS-Test p < 0.05",
       title: "Evidently AI Drift Monitoring",
-      desc: "Continuous statistical two-sample tests detect covariate shift in feature distributions before model degradation impacts production traffic.",
+      desc: "Continuous statistical testing detects covariate shift in feature distributions before model degradation impacts production traffic.",
+      path: "/app/monitoring",
     },
     {
       category: "governance",
       icon: RotateCcw,
       iconColor: "text-teal-700 bg-teal-50 border-teal-200",
-      tag: "Zero Downtime",
       title: "Automated & Instant Rollback",
       desc: "Configurable drift and error spike triggers automatically switch traffic back to the previous healthy model version with zero service interruption.",
+      path: "/app/alerts",
     },
   ];
 

@@ -184,159 +184,196 @@ export const SignInPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right Panel: Premium Animated Visual ── */}
-      <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden items-center justify-center"
+      {/* ── Right Panel: Natural Living Visual Décor (Pure Art & Motion) ── */}
+      <div
+        className="hidden lg:flex lg:w-[52%] relative overflow-hidden items-center justify-center select-none"
         style={{
-          background: "linear-gradient(135deg, #081520 0%, #0B1E2D 25%, #0A1926 50%, #061318 100%)",
+          background: "linear-gradient(135deg, #07131D 0%, #0A1B28 35%, #081722 70%, #050E15 100%)",
         }}
       >
-        {/* ── Animated Grid Background ── */}
-        <div className="absolute inset-0 opacity-[0.07]"
+        {/* ── Ambient Organic Nebula Glows ── */}
+        <div
+          className="absolute top-[15%] right-[20%] w-[440px] h-[440px] rounded-full opacity-45 pointer-events-none blur-[120px]"
+          style={{
+            background: "radial-gradient(circle, rgba(59,180,140,0.35) 0%, rgba(16,185,129,0.15) 50%, transparent 70%)",
+            animation: "auroraPulse1 10s ease-in-out infinite alternate",
+          }}
+        />
+        <div
+          className="absolute bottom-[18%] left-[15%] w-[480px] h-[480px] rounded-full opacity-35 pointer-events-none blur-[140px]"
+          style={{
+            background: "radial-gradient(circle, rgba(20,184,166,0.3) 0%, rgba(59,180,140,0.1) 60%, transparent 80%)",
+            animation: "auroraPulse2 12s ease-in-out infinite alternate",
+          }}
+        />
+
+        {/* ── Subtle Geometric Grid ── */}
+        <div
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(59,180,140,0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(59,180,140,0.5) 1px, transparent 1px)
+              radial-gradient(circle at center, rgba(59,180,140,0.8) 1.2px, transparent 1.2px),
+              linear-gradient(rgba(59,180,140,0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59,180,140,0.3) 1px, transparent 1px)
             `,
-            backgroundSize: "60px 60px",
+            backgroundSize: "40px 40px, 80px 80px, 80px 80px",
           }}
         />
 
-        {/* ── Floating Gradient Orbs ── */}
-        <div className="absolute top-[10%] right-[15%] w-72 h-72 rounded-full opacity-60 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, rgba(59,180,140,0.25) 0%, transparent 70%)",
-            animation: "floatOrb1 8s ease-in-out infinite",
-          }}
-        />
-        <div className="absolute bottom-[15%] left-[10%] w-96 h-96 rounded-full opacity-40 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)",
-            animation: "floatOrb2 10s ease-in-out infinite",
-          }}
-        />
-        <div className="absolute top-[50%] left-[50%] w-64 h-64 rounded-full opacity-30 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, rgba(59,180,140,0.3) 0%, transparent 60%)",
-            animation: "floatOrb3 12s ease-in-out infinite",
-          }}
-        />
-
-        {/* ── Animated Neural Network Lines (SVG) ── */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 900" fill="none" preserveAspectRatio="xMidYMid slice">
-          {/* Connection lines */}
-          <path d="M100 150 Q 250 100, 400 200 T 700 180" stroke="url(#line1)" strokeWidth="1" opacity="0.3" strokeDasharray="8 6">
-            <animate attributeName="stroke-dashoffset" values="0;-28" dur="3s" repeatCount="indefinite" />
-          </path>
-          <path d="M50 400 Q 200 350, 350 450 T 750 400" stroke="url(#line2)" strokeWidth="1" opacity="0.25" strokeDasharray="6 8">
-            <animate attributeName="stroke-dashoffset" values="0;-28" dur="4s" repeatCount="indefinite" />
-          </path>
-          <path d="M150 650 Q 300 600, 500 700 T 780 620" stroke="url(#line1)" strokeWidth="1" opacity="0.2" strokeDasharray="8 6">
-            <animate attributeName="stroke-dashoffset" values="0;-28" dur="3.5s" repeatCount="indefinite" />
-          </path>
-          <path d="M80 800 Q 250 750, 450 830 T 720 780" stroke="url(#line2)" strokeWidth="1" opacity="0.15" strokeDasharray="6 8">
-            <animate attributeName="stroke-dashoffset" values="0;-28" dur="5s" repeatCount="indefinite" />
-          </path>
-
-          {/* Animated nodes / dots */}
-          <circle cx="400" cy="200" r="3" fill="#3BB48C" opacity="0.8">
-            <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="200" cy="350" r="2.5" fill="#3BB48C" opacity="0.6">
-            <animate attributeName="r" values="2.5;4.5;2.5" dur="2.5s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.6;0.2;0.6" dur="2.5s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="600" cy="450" r="3" fill="#10B981" opacity="0.7">
-            <animate attributeName="r" values="3;5;3" dur="3s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.7;0.25;0.7" dur="3s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="150" cy="600" r="2" fill="#3BB48C" opacity="0.5">
-            <animate attributeName="r" values="2;4;2" dur="2.8s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="500" cy="700" r="2.5" fill="#10B981" opacity="0.6">
-            <animate attributeName="r" values="2.5;4;2.5" dur="3.2s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="700" cy="180" r="2" fill="#3BB48C" opacity="0.4">
-            <animate attributeName="r" values="2;3.5;2" dur="2.2s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="350" cy="500" r="2" fill="#3BB48C" opacity="0.5">
-            <animate attributeName="r" values="2;4;2" dur="4s" repeatCount="indefinite" />
-          </circle>
-
-          {/* Gradient definitions */}
+        {/* ── Organic Flowing Aurora Waves (SVG) ── */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 800 1000"
+          fill="none"
+          preserveAspectRatio="none"
+        >
           <defs>
-            <linearGradient id="line1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3BB48C" stopOpacity="0" />
-              <stop offset="50%" stopColor="#3BB48C" stopOpacity="1" />
-              <stop offset="100%" stopColor="#3BB48C" stopOpacity="0" />
+            <linearGradient id="signInAurora1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="#10B981" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="#0D9488" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="line2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10B981" stopOpacity="0" />
-              <stop offset="50%" stopColor="#10B981" stopOpacity="1" />
-              <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+            <linearGradient id="signInAurora2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.22" />
+              <stop offset="50%" stopColor="#3BB48C" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#065F46" stopOpacity="0" />
             </linearGradient>
           </defs>
+
+          <path
+            d="M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z"
+            fill="url(#signInAurora1)"
+            opacity="0.6"
+          >
+            <animate
+              attributeName="d"
+              dur="16s"
+              repeatCount="indefinite"
+              values="
+                M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z;
+                M-50 300 C 220 420, 350 220, 560 450 C 700 280, 780 200, 900 320 L 900 1000 L -50 1000 Z;
+                M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z
+              "
+            />
+          </path>
+          <path
+            d="M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z"
+            fill="url(#signInAurora2)"
+            opacity="0.5"
+          >
+            <animate
+              attributeName="d"
+              dur="20s"
+              repeatCount="indefinite"
+              values="
+                M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z;
+                M-50 520 C 150 360, 420 580, 580 380 C 750 460, 820 600, 900 420 L 900 1000 L -50 1000 Z;
+                M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z
+              "
+            />
+          </path>
         </svg>
 
-        {/* ── Center Content ── */}
-        <div className={`relative z-10 max-w-lg px-8 transition-all duration-1000 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          {/* Center Logo + Text */}
-          <div className="text-center">
-            {/* Logo with animated glow ring */}
-            <div className="relative w-24 h-24 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-3xl bg-[#3BB48C]/20 blur-xl animate-pulse" />
-              <div className="relative w-full h-full bg-white rounded-3xl p-4 shadow-2xl shadow-[#3BB48C]/20 border border-white/20">
-                <img src="/logo.png" alt="MLite" className="w-full h-full object-contain" />
+        {/* ── Central Living Orbital Core ── */}
+        <div
+          className={`relative z-10 flex flex-col items-center justify-center p-8 transition-all duration-1000 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
+        >
+          {/* Orbital Container */}
+          <div className="relative w-80 h-80 flex items-center justify-center mb-8">
+            {/* Outer Orbit Ring */}
+            <div
+              className="absolute w-72 h-72 rounded-full border border-[#3BB48C]/25"
+              style={{
+                animation: "spinSlow 36s linear infinite",
+                boxShadow: "0 0 40px rgba(59, 180, 140, 0.08)",
+              }}
+            >
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#3BB48C] shadow-lg shadow-[#3BB48C]/80 flex items-center justify-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
               </div>
             </div>
 
-            <h2 className="font-black text-white text-5xl tracking-tight mb-3">
+            {/* Middle Dashed Orbit Ring */}
+            <div
+              className="absolute w-56 h-56 rounded-full border border-dashed border-teal-400/30"
+              style={{
+                animation: "spinReverse 24s linear infinite",
+              }}
+            >
+              <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-teal-300 shadow-md shadow-teal-300/80" />
+            </div>
+
+            {/* Inner Orbit Ring */}
+            <div
+              className="absolute w-40 h-40 rounded-full border border-[#3BB48C]/40"
+              style={{
+                animation: "spinSlow 16s linear infinite",
+              }}
+            >
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400" />
+            </div>
+
+            {/* Radiant Breathing Halo Behind Logo */}
+            <div className="absolute w-32 h-32 rounded-full bg-gradient-to-tr from-[#3BB48C]/30 via-emerald-400/25 to-teal-300/20 blur-2xl animate-pulse" />
+
+            {/* Central Floating Glass Emblem */}
+            <div className="relative w-28 h-28 rounded-3xl bg-white/95 p-5 shadow-2xl shadow-[#3BB48C]/30 border border-white/40 flex items-center justify-center backdrop-blur-md transition-transform duration-700 hover:scale-105">
+              <img
+                src="/logo.png"
+                alt="MLite"
+                className="w-full h-full object-contain filter drop-shadow-sm select-none"
+              />
+            </div>
+          </div>
+
+          {/* Minimalist Natural Brand Mark */}
+          <div className="text-center space-y-2">
+            <h2 className="font-black text-white text-4xl sm:text-5xl tracking-tight">
               MLite
             </h2>
-            <p className="text-base text-slate-400 leading-relaxed max-w-xs mx-auto mb-2">
-              The lightweight, self-hosted MLOps platform.
+            <p className="text-sm font-semibold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] via-emerald-300 to-teal-300">
+              Autonomous Machine Learning Infrastructure
             </p>
-            <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] via-emerald-400 to-teal-300">
-              Deploy. Monitor. Control.
-            </p>
+          </div>
 
-            {/* Animated separator */}
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#3BB48C]/40" />
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#3BB48C]/60 animate-pulse" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                  Secure · Private · Fast
-                </span>
-                <Sparkles className="w-3.5 h-3.5 text-[#3BB48C]/60 animate-pulse" />
-              </div>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#3BB48C]/40" />
-            </div>
+          {/* Living Core Engine Status Pill */}
+          <div className="mt-8 flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3BB48C] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3BB48C]" />
+            </span>
+            <span className="text-xs font-mono font-bold text-slate-300 tracking-wider">
+              CORE ENGINE ONLINE
+            </span>
           </div>
         </div>
 
-        {/* ── Corner accents ── */}
-        <div className="absolute top-6 left-6 w-8 h-8 border-l-2 border-t-2 border-[#3BB48C]/20 rounded-tl-lg" />
-        <div className="absolute top-6 right-6 w-8 h-8 border-r-2 border-t-2 border-[#3BB48C]/20 rounded-tr-lg" />
-        <div className="absolute bottom-6 left-6 w-8 h-8 border-l-2 border-b-2 border-[#3BB48C]/20 rounded-bl-lg" />
-        <div className="absolute bottom-6 right-6 w-8 h-8 border-r-2 border-b-2 border-[#3BB48C]/20 rounded-br-lg" />
+        {/* ── Corner Framing Accents ── */}
+        <div className="absolute top-8 left-8 w-8 h-8 border-l-2 border-t-2 border-[#3BB48C]/30 rounded-tl-xl pointer-events-none" />
+        <div className="absolute top-8 right-8 w-8 h-8 border-r-2 border-t-2 border-[#3BB48C]/30 rounded-tr-xl pointer-events-none" />
+        <div className="absolute bottom-8 left-8 w-8 h-8 border-l-2 border-b-2 border-[#3BB48C]/30 rounded-bl-xl pointer-events-none" />
+        <div className="absolute bottom-8 right-8 w-8 h-8 border-r-2 border-b-2 border-[#3BB48C]/30 rounded-br-xl pointer-events-none" />
       </div>
 
       {/* ── Keyframe Styles ── */}
       <style>{`
-        @keyframes floatOrb1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -20px) scale(1.1); }
-          66% { transform: translate(-15px, 15px) scale(0.95); }
+        @keyframes auroraPulse1 {
+          0% { transform: scale(1) translate(0, 0); }
+          100% { transform: scale(1.15) translate(25px, -18px); }
         }
-        @keyframes floatOrb2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-25px, 20px) scale(1.05); }
-          66% { transform: translate(20px, -10px) scale(0.98); }
+        @keyframes auroraPulse2 {
+          0% { transform: scale(1) translate(0, 0); }
+          100% { transform: scale(1.12) translate(-20px, 20px); }
         }
-        @keyframes floatOrb3 {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); }
-          50% { transform: translate(calc(-50% + 20px), calc(-50% - 15px)) scale(1.08); }
+        @keyframes spinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes spinReverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
         }
       `}</style>
     </div>

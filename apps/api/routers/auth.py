@@ -107,6 +107,67 @@ async def login(
     }
 
 
+@router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    payload: UserCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Register a new user account and receive JWT tokens for immediate login."""
+    from packages.core.security.audit import AuditService
+    from sqlalchemy import func
+
+    # Check for existing email or username
+    existing = await db.execute(
+        select(User).where(
+            (User.email == payload.email) | (User.username == payload.username)
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise ConflictError("User with this email or username already exists")
+
+    # If first user, make admin, otherwise keep role from payload (or DEVELOPER)
+    count_res = await db.execute(select(func.count(User.id)))
+    user_count = count_res.scalar() or 0
+    assigned_role = UserRole.ADMIN if user_count == 0 else (payload.role or UserRole.DEVELOPER)
+
+    user = User(
+        email=payload.email,
+        username=payload.username,
+        hashed_password=hash_password(payload.password),
+        full_name=payload.full_name,
+        role=assigned_role,
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+
+    token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
+    access_token = create_access_token(token_data)
+    refresh_token = create_refresh_token(token_data)
+
+    # Audit log
+    audit = AuditService(session=db)
+    await audit.log(
+        action=AuditAction.USER_CREATE,
+        resource_type="user",
+        resource_id=user.id,
+        resource_name=user.username,
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+        details={"self_registered": True, "role": user.role.value},
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
+
+
 @router.post("/auth/refresh", response_model=TokenResponse)
 async def refresh_token(
     payload: RefreshRequest,

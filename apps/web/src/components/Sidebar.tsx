@@ -11,10 +11,14 @@ import {
   Bell,
   Activity,
   Home,
+  ShieldCheck,
+  User as UserIcon,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { user, isAuthenticated, hasPermission } = useAuth();
 
   const navigation = [
     { name: "Overview", href: "/app", icon: LayoutDashboard },
@@ -25,11 +29,28 @@ export const Sidebar: React.FC = () => {
     { name: "Deployments", href: "/app/deployments", icon: Server },
     { name: "Monitoring", href: "/app/monitoring", icon: LineChart },
     { name: "Alerts", href: "/app/alerts", icon: Bell },
+    ...(hasPermission("audit:view")
+      ? [{ name: "Audit Logs", href: "/app/audit", icon: ShieldCheck }]
+      : []),
   ];
 
+  const getRoleColor = (role?: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "text-rose-700 bg-rose-50 border-rose-200";
+      case "MAINTAINER":
+        return "text-sky-700 bg-sky-50 border-sky-200";
+      case "DEVELOPER":
+        return "text-emerald-700 bg-emerald-50 border-emerald-200";
+      case "VIEWER":
+      default:
+        return "text-slate-700 bg-slate-100 border-slate-200";
+    }
+  };
+
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 shadow-sm">
-      <div>
+    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 shadow-sm z-20">
+      <div className="overflow-y-auto">
         {/* Brand Logo Header */}
         <div className="h-16 flex items-center px-6 gap-3 border-b border-slate-100">
           <Link
@@ -82,20 +103,38 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* System Status Footer */}
-      <div className="p-4 border-t border-slate-100">
-        <div className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-3 text-xs">
+      {/* User Status & Infrastructure Footer */}
+      <div className="p-4 border-t border-slate-100 space-y-2.5">
+        {isAuthenticated && user && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center shrink-0">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="truncate text-left">
+                <div className="text-xs font-bold text-slate-800 truncate leading-none">
+                  {user.username}
+                </div>
+                <span className={`inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-1 border ${getRoleColor(user.role)}`}>
+                  {user.role}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-2.5 text-xs">
           <div className="flex items-center justify-between text-slate-700 mb-1 font-medium">
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-[11px]">
               <Activity className="w-3.5 h-3.5 text-[#3BB48C]" />
               Infrastructure
             </span>
-            <span className="text-[#1A7456] font-bold flex items-center gap-1">
+            <span className="text-[#1A7456] text-[11px] font-bold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C] animate-pulse"></span>
               Online
             </span>
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-[10px] text-slate-500 font-mono">
             MinIO: 9000 • API: 8000
           </div>
         </div>

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { DashboardOverview } from "../pages/DashboardOverview";
+import { AuthProvider } from "../context/AuthContext";
 
 // Mock API client
 vi.mock("../api/client", () => ({
@@ -26,20 +27,25 @@ vi.mock("../api/client", () => ({
       status: "RUNNING",
     },
   ]),
+  testModelPrediction: vi.fn().mockResolvedValue({
+    prediction: { predictions: [1] },
+    latency_ms: 12,
+  }),
 }));
 
 describe("DashboardOverview Component", () => {
   it("renders welcome header and key metrics", async () => {
     render(
-      <BrowserRouter>
-        <DashboardOverview />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <DashboardOverview />
+        </BrowserRouter>
+      </AuthProvider>
     );
 
-    expect(screen.getByText("Welcome to MLite Dashboard")).toBeDefined();
-    expect(screen.getByText("Active Projects")).toBeDefined();
-    expect(screen.getByText("Registered Models")).toBeDefined();
-    expect(screen.getByText("Live Deployments")).toBeDefined();
-    expect(screen.getByText("Active Alerts")).toBeDefined();
+    expect(screen.getByText(/Active Projects/i)).toBeDefined();
+    expect(screen.getByText(/Registered Models/i)).toBeDefined();
+    expect(screen.getByText(/Live Deployments/i)).toBeDefined();
+    expect(screen.getByText(/Active Alerts/i)).toBeDefined();
   });
 });

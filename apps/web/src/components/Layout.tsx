@@ -16,6 +16,7 @@ export const Layout: React.FC = () => {
     "/app/deployments": "Inference Deployments",
     "/app/monitoring": "Model Monitoring & Drift",
     "/app/alerts": "Alerts & Webhooks",
+    "/app/audit": "Audit Logs & Governance",
     "/projects": "Project Management",
     "/datasets": "Datasets & Lineage",
     "/experiments": "Experiment Tracking",
@@ -23,6 +24,7 @@ export const Layout: React.FC = () => {
     "/deployments": "Inference Deployments",
     "/monitoring": "Model Monitoring & Drift",
     "/alerts": "Alerts & Webhooks",
+    "/audit": "Audit Logs & Governance",
   };
 
   const title = titleMap[location.pathname] || "MLite Dashboard";

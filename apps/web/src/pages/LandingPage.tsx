@@ -744,12 +744,11 @@ export const LandingPage: React.FC = () => {
       {/* ── Enterprise Dark Footer with Official Brand Palette & Complete Logo ── */}
       <footer className="bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Main Footer Grid (5 Columns) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-slate-800/80">
-            {/* Column 1: Brand & Complete Real Logo (Col Span 4) */}
-            <div className="lg:col-span-4 space-y-4">
+          {/* Main Footer: Simple & Clean (Pas de mille colonnes) */}
+          <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-12 border-b border-slate-800/80">
+            {/* Brand & Description */}
+            <div className="max-w-md space-y-4">
               <div className="flex items-center gap-3">
-                {/* Complete Real Logo in crisp light tile */}
                 <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl border border-slate-200 p-1.5 shadow-sm">
                   <img src="/logo.png" alt="MLite Logo" className="w-full h-full object-contain" />
                 </div>
@@ -764,32 +763,33 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Column 2: Platform Engine (Col Span 2) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Platform</div>
-              <ul className="space-y-2">
-                <li><Link to="/app/models" className="hover:text-[#3BB48C] transition">Model Registry</Link></li>
-                <li><Link to="/app/deployments" className="hover:text-[#3BB48C] transition">Container Serving</Link></li>
-                <li><Link to="/app/monitoring" className="hover:text-[#3BB48C] transition">Drift Monitoring</Link></li>
-                <li><Link to="/app/monitoring" className="hover:text-[#3BB48C] transition">Auto-Rollback</Link></li>
-                <li><Link to="/app/alerts" className="hover:text-[#3BB48C] transition">Smart Alerting</Link></li>
-                <li><Link to="/app/datasets" className="hover:text-[#3BB48C] transition">Dataset Lineage</Link></li>
-              </ul>
-            </div>
+            {/* Liens simples et clairs */}
+            <div className="flex flex-wrap gap-12 sm:gap-16 text-xs">
+              {/* Platform */}
+              <div className="space-y-3">
+                <div className="font-bold text-white uppercase tracking-wider text-[11px]">Platform</div>
+                <ul className="space-y-2">
+                  <li><Link to="/app/models" className="hover:text-[#3BB48C] transition">Model Registry</Link></li>
+                  <li><Link to="/app/deployments" className="hover:text-[#3BB48C] transition">Container Serving</Link></li>
+                  <li><Link to="/app/monitoring" className="hover:text-[#3BB48C] transition">Drift Monitoring</Link></li>
+                  <li><Link to="/app/alerts" className="hover:text-[#3BB48C] transition">Smart Alerting</Link></li>
+                </ul>
+              </div>
 
-            {/* Column 3: (Emplacement vidé - En attente de discussion) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              {/* Emplacement libre */}
-            </div>
-
-            {/* Column 4: (Emplacement vidé - En attente de discussion) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              {/* Emplacement libre */}
-            </div>
-
-            {/* Column 5: (Emplacement vidé - En attente de discussion) */}
-            <div className="lg:col-span-2 space-y-3 text-xs">
-              {/* Emplacement libre */}
+              {/* Navigation rapide */}
+              <div className="space-y-3">
+                <div className="font-bold text-white uppercase tracking-wider text-[11px]">Navigation</div>
+                <ul className="space-y-2">
+                  <li><a href="#features" className="hover:text-[#3BB48C] transition">Features</a></li>
+                  <li><a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a></li>
+                  <li><a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a></li>
+                  <li>
+                    <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
+                      GitHub Repo <ExternalLink className="w-3 h-3 text-slate-500" />
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
 

@@ -134,9 +134,6 @@ export const Sidebar: React.FC = () => {
               Online
             </span>
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">
-            MinIO: 9000 • API: 8000
-          </div>
         </div>
       </div>
     </aside>

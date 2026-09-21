@@ -16,7 +16,6 @@ import {
   Layers,
   ChevronRight,
   CheckCircle2,
-  Lock,
   Cpu,
   Activity,
   HardDrive,
@@ -568,22 +567,35 @@ export const LandingPage: React.FC = () => {
               <div
                 key={`${activeCategory}-${i}`}
                 ref={addRevealRef}
-                className={`group relative overflow-hidden p-7 rounded-2xl bg-white border border-slate-200 hover:border-[#3BB48C] hover:-translate-y-2 hover:shadow-xl hover:shadow-[#3BB48C]/15 transition-all duration-300 flex flex-col justify-between opacity-0 ${delayClass}`}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
+                  e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
+                }}
+                className={`group relative overflow-hidden p-7 rounded-2xl bg-white border border-slate-200 hover:border-[#3BB48C]/70 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#3BB48C]/15 transition-all duration-300 flex flex-col justify-between opacity-0 ${delayClass}`}
               >
+                {/* Interactive cursor spotlight event on hover */}
+                <div
+                  className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background:
+                      "radial-gradient(400px circle at var(--mouse-x, 150px) var(--mouse-y, 150px), rgba(59,180,140,0.09), transparent 70%)",
+                  }}
+                />
+
                 {/* Subtle top indicator bar on hover */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#3BB48C]/0 to-transparent group-hover:via-[#3BB48C] transition-all duration-500" />
 
                 <div>
-                  <div className="flex items-center justify-between mb-5">
+                  <div className="mb-5">
                     {/* Natural, vibrant icon */}
                     <div
                       className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs ${f.iconColor}`}
                     >
                       <Icon className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                      {f.tag}
-                    </span>
                   </div>
 
                   <h3 className="text-lg font-extrabold text-slate-900 mb-2 group-hover:text-slate-950 transition-colors">
@@ -765,65 +777,19 @@ export const LandingPage: React.FC = () => {
               </ul>
             </div>
 
-            {/* Column 3: Architecture & Core (Col Span 2) */}
+            {/* Column 3: (Emplacement vidé - En attente de discussion) */}
             <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Architecture</div>
-              <ul className="space-y-2">
-                <li><span className="text-slate-300 font-medium">FastAPI</span> Async Core</li>
-                <li><span className="text-slate-300 font-medium">PostgreSQL 16</span> Store</li>
-                <li><span className="text-slate-300 font-medium">MinIO S3</span> Buckets</li>
-                <li><span className="text-slate-300 font-medium">MLflow 2.15</span> Server</li>
-                <li><span className="text-slate-300 font-medium">Docker</span> Containers</li>
-                <li><span className="text-slate-300 font-medium">Evidently AI</span> Stats</li>
-              </ul>
+              {/* Emplacement libre */}
             </div>
 
-            {/* Column 4: Developers & Docs (Col Span 2) */}
+            {/* Column 4: (Emplacement vidé - En attente de discussion) */}
             <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px]">Developers</div>
-              <ul className="space-y-2">
-                <li>
-                  <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
-                    Swagger API <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:8000/redoc" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
-                    ReDoc Spec <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
-                    GitHub Repo <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:5000" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
-                    MLflow UI <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="http://localhost:9001" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
-                    MinIO Console <ExternalLink className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-              </ul>
+              {/* Emplacement libre */}
             </div>
 
-            {/* Column 5: Security & Compliance (Col Span 2) */}
+            {/* Column 5: (Emplacement vidé - En attente de discussion) */}
             <div className="lg:col-span-2 space-y-3 text-xs">
-              <div className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#3BB48C]" />
-                Security
-              </div>
-              <ul className="space-y-2">
-                <li className="text-slate-300">Air-Gapped Ready</li>
-                <li className="text-slate-300">RBAC Token Auth</li>
-                <li className="text-slate-300">Container Sandbox</li>
-                <li className="text-slate-300">SHA-256 Checksums</li>
-                <li className="text-slate-300">Security Headers</li>
-                <li className="text-slate-300">Audit Trail Active</li>
-              </ul>
+              {/* Emplacement libre */}
             </div>
           </div>
 

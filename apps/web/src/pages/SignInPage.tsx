@@ -184,43 +184,43 @@ export const SignInPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right Panel: Natural Living Visual Décor (Pure Art & Motion) ── */}
+      {/* ── Right Panel: Natural Living Visual Décor (Pure Art & Motion - No Text, Pure Atmosphere) ── */}
       <div
         className="hidden lg:flex lg:w-[52%] relative overflow-hidden items-center justify-center select-none"
         style={{
-          background: "linear-gradient(135deg, #07131D 0%, #0A1B28 35%, #081722 70%, #050E15 100%)",
+          background: "linear-gradient(135deg, #050F16 0%, #081722 35%, #06151F 70%, #040A0F 100%)",
         }}
       >
         {/* ── Ambient Organic Nebula Glows ── */}
         <div
-          className="absolute top-[15%] right-[20%] w-[440px] h-[440px] rounded-full opacity-45 pointer-events-none blur-[120px]"
+          className="absolute top-[12%] right-[18%] w-[480px] h-[480px] rounded-full opacity-45 pointer-events-none blur-[130px]"
           style={{
-            background: "radial-gradient(circle, rgba(59,180,140,0.35) 0%, rgba(16,185,129,0.15) 50%, transparent 70%)",
-            animation: "auroraPulse1 10s ease-in-out infinite alternate",
+            background: "radial-gradient(circle, rgba(59,180,140,0.38) 0%, rgba(16,185,129,0.18) 50%, transparent 70%)",
+            animation: "auroraPulse1 12s ease-in-out infinite alternate",
           }}
         />
         <div
-          className="absolute bottom-[18%] left-[15%] w-[480px] h-[480px] rounded-full opacity-35 pointer-events-none blur-[140px]"
+          className="absolute bottom-[14%] left-[12%] w-[520px] h-[520px] rounded-full opacity-35 pointer-events-none blur-[150px]"
           style={{
-            background: "radial-gradient(circle, rgba(20,184,166,0.3) 0%, rgba(59,180,140,0.1) 60%, transparent 80%)",
-            animation: "auroraPulse2 12s ease-in-out infinite alternate",
+            background: "radial-gradient(circle, rgba(20,184,166,0.32) 0%, rgba(59,180,140,0.12) 60%, transparent 80%)",
+            animation: "auroraPulse2 14s ease-in-out infinite alternate",
           }}
         />
 
-        {/* ── Subtle Geometric Grid ── */}
+        {/* ── Subtle Geometric Starlight Grid ── */}
         <div
           className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
             backgroundImage: `
-              radial-gradient(circle at center, rgba(59,180,140,0.8) 1.2px, transparent 1.2px),
-              linear-gradient(rgba(59,180,140,0.3) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(59,180,140,0.3) 1px, transparent 1px)
+              radial-gradient(circle at center, rgba(59,180,140,0.85) 1.2px, transparent 1.2px),
+              linear-gradient(rgba(59,180,140,0.25) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59,180,140,0.25) 1px, transparent 1px)
             `,
-            backgroundSize: "40px 40px, 80px 80px, 80px 80px",
+            backgroundSize: "44px 44px, 88px 88px, 88px 88px",
           }}
         />
 
-        {/* ── Organic Flowing Aurora Waves (SVG) ── */}
+        {/* ── Organic Flowing Aurora Ribbon Waves (SVG) ── */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 800 1000"
@@ -229,13 +229,13 @@ export const SignInPage: React.FC = () => {
         >
           <defs>
             <linearGradient id="signInAurora1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.25" />
-              <stop offset="50%" stopColor="#10B981" stopOpacity="0.12" />
+              <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.28" />
+              <stop offset="50%" stopColor="#10B981" stopOpacity="0.14" />
               <stop offset="100%" stopColor="#0D9488" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="signInAurora2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.22" />
-              <stop offset="50%" stopColor="#3BB48C" stopOpacity="0.08" />
+              <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="#3BB48C" stopOpacity="0.10" />
               <stop offset="100%" stopColor="#065F46" stopOpacity="0" />
             </linearGradient>
           </defs>
@@ -274,79 +274,100 @@ export const SignInPage: React.FC = () => {
           </path>
         </svg>
 
-        {/* ── Central Living Orbital Core ── */}
+        {/* ── Natural Floating Bioluminescent Motes / Fireflies ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute w-2 h-2 rounded-full bg-[#3BB48C] blur-[1px] shadow-[0_0_10px_#3BB48C]"
+            style={{ top: "25%", left: "30%", animation: "floatMote1 8s ease-in-out infinite" }}
+          />
+          <div
+            className="absolute w-1.5 h-1.5 rounded-full bg-teal-300 blur-[0.5px] shadow-[0_0_8px_#14B8A6]"
+            style={{ top: "65%", left: "22%", animation: "floatMote2 10s ease-in-out infinite 2s" }}
+          />
+          <div
+            className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 blur-[1px] shadow-[0_0_12px_#10B981]"
+            style={{ top: "35%", right: "25%", animation: "floatMote3 9s ease-in-out infinite 1s" }}
+          />
+          <div
+            className="absolute w-1 h-1 rounded-full bg-white shadow-[0_0_6px_#3BB48C]"
+            style={{ top: "75%", right: "32%", animation: "floatMote1 11s ease-in-out infinite 3s" }}
+          />
+          <div
+            className="absolute w-2 h-2 rounded-full bg-[#6EE7B7] blur-[1px] shadow-[0_0_10px_#6EE7B7]"
+            style={{ top: "18%", right: "40%", animation: "floatMote2 12s ease-in-out infinite 4s" }}
+          />
+        </div>
+
+        {/* ── Central Sacred Geometric Gyroscope (Pure Natural Décor - Zero Text) ── */}
         <div
           className={`relative z-10 flex flex-col items-center justify-center p-8 transition-all duration-1000 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          {/* Orbital Container */}
-          <div className="relative w-80 h-80 flex items-center justify-center mb-8">
-            {/* Outer Orbit Ring */}
+          {/* Astrolabe Orbital Mandala */}
+          <div className="relative w-96 h-96 flex items-center justify-center">
+            {/* Outermost Celestial Ring with Orbiting Satellite */}
             <div
-              className="absolute w-72 h-72 rounded-full border border-[#3BB48C]/25"
+              className="absolute w-88 h-88 rounded-full border border-[#3BB48C]/20"
               style={{
-                animation: "spinSlow 36s linear infinite",
-                boxShadow: "0 0 40px rgba(59, 180, 140, 0.08)",
+                animation: "spinSlow 42s linear infinite",
+                boxShadow: "0 0 50px rgba(59, 180, 140, 0.08)",
               }}
             >
               <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#3BB48C] shadow-lg shadow-[#3BB48C]/80 flex items-center justify-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
               </div>
+              <div className="absolute -bottom-1 left-1/4 w-2 h-2 rounded-full bg-teal-400/80 shadow-md shadow-teal-400/50" />
             </div>
 
-            {/* Middle Dashed Orbit Ring */}
+            {/* 3D Inclined Gyroscopic Ring */}
             <div
-              className="absolute w-56 h-56 rounded-full border border-dashed border-teal-400/30"
+              className="absolute w-76 h-76 rounded-full border border-dashed border-[#3BB48C]/35"
               style={{
-                animation: "spinReverse 24s linear infinite",
+                transform: "rotateX(62deg) rotateY(18deg)",
+                animation: "spinReverse 28s linear infinite",
               }}
             >
               <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-teal-300 shadow-md shadow-teal-300/80" />
+              <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 rounded-full bg-emerald-400" />
             </div>
 
-            {/* Inner Orbit Ring */}
+            {/* Counter-Rotating Mid Celestial Ring */}
             <div
-              className="absolute w-40 h-40 rounded-full border border-[#3BB48C]/40"
+              className="absolute w-60 h-60 rounded-full border border-teal-400/30"
               style={{
-                animation: "spinSlow 16s linear infinite",
+                animation: "spinSlow 20s linear infinite",
+              }}
+            >
+              <div className="absolute top-0 right-1/4 w-2 h-2 rounded-full bg-[#3BB48C] shadow-md shadow-[#3BB48C]/70" />
+            </div>
+
+            {/* Inner Sacred Geometric Constellation Ring */}
+            <div
+              className="absolute w-44 h-44 rounded-full border border-dashed border-emerald-300/35"
+              style={{
+                animation: "spinReverse 14s linear infinite",
               }}
             >
               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400" />
             </div>
 
             {/* Radiant Breathing Halo Behind Logo */}
-            <div className="absolute w-32 h-32 rounded-full bg-gradient-to-tr from-[#3BB48C]/30 via-emerald-400/25 to-teal-300/20 blur-2xl animate-pulse" />
+            <div className="absolute w-36 h-36 rounded-full bg-gradient-to-tr from-[#3BB48C]/35 via-emerald-400/25 to-teal-300/20 blur-2xl animate-pulse" />
 
-            {/* Central Floating Glass Emblem */}
-            <div className="relative w-28 h-28 rounded-3xl bg-white/95 p-5 shadow-2xl shadow-[#3BB48C]/30 border border-white/40 flex items-center justify-center backdrop-blur-md transition-transform duration-700 hover:scale-105">
+            {/* Central Floating Glass Emblem (Natural Breathing Levitation) */}
+            <div
+              className="relative w-32 h-32 rounded-3xl bg-white/95 p-5 shadow-2xl shadow-[#3BB48C]/30 border border-white/40 flex items-center justify-center backdrop-blur-md transition-all duration-700 hover:scale-105 select-none"
+              style={{
+                animation: "levitateFloat 6s ease-in-out infinite",
+              }}
+            >
               <img
                 src="/logo.png"
                 alt="MLite"
                 className="w-full h-full object-contain filter drop-shadow-sm select-none"
               />
             </div>
-          </div>
-
-          {/* Minimalist Natural Brand Mark */}
-          <div className="text-center space-y-2">
-            <h2 className="font-black text-white text-4xl sm:text-5xl tracking-tight">
-              MLite
-            </h2>
-            <p className="text-sm font-semibold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] via-emerald-300 to-teal-300">
-              Autonomous Machine Learning Infrastructure
-            </p>
-          </div>
-
-          {/* Living Core Engine Status Pill */}
-          <div className="mt-8 flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3BB48C] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3BB48C]" />
-            </span>
-            <span className="text-xs font-mono font-bold text-slate-300 tracking-wider">
-              CORE ENGINE ONLINE
-            </span>
           </div>
         </div>
 
@@ -374,6 +395,22 @@ export const SignInPage: React.FC = () => {
         @keyframes spinReverse {
           from { transform: rotate(360deg); }
           to { transform: rotate(0deg); }
+        }
+        @keyframes levitateFloat {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-9px) scale(1.02); }
+        }
+        @keyframes floatMote1 {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+          50% { transform: translate(16px, -22px) scale(1.25); opacity: 0.9; }
+        }
+        @keyframes floatMote2 {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          50% { transform: translate(-18px, -28px) scale(1.15); opacity: 0.85; }
+        }
+        @keyframes floatMote3 {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.45; }
+          50% { transform: translate(22px, -16px) scale(1.3); opacity: 0.95; }
         }
       `}</style>
     </div>

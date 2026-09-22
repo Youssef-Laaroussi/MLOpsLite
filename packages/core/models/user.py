@@ -12,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     JSON,
+    ForeignKey,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -67,7 +68,7 @@ class ApiKey(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
     user_id: Mapped[str] = mapped_column(
-        String(36), nullable=False, index=True, doc="Owning user ID"
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, doc="Owning user ID"
     )
     name: Mapped[str] = mapped_column(
         String(100), nullable=False, doc="Human-readable key name (e.g. 'CI Pipeline')"

@@ -30,11 +30,7 @@ export const SignUpPage: React.FC = () => {
     setMounted(true);
   }, []);
 
-  // If already authenticated, redirect to dashboard
-  if (isAuthenticated) {
-    navigate("/app", { replace: true });
-    return null;
-  }
+  // Removed auto-redirect so the user can access this page even if a stale token exists
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

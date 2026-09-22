@@ -32,6 +32,7 @@ class AuditService:
         user_email: Optional[str] = None,
         ip_address: Optional[str] = None,
         changes: Optional[Dict[str, Any]] = None,
+        details: Optional[Dict[str, Any]] = None,
     ) -> AuditLog:
         """Write an immutable audit log entry.
 
@@ -48,7 +49,7 @@ class AuditService:
                 resource_type=resource_type,
                 resource_id=resource_id,
                 resource_name=resource_name,
-                changes_json=changes,
+                changes_json=changes if changes is not None else details,
             )
             self.session.add(entry)
             await self.session.flush()

@@ -106,6 +106,67 @@ export const ModelsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Model Performance Tracker (Native SVG Line Chart) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/30 transition-all">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Model Accuracy Trend (Validation Set)
+          </h3>
+          <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Across Versions</span>
+        </div>
+        
+        <div className="relative h-44 w-full flex items-end justify-between px-2">
+          {/* Grid lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 border-b border-slate-200">
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+          </div>
+          
+          {/* Native SVG Line Chart */}
+          <div className="absolute inset-x-2 bottom-6 top-0 pointer-events-none">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+              <path 
+                d="M 0 70 L 25 55 L 50 25 L 75 35 L 100 10" 
+                fill="none" 
+                stroke="#6366f1" 
+                strokeWidth="2.5" 
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="drop-shadow-[0_4px_6px_rgba(99,102,241,0.3)]"
+              />
+              {/* Glowing Data Points */}
+              {[
+                { x: 0, y: 70, val: "0.82" }, 
+                { x: 25, y: 55, val: "0.85" }, 
+                { x: 50, y: 25, val: "0.91" }, 
+                { x: 75, y: 35, val: "0.89" }, 
+                { x: 100, y: 10, val: "0.94" }
+              ].map((pt, i) => (
+                <g key={i} className="group cursor-pointer pointer-events-auto">
+                  <circle cx={pt.x} cy={pt.y} r="3.5" fill="#fff" stroke="#6366f1" strokeWidth="2" className="group-hover:r-[5.5] group-hover:fill-indigo-50 transition-all duration-300" />
+                  <foreignObject x={pt.x - 30} y={pt.y - 35} width="60" height="30" className="opacity-0 group-hover:opacity-100 transition-opacity overflow-visible">
+                    <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md text-center shadow-lg border border-slate-700">
+                      Acc: {pt.val}
+                    </div>
+                  </foreignObject>
+                </g>
+              ))}
+            </svg>
+          </div>
+          
+          {/* X Axis Labels */}
+          <div className="absolute bottom-0 inset-x-2 flex justify-between text-[10px] font-bold text-slate-400">
+            <span>v1.0</span>
+            <span>v1.1</span>
+            <span>v2.0</span>
+            <span>v2.1</span>
+            <span>v3.0</span>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
         <table className="w-full text-left text-sm text-slate-700">
           <thead className="bg-[#F8FAFC] border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">

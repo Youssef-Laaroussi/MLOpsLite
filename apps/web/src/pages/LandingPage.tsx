@@ -26,13 +26,9 @@ import {
   Linkedin,
   Twitter,
   Github,
-  LogOut,
-  User as UserIcon,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 
 export const LandingPage: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
@@ -210,44 +206,20 @@ export const LandingPage: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            {isAuthenticated && user ? (
-              <div className="flex items-center gap-2.5">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200">
-                  <div className="w-6 h-6 rounded-lg bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center">
-                    {user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-xs font-bold text-slate-800">{user.full_name || user.username}</span>
-                </div>
-                <Link
-                  to="/app"
-                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs sm:text-sm transition shadow-md shadow-[#3BB48C]/25 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  Dashboard Console <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                </Link>
-                <button
-                  onClick={logout}
-                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/signin"
-                  className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#3BB48C] transition"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="px-5 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Link
+                to="/signin"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#3BB48C] transition"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                className="px-5 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
         </div>
       </header>

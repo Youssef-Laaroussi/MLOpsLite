@@ -1,5 +1,4 @@
-"""Application settings loaded from environment variables via pydantic-settings."""
-
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,8 +30,9 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["*"]
 
     # ── Database ─────────────────────────────────────────────
-    database_url: str = (
-        "postgresql+asyncpg://mlite_user:mlite_secure_password@localhost:5432/mlite_db"
+    database_url: str = os.getenv(
+        "DATABASE_URL",
+        "sqlite+aiosqlite:///./mlite.db",
     )
     db_pool_size: int = 20
     db_max_overflow: int = 10

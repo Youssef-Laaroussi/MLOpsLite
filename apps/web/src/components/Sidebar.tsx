@@ -79,11 +79,10 @@ export const Sidebar: React.FC = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  isActive
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
                     ? "bg-[#3BB48C] text-white shadow-md shadow-[#3BB48C]/25"
                     : "text-slate-600 hover:text-slate-900 hover:bg-[#F0FDF9]"
-                }`}
+                  }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500"}`} />
                 {item.name}

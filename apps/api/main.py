@@ -53,6 +53,17 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         settings.debug,
     )
 
+    # Ensure database schema is created (essential for SQLite / local testing)
+    try:
+        from packages.core.db.session import engine
+        from packages.core.db.base import Base
+        import packages.core.models  # noqa: F401
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        logger.debug("Schema auto-create skipped or deferred: %s", exc)
+
     # Bootstrap default admin account (Issue #26)
     try:
         from packages.core.db.session import async_session_factory

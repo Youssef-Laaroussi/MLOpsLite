@@ -21,6 +21,7 @@ from packages.core.schemas.dataset import (
 )
 from packages.data.parser import TabularDataParser
 from packages.data.service import DatasetService
+from packages.core.schemas.monitoring import DataQualityReportResponse
 
 router = APIRouter(prefix="/api/v1/datasets", tags=["Datasets"])
 

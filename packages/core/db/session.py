@@ -1,7 +1,10 @@
 """Asynchronous database engine and session management."""
 
 import os
+from dotenv import load_dotenv
 from collections.abc import AsyncGenerator
+
+load_dotenv()
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -14,7 +17,7 @@ def get_db_url() -> str:
     """Retrieve async database connection URL from environment or default."""
     url = os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://mlite_user:mlite_secure_password@localhost:5432/mlite_db",
+        "sqlite+aiosqlite:///./mlite.db",
     )
     # Ensure URL uses asyncpg driver if postgresql:// is provided
     if url.startswith("postgresql://"):

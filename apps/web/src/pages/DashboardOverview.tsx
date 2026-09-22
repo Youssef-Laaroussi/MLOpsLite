@@ -21,9 +21,10 @@ import { fetchSystemStats, fetchModels, fetchDeployments, testModelPrediction } 
 import { RegisteredModel, Deployment } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { LogOut, User as UserIcon, LineChart } from "lucide-react";
 
 export const DashboardOverview: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout, hasRole, hasPermission } = useAuth();
   const [stats, setStats] = useState({
     projects_count: 0,
     models_count: 0,
@@ -130,22 +131,33 @@ export const DashboardOverview: React.FC = () => {
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Top Banner / Welcome with vitality */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#EBF8F4] via-white to-emerald-50/40 border border-[#BCE9DA] rounded-3xl p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              All Systems Operational • Real-Time Engine Active
-            </span>
+        <div className="relative z-10 flex items-center gap-5">
+          {/* User Avatar */}
+          <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-tr from-[#3BB48C] to-teal-400 flex items-center justify-center text-white font-black text-3xl shadow-lg border-[3px] border-white">
+            {user?.username?.charAt(0).toUpperCase() || <UserIcon className="w-8 h-8" />}
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Welcome back{user?.full_name ? `, ${user.full_name}` : user?.username ? `, ${user.username}` : ""}
-          </h2>
-          <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-            Lightweight, self-hosted platform orchestrating model versioning, Docker inference, drift monitoring, and dataset integrity.
-          </p>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                All Systems Operational
+              </span>
+              {hasRole?.("ADMIN") && (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase tracking-widest shadow-xs">
+                  Admin Access
+                </span>
+              )}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Welcome back{user?.full_name ? `, ${user.full_name}` : user?.username ? `, ${user.username}` : ""}
+            </h2>
+            <p className="text-sm text-slate-600 mt-1 max-w-2xl">
+              Lightweight, self-hosted platform orchestrating model versioning, Docker inference, drift monitoring, and dataset integrity.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0 relative z-10">
@@ -163,6 +175,13 @@ export const DashboardOverview: React.FC = () => {
             <Plus className="w-4 h-4 stroke-[2.5]" />
             New Project
           </Link>
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-sm transition shadow-sm border border-slate-200 hover:border-rose-200 hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
         </div>
       </div>
 
@@ -199,6 +218,49 @@ export const DashboardOverview: React.FC = () => {
           color="amber"
           trend="0 critical"
         />
+      </div>
+
+      {/* Visual Analytics & Graphs (Native CSS) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-slate-300 transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <LineChart className="w-5 h-5 text-[#3BB48C]" />
+            Platform Inference Volume (Last 7 Days)
+          </h3>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200">Requests / Day</span>
+          </div>
+        </div>
+        
+        <div className="relative h-48 w-full flex items-end justify-between gap-3 px-4 pb-2">
+          {/* Grid lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 border-b border-slate-200">
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+          </div>
+          
+          {/* Native CSS Bars */}
+          {[45, 60, 30, 80, 50, 95, 70].map((height, i) => (
+            <div key={i} className="relative z-10 w-full group h-full flex flex-col justify-end items-center">
+              <div 
+                className="w-full max-w-[48px] bg-gradient-to-t from-[#3BB48C] to-emerald-300 rounded-t-lg transition-all duration-300 group-hover:opacity-80 group-hover:shadow-lg cursor-pointer border border-[#329F7B]"
+                style={{ height: `${height}%` }}
+              >
+                {/* Tooltip */}
+                <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all pointer-events-none whitespace-nowrap z-20 shadow-xl">
+                  {height * 120} reqs
+                  {/* Tooltip Arrow */}
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                </div>
+              </div>
+              <div className="text-[11px] font-bold text-slate-500 mt-3">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Two Column Section: Production Models & Living Active Endpoints */}
@@ -355,6 +417,34 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
       </div>
+    {/* RBAC: Admin Only Section */}
+      {hasRole?.("ADMIN") && (
+        <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 shadow-xs">
+          <div className="flex items-center gap-2 text-rose-800 text-sm font-bold mb-3">
+            <ShieldCheck className="w-5 h-5 text-rose-600" />
+            Admin Security & Governance Overview
+          </div>
+          <p className="text-xs text-rose-700 mb-4 max-w-3xl leading-relaxed">
+            As an administrator, you have elevated access to platform security settings. This section is strictly isolated and invisible to Developers and Viewers via RBAC rules.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="p-4 rounded-2xl bg-white border border-rose-200 text-slate-800 flex items-center justify-between shadow-sm hover:shadow-md transition cursor-pointer">
+              <div>
+                <div className="font-bold text-rose-900">User Sessions Active</div>
+                <div className="text-rose-600 font-mono mt-0.5">3 active tokens</div>
+              </div>
+              <Link to="/app/audit" className="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 font-bold hover:bg-rose-200 transition border border-rose-200">View Audit</Link>
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-rose-200 text-slate-800 flex items-center justify-between shadow-sm hover:shadow-md transition cursor-pointer">
+              <div>
+                <div className="font-bold text-rose-900">Database Maintenance</div>
+                <div className="text-rose-600 font-mono mt-0.5">mlite.db - 45MB</div>
+              </div>
+              <button className="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 font-bold hover:bg-rose-200 transition border border-rose-200">Backup DB</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

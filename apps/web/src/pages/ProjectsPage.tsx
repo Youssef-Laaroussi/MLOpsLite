@@ -57,6 +57,45 @@ export const ProjectsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Project Activity Timeline (Native CSS Graph) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/30 transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+            Workspace Commit Activity
+          </h3>
+          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Weekly Trend</span>
+        </div>
+        
+        <div className="relative h-40 w-full flex items-end justify-between gap-4 px-2 pb-2">
+          {/* Grid lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 border-b border-slate-200">
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+             <div className="w-full border-t border-slate-100 border-dashed h-0" />
+          </div>
+          
+          {/* Native CSS Bars */}
+          {[20, 45, 30, 85, 60, 40, 75, 90, 50, 65].map((height, i) => (
+            <div key={i} className="relative z-10 w-full group h-full flex flex-col justify-end items-center">
+              <div 
+                className="w-full max-w-[32px] bg-gradient-to-t from-[#3BB48C] to-emerald-300 rounded-t-lg transition-all duration-300 group-hover:opacity-80 group-hover:shadow-lg cursor-pointer border border-[#329F7B]"
+                style={{ height: `${height}%` }}
+              >
+                {/* Tooltip */}
+                <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all pointer-events-none whitespace-nowrap z-20 shadow-xl">
+                  {height} Commits
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                </div>
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 mt-3 opacity-50 group-hover:opacity-100 transition-opacity">
+                W{i+1}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Grid of Projects */}
       {projects.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">

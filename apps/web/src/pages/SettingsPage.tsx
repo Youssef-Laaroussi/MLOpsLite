@@ -374,42 +374,112 @@ export const SettingsPage: React.FC = () => {
 
       {/* TAB 3: PROFILE & RBAC */}
       {activeTab === "profile" && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3BB48C] to-teal-400 flex items-center justify-center text-white font-black text-2xl shadow-md">
-              {user?.username?.charAt(0).toUpperCase() || "U"}
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3BB48C] to-teal-400 flex items-center justify-center text-white font-black text-2xl shadow-md">
+                {user?.username?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{user?.full_name || user?.username}</h3>
+                <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
+                <div className="mt-1">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                      user?.role === "ADMIN"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
+                    }`}
+                  >
+                    Rôle : {user?.role === "ADMIN" ? "ADMINISTRATEUR (ADMIN)" : "MEMBRE MLOPS (USER)"}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">{user?.full_name || user?.username}</h3>
-              <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
-              <div className="mt-1">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                  Rôle : {user?.role || "DEVELOPER"}
-                </span>
+
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Périmètre des Permissions ({user?.role === "ADMIN" ? "Gouvernance Complète" : "Cycle MLOps Intégral"})
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Cycle complet de modélisation & promotion</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Déploiement de conteneurs Docker & Rollbacks</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Surveillance de dérive (Evidently AI)</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Profilage & Synchronisation Datasets MinIO</span>
+                </div>
+                {user?.role === "ADMIN" && (
+                  <>
+                    <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
+                      <Shield className="w-4 h-4 text-rose-600" />
+                      <span>Gestion des comptes & permissions</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
+                      <Lock className="w-4 h-4 text-rose-600" />
+                      <span>Audit Logs & Suppression de projets</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Permissions & Accès
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Enregistrement & Promotion de modèles</span>
+          {/* Team Members List (Visible to Admin or for Team visibility) */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-[#3BB48C]" />
+                  Membres de l'Équipe (Modèle 2 Rôles : Admin & User)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tous les membres bénéficient d'un accès opérationnel complet au cycle MLOps. Les administrateurs gèrent la gouvernance.
+                </p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Déploiement de conteneurs Docker</span>
+            </div>
+
+            <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+              <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase">
+                <span>Utilisateur</span>
+                <span>Rôle Actif</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Évaluation de dérive (Evidently AI)</span>
+              <div className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 font-black text-xs flex items-center justify-center">
+                    A
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">admin (Système)</div>
+                    <div className="text-[11px] text-slate-400 font-mono">admin@mlite.local</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  ADMIN
+                </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Synchronisation de jeux de données MinIO</span>
+              <div className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#EBF8F4] text-[#1A7456] font-black text-xs flex items-center justify-center">
+                    {user?.username?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">{user?.username || "youssef"} (Actuel)</div>
+                    <div className="text-[11px] text-slate-400 font-mono">{user?.email || "youssef@mlite.local"}</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                  {user?.role === "ADMIN" ? "ADMIN" : "USER"}
+                </span>
               </div>
             </div>
           </div>

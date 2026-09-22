@@ -129,7 +129,7 @@ async def register(
     # If first user, make admin, otherwise keep role from payload (or DEVELOPER)
     count_res = await db.execute(select(func.count(User.id)))
     user_count = count_res.scalar() or 0
-    assigned_role = UserRole.ADMIN if user_count == 0 else (payload.role or UserRole.DEVELOPER)
+    assigned_role = UserRole.ADMIN if user_count == 0 else (payload.role or UserRole.USER)
 
     user = User(
         email=payload.email,

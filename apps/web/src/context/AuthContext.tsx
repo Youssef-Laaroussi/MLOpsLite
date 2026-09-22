@@ -24,8 +24,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ROLE_LEVEL: Record<UserRole, number> = {
   VIEWER: 0,
   DEVELOPER: 1,
-  MAINTAINER: 2,
-  ADMIN: 3,
+  USER: 1,
+  MAINTAINER: 1,
+  ADMIN: 2,
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -122,6 +123,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     if (user.role === "ADMIN") return true;
+    if (user.role === "USER" || user.role === "DEVELOPER" || user.role === "MAINTAINER") {
+      // Standard users have full operational MLOps lifecycle access
+      if (!permission.startsWith("user:") && !permission.startsWith("audit:") && permission !== "project:delete") {
+        return true;
+      }
+    }
     if (!user.permissions) return false;
     return user.permissions.includes(permission) || user.permissions.includes("*");
   };

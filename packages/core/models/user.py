@@ -23,6 +23,8 @@ class UserRole(str, enum.Enum):
     """User role for RBAC (Issue #26)."""
 
     ADMIN = "ADMIN"
+    USER = "USER"
+    # Legacy aliases mapped for full backwards-compatibility
     MAINTAINER = "MAINTAINER"
     DEVELOPER = "DEVELOPER"
     VIEWER = "VIEWER"
@@ -47,8 +49,8 @@ class User(Base, UUIDMixin, TimestampMixin):
     )
     role: Mapped[UserRole] = mapped_column(
         SAEnum(UserRole, name="user_role", create_constraint=True),
-        default=UserRole.DEVELOPER,
-        server_default="DEVELOPER",
+        default=UserRole.USER,
+        server_default="USER",
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(

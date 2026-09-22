@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 ROLE_HIERARCHY: dict[UserRole, int] = {
     UserRole.VIEWER: 0,
     UserRole.DEVELOPER: 1,
+    UserRole.USER: 1,
     UserRole.MAINTAINER: 2,
     UserRole.ADMIN: 3,
 }
@@ -103,6 +104,32 @@ ROLE_PERMISSIONS: dict[UserRole, set[str]] = {
         Permission.ALERT_VIEW,
         Permission.ROLLBACK_POLICY_VIEW,
     },
+    UserRole.USER: {
+        # Full operational lifecycle for all MLOps team members
+        Permission.PROJECT_VIEW,
+        Permission.PROJECT_CREATE,
+        Permission.PROJECT_UPDATE,
+        Permission.MODEL_VIEW,
+        Permission.MODEL_REGISTER,
+        Permission.MODEL_PROMOTE,
+        Permission.MODEL_DELETE,
+        Permission.DEPLOYMENT_VIEW,
+        Permission.DEPLOYMENT_CREATE,
+        Permission.DEPLOYMENT_STOP,
+        Permission.DEPLOYMENT_ROLLBACK,
+        Permission.DATASET_VIEW,
+        Permission.DATASET_CREATE,
+        Permission.DATASET_DELETE,
+        Permission.EXPERIMENT_VIEW,
+        Permission.EXPERIMENT_RUN,
+        Permission.MONITORING_VIEW,
+        Permission.MONITORING_CONFIGURE,
+        Permission.ALERT_VIEW,
+        Permission.ALERT_ACKNOWLEDGE,
+        Permission.ALERT_CONFIGURE,
+        Permission.ROLLBACK_POLICY_VIEW,
+        Permission.ROLLBACK_POLICY_MANAGE,
+    },
     UserRole.DEVELOPER: {
         # Inherits VIEWER permissions +
         Permission.PROJECT_CREATE,
@@ -126,11 +153,12 @@ ROLE_PERMISSIONS: dict[UserRole, set[str]] = {
         Permission.AUDIT_VIEW,
     },
     UserRole.ADMIN: {
-        # Inherits MAINTAINER permissions +
+        # Inherits USER/MAINTAINER permissions + exclusive administrative control
         Permission.PROJECT_DELETE,
         Permission.USER_VIEW,
         Permission.USER_MANAGE,
         Permission.API_KEY_MANAGE,
+        Permission.AUDIT_VIEW,
     },
 }
 

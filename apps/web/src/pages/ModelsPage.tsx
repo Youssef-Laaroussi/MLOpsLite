@@ -88,7 +88,7 @@ export const ModelsPage: React.FC = () => {
     }
   };
 
-  const canPromote = hasRole("DEVELOPER");
+  const canPromote = hasRole("USER") || hasRole("DEVELOPER") || hasRole("ADMIN");
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

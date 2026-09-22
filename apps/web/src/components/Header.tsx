@@ -22,17 +22,14 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
   const [apiKeysModalOpen, setApiKeysModalOpen] = useState(false);
 
   const getRoleBadgeStyle = (role?: UserRole) => {
-    switch (role) {
-      case "ADMIN":
-        return "bg-rose-50 text-rose-700 border-rose-200";
-      case "MAINTAINER":
-        return "bg-sky-50 text-sky-700 border-sky-200";
-      case "DEVELOPER":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "VIEWER":
-      default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
+    if (role === "ADMIN") {
+      return "bg-rose-50 text-rose-700 border-rose-200";
     }
+    return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  };
+
+  const getRoleLabel = (role?: UserRole) => {
+    return role === "ADMIN" ? "ADMIN" : "USER";
   };
 
   return (
@@ -66,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
                         user.role
                       )}`}
                     >
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </span>
                   </div>
                 </div>
@@ -86,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
                           user.role
                         )}`}
                       >
-                        Role: {user.role}
+                        Role: {getRoleLabel(user.role)}
                       </span>
                     </div>
                   </div>

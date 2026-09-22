@@ -37,17 +37,10 @@ export const Sidebar: React.FC = () => {
   ];
 
   const getRoleColor = (role?: string) => {
-    switch (role) {
-      case "ADMIN":
-        return "text-rose-700 bg-rose-50 border-rose-200";
-      case "MAINTAINER":
-        return "text-sky-700 bg-sky-50 border-sky-200";
-      case "DEVELOPER":
-        return "text-emerald-700 bg-emerald-50 border-emerald-200";
-      case "VIEWER":
-      default:
-        return "text-slate-700 bg-slate-100 border-slate-200";
+    if (role === "ADMIN") {
+      return "text-rose-700 bg-rose-50 border-rose-200";
     }
+    return "text-emerald-700 bg-emerald-50 border-emerald-200";
   };
 
   return (
@@ -117,7 +110,7 @@ export const Sidebar: React.FC = () => {
                   {user.username}
                 </div>
                 <span className={`inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-1 border ${getRoleColor(user.role)}`}>
-                  {user.role}
+                  {user.role === "ADMIN" ? "ADMIN" : "USER"}
                 </span>
               </div>
             </div>

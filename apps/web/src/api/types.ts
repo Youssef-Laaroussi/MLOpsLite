@@ -84,12 +84,50 @@ export interface Deployment {
   created_at: string;
 }
 
+export interface DatasetColumn {
+  name: string;
+  dtype: string;
+  null_count: number;
+  null_pct?: number;
+  unique_count?: number;
+  min_val?: string | number;
+  max_val?: string | number;
+  sample_values?: (string | number)[];
+}
+
+export interface DatasetVersion {
+  id: string;
+  dataset_id: string;
+  version_num: number;
+  hash_sha256: string;
+  row_count: number;
+  column_count: number;
+  size_bytes: number;
+  schema_json?: Record<string, any>;
+  s3_key?: string;
+  description?: string;
+  created_at: string;
+}
+
 export interface Dataset {
   id: string;
+  project_id?: string;
   name: string;
   format: string;
   description?: string;
   created_at: string;
+  updated_at?: string;
+  version_num?: number;
+  row_count?: number;
+  column_count?: number;
+  size_bytes?: number;
+  hash_sha256?: string;
+  s3_key?: string;
+  quality_score?: number;
+  downstream_models?: string[];
+  columns?: DatasetColumn[];
+  sample_records?: Record<string, any>[];
+  latest_version?: DatasetVersion;
 }
 
 export interface SystemStats {

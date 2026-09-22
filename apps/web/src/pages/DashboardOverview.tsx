@@ -21,7 +21,7 @@ import { fetchSystemStats, fetchModels, fetchDeployments, testModelPrediction } 
 import { RegisteredModel, Deployment } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, User as UserIcon, LineChart } from "lucide-react";
+import { Settings, User as UserIcon, LineChart } from "lucide-react";
 
 export const DashboardOverview: React.FC = () => {
   const { user, logout, hasRole, hasPermission } = useAuth();
@@ -168,20 +168,15 @@ export const DashboardOverview: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
-          <Link
-            to="/app/projects"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            New Project
-          </Link>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-sm transition shadow-sm border border-slate-200 hover:border-rose-200 hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          {hasPermission("project:create") && (
+            <Link
+              to="/app/projects"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              New Project
+            </Link>
+          )}
         </div>
       </div>
 

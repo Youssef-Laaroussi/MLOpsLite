@@ -15,6 +15,7 @@ import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { LandingPage } from "./pages/LandingPage";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 import { AIAgentWidget } from "./components/AIAgentWidget";
 
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="alerts" element={<AlertsPage />} />
               <Route path="audit" element={<AuditLogsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
 
             {/* ── Direct convenience routes (also protected) ── */}
@@ -82,6 +84,7 @@ export const App: React.FC = () => {
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="alerts" element={<AlertsPage />} />
               <Route path="audit" element={<AuditLogsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
 
             {/* ── Catch-all ── */}

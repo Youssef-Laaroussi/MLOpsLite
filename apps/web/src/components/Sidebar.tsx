@@ -13,6 +13,7 @@ import {
   Home,
   ShieldCheck,
   User as UserIcon,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -32,6 +33,7 @@ export const Sidebar: React.FC = () => {
     ...(hasPermission("audit:view")
       ? [{ name: "Audit Logs", href: "/app/audit", icon: ShieldCheck }]
       : []),
+    { name: "Settings", href: "/app/settings", icon: Settings },
   ];
 
   const getRoleColor = (role?: string) => {
@@ -102,12 +104,12 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* User Status & Infrastructure Footer */}
-      <div className="p-4 border-t border-slate-100 space-y-2.5">
-        {isAuthenticated && user && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+      {/* User Status & Settings Footer */}
+      <div className="p-4 border-t border-slate-100">
+        {isAuthenticated && user ? (
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                 {user.username.charAt(0).toUpperCase()}
               </div>
               <div className="truncate text-left">
@@ -119,21 +121,26 @@ export const Sidebar: React.FC = () => {
                 </span>
               </div>
             </div>
-          </div>
-        )}
 
-        <div className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-2.5 text-xs">
-          <div className="flex items-center justify-between text-slate-700 mb-1 font-medium">
-            <span className="flex items-center gap-1.5 text-[11px]">
-              <Activity className="w-3.5 h-3.5 text-[#3BB48C]" />
-              Infrastructure
-            </span>
-            <span className="text-[#1A7456] text-[11px] font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C] animate-pulse"></span>
-              Online
-            </span>
+            <Link
+              to="/app/settings"
+              title="Paramètres de l'application"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition"
+            >
+              <Settings className="w-4 h-4" />
+            </Link>
           </div>
-        </div>
+        ) : (
+          <Link
+            to="/app/settings"
+            className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+          >
+            <span className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-slate-400" />
+              Paramètres
+            </span>
+          </Link>
+        )}
       </div>
     </aside>
   );

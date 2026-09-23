@@ -10,8 +10,8 @@ export const Layout: React.FC = () => {
   const isAdmin = user?.role === "ADMIN";
 
   const overviewTitle = isAdmin
-    ? "Tour de Contrôle & Gouvernance"
-    : "Tableau de Bord MLOps";
+    ? "Governance & Admin Console"
+    : "MLOps Dashboard";
 
   const titleMap: Record<string, string> = {
     "/": overviewTitle,
@@ -24,7 +24,7 @@ export const Layout: React.FC = () => {
     "/app/monitoring": "Model Monitoring & Drift",
     "/app/alerts": "Alerts & Webhooks",
     "/app/audit": "Audit Logs & Governance",
-    "/app/settings": "Paramètres & Configuration",
+    "/app/settings": "Settings & Configuration",
     "/projects": "Project Management",
     "/datasets": "Datasets & Lineage",
     "/experiments": "Experiment Tracking",
@@ -33,7 +33,7 @@ export const Layout: React.FC = () => {
     "/monitoring": "Model Monitoring & Drift",
     "/alerts": "Alerts & Webhooks",
     "/audit": "Audit Logs & Governance",
-    "/settings": "Paramètres & Configuration",
+    "/settings": "Settings & Configuration",
   };
 
   const title = titleMap[location.pathname] || "MLite Dashboard";

@@ -75,8 +75,8 @@ export const Sidebar: React.FC = () => {
                 key={item.name}
                 to={item.href}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
-                    ? "bg-[#3BB48C] text-white shadow-md shadow-[#3BB48C]/25"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-[#F0FDF9]"
+                  ? "bg-[#3BB48C] text-white shadow-md shadow-[#3BB48C]/25"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-[#F0FDF9]"
                   }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500"}`} />
@@ -103,11 +103,10 @@ export const Sidebar: React.FC = () => {
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs ${
-                  user.role === "ADMIN"
+                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs ${user.role === "ADMIN"
                     ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
                     : "bg-[#3BB48C]"
-                }`}
+                  }`}
               >
                 {user.username.charAt(0).toUpperCase()}
               </div>
@@ -123,7 +122,7 @@ export const Sidebar: React.FC = () => {
 
             <Link
               to="/app/settings"
-              title="Paramètres de l'application"
+              title="Application Settings"
               className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition"
             >
               <Settings className="w-4 h-4" />
@@ -136,7 +135,7 @@ export const Sidebar: React.FC = () => {
           >
             <span className="flex items-center gap-2">
               <Settings className="w-4 h-4 text-slate-400" />
-              Paramètres
+              Settings
             </span>
           </Link>
         )}

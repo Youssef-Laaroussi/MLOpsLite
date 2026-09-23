@@ -145,10 +145,10 @@ export const SettingsPage: React.FC = () => {
       <div>
         <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
           <Settings className="w-6 h-6 text-[#3BB48C]" />
-          Paramètres & Configuration
+          Settings & Configuration
         </h2>
         <p className="text-sm text-slate-500 mt-0.5">
-          Gérez votre profil, vos clés d'authentification CLI et les préférences de gouvernance
+          Manage your profile, CLI authentication keys, and governance preferences
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export const SettingsPage: React.FC = () => {
           }`}
         >
           <UserIcon className="w-4 h-4" />
-          Profil & Rôle
+          Profile & Role
         </button>
 
         <button
@@ -175,7 +175,7 @@ export const SettingsPage: React.FC = () => {
           }`}
         >
           <Key className="w-4 h-4" />
-          Clés d'API & CLI
+          API & CLI Keys
         </button>
 
         {isAdmin && (
@@ -188,7 +188,7 @@ export const SettingsPage: React.FC = () => {
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            Intégrité Système & Microservices
+            System Integrity & Microservices
           </button>
         )}
       </div>
@@ -218,10 +218,10 @@ export const SettingsPage: React.FC = () => {
                         : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
                     }`}
                   >
-                    Rôle : {isAdmin ? "ADMINISTRATEUR (ADMIN)" : "MEMBRE MLOPS (USER)"}
+                    Role: {isAdmin ? "ADMINISTRATOR (ADMIN)" : "MLOPS MEMBER (USER)"}
                   </span>
                   <span className="text-[11px] text-slate-400">
-                    Modèle simplifié à 2 rôles : ADMIN & USER
+                    Simplified 2-role model: ADMIN & USER
                   </span>
                 </div>
               </div>
@@ -229,44 +229,44 @@ export const SettingsPage: React.FC = () => {
 
             <div className="pt-4 border-t border-slate-100">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Périmètre des Permissions ({isAdmin ? "Supervision & Gouvernance Totale" : "Cycle Opérationnel MLOps"})
+                Permissions Scope ({isAdmin ? "Comprehensive Governance & Supervision" : "MLOps Operational Lifecycle"})
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Cycle complet de modélisation & promotion</span>
+                  <span>Full modeling & promotion lifecycle</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Déploiement de conteneurs & rollbacks</span>
+                  <span>Container serving & rollback triggers</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Surveillance de dérive (Evidently AI)</span>
+                  <span>Evidently AI drift monitoring & alerts</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Profilage & Synchronisation Datasets MinIO</span>
+                  <span>MinIO S3 dataset profiling & sync</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Exécution des runs d'expérimentation MLflow</span>
+                  <span>MLflow experiment runs execution</span>
                 </div>
                 {isAdmin ? (
                   <>
                     <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
                       <Shield className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>Gestion des comptes utilisateurs & rôles</span>
+                      <span>User account management & roles</span>
                     </div>
                     <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
                       <Lock className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>Audit Logs de Sécurité & Clés système</span>
+                      <span>Security audit logs & system keys</span>
                     </div>
                   </>
                 ) : (
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-600">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Génération de clés CLI personnelles</span>
+                    <span>Personal CLI key generation</span>
                   </div>
                 )}
               </div>
@@ -280,18 +280,18 @@ export const SettingsPage: React.FC = () => {
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <UserIcon className="w-5 h-5 text-[#3BB48C]" />
-                    Membres Enregistrés ({teamUsers.length})
+                    Registered Members ({teamUsers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Modèle strict à 2 rôles : <span className="font-semibold text-rose-700">ADMIN</span> (Gouvernance) et <span className="font-semibold text-emerald-700">USER</span> (Opérations MLOps)
+                    Strict 2-role model: <span className="font-semibold text-rose-700">ADMIN</span> (Governance) and <span className="font-semibold text-emerald-700">USER</span> (MLOps Operations)
                   </p>
                 </div>
               </div>
 
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
                 <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase">
-                  <span>Utilisateur</span>
-                  <span>Rôle Attribué</span>
+                  <span>User</span>
+                  <span>Assigned Role</span>
                 </div>
                 {teamUsers.map((u) => (
                   <div key={u.id} className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50 transition">
@@ -309,7 +309,7 @@ export const SettingsPage: React.FC = () => {
                         <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                           {u.username}
                           {u.username === user?.username && (
-                            <span className="text-[10px] text-slate-400 font-normal">(Vous)</span>
+                            <span className="text-[10px] text-slate-400 font-normal">(You)</span>
                           )}
                         </div>
                         <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
@@ -338,10 +338,10 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
               <Key className="w-5 h-5 text-[#3BB48C]" />
-              Générer une nouvelle clé d'API
+              Generate a New API Key
             </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Les clés d'API permettent d'authentifier la CLI <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">mlite</code> et vos scripts CI/CD de manière sécurisée.
+              API keys securely authenticate the <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">mlite</code> CLI and your CI/CD pipelines.
             </p>
 
             <form onSubmit={handleCreateKey} className="flex flex-col sm:flex-row gap-3">
@@ -349,7 +349,7 @@ export const SettingsPage: React.FC = () => {
                 type="text"
                 value={keyName}
                 onChange={(e) => setKeyName(e.target.value)}
-                placeholder="Ex: Token CLI Poste Principal"
+                placeholder="e.g. Workstation CLI Token"
                 className="flex-1 px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C]"
               />
               <button
@@ -358,20 +358,20 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs transition shadow-sm disabled:opacity-50"
               >
                 <Plus className="w-4 h-4" />
-                Générer la clé
+                Generate Key
               </button>
             </form>
 
             {newlyCreatedKey && (
               <div className="mt-4 p-4 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-[#1A7456]">
-                  <span>Nouvelle clé d'API créée (Copiez-la maintenant, elle ne sera plus réaffichée) :</span>
+                  <span>New API key created (Copy it now, it will not be displayed again):</span>
                   <button
                     onClick={() => copyToClipboard(newlyCreatedKey)}
                     className="flex items-center gap-1 text-xs font-mono font-bold bg-white px-2.5 py-1 rounded-lg border border-[#BCE9DA] shadow-2xs hover:bg-slate-50"
                   >
                     {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedKey ? "Copié !" : "Copier"}
+                    {copiedKey ? "Copied!" : "Copy"}
                   </button>
                 </div>
                 <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-[#BCE9DA] break-all select-all">
@@ -384,14 +384,14 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Clés d'API Actives ({apiKeys.length})
+                Active API Keys ({apiKeys.length})
               </span>
             </div>
 
             <div className="divide-y divide-slate-100">
               {apiKeys.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-sm">
-                  Aucune clé d'API active.
+                  No active API keys found.
                 </div>
               ) : (
                 apiKeys.map((k) => (
@@ -399,14 +399,14 @@ export const SettingsPage: React.FC = () => {
                     <div>
                       <div className="font-bold text-slate-900 text-sm">{k.name}</div>
                       <div className="text-xs text-slate-400 font-mono mt-0.5">
-                        {k.key_prefix}... • Créée le {k.created_at.slice(0, 10)}
+                        {k.key_prefix}... • Created on {k.created_at.slice(0, 10)}
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleRevokeKey(k.id)}
                       className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition"
-                      title="Révoquer cette clé"
+                      title="Revoke this key"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -427,10 +427,10 @@ export const SettingsPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Intégrité des Microservices Internes
+                  Internal Microservices Health
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Surveillance des composants orchestrés (Vérifié: {lastCheckTime} • Latence : {latencyMs} ms)
+                  Orchestrated components monitor (Verified: {lastCheckTime} • Latency: {latencyMs} ms)
                 </p>
               </div>
 
@@ -440,7 +440,7 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition shadow-2xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#3BB48C] ${checkingInfra ? "animate-spin" : ""}`} />
-                {checkingInfra ? "Vérification..." : "Vérifier la connectivité"}
+                {checkingInfra ? "Checking..." : "Verify Connectivity"}
               </button>
             </div>
 
@@ -449,13 +449,13 @@ export const SettingsPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">Moteur REST FastAPI</span>
+                    <span className="font-bold text-sm text-slate-900">FastAPI REST Engine</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                      Opérationnel
+                      Operational
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium">Orchestration REST, RBAC & Sécurité JWT</p>
-                  <p className="text-[11px] text-slate-400">Endpoints protégés • Authentification Bearer stricte</p>
+                  <p className="text-xs text-slate-600 font-medium">REST orchestration, RBAC & JWT security</p>
+                  <p className="text-[11px] text-slate-400">Protected endpoints • Strict Bearer token authentication</p>
                 </div>
                 <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
                   <CheckCircle2 className="w-4 h-4" />
@@ -466,13 +466,13 @@ export const SettingsPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">Base de Données PostgreSQL</span>
+                    <span className="font-bold text-sm text-slate-900">PostgreSQL Database</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                      Connecté
+                      Connected
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium">Stockage persistant des métadonnées & audits</p>
-                  <p className="text-[11px] text-slate-400">Pool de connexions actif • Intégrité relationnelle validée</p>
+                  <p className="text-xs text-slate-600 font-medium">Persistent metadata & audit storage</p>
+                  <p className="text-[11px] text-slate-400">Active connection pool • Verified relational integrity</p>
                 </div>
                 <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
                   <CheckCircle2 className="w-4 h-4" />
@@ -483,13 +483,13 @@ export const SettingsPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">Stockage d'Objets S3 (MinIO)</span>
+                    <span className="font-bold text-sm text-slate-900">MinIO S3 Object Storage</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                      Synchronisé
+                      Synchronized
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium">Stockage immuable des jeux de données & artefacts</p>
-                  <p className="text-[11px] text-slate-400">Déduplication SHA-256 • Chiffrement au repos</p>
+                  <p className="text-xs text-slate-600 font-medium">Immutable dataset & artifact storage</p>
+                  <p className="text-[11px] text-slate-400">SHA-256 deduplication • Encrypted at rest</p>
                 </div>
                 <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
                   <CheckCircle2 className="w-4 h-4" />
@@ -500,13 +500,13 @@ export const SettingsPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">Serveur MLflow Tracking</span>
+                    <span className="font-bold text-sm text-slate-900">MLflow Tracking Server</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-                      Opérationnel
+                      Operational
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium">Registre des métriques, hyperparamètres et runs</p>
-                  <p className="text-[11px] text-slate-400">Persistance d'artefacts couplée au stockage objet S3</p>
+                  <p className="text-xs text-slate-600 font-medium">Metrics, hyperparameters & experiment run registry</p>
+                  <p className="text-[11px] text-slate-400">Artifact persistence backed by MinIO S3 object storage</p>
                 </div>
                 <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
                   <CheckCircle2 className="w-4 h-4" />

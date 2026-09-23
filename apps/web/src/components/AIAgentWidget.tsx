@@ -42,83 +42,83 @@ const KNOWLEDGE_RESPONSES: {
   codeSnippet?: { language: string; code: string };
   actionLink?: { label: string; path: string };
 }[] = [
-  {
-    keywords: ["hi", "hello", "hey", "bonjour", "salut", "coucou"],
-    reply:
-      "Hello! How can I assist you with your ML models, deployments, or drift monitoring today? You can ask me to generate CLI commands, explain pipelines, or inspect system health.",
-    actionLink: { label: "Go to Dashboard Console", path: "/app" },
-  },
-  {
-    keywords: ["deploy", "docker", "serving", "container", "production"],
-    reply:
-      "To deploy a model in MLite, you can use the CLI or the Dashboard. MLite builds a container runtime with sub-50ms latency and automatic health probes.",
-    codeSnippet: {
-      language: "bash",
-      code: `# Deploy a registered model via CLI\nmlite deployments create \\\n  --model fraud-detector \\\n  --version 1.0.0 \\\n  --port 8001 \\\n  --replicas 2`,
+    {
+      keywords: ["hi", "hello", "hey", "bonjour", "salut", "coucou"],
+      reply:
+        "Hello! How can I assist you with your ML models, deployments, or drift monitoring today? You can ask me to generate CLI commands, explain pipelines, or inspect system health.",
+      actionLink: { label: "Go to Dashboard Console", path: "/app" },
     },
-    actionLink: { label: "View Deployments", path: "/app/deployments" },
-  },
-  {
-    keywords: ["drift", "evidently", "ks", "statistical", "monitor", "alert"],
-    reply:
-      "MLite integrates Evidently AI for real-time drift monitoring. We run Kolmogorov-Smirnov tests on numerical distributions and Population Stability Index (PSI) on categorical features.",
-    codeSnippet: {
-      language: "bash",
-      code: `# Trigger on-demand drift analysis\nmlite monitoring check-drift \\\n  --dataset-current s3://datasets/current.parquet \\\n  --dataset-reference s3://datasets/reference.parquet`,
+    {
+      keywords: ["deploy", "docker", "serving", "container", "production"],
+      reply:
+        "To deploy a model in MLite, you can use the CLI or the Dashboard. MLite builds a container runtime with sub-50ms latency and automatic health probes.",
+      codeSnippet: {
+        language: "bash",
+        code: `# Deploy a registered model via CLI\nmlite deployments create \\\n  --model fraud-detector \\\n  --version 1.0.0 \\\n  --port 8001 \\\n  --replicas 2`,
+      },
+      actionLink: { label: "View Deployments", path: "/app/deployments" },
     },
-    actionLink: { label: "Open Monitoring & Drift", path: "/app/monitoring" },
-  },
-  {
-    keywords: ["rollback", "recovery", "failure", "crash", "auto-rollback"],
-    reply:
-      "Automated rollbacks trigger when consecutive health probes fail (HTTP 500 or timeout > 5000ms) or severe drift exceeds threshold (p < 0.05). Zero downtime is guaranteed via traffic redirection.",
-    codeSnippet: {
-      language: "bash",
-      code: `# Manual rollback to previous stable checkpoint\nmlite deployments rollback \\\n  --deployment-id dep_fraud_8001 \\\n  --to-version v1.2.0`,
+    {
+      keywords: ["drift", "evidently", "ks", "statistical", "monitor", "alert"],
+      reply:
+        "MLite integrates Evidently AI for real-time drift monitoring. We run Kolmogorov-Smirnov tests on numerical distributions and Population Stability Index (PSI) on categorical features.",
+      codeSnippet: {
+        language: "bash",
+        code: `# Trigger on-demand drift analysis\nmlite monitoring check-drift \\\n  --dataset-current s3://datasets/current.parquet \\\n  --dataset-reference s3://datasets/reference.parquet`,
+      },
+      actionLink: { label: "Open Monitoring & Drift", path: "/app/monitoring" },
     },
-    actionLink: { label: "Check Alerts & Rollback", path: "/app/alerts" },
-  },
-  {
-    keywords: ["dataset", "minio", "s3", "version", "sha256", "data"],
-    reply:
-      "Datasets in MLite are immutably versioned using SHA-256 checksums and synced with MinIO S3 object storage for reproducible training runs.",
-    codeSnippet: {
-      language: "bash",
-      code: `# Register and hash a new dataset\nmlite datasets register \\\n  --name customer_churn \\\n  --path ./data/churn_2026.csv`,
+    {
+      keywords: ["rollback", "recovery", "failure", "crash", "auto-rollback"],
+      reply:
+        "Automated rollbacks trigger when consecutive health probes fail (HTTP 500 or timeout > 5000ms) or severe drift exceeds threshold (p < 0.05). Zero downtime is guaranteed via traffic redirection.",
+      codeSnippet: {
+        language: "bash",
+        code: `# Manual rollback to previous stable checkpoint\nmlite deployments rollback \\\n  --deployment-id dep_fraud_8001 \\\n  --to-version v1.2.0`,
+      },
+      actionLink: { label: "Check Alerts & Rollback", path: "/app/alerts" },
     },
-    actionLink: { label: "Inspect Datasets", path: "/app/datasets" },
-  },
-  {
-    keywords: ["mlflow", "experiment", "metrics", "loss", "accuracy", "track"],
-    reply:
-      "MLite includes full MLflow tracking out of the box. Metrics, hyper-parameters, and model artifacts are logged automatically.",
-    codeSnippet: {
-      language: "python",
-      code: `import mlflow\n\nwith mlflow.start_run():\n    mlflow.log_param("learning_rate", 0.01)\n    mlflow.log_metric("accuracy", 0.984)\n    mlflow.xgboost.log_model(model, "model")`,
+    {
+      keywords: ["dataset", "minio", "s3", "version", "sha256", "data"],
+      reply:
+        "Datasets in MLite are immutably versioned using SHA-256 checksums and synced with MinIO S3 object storage for reproducible training runs.",
+      codeSnippet: {
+        language: "bash",
+        code: `# Register and hash a new dataset\nmlite datasets register \\\n  --name customer_churn \\\n  --path ./data/churn_2026.csv`,
+      },
+      actionLink: { label: "Inspect Datasets", path: "/app/datasets" },
     },
-    actionLink: { label: "View Experiments", path: "/app/experiments" },
-  },
-  {
-    keywords: ["rbac", "role", "security", "token", "key", "admin", "permission"],
-    reply:
-      "MLite enforces 4-tier Role-Based Access Control: ADMIN (full access), MAINTAINER (model promotions), DEVELOPER (training & logs), and VIEWER (read-only audit).",
-    codeSnippet: {
-      language: "bash",
-      code: `# Generate a scoped API key\nmlite auth create-key --role DEVELOPER --name "ci-pipeline"`,
+    {
+      keywords: ["mlflow", "experiment", "metrics", "loss", "accuracy", "track"],
+      reply:
+        "MLite includes full MLflow tracking out of the box. Metrics, hyper-parameters, and model artifacts are logged automatically.",
+      codeSnippet: {
+        language: "python",
+        code: `import mlflow\n\nwith mlflow.start_run():\n    mlflow.log_param("learning_rate", 0.01)\n    mlflow.log_metric("accuracy", 0.984)\n    mlflow.xgboost.log_model(model, "model")`,
+      },
+      actionLink: { label: "View Experiments", path: "/app/experiments" },
     },
-    actionLink: { label: "Audit & Governance", path: "/app/audit" },
-  },
-  {
-    keywords: ["cli", "command", "init", "install", "tool"],
-    reply:
-      "The MLite CLI is available in Python. You can initialize projects, deploy models, and stream logs directly from your terminal.",
-    codeSnippet: {
-      language: "bash",
-      code: `# Initialize a new MLOps project\nmlite init my-project\ncd my-project\nmlite status`,
+    {
+      keywords: ["rbac", "role", "security", "token", "key", "admin", "permission"],
+      reply:
+        "MLite enforces 4-tier Role-Based Access Control: ADMIN (full access), MAINTAINER (model promotions), DEVELOPER (training & logs), and VIEWER (read-only audit).",
+      codeSnippet: {
+        language: "bash",
+        code: `# Generate a scoped API key\nmlite auth create-key --role DEVELOPER --name "ci-pipeline"`,
+      },
+      actionLink: { label: "Audit & Governance", path: "/app/audit" },
     },
-    actionLink: { label: "Explore Dashboard", path: "/app" },
-  },
-];
+    {
+      keywords: ["cli", "command", "init", "install", "tool"],
+      reply:
+        "The MLite CLI is available in Python. You can initialize projects, deploy models, and stream logs directly from your terminal.",
+      codeSnippet: {
+        language: "bash",
+        code: `# Initialize a new MLOps project\nmlite init my-project\ncd my-project\nmlite status`,
+      },
+      actionLink: { label: "Explore Dashboard", path: "/app" },
+    },
+  ];
 
 interface SuggestedQuestion {
   icon: React.ElementType;
@@ -206,11 +206,10 @@ export const AIAgentWidget: React.FC = () => {
         return (
           <code
             key={index}
-            className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-semibold ${
-              isUser
+            className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-semibold ${isUser
                 ? "bg-white/20 text-white"
                 : "bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]"
-            }`}
+              }`}
           >
             {content}
           </code>
@@ -284,9 +283,8 @@ export const AIAgentWidget: React.FC = () => {
       {/* ── Chat Window ── */}
       {isOpen && (
         <div
-          className={`w-[92vw] sm:w-[420px] bg-white border border-slate-200/90 rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 mb-4 backdrop-blur-xl ${
-            isMinimized ? "h-16" : "h-[560px]"
-          }`}
+          className={`w-[92vw] sm:w-[420px] bg-white border border-slate-200/90 rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 mb-4 backdrop-blur-xl ${isMinimized ? "h-16" : "h-[560px]"
+            }`}
           style={{
             boxShadow: "0 20px 50px -10px rgba(11, 30, 45, 0.25), 0 0 0 1px rgba(59, 180, 140, 0.2)",
           }}
@@ -352,9 +350,8 @@ export const AIAgentWidget: React.FC = () => {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex items-start gap-2.5 ${
-                      msg.sender === "user" ? "flex-row-reverse" : "flex-row"
-                    }`}
+                    className={`flex items-start gap-2.5 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"
+                      }`}
                   >
                     {/* Avatar */}
                     {msg.sender === "agent" ? (
@@ -369,11 +366,10 @@ export const AIAgentWidget: React.FC = () => {
 
                     {/* Message Bubble */}
                     <div
-                      className={`max-w-[82%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                        msg.sender === "user"
+                      className={`max-w-[82%] rounded-2xl p-3.5 text-xs leading-relaxed ${msg.sender === "user"
                           ? "bg-gradient-to-r from-[#3BB48C] to-[#2FA07B] text-white font-medium shadow-md shadow-[#3BB48C]/20 rounded-tr-xs"
                           : "bg-white border border-slate-200/80 text-slate-800 shadow-xs rounded-tl-xs"
-                      }`}
+                        }`}
                     >
                       <div className="whitespace-pre-wrap">
                         {renderFormattedText(msg.text, msg.sender === "user")}

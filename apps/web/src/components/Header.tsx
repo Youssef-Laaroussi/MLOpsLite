@@ -50,11 +50,10 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
                 className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl border border-slate-200 hover:border-[#3BB48C] hover:bg-slate-50 transition shadow-xs bg-white"
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-xs ${
-                    user.role === "ADMIN"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-xs ${user.role === "ADMIN"
                       ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
                       : "bg-gradient-to-tr from-[#3BB48C] to-teal-400 shadow-[#3BB48C]/20"
-                  }`}
+                    }`}
                 >
                   {user.username.charAt(0).toUpperCase()}
                 </div>
@@ -101,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
                       className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition"
                     >
                       <Settings className="w-3.5 h-3.5 text-slate-400" />
-                      Paramètres
+                      Settings
                     </Link>
 
                     <button
@@ -133,11 +132,11 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
             </div>
           ) : (
             <Link
-              to="/"
+              to="/login"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs transition shadow-sm hover:-translate-y-0.5 active:translate-y-0"
             >
               <LogIn className="w-3.5 h-3.5" />
-              Connect
+              Sign In
             </Link>
           )}
         </div>

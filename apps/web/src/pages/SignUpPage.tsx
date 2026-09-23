@@ -261,6 +261,16 @@ export const SignUpPage: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Platform Name */}
+          <div className="mt-8 text-center select-none">
+            <h2 className="text-3xl font-black tracking-wider text-white drop-shadow-lg">
+              MLite
+            </h2>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#3BB48C] font-semibold mt-1">
+              Lightweight MLOps Platform
+            </p>
+          </div>
         </div>
 
         {/* ── Corner Framing Accents ── */}

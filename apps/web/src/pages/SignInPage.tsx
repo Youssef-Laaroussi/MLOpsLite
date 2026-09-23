@@ -74,12 +74,7 @@ export const SignInPage: React.FC = () => {
 
         {/* Form Card */}
         <div className={`max-w-[420px] w-full transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-          <div className="mb-1">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#3BB48C] uppercase tracking-widest bg-[#EBF8F4] px-3 py-1 rounded-full border border-[#BCE9DA] mb-4">
-              <Lock className="w-3 h-3" />
-              Secure Authentication
-            </span>
-          </div>
+
           <h1 className="text-3xl sm:text-[40px] font-black text-slate-900 tracking-tight leading-[1.1] mb-3">
             Welcome back
           </h1>
@@ -364,6 +359,16 @@ export const SignInPage: React.FC = () => {
                 className="w-full h-full object-contain filter drop-shadow-sm select-none"
               />
             </div>
+          </div>
+
+          {/* Platform Name */}
+          <div className="mt-8 text-center select-none">
+            <h2 className="text-3xl font-black tracking-wider text-white drop-shadow-lg">
+              MLite
+            </h2>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#3BB48C] font-semibold mt-1">
+              Lightweight MLOps Platform
+            </p>
           </div>
         </div>
 

@@ -227,11 +227,10 @@ export const DashboardOverview: React.FC = () => {
         <div className="relative z-10 flex items-center gap-5">
           {/* User Avatar */}
           <div
-            className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg border-[3px] border-white ${
-              isAdmin
+            className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg border-[3px] border-white ${isAdmin
                 ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
                 : "bg-gradient-to-tr from-[#3BB48C] to-teal-400 shadow-[#3BB48C]/20"
-            }`}
+              }`}
           >
             {user?.username?.charAt(0).toUpperCase() || <UserIcon className="w-8 h-8" />}
           </div>
@@ -242,29 +241,29 @@ export const DashboardOverview: React.FC = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                Système 100% Opérationnel
+                System 100% Operational
               </span>
 
               {isAdmin ? (
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase tracking-widest shadow-2xs">
-                  Administrateur Système
+                  System Administrator
                 </span>
               ) : (
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase tracking-widest shadow-2xs">
-                  Membre MLOps
+                  MLOps Member
                 </span>
               )}
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {isAdmin
-                ? "Tour de Contrôle & Gouvernance"
-                : `Bienvenue${user?.full_name ? `, ${user.full_name}` : user?.username ? `, ${user.username}` : ""}`}
+                ? "Governance & Control Plane"
+                : `Welcome${user?.full_name ? `, ${user.full_name}` : user?.username ? `, ${user.username}` : ""}`}
             </h2>
             <p className="text-sm text-slate-600 mt-1 max-w-2xl">
               {isAdmin
-                ? "Supervision globale des conteneurs, intégrité de l'infrastructure, gestion des membres et logs d'audit."
-                : "Plateforme légère orchestrant vos modèles, entraînements MLflow, datasets et surveillance de dérive."}
+                ? "Comprehensive container supervision, infrastructure health, member RBAC management, and audit trails."
+                : "Lightweight platform orchestrating machine learning models, MLflow training runs, datasets, and drift monitors."}
             </p>
           </div>
         </div>
@@ -276,25 +275,23 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center p-1 bg-white border border-slate-200 rounded-2xl shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "governance"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "governance"
                     ? "bg-slate-900 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Shield className="w-3.5 h-3.5" />
-                Vue Admin
+                Admin View
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "ml"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "ml"
                     ? "bg-[#3BB48C] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Box className="w-3.5 h-3.5" />
-                Vue Modèles ML
+                ML View
               </button>
             </div>
           )}
@@ -302,7 +299,7 @@ export const DashboardOverview: React.FC = () => {
           <button
             onClick={loadData}
             className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
-            title="Rafraîchir les métriques"
+            title="Refresh metrics"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
@@ -314,7 +311,7 @@ export const DashboardOverview: React.FC = () => {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              Nouveau Projet
+              New Project
             </Link>
           )}
 
@@ -324,7 +321,7 @@ export const DashboardOverview: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition border border-slate-200 shadow-2xs hover:border-[#3BB48C]/40"
             >
               <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-              Consulter les Audits
+              View Audit Logs
             </Link>
           )}
         </div>
@@ -338,36 +335,36 @@ export const DashboardOverview: React.FC = () => {
           {/* Admin Specific KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatCard
-              title="Membres de l'Équipe"
-              value={`${teamUsers.length || 4} Membres`}
-              subtitle={`${teamUsers.filter((u) => u.role === "ADMIN").length || 2} Admin • ${teamUsers.filter((u) => u.role !== "ADMIN").length || 2} Utilisateurs`}
+              title="Team Members"
+              value={`${teamUsers.length || 4} Members`}
+              subtitle={`${teamUsers.filter((u) => u.role === "ADMIN").length || 2} Admin • ${teamUsers.filter((u) => u.role !== "ADMIN").length || 2} Users`}
               icon={Users}
               color="brand"
-              trend="Rôles RBAC Actifs"
+              trend="Active RBAC Roles"
             />
             <StatCard
-              title="Santé Infrastructure"
+              title="Infrastructure Health"
               value="4/4 Services"
               subtitle="FastAPI, Postgres, MinIO, MLflow"
               icon={Server}
               color="emerald"
               isLive={true}
-              trend="100% en ligne"
+              trend="100% Online"
             />
             <StatCard
-              title="Volume MinIO S3"
+              title="MinIO S3 Volume"
               value="88.6 MB"
-              subtitle="Stockage dédupliqué SHA-256"
+              subtitle="Deduplicated SHA-256 storage"
               icon={HardDrive}
               color="brand"
             />
             <StatCard
-              title="Sécurité & Audits"
-              value={`${auditLogs.length} Événements`}
-              subtitle="Aucune anomalie détectée"
+              title="Security & Audits"
+              value={`${auditLogs.length} Events`}
+              subtitle="No anomalies detected"
               icon={ShieldCheck}
               color="emerald"
-              trend="0 critique"
+              trend="0 Critical"
             />
           </div>
 
@@ -378,7 +375,7 @@ export const DashboardOverview: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-[#3BB48C]" />
-                  État en Direct de la Stack Système
+                  Live Infrastructure Services Status
                 </h3>
                 <span className="text-xs font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-0.5 rounded-full">
                   Local Docker Stack
@@ -392,11 +389,11 @@ export const DashboardOverview: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     <div>
                       <div className="font-bold text-slate-900 text-xs">FastAPI Core Backend</div>
-                      <div className="text-[11px] text-slate-400 font-medium">Orchestration REST & Auth JWT • 3.2ms</div>
+                      <div className="text-[11px] text-slate-400 font-medium">REST Orchestration & JWT Auth • 3.2ms</div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Opérationnel
+                    Operational
                   </span>
                 </div>
 
@@ -406,11 +403,11 @@ export const DashboardOverview: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     <div>
                       <div className="font-bold text-slate-900 text-xs">PostgreSQL 16 Engine</div>
-                      <div className="text-[11px] text-slate-400 font-medium">Persistance Métadonnées & Piste d'Audit</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Metadata Persistence & Audit Trail</div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Connecté
+                    Connected
                   </span>
                 </div>
 
@@ -420,11 +417,11 @@ export const DashboardOverview: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     <div>
                       <div className="font-bold text-slate-900 text-xs">MinIO Object Storage S3</div>
-                      <div className="text-[11px] text-slate-400 font-medium">Buckets Jeux de Données & Artefacts</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Dataset Buckets & S3 Artifacts</div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Synchronisé
+                    Synchronized
                   </span>
                 </div>
 
@@ -434,11 +431,11 @@ export const DashboardOverview: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     <div>
                       <div className="font-bold text-slate-900 text-xs">MLflow Tracking Server</div>
-                      <div className="text-[11px] text-slate-400 font-medium">Tracking d'Expériences & Métriques</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Experiment Tracking & Metrics</div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Actif
+                    Active
                   </span>
                 </div>
               </div>
@@ -449,13 +446,13 @@ export const DashboardOverview: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Dernières Actions & Audits de Sécurité
+                  Recent Security & Audit Events
                 </h3>
                 <Link
                   to="/app/audit"
                   className="text-xs text-[#3BB48C] hover:underline flex items-center gap-1 font-bold"
                 >
-                  Tous les Logs <ArrowUpRight className="w-3.5 h-3.5" />
+                  All Logs <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
@@ -470,7 +467,7 @@ export const DashboardOverview: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono">
-                        {log.resource_name} • Par {log.user_email || "admin"}
+                        {log.resource_name} • By {log.user_email || "admin"}
                       </div>
                     </div>
                     <div className="text-right">
@@ -493,17 +490,17 @@ export const DashboardOverview: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Users className="w-5 h-5 text-[#3BB48C]" />
-                  Membres Enregistrés sur MLOpsLite
+                  Registered MLOpsLite Members
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Gestion des accès et attribution des rôles ADMIN et USER
+                  Access control and role management for ADMIN and USER
                 </p>
               </div>
               <Link
                 to="/app/settings"
                 className="text-xs font-bold text-[#1A7456] bg-[#EBF8F4] border border-[#BCE9DA] px-3 py-1.5 rounded-xl hover:bg-[#D5F2E8] transition"
               >
-                Gérer les Clés & Accès
+                Manage Keys & Access
               </Link>
             </div>
 
@@ -511,17 +508,16 @@ export const DashboardOverview: React.FC = () => {
               {(teamUsers.length > 0
                 ? teamUsers
                 : [
-                    { id: "1", username: "admin", email: "admin@mlite.local", role: "ADMIN" as const, is_active: true, created_at: "", updated_at: "" },
-                    { id: "2", username: "khalid22", email: "khalid2@gmail.com", role: "USER" as const, is_active: true, created_at: "", updated_at: "" },
-                    { id: "3", username: "yassi", email: "yassiYassir123@gmail.com", role: "USER" as const, is_active: true, created_at: "", updated_at: "" },
-                    { id: "4", username: "testuser", email: "test@mlite.local", role: "ADMIN" as const, is_active: true, created_at: "", updated_at: "" },
-                  ]
+                  { id: "1", username: "admin", email: "admin@mlite.local", role: "ADMIN" as const, is_active: true, created_at: "", updated_at: "" },
+                  { id: "2", username: "khalid22", email: "khalid2@gmail.com", role: "USER" as const, is_active: true, created_at: "", updated_at: "" },
+                  { id: "3", username: "yassi", email: "yassiYassir123@gmail.com", role: "USER" as const, is_active: true, created_at: "", updated_at: "" },
+                  { id: "4", username: "testuser", email: "test@mlite.local", role: "ADMIN" as const, is_active: true, created_at: "", updated_at: "" },
+                ]
               ).map((m, i) => (
                 <div key={m.id || i} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
-                      m.role === "ADMIN" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-800"
-                    }`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${m.role === "ADMIN" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-800"
+                      }`}
                   >
                     {m.username.charAt(0).toUpperCase()}
                   </div>
@@ -529,16 +525,15 @@ export const DashboardOverview: React.FC = () => {
                     <div className="font-bold text-xs text-slate-900 truncate flex items-center gap-1">
                       {m.username}
                       {m.username === user?.username && (
-                        <span className="text-[10px] text-slate-400 font-normal">(Vous)</span>
+                        <span className="text-[10px] text-slate-400 font-normal">(You)</span>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-400 font-mono truncate">{m.email}</div>
                     <span
-                      className={`inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-1 border ${
-                        m.role === "ADMIN"
+                      className={`inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-1 border ${m.role === "ADMIN"
                           ? "bg-rose-50 text-rose-700 border-rose-200"
                           : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      }`}
+                        }`}
                     >
                       {m.role}
                     </span>
@@ -559,35 +554,35 @@ export const DashboardOverview: React.FC = () => {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatCard
-              title="Projets Actifs"
+              title="Active Projects"
               value={stats.projects_count || 4}
-              subtitle="Espaces de travail & repos suivis"
+              subtitle="Tracked workspaces & repositories"
               icon={FolderGit2}
               color="brand"
             />
             <StatCard
-              title="Modèles Catalogués"
+              title="Cataloged Models"
               value={stats.models_count || 3}
-              subtitle="Versions dans le Model Registry"
+              subtitle="Versions in Model Registry"
               icon={Box}
               color="brand"
             />
             <StatCard
-              title="Déploiements Conteneurs"
+              title="Container Deployments"
               value={stats.active_deployments || 2}
-              subtitle="Inférence active sur ports dédiés"
+              subtitle="Active serving on dedicated ports"
               icon={Server}
               color="emerald"
               isLive={true}
               trend="+100% stable"
             />
             <StatCard
-              title="Alertes de Dérive"
+              title="Drift Alerts"
               value={stats.alerts_count || 0}
-              subtitle="Violations PSI & latence"
+              subtitle="PSI violations & latency warnings"
               icon={Bell}
               color="amber"
-              trend="0 critique"
+              trend="0 critical"
             />
           </div>
 
@@ -596,10 +591,10 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <LineChart className="w-5 h-5 text-[#3BB48C]" />
-                Volume d'Inférence de la Plateforme (7 Derniers Jours)
+                Platform Inference Volume (Last 7 Days)
               </h3>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200">Requêtes / Jour</span>
+                <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200">Requests / Day</span>
               </div>
             </div>
 
@@ -625,7 +620,7 @@ export const DashboardOverview: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-[11px] font-bold text-slate-500 mt-3">
-                    {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"][i]}
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
                   </div>
                 </div>
               ))}
@@ -639,19 +634,19 @@ export const DashboardOverview: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Modèles en Production & Registre
+                  Production Models & Registry
                 </h3>
                 <Link
                   to="/app/models"
                   className="text-xs text-[#3BB48C] hover:underline flex items-center gap-1 font-bold"
                 >
-                  Voir Tout <ArrowUpRight className="w-3.5 h-3.5" />
+                  View All <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
               {models.length === 0 ? (
                 <div className="text-center py-8 text-slate-400 text-sm">
-                  Aucun modèle catalogué pour l'instant.
+                  No cataloged models found.
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
@@ -669,7 +664,7 @@ export const DashboardOverview: React.FC = () => {
                             {m.name}
                           </div>
                           <div className="text-xs text-slate-400 mt-0.5 font-mono">
-                            Version v{m.version} • Registre vérifié
+                            Version v{m.version} • Verified Registry
                           </div>
                         </div>
                       </div>
@@ -689,20 +684,20 @@ export const DashboardOverview: React.FC = () => {
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    Endpoints d'Inférence Actifs
+                    Active Inference Endpoints
                   </h3>
                 </div>
                 <Link
                   to="/app/deployments"
                   className="text-xs text-[#3BB48C] hover:underline flex items-center gap-1 font-bold"
                 >
-                  Gérer <ArrowUpRight className="w-3.5 h-3.5" />
+                  Manage <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
               {deployments.length === 0 ? (
                 <div className="text-center py-8 text-slate-400 text-sm">
-                  Aucun conteneur en cours d'exécution.
+                  No running containers found.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -724,7 +719,7 @@ export const DashboardOverview: React.FC = () => {
                               </span>
                             </div>
                             <div className="text-xs text-slate-500 font-mono font-semibold mt-0.5">
-                              Port Dédié :{d.port} • Inférence Sécurisée
+                              Dedicated Port :{d.port} • Secure Inference
                             </div>
                           </div>
                         </div>
@@ -745,7 +740,7 @@ export const DashboardOverview: React.FC = () => {
                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs animate-fadeIn">
                           <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Inférence réussie ({pingResult.latency} ms)</span>
+                            <span>Inference succeeded ({pingResult.latency} ms)</span>
                           </div>
                           <span className="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                             Class: {pingResult.prediction?.predicted_class ?? 1} (Conf: 94%)

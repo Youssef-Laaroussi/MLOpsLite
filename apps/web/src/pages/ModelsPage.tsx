@@ -214,14 +214,13 @@ export const ModelsPage: React.FC = () => {
 
                   <td className="px-6 py-4 text-xs font-mono text-slate-500">
                     {m.mlflow_run_id ? (
-                      <a
-                        href={`http://localhost:5000/#/runs/${m.mlflow_run_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#3BB48C] hover:underline font-semibold flex items-center gap-1"
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 font-mono text-[11px] text-slate-700 border border-slate-200"
+                        title={`MLflow Run: ${m.mlflow_run_id}`}
                       >
-                        {m.mlflow_run_id.slice(0, 10)}... <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </a>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C]"></span>
+                        {m.mlflow_run_id.slice(0, 10)}...
+                      </span>
                     ) : (
                       <span className="text-slate-400">—</span>
                     )}

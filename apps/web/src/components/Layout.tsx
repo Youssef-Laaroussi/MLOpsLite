@@ -2,13 +2,20 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { useAuth } from "../context/AuthContext";
 
 export const Layout: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
+
+  const overviewTitle = isAdmin
+    ? "Tour de Contrôle & Gouvernance"
+    : "Tableau de Bord MLOps";
 
   const titleMap: Record<string, string> = {
-    "/": "System Overview",
-    "/app": "System Overview",
+    "/": overviewTitle,
+    "/app": overviewTitle,
     "/app/projects": "Project Management",
     "/app/datasets": "Datasets & Lineage",
     "/app/experiments": "Experiment Tracking",
@@ -17,6 +24,7 @@ export const Layout: React.FC = () => {
     "/app/monitoring": "Model Monitoring & Drift",
     "/app/alerts": "Alerts & Webhooks",
     "/app/audit": "Audit Logs & Governance",
+    "/app/settings": "Paramètres & Configuration",
     "/projects": "Project Management",
     "/datasets": "Datasets & Lineage",
     "/experiments": "Experiment Tracking",
@@ -25,6 +33,7 @@ export const Layout: React.FC = () => {
     "/monitoring": "Model Monitoring & Drift",
     "/alerts": "Alerts & Webhooks",
     "/audit": "Audit Logs & Governance",
+    "/settings": "Paramètres & Configuration",
   };
 
   const title = titleMap[location.pathname] || "MLite Dashboard";

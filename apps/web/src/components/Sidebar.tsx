@@ -102,7 +102,13 @@ export const Sidebar: React.FC = () => {
         {isAuthenticated && user ? (
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-[#3BB48C] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+              <div
+                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs ${
+                  user.role === "ADMIN"
+                    ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
+                    : "bg-[#3BB48C]"
+                }`}
+              >
                 {user.username.charAt(0).toUpperCase()}
               </div>
               <div className="truncate text-left">

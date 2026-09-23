@@ -80,6 +80,13 @@ export const revokeApiKey = async (keyId: string): Promise<void> => {
   await api.delete(`/auth/api-keys/${keyId}`);
 };
 
+// ── User Management (Admin) ─────────────────────────────────────────
+
+export const fetchUsers = async (): Promise<User[]> => {
+  const res = await api.get("/users");
+  return res.data.users || [];
+};
+
 // ── Audit Logs ─────────────────────────────────────────────────────
 
 export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> => {

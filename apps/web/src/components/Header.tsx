@@ -49,7 +49,13 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl border border-slate-200 hover:border-[#3BB48C] hover:bg-slate-50 transition shadow-xs bg-white"
               >
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#3BB48C] to-teal-400 flex items-center justify-center text-white font-black text-xs shadow-xs">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-xs ${
+                    user.role === "ADMIN"
+                      ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
+                      : "bg-gradient-to-tr from-[#3BB48C] to-teal-400 shadow-[#3BB48C]/20"
+                  }`}
+                >
                   {user.username.charAt(0).toUpperCase()}
                 </div>
 

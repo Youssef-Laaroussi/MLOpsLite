@@ -9,6 +9,7 @@ export interface User {
   is_active?: boolean;
   permissions?: string[];
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthTokens {

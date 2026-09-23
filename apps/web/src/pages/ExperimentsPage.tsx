@@ -20,7 +20,12 @@ import {
   FileCode,
   Tag,
   FolderGit2,
+  Calendar,
+  ChevronDown,
+  Activity,
+  Zap,
 } from "lucide-react";
+import { StatCard } from "../components/StatCard";
 import { Experiment, ExperimentRun } from "../api/types";
 import { fetchExperiments, fetchExperimentRuns, createExperiment } from "../api/client";
 

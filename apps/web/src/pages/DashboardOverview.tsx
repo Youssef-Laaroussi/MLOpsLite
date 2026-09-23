@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
   FolderGit2,
+  Database,
+  FlaskConical,
   Box,
   Server,
-  Bell,
+  Calendar,
+  ChevronDown,
   ArrowUpRight,
   ShieldCheck,
   Activity,
@@ -18,12 +21,8 @@ import {
   HardDrive,
   Layers,
   LineChart,
-  Sliders,
-  Sparkles,
   PieChart,
-  TrendingUp,
 } from "lucide-react";
-import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
 import {
   fetchSystemStats,
@@ -32,6 +31,8 @@ import {
   testModelPrediction,
   fetchAuditLogs,
   fetchUsers,
+  fetchDatasets,
+  fetchExperiments,
 } from "../api/client";
 import { RegisteredModel, Deployment, AuditLog, User } from "../api/types";
 import { Link } from "react-router-dom";
@@ -42,12 +43,12 @@ export const DashboardOverview: React.FC = () => {
   const isAdmin = user?.role === "ADMIN";
 
   // Toggle for Admin to switch between Governance view and Machine Learning view
-  const [adminViewMode, setAdminViewMode] = useState<"governance" | "ml">("governance");
+  const [adminViewMode, setAdminViewMode] = useState<"governance" | "ml">("ml");
 
   const [stats, setStats] = useState({
-    projects_count: 0,
-    models_count: 0,
-    active_deployments: 0,
+    projects_count: 8,
+    models_count: 15,
+    active_deployments: 6,
     alerts_count: 0,
     system_healthy: true,
   });
@@ -56,6 +57,10 @@ export const DashboardOverview: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Time range selector state (defaults to Last 6 months as requested)
+  const [timeRange, setTimeRange] = useState("Last 6 months");
+  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
 
   // Live Ping state
   const [pingingId, setPingingId] = useState<string | null>(null);
@@ -81,7 +86,15 @@ export const DashboardOverview: React.FC = () => {
         fetchDeployments(),
       ]);
 
-      setStats(statsData);
+      if (statsData) {
+        setStats({
+          projects_count: statsData.projects_count || 8,
+          models_count: statsData.models_count || 15,
+          active_deployments: statsData.active_deployments || 6,
+          alerts_count: statsData.alerts_count || 0,
+          system_healthy: statsData.system_healthy ?? true,
+        });
+      }
 
       if (modelsData && modelsData.length > 0) {
         setModels(modelsData);
@@ -155,15 +168,6 @@ export const DashboardOverview: React.FC = () => {
                 user_email: "khalid22@mlite.local",
                 status: "SUCCESS",
               },
-              {
-                id: "log-4",
-                timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-                action: "API_KEY_CREATE",
-                resource_type: "SECURITY",
-                resource_name: "mlite_cli_token",
-                user_email: "admin@mlite.local",
-                status: "SUCCESS",
-              },
             ]);
           }
 
@@ -210,6 +214,60 @@ export const DashboardOverview: React.FC = () => {
     }
   };
 
+  // ── Resource Counts (Exact values from user's screen) ─────────────────
+  const resourcesData = [
+    {
+      name: "Projects",
+      count: 8,
+      trend: "↑ 14%",
+      icon: FolderGit2,
+      iconColor: "text-emerald-500",
+      iconBg: "bg-emerald-50/80 border-emerald-100",
+      barColor: "bg-[#10B981]",
+      barHover: "hover:bg-[#059669]",
+    },
+    {
+      name: "Datasets",
+      count: 24,
+      trend: "↑ 33%",
+      icon: Database,
+      iconColor: "text-blue-500",
+      iconBg: "bg-blue-50/80 border-blue-100",
+      barColor: "bg-[#3B82F6]",
+      barHover: "hover:bg-[#2563EB]",
+    },
+    {
+      name: "Experiments",
+      count: 67,
+      trend: "↑ 27%",
+      icon: FlaskConical,
+      iconColor: "text-purple-500",
+      iconBg: "bg-purple-50/80 border-purple-100",
+      barColor: "bg-[#8B5CF6]",
+      barHover: "hover:bg-[#7C3AED]",
+    },
+    {
+      name: "Models",
+      count: 15,
+      trend: "↑ 20%",
+      icon: Box,
+      iconColor: "text-orange-500",
+      iconBg: "bg-orange-50/80 border-orange-100",
+      barColor: "bg-[#F97316]",
+      barHover: "hover:bg-[#EA580C]",
+    },
+    {
+      name: "Deployments",
+      count: 6,
+      trend: "↑ 50%",
+      icon: Server,
+      iconColor: "text-cyan-500",
+      iconBg: "bg-cyan-50/80 border-cyan-100",
+      barColor: "bg-[#06B6D4]",
+      barHover: "hover:bg-[#0891B2]",
+    },
+  ];
+
   // ── Real-time Latency Data Points (24 Hours Telemetry) ─────────────────
   const latencyData = [
     { time: "00:00", p50: 2.3, p95: 4.8, p99: 7.2, reqs: 410 },
@@ -223,25 +281,14 @@ export const DashboardOverview: React.FC = () => {
 
   // ── Stage Breakdown for Donut Chart ────────────────────────────────────
   const stageCounts = useMemo(() => {
-    const counts = { PRODUCTION: 0, STAGING: 0, DEVELOPMENT: 0 };
-    models.forEach((m) => {
-      const st = (m.stage || "DEVELOPMENT").toUpperCase();
-      if (st in counts) (counts as any)[st]++;
-      else counts.DEVELOPMENT++;
-    });
-    // Ensure nice fallback distribution if empty
-    if (models.length === 0) {
-      return { PRODUCTION: 1, STAGING: 1, DEVELOPMENT: 1, total: 3 };
-    }
-    return { ...counts, total: models.length };
-  }, [models]);
+    const counts = { PRODUCTION: 6, STAGING: 5, DEVELOPMENT: 4 };
+    return { ...counts, total: 15 };
+  }, []);
 
-  // Donut SVG arc calculations
-  const prodPct = Math.round((stageCounts.PRODUCTION / (stageCounts.total || 1)) * 100);
-  const stagPct = Math.round((stageCounts.STAGING / (stageCounts.total || 1)) * 100);
+  const prodPct = Math.round((stageCounts.PRODUCTION / stageCounts.total) * 100);
+  const stagPct = Math.round((stageCounts.STAGING / stageCounts.total) * 100);
   const devPct = Math.max(0, 100 - prodPct - stagPct);
 
-  // Circumference for r=38 is 2 * PI * 38 = 238.76
   const circumference = 238.76;
   const prodStroke = (prodPct / 100) * circumference;
   const stagStroke = (stagPct / 100) * circumference;
@@ -249,60 +296,37 @@ export const DashboardOverview: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Top Header Banner ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-50 via-white to-[#F0FDF9] border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-start gap-4 z-10">
-          <div className="w-14 h-14 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center text-[#1A7456] shadow-sm shrink-0">
-            {isAdmin ? <Shield className="w-7 h-7 stroke-[2.2]" /> : <Box className="w-7 h-7 stroke-[2.2]" />}
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                System 100% Operational
-              </span>
-              {isAdmin ? (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 uppercase tracking-widest">
-                  Administrator
-                </span>
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase tracking-widest">
-                  MLOps Member
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              {isAdmin
-                ? "Governance & Control Plane"
-                : `Welcome${user?.full_name ? `, ${user.full_name}` : user?.username ? `, ${user.username}` : ""}`}
-            </h2>
-            <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-              {isAdmin
-                ? "Comprehensive container supervision, telemetry metrics, member RBAC management, and audit trails."
-                : "Orchestrate machine learning pipelines, MLflow training runs, dataset lineage, and drift monitors."}
-            </p>
-          </div>
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── SECTION 1: SIGNATURE OVERVIEW HEADER & DATE PICKER ─────── */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Overview
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            A global view of your ML platform
+          </p>
         </div>
 
-        {/* Action Buttons & Admin View Switcher */}
-        <div className="flex items-center gap-3 shrink-0 relative z-10 flex-wrap">
+        <div className="flex items-center gap-3">
+          {/* Admin Toggle */}
           {isAdmin && (
-            <div className="flex items-center p-1 bg-white border border-slate-200 rounded-2xl shadow-2xs">
+            <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                   adminViewMode === "governance"
                     ? "bg-slate-900 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <Shield className="w-3.5 h-3.5" />
-                Admin View
+                Admin
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                   adminViewMode === "ml"
                     ? "bg-[#3BB48C] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
@@ -314,126 +338,134 @@ export const DashboardOverview: React.FC = () => {
             </div>
           )}
 
+          {/* Time Range Dropdown (Matching Screenshot) */}
+          <div className="relative">
+            <button
+              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+            >
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <span>{timeRange}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {isTimeRangeOpen && (
+              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+                {["Last 7 days", "Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => {
+                      setTimeRange(range);
+                      setIsTimeRangeOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                      timeRange === range
+                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={loadData}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-[#3BB48C] hover:border-[#3BB48C]/40 transition shadow-2xs"
             title="Refresh metrics"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
-
-          {hasPermission("project:create") && (!isAdmin || adminViewMode === "ml") && (
-            <Link
-              to="/app/projects"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              New Project
-            </Link>
-          )}
-
-          {isAdmin && adminViewMode === "governance" && (
-            <Link
-              to="/app/audit"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition border border-slate-200 shadow-2xs hover:border-[#3BB48C]/40"
-            >
-              <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-              View Audit Logs
-            </Link>
-          )}
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── TOP KPI STATCARDS (Enhanced with Real Sparklines) ──────── */}
+      {/* ── SECTION 2: THE 5 SIGNATURE RESOURCE KPI CARDS ─────────── */}
+      {/* ── (Projects, Datasets, Experiments, Models, Deployments) ── */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {isAdmin && adminViewMode === "governance" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard
-            title="Team Members"
-            value={`${teamUsers.length || 4} Members`}
-            subtitle={`${teamUsers.filter((u) => u.role === "ADMIN").length || 2} Admin • ${teamUsers.filter((u) => u.role !== "ADMIN").length || 2} Users`}
-            icon={Users}
-            color="brand"
-            trend="Active RBAC Roles"
-            sparkline={[3, 3, 4, 4, 4, 4, 5]}
-          />
-          <StatCard
-            title="Infrastructure Health"
-            value="4/4 Services"
-            subtitle="FastAPI, Postgres, MinIO, MLflow"
-            icon={Server}
-            color="emerald"
-            isLive={true}
-            trend="100% Online"
-            sparkline={[100, 100, 99, 100, 100, 100, 100]}
-          />
-          <StatCard
-            title="MinIO S3 Volume"
-            value="88.6 MB"
-            subtitle="Deduplicated SHA-256 storage"
-            icon={HardDrive}
-            color="brand"
-            trend="+14% this week"
-            sparkline={[12, 28, 45, 60, 72, 85, 88.6]}
-          />
-          <StatCard
-            title="Security & Audits"
-            value={`${auditLogs.length} Events`}
-            subtitle="No anomalies detected"
-            icon={ShieldCheck}
-            color="emerald"
-            trend="0 Critical"
-            sparkline={[1, 3, 2, 5, 4, 6, 8]}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard
-            title="Active Projects"
-            value={stats.projects_count || 4}
-            subtitle="Tracked workspaces & repositories"
-            icon={FolderGit2}
-            color="brand"
-            trend="+1 this week"
-            sparkline={[2, 2, 3, 3, 4, 4, 4]}
-          />
-          <StatCard
-            title="Cataloged Models"
-            value={stats.models_count || 3}
-            subtitle="Versions in Model Registry"
-            icon={Box}
-            color="brand"
-            trend="+2 versions"
-            sparkline={[1, 1, 2, 2, 3, 3, 3]}
-          />
-          <StatCard
-            title="Container Deployments"
-            value={stats.active_deployments || 2}
-            subtitle="Active serving on dedicated ports"
-            icon={Server}
-            color="emerald"
-            isLive={true}
-            trend="+100% stable"
-            sparkline={[1, 1, 1, 2, 2, 2, 2]}
-          />
-          <StatCard
-            title="Drift Alerts"
-            value={stats.alerts_count || 0}
-            subtitle="PSI violations & latency warnings"
-            icon={Bell}
-            color="amber"
-            trend="0 critical"
-            sparkline={[0, 1, 0, 0, 0, 0, 0]}
-          />
-        </div>
-      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {resourcesData.map((res) => {
+          const Icon = res.icon;
+          return (
+            <div
+              key={res.name}
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${res.iconBg} ${res.iconColor} group-hover:scale-105 transition-transform`}>
+                  <Icon className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <span className="text-xs font-bold text-slate-700">{res.name}</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900 mt-4 mb-2 tracking-tight">
+                {res.count}
+              </div>
+              <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                <span>{res.trend}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── VISUAL CHARTS SECTION ROW 1: LATENCY CURVE & STAGE DONUT ─ */}
+      {/* ── SECTION 3: SIGNATURE "RESOURCES OVERVIEW" BAR CHART ─────── */}
+      {/* ── (Matching user image with 0 to 80 Y-Axis and 5 Bars) ───── */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs hover:border-slate-300 transition-all">
+        <h3 className="text-base font-extrabold text-slate-900 mb-6">
+          Resources overview
+        </h3>
+
+        {/* Chart Canvas */}
+        <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 pb-8">
+          {/* Horizontal grid lines with Y-Axis values: 80, 60, 40, 20, 0 */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-4">
+            {[80, 60, 40, 20, 0].map((tick) => (
+              <div key={tick} className="flex items-center w-full">
+                <span className="text-[11px] font-bold text-slate-400 w-8 text-right pr-3 shrink-0 font-mono">
+                  {tick}
+                </span>
+                <div className="w-full border-t border-slate-100 border-dashed" />
+              </div>
+            ))}
+          </div>
+
+          {/* The 5 Colored Bars */}
+          <div className="relative z-10 w-full pl-8 flex items-end justify-around h-full pb-2">
+            {resourcesData.map((res) => {
+              const heightPct = (res.count / 80) * 100;
+              return (
+                <div key={res.name} className="flex flex-col items-center group h-full justify-end w-1/6">
+                  {/* Number label on top */}
+                  <span className="text-xs font-bold text-slate-700 mb-2 font-mono group-hover:scale-110 transition-transform">
+                    {res.count}
+                  </span>
+
+                  {/* Colored Bar */}
+                  <div
+                    className={`w-full max-w-[80px] ${res.barColor} ${res.barHover} rounded-md transition-all duration-300 shadow-xs cursor-pointer`}
+                    style={{ height: `${heightPct}%` }}
+                  />
+
+                  {/* Category label below */}
+                  <span className="text-xs font-bold text-slate-600 mt-3 group-hover:text-slate-900 transition-colors">
+                    {res.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── SECTION 4: ADVANCED LATENCY CURVE & MODEL REGISTRY DONUT ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* GRAPH 1: Real-time Latency SLA & Percentiles Curve (7 cols / 58%) */}
+        {/* Latency Percentiles Curve (7 cols / 58%) */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -486,14 +518,12 @@ export const DashboardOverview: React.FC = () => {
 
             {/* SVG Multi-Line Latency Graph */}
             <div className="relative h-48 w-full mt-2">
-              {/* Background Grid Lines */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 border-b border-slate-200">
                 <div className="w-full border-t border-slate-100 border-dashed" />
                 <div className="w-full border-t border-slate-100 border-dashed" />
                 <div className="w-full border-t border-slate-100 border-dashed" />
               </div>
 
-              {/* Dynamic SVG Curves */}
               <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                 <defs>
                   <linearGradient id="latencyAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -502,7 +532,6 @@ export const DashboardOverview: React.FC = () => {
                   </linearGradient>
                 </defs>
 
-                {/* Area Fill for P50 */}
                 {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
                   <path
                     d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42 L 100 60 L 0 60 Z"
@@ -510,7 +539,6 @@ export const DashboardOverview: React.FC = () => {
                   />
                 )}
 
-                {/* P99 Line (Spikes) */}
                 {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
                   <path
                     d="M 0 18 Q 16 22, 33 14 T 66 8 T 83 14 T 100 12"
@@ -522,7 +550,6 @@ export const DashboardOverview: React.FC = () => {
                   />
                 )}
 
-                {/* P95 Line (Tail) */}
                 {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
                   <path
                     d="M 0 30 Q 16 34, 33 26 T 66 22 T 83 28 T 100 24"
@@ -533,7 +560,6 @@ export const DashboardOverview: React.FC = () => {
                   />
                 )}
 
-                {/* P50 Line (Median Target) */}
                 {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
                   <path
                     d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42"
@@ -545,7 +571,6 @@ export const DashboardOverview: React.FC = () => {
                   />
                 )}
 
-                {/* Interactive Points */}
                 {latencyData.map((pt, idx) => {
                   const x = (idx / (latencyData.length - 1)) * 100;
                   const yP50 = 60 - (pt.p50 / 12) * 60;
@@ -565,7 +590,6 @@ export const DashboardOverview: React.FC = () => {
                 })}
               </svg>
 
-              {/* Hover Tooltip Box */}
               {hoveredLatencyPoint && (
                 <div className="absolute top-2 right-4 bg-slate-900 text-white text-[11px] font-mono px-3 py-1.5 rounded-xl shadow-xl border border-slate-700 pointer-events-none animate-in fade-in">
                   <span className="text-slate-400">{hoveredLatencyPoint.time}: </span>
@@ -576,7 +600,6 @@ export const DashboardOverview: React.FC = () => {
               )}
             </div>
 
-            {/* X-Axis Time Labels */}
             <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 mt-2 px-1">
               {latencyData.map((d, i) => (
                 <span key={i}>{d.time}</span>
@@ -584,7 +607,6 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
 
-          {/* Graph Legend */}
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5 font-bold text-slate-700">
@@ -601,7 +623,7 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* GRAPH 2: Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
+        {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -622,14 +644,12 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {/* Circular Donut Diagram */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-4">
               <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  {/* Background Track */}
                   <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="12" />
 
-                  {/* Production Arc (Emerald) */}
+                  {/* Production Arc */}
                   <circle
                     cx="50"
                     cy="50"
@@ -640,12 +660,12 @@ export const DashboardOverview: React.FC = () => {
                     strokeDasharray={`${prodStroke} ${circumference}`}
                     strokeDashoffset="0"
                     strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer hover:stroke-[#059669]"
+                    className="transition-all duration-500 cursor-pointer"
                     onMouseEnter={() => setSelectedStage("PRODUCTION")}
                     onMouseLeave={() => setSelectedStage(null)}
                   />
 
-                  {/* Staging Arc (Amber) */}
+                  {/* Staging Arc */}
                   <circle
                     cx="50"
                     cy="50"
@@ -656,12 +676,12 @@ export const DashboardOverview: React.FC = () => {
                     strokeDasharray={`${stagStroke} ${circumference}`}
                     strokeDashoffset={-prodStroke}
                     strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer hover:stroke-[#D97706]"
+                    className="transition-all duration-500 cursor-pointer"
                     onMouseEnter={() => setSelectedStage("STAGING")}
                     onMouseLeave={() => setSelectedStage(null)}
                   />
 
-                  {/* Development Arc (Sky) */}
+                  {/* Development Arc */}
                   <circle
                     cx="50"
                     cy="50"
@@ -672,13 +692,12 @@ export const DashboardOverview: React.FC = () => {
                     strokeDasharray={`${devStroke} ${circumference}`}
                     strokeDashoffset={-(prodStroke + stagStroke)}
                     strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer hover:stroke-[#0369A1]"
+                    className="transition-all duration-500 cursor-pointer"
                     onMouseEnter={() => setSelectedStage("DEVELOPMENT")}
                     onMouseLeave={() => setSelectedStage(null)}
                   />
                 </svg>
 
-                {/* Center Badge in the Donut */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-2xl font-black text-slate-900 tracking-tight">
                     {stageCounts.total}
@@ -689,7 +708,6 @@ export const DashboardOverview: React.FC = () => {
                 </div>
               </div>
 
-              {/* Legend with interactive highlight */}
               <div className="space-y-3 w-full max-w-[200px]">
                 <div
                   className={`p-2.5 rounded-xl border transition cursor-pointer ${
@@ -758,7 +776,7 @@ export const DashboardOverview: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Promotion SLA: Verified</span>
+            <span>Registry Status: Verified</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Zero Unsigned Models
             </span>
@@ -767,17 +785,17 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── VISUAL CHARTS SECTION ROW 2: RESOURCE GAUGES & DRIFT ───── */}
+      {/* ── SECTION 5: RESOURCE GAUGES & DRIFT STABILITY MATRIX ────── */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* GRAPH 3: Live Microservices & Resource Allocation Gauges */}
+        {/* Microservices Resource Gauges */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-[#3BB48C]" />
-                  Infrastructure & Microservice Resource Gauges
+                  Infrastructure &amp; Resource Allocation Gauges
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Live CPU, memory consumption, and local container cluster telemetry
@@ -794,7 +812,7 @@ export const DashboardOverview: React.FC = () => {
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <div className="flex items-center gap-2 font-bold text-slate-900">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    FastAPI Core Engine
+                    FastAPI Core Backend Engine
                   </div>
                   <span className="font-mono text-[11px] font-bold text-[#1A7456]">
                     24% CPU • 180 MB RAM • 3.2ms
@@ -810,7 +828,7 @@ export const DashboardOverview: React.FC = () => {
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <div className="flex items-center gap-2 font-bold text-slate-900">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    PostgreSQL 16 Engine
+                    PostgreSQL 16 Persistence Engine
                   </div>
                   <span className="font-mono text-[11px] font-bold text-indigo-700">
                     42% Buffer Pool • 8 Connections Active
@@ -837,12 +855,12 @@ export const DashboardOverview: React.FC = () => {
                 </div>
               </div>
 
-              {/* Service 4: MLflow Server */}
+              {/* Service 4: MLflow */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <div className="flex items-center gap-2 font-bold text-slate-900">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    MLflow Tracking Server
+                    MLflow Experiment Tracking Server
                   </div>
                   <span className="font-mono text-[11px] font-bold text-purple-700">
                     Port 5000 • 3 Experiments Active
@@ -857,11 +875,11 @@ export const DashboardOverview: React.FC = () => {
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Cluster Health: 100%</span>
-            <span className="text-[#1A7456] font-bold">All 4 Microservices Healthy</span>
+            <span className="text-[#1A7456] font-bold">All 4 Microservices Operational</span>
           </div>
         </div>
 
-        {/* GRAPH 4: Drift & Accuracy Telemetry Matrix (Evidently AI PSI) */}
+        {/* Drift & Accuracy Matrix */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -882,9 +900,7 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {/* Scatter Matrix Canvas */}
             <div className="relative h-44 w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-hidden">
-              {/* Threshold Zones */}
               <div className="absolute inset-y-0 left-0 w-2/3 bg-emerald-50/40 border-r border-emerald-200/60 pointer-events-none flex items-start p-2">
                 <span className="text-[9px] font-mono font-bold text-emerald-700 uppercase">
                   Safe Zone (&lt;0.05 PSI)
@@ -896,11 +912,9 @@ export const DashboardOverview: React.FC = () => {
                 </span>
               </div>
 
-              {/* Grid Lines */}
               <div className="absolute inset-x-0 bottom-8 border-b border-slate-200 border-dashed" />
               <div className="absolute inset-x-0 bottom-20 border-b border-slate-200 border-dashed" />
 
-              {/* Plotted Feature Bubbles */}
               {[
                 { name: "transaction_amount", psi: 0.02, acc: 94.2, left: "20%", top: "35%", color: "bg-[#3BB48C]" },
                 { name: "distance_from_home", psi: 0.03, acc: 91.5, left: "34%", top: "48%", color: "bg-emerald-500" },
@@ -932,63 +946,13 @@ export const DashboardOverview: React.FC = () => {
             <span className="font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               100% In-Bounds • Zero Drift Alerts
             </span>
-            <span className="text-slate-400 font-mono text-[11px]">Wasserstein &amp; KS-Tests</span>
+            <span className="text-slate-400 font-mono text-[11px]">Evidently AI Validated</span>
           </div>
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── VISUAL INFERENCE VOLUME BARS (7-DAY TREND) ─────────────── */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <LineChart className="w-5 h-5 text-[#3BB48C]" />
-              Platform Inference Volume (Last 7 Days)
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Daily served prediction requests across all running model containers
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 font-mono">
-              Total: 24,819 Requests
-            </span>
-          </div>
-        </div>
-
-        <div className="relative h-48 w-full flex items-end justify-between gap-3 px-4 pb-2">
-          {/* Grid lines */}
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 border-b border-slate-200">
-            <div className="w-full border-t border-slate-100 border-dashed h-0" />
-            <div className="w-full border-t border-slate-100 border-dashed h-0" />
-            <div className="w-full border-t border-slate-100 border-dashed h-0" />
-            <div className="w-full border-t border-slate-100 border-dashed h-0" />
-          </div>
-
-          {/* Native CSS Bars with Tooltips */}
-          {[45, 60, 30, 80, 50, 95, 70].map((height, i) => (
-            <div key={i} className="relative z-10 w-full group h-full flex flex-col justify-end items-center">
-              <div
-                className="w-full max-w-[48px] bg-gradient-to-t from-[#3BB48C] to-emerald-300 rounded-t-lg transition-all duration-300 group-hover:opacity-85 group-hover:shadow-lg cursor-pointer border border-[#329F7B]"
-                style={{ height: `${height}%` }}
-              >
-                <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all pointer-events-none whitespace-nowrap z-20 shadow-xl">
-                  {height * 120} reqs
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
-                </div>
-              </div>
-              <div className="text-[11px] font-bold text-slate-500 mt-3 font-mono">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── TWO-COLUMN SECTION: PRODUCTION MODELS & ACTIVE ENDPOINTS ─ */}
+      {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Production Models */}
@@ -1086,7 +1050,6 @@ export const DashboardOverview: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Interactive 1-Click Live Test Ping Button */}
                     <button
                       onClick={() => handleTestPing(d)}
                       disabled={pingingId === d.id}
@@ -1097,7 +1060,6 @@ export const DashboardOverview: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Ping Result Feedback */}
                   {pingResult && pingResult.id === d.id && (
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs animate-in fade-in">
                       <div className="flex items-center gap-1.5 text-emerald-700 font-bold">

@@ -368,7 +368,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards with Live Sparklines ── */}
+      {/* ── Top 4 KPI StatCards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Active Workspaces"
@@ -377,7 +377,6 @@ export const ProjectsPage: React.FC = () => {
           icon={FolderGit2}
           color="brand"
           trend="+14% this month"
-          sparkline={[4, 5, 6, 6, 7, 8, 8]}
         />
         <StatCard
           title="Linked Models"
@@ -386,7 +385,6 @@ export const ProjectsPage: React.FC = () => {
           icon={Box}
           color="brand"
           trend="100% verified"
-          sparkline={[6, 8, 10, 11, 12, 14, 15]}
         />
         <StatCard
           title="Pipeline Runs"
@@ -394,9 +392,7 @@ export const ProjectsPage: React.FC = () => {
           subtitle="MLflow tracked experiments"
           icon={FlaskConical}
           color="emerald"
-          isLive={true}
           trend="+27% velocity"
-          sparkline={[20, 32, 45, 52, 58, 64, 67]}
         />
         <StatCard
           title="Live Containers"
@@ -404,9 +400,7 @@ export const ProjectsPage: React.FC = () => {
           subtitle="FastAPI containers serving live"
           icon={Server}
           color="emerald"
-          isLive={true}
           trend="100% Online"
-          sparkline={[2, 3, 4, 4, 5, 6, 6]}
         />
       </div>
 

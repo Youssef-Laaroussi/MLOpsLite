@@ -175,7 +175,7 @@ export const SignInPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right Panel: Natural Living Visual Décor (Pure Art & Motion - No Text, Pure Atmosphere) ── */}
+      {/* ── Right Panel: Natural Living Visual Decor (Pure Art & Motion - No Text, Pure Atmosphere) ── */}
       <div
         className="hidden lg:flex lg:w-[52%] relative overflow-hidden items-center justify-center select-none"
         style={{
@@ -289,7 +289,7 @@ export const SignInPage: React.FC = () => {
           />
         </div>
 
-        {/* ── Central Sacred Geometric Gyroscope (Pure Natural Décor - Zero Text) ── */}
+        {/* ── Central Sacred Geometric Gyroscope (Pure Natural Decor - Zero Text) ── */}
         <div
           className={`relative z-10 flex flex-col items-center justify-center p-8 transition-all duration-1000 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"

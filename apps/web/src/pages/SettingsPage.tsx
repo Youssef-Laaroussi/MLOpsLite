@@ -41,7 +41,7 @@ export const SettingsPage: React.FC = () => {
 
   // Stack Integrity state (Admin only)
   const [checkingInfra, setCheckingInfra] = useState(false);
-  const [lastCheckTime, setLastCheckTime] = useState<string>("À l'instant");
+  const [lastCheckTime, setLastCheckTime] = useState<string>("Just now");
   const [latencyMs, setLatencyMs] = useState<number>(3);
 
   const loadKeys = async () => {
@@ -53,7 +53,7 @@ export const SettingsPage: React.FC = () => {
       setApiKeys([
         {
           id: "key-01",
-          name: "CLI Token Principal",
+          name: "Primary CLI Token",
           key_prefix: "mlite_live_a89f",
           created_at: new Date().toISOString(),
           is_revoked: false,

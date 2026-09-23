@@ -226,7 +226,7 @@ export const DatasetsPage: React.FC = () => {
     downloadAnchor.click();
     downloadAnchor.remove();
 
-    setExportSuccess(`Échantillon de ${dataset.name} exporté avec succès !`);
+    setExportSuccess(`Sample of ${dataset.name} exported successfully!`);
     setTimeout(() => setExportSuccess(null), 3000);
   };
 
@@ -277,7 +277,7 @@ export const DatasetsPage: React.FC = () => {
             </span>
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            Profilage statistique, contrôle de complétude, traçabilité MinIO S3 et lignée d'entraînement des modèles
+            Statistical profiling, completeness checks, MinIO S3 traceability, and model training lineage
           </p>
         </div>
 
@@ -286,39 +286,39 @@ export const DatasetsPage: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-xs hover:border-[#3BB48C]/40"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
-          Actualiser les métadonnées
+          Refresh Metadata
         </button>
       </div>
 
       {/* KPI Cards (StatCards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
-          title="Datasets Indexés"
+          title="Indexed Datasets"
           value={datasets.length}
-          subtitle="Catalogués & versionnés SHA-256"
+          subtitle="Cataloged & versioned SHA-256"
           icon={Database}
           color="brand"
         />
         <StatCard
-          title="Lignes Tabulaires"
+          title="Tabular Rows"
           value={totalRows > 0 ? `${(totalRows / 1000).toFixed(0)}k` : "693k"}
-          subtitle="Données d'entraînement & validation"
+          subtitle="Training & validation records"
           icon={TableIcon}
           color="brand"
-          trend="+18% ce mois"
+          trend="+18% this month"
         />
         <StatCard
-          title="Score de Qualité"
+          title="Quality Score"
           value={`${avgQualityScore}%`}
-          subtitle="Taux moyen de complétude & hygiène"
+          subtitle="Average completeness & hygiene"
           icon={ShieldCheck}
           color="emerald"
           isLive={true}
         />
         <StatCard
-          title="Volume MinIO S3"
+          title="MinIO S3 Volume"
           value={formatBytes(totalSizeBytes || 86700000)}
-          subtitle="Stockage dédupliqué & synchronisé"
+          subtitle="Deduplicated & synchronized storage"
           icon={Server}
           color="brand"
         />
@@ -330,14 +330,14 @@ export const DatasetsPage: React.FC = () => {
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Database className="w-5 h-5 text-[#3BB48C]" />
-              Évolution du Volume de Données (MinIO S3 Trend)
+              Dataset Storage Volume Trend (MinIO S3)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Historique de synchronisation et déduplication par hachage SHA-256
+              Synchronization history and deduplication via SHA-256 hashing
             </p>
           </div>
           <span className="text-xs font-bold text-[#1A7456] bg-[#EBF8F4] border border-[#BCE9DA] px-3 py-1 rounded-full">
-            30 Derniers Jours
+            Last 30 Days
           </span>
         </div>
 
@@ -389,11 +389,11 @@ export const DatasetsPage: React.FC = () => {
 
           {/* X Axis Labels */}
           <div className="absolute bottom-0 inset-x-2 flex justify-between text-[10px] font-bold text-slate-400">
-            <span>Semaine 1</span>
-            <span>Semaine 2</span>
-            <span>Semaine 3</span>
-            <span>Semaine 4</span>
-            <span>Aujourd'hui</span>
+            <span>Week 1</span>
+            <span>Week 2</span>
+            <span>Week 3</span>
+            <span>Week 4</span>
+            <span>Today</span>
           </div>
         </div>
       </div>
@@ -407,7 +407,7 @@ export const DatasetsPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher par nom de dataset, description ou colonne..."
+            placeholder="Search by dataset name, description or column..."
             className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
           />
         </div>
@@ -424,22 +424,22 @@ export const DatasetsPage: React.FC = () => {
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
               }`}
             >
-              {fmt === "ALL" ? "Tous les formats" : fmt}
+              {fmt === "ALL" ? "All formats" : fmt}
             </button>
           ))}
         </div>
 
         {/* Sort dropdown */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-bold text-slate-400">Trier par:</span>
+          <span className="text-xs font-bold text-slate-400">Sort by:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
             className="text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
           >
-            <option value="date">Date d'enregistrement</option>
-            <option value="rows">Nombre de lignes</option>
-            <option value="size">Taille de fichier</option>
+            <option value="date">Registration date</option>
+            <option value="rows">Row count</option>
+            <option value="size">File size</option>
           </select>
         </div>
       </div>
@@ -449,11 +449,11 @@ export const DatasetsPage: React.FC = () => {
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Jeux de Données Répertoriés ({filteredDatasets.length})
+              Cataloged Datasets ({filteredDatasets.length})
             </span>
           </div>
           <span className="text-xs text-slate-400 font-mono">
-            {filteredDatasets.reduce((sum, d) => sum + (d.row_count || 0), 0).toLocaleString()} lignes totales
+            {filteredDatasets.reduce((sum, d) => sum + (d.row_count || 0), 0).toLocaleString()} total rows
           </span>
         </div>
 
@@ -463,18 +463,18 @@ export const DatasetsPage: React.FC = () => {
               <tr>
                 <th className="px-6 py-3.5">Dataset & SHA-256</th>
                 <th className="px-4 py-3.5">Format</th>
-                <th className="px-4 py-3.5">Volumétrie</th>
-                <th className="px-4 py-3.5">Qualité</th>
-                <th className="px-4 py-3.5">Lignée Modèles</th>
+                <th className="px-4 py-3.5">Volume</th>
+                <th className="px-4 py-3.5">Quality</th>
+                <th className="px-4 py-3.5">Model Lineage</th>
                 <th className="px-4 py-3.5">Date</th>
-                <th className="px-6 py-3.5 text-right">Actions Analyste</th>
+                <th className="px-6 py-3.5 text-right">Analyst Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredDatasets.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                    Aucun dataset ne correspond à votre recherche.
+                    No dataset matches your search criteria.
                   </td>
                 </tr>
               ) : (
@@ -496,7 +496,7 @@ export const DatasetsPage: React.FC = () => {
                             )}
                           </div>
                           <p className="text-xs text-slate-500 line-clamp-1 max-w-sm mt-0.5">
-                            {d.description || "Aucune description fournie"}
+                            {d.description || "No description provided"}
                           </p>
                           {d.hash_sha256 && (
                             <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-mono text-slate-400">
@@ -505,7 +505,7 @@ export const DatasetsPage: React.FC = () => {
                               </span>
                               <button
                                 onClick={() => handleCopyHash(d.hash_sha256)}
-                                title="Copier le hash SHA-256"
+                                title="Copy SHA-256 hash"
                                 className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
                               >
                                 {copiedHash === d.hash_sha256 ? (
@@ -527,10 +527,10 @@ export const DatasetsPage: React.FC = () => {
                       </span>
                     </td>
 
-                    {/* Volumétrie (Rows & Size) */}
+                    {/* Volume (Rows & Size) */}
                     <td className="px-4 py-4">
                       <div className="font-bold text-slate-800 text-xs">
-                        {d.row_count ? `${d.row_count.toLocaleString()} lignes` : "Non spécifié"}
+                        {d.row_count ? `${d.row_count.toLocaleString()} rows` : "Not specified"}
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono mt-0.5">
                         {d.column_count ? `${d.column_count} cols • ` : ""}
@@ -538,7 +538,7 @@ export const DatasetsPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Qualité / Health */}
+                    {/* Quality / Health */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -546,7 +546,7 @@ export const DatasetsPage: React.FC = () => {
                           {d.quality_score ? `${d.quality_score}%` : "98.5%"}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 block mt-1">0 nulls critiques</span>
+                      <span className="text-[10px] text-slate-400 block mt-1">0 critical nulls</span>
                     </td>
 
                     {/* Lineage */}
@@ -564,7 +564,7 @@ export const DatasetsPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">Aucun modèle lié</span>
+                        <span className="text-xs text-slate-400 italic">No linked models</span>
                       )}
                     </td>
 
@@ -585,25 +585,25 @@ export const DatasetsPage: React.FC = () => {
                             setActiveInspectorTab("preview");
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition shadow-2xs hover:border-[#3BB48C]/40"
-                          title="Aperçu et profilage statistique"
+                          title="Preview and statistical profiling"
                         >
                           <Eye className="w-3.5 h-3.5 text-[#3BB48C]" />
-                          Inspecter
+                          Inspect
                         </button>
 
                         <button
                           onClick={() => setLineageDataset(d)}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
-                          title="Voir la lignée de données"
+                          title="View data lineage"
                         >
                           <GitBranch className="w-3.5 h-3.5" />
-                          Lignée
+                          Lineage
                         </button>
 
                         <button
                           onClick={() => handleExportSample(d)}
                           className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Exporter un échantillon JSON"
+                          title="Export JSON sample"
                         >
                           <Download className="w-3.5 h-3.5" />
                         </button>

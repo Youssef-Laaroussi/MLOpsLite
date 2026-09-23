@@ -161,6 +161,9 @@ export const ProjectsPage: React.FC = () => {
   // Velocity chart filter
   const [hoveredWeek, setHoveredWeek] = useState<{ week: string; commits: number; runs: number } | null>(null);
 
+  // Project activity chart hover point (from user's design reference)
+  const [hoveredActivity, setHoveredActivity] = useState<{ month: string; value: number } | null>(null);
+
   const loadProjects = async () => {
     setLoading(true);
     try {
@@ -279,6 +282,24 @@ export const ProjectsPage: React.FC = () => {
     { week: "Current", commits: 48, runs: 72 },
   ];
 
+  // Exact Project Activity monthly data from user's design reference (Apr - Sep)
+  const activityData = [
+    { month: "Apr", value: 18, x: 55, y: 138.5 },
+    { month: "May", value: 27, x: 139, y: 122.75 },
+    { month: "Jun", value: 35, x: 223, y: 108.75 },
+    { month: "Jul", value: 31, x: 307, y: 115.75 },
+    { month: "Aug", value: 44, x: 391, y: 93.0 },
+    { month: "Sep", value: 52, x: 475, y: 79.0 },
+  ];
+
+  // Exact Project Status Counts from user reference (8 total projects: 5 Active, 2 Completed, 1 Archived)
+  const totalProjectsCount = projects.length || 8;
+  const statusBreakdown = {
+    active: { count: 5, pct: 62 },
+    completed: { count: 2, pct: 25 },
+    archived: { count: 1, pct: 13 },
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
@@ -317,11 +338,10 @@ export const ProjectsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
-                      timeRange === range
+                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
                         ? "bg-[#EBF8F4] text-[#1A7456]"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -594,6 +614,213 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Additional Analytics Row: Project activity (Line Chart) & Projects by status (Donut) ── */}
+      {/* Exactly as requested in user's design reference */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* CARD 1: Project activity */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-2">
+              Project activity
+            </h3>
+
+            <div className="relative w-full h-56 pt-2">
+              <svg viewBox="0 0 520 215" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                {/* Y-Axis Grid Lines & Tick Labels (80, 60, 40, 20, 0) */}
+                {[
+                  { val: 80, y: 30 },
+                  { val: 60, y: 65 },
+                  { val: 40, y: 100 },
+                  { val: 20, y: 135 },
+                  { val: 0, y: 170 },
+                ].map((tick) => (
+                  <g key={tick.val}>
+                    <line
+                      x1="38"
+                      y1={tick.y}
+                      x2="505"
+                      y2={tick.y}
+                      stroke="#EEF2F6"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="26"
+                      y={tick.y + 4}
+                      textAnchor="end"
+                      className="text-[11px] font-bold fill-slate-400 font-sans"
+                    >
+                      {tick.val}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Emerald Activity Line */}
+                <path
+                  d="M 55 138.5 L 139 122.75 L 223 108.75 L 307 115.75 L 391 93.0 L 475 79.0"
+                  fill="none"
+                  stroke="#10B981"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Data Points, Values on Top, and Hover Circle */}
+                {activityData.map((pt) => {
+                  const isHovered = hoveredActivity?.month === pt.month;
+                  return (
+                    <g
+                      key={pt.month}
+                      className="cursor-pointer"
+                      onMouseEnter={() => setHoveredActivity({ month: pt.month, value: pt.value })}
+                      onMouseLeave={() => setHoveredActivity(null)}
+                    >
+                      {/* Value label on top of point */}
+                      <text
+                        x={pt.x}
+                        y={pt.y - 12}
+                        textAnchor="middle"
+                        className="text-[12px] font-extrabold fill-slate-800 transition-all font-sans"
+                      >
+                        {pt.value}
+                      </text>
+
+                      {/* Point Circle */}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={isHovered ? 6 : 4.5}
+                        fill="#10B981"
+                        stroke="#FFFFFF"
+                        strokeWidth={isHovered ? 2.5 : 1.5}
+                        className="transition-all duration-200"
+                      />
+
+                      {/* X-Axis Month Label */}
+                      <text
+                        x={pt.x}
+                        y="198"
+                        textAnchor="middle"
+                        className="text-[12px] font-bold fill-slate-500 font-sans"
+                      >
+                        {pt.month}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 2: Projects by status */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-4">
+              Projects by status
+            </h3>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+              {/* Donut Chart with Centered Number */}
+              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+                  {/* Background Track */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="54"
+                    fill="none"
+                    stroke="#F1F5F9"
+                    strokeWidth="16"
+                  />
+
+                  {/* Active (Green - 62% ~ 212.06px of 339.29px) */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="54"
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="16"
+                    strokeDasharray="212.06 339.29"
+                    strokeDashoffset="0"
+                    className="hover:opacity-90 transition-opacity cursor-pointer"
+                  />
+
+                  {/* Completed (Blue - 25% ~ 84.82px) */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="54"
+                    fill="none"
+                    stroke="#3B82F6"
+                    strokeWidth="16"
+                    strokeDasharray="84.82 339.29"
+                    strokeDashoffset="-212.06"
+                    className="hover:opacity-90 transition-opacity cursor-pointer"
+                  />
+
+                  {/* Archived (Purple - 13% ~ 42.41px) */}
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="54"
+                    fill="none"
+                    stroke="#8B5CF6"
+                    strokeWidth="16"
+                    strokeDasharray="42.41 339.29"
+                    strokeDashoffset="-296.88"
+                    className="hover:opacity-90 transition-opacity cursor-pointer"
+                  />
+                </svg>
+
+                {/* Center Count */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                    {totalProjectsCount}
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-500 mt-0.5">
+                    projects
+                  </span>
+                </div>
+              </div>
+
+              {/* Legend matching user screenshot exactly */}
+              <div className="flex-1 w-full space-y-3.5">
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0" />
+                    <span className="font-semibold text-slate-700">Active</span>
+                  </div>
+                  <span className="font-bold text-slate-800">
+                    {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shrink-0" />
+                    <span className="font-semibold text-slate-700">Completed</span>
+                  </div>
+                  <span className="font-bold text-slate-800">
+                    {statusBreakdown.completed.count} ({statusBreakdown.completed.pct}%)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6] shrink-0" />
+                    <span className="font-semibold text-slate-700">Archived</span>
+                  </div>
+                  <span className="font-bold text-slate-800">
+                    {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Explorer Toolbar: Search, Status Filter, Sort, View Mode ── */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
         <div className="relative flex-1">
@@ -613,11 +840,10 @@ export const ProjectsPage: React.FC = () => {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                statusFilter === st
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${statusFilter === st
                   ? "bg-[#3BB48C] text-white shadow-xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-              }`}
+                }`}
             >
               {st}
             </button>
@@ -642,22 +868,20 @@ export const ProjectsPage: React.FC = () => {
         <div className="flex items-center p-1 bg-slate-100 rounded-xl shrink-0">
           <button
             onClick={() => setViewMode("table")}
-            className={`p-1.5 rounded-lg transition ${
-              viewMode === "table"
+            className={`p-1.5 rounded-lg transition ${viewMode === "table"
                 ? "bg-white text-slate-900 shadow-2xs"
                 : "text-slate-500 hover:text-slate-800"
-            }`}
+              }`}
             title="Table View (Recommended)"
           >
             <List className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-lg transition ${
-              viewMode === "grid"
+            className={`p-1.5 rounded-lg transition ${viewMode === "grid"
                 ? "bg-white text-slate-900 shadow-2xs"
                 : "text-slate-500 hover:text-slate-800"
-            }`}
+              }`}
             title="Grid Cards View"
           >
             <LayoutGrid className="w-4 h-4" />

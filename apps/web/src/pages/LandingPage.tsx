@@ -716,7 +716,7 @@ export const LandingPage: React.FC = () => {
       {/* ── Enterprise Dark Footer with Official Brand Palette & Complete Logo ── */}
       <footer className="bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Main Footer: Simple & Clean (Pas de mille colonnes) */}
+          {/* Main Footer: Simple & Clean (No multiple columns) */}
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-12 border-b border-slate-800/80">
             {/* Brand & Description */}
             <div className="max-w-md space-y-4">

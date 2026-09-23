@@ -642,19 +642,19 @@ export const DatasetsPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {inspectingDataset.description || "Aucune description fournie"}
+                    {inspectingDataset.description || "No description provided"}
                   </p>
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500 font-mono">
                     <span>
-                      <strong>{inspectingDataset.row_count?.toLocaleString()}</strong> lignes
+                      <strong>{inspectingDataset.row_count?.toLocaleString()}</strong> rows
                     </span>
                     <span>•</span>
                     <span>
-                      <strong>{inspectingDataset.columns?.length || inspectingDataset.column_count || 0}</strong> colonnes
+                      <strong>{inspectingDataset.columns?.length || inspectingDataset.column_count || 0}</strong> columns
                     </span>
                     <span>•</span>
                     <span>
-                      Taille: <strong>{formatBytes(inspectingDataset.size_bytes)}</strong>
+                      Size: <strong>{formatBytes(inspectingDataset.size_bytes)}</strong>
                     </span>
                     {inspectingDataset.s3_key && (
                       <>
@@ -686,7 +686,7 @@ export const DatasetsPage: React.FC = () => {
                   }`}
                 >
                   <TableIcon className="w-4 h-4" />
-                  Aperçu des Données (Preview)
+                  Data Preview
                 </button>
 
                 <button
@@ -698,7 +698,7 @@ export const DatasetsPage: React.FC = () => {
                   }`}
                 >
                   <BarChart2 className="w-4 h-4" />
-                  Profilage des Colonnes & Schéma
+                  Column Profiling & Schema
                 </button>
 
                 <button
@@ -710,7 +710,7 @@ export const DatasetsPage: React.FC = () => {
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  Santé & Intégrité (Hygiene)
+                  Health & Hygiene
                 </button>
               </div>
 
@@ -719,7 +719,7 @@ export const DatasetsPage: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
               >
                 <Download className="w-3.5 h-3.5" />
-                Exporter Échantillon
+                Export Sample
               </button>
             </div>
 
@@ -730,10 +730,10 @@ export const DatasetsPage: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-3 text-xs text-slate-500">
                     <span>
-                      Affichage des <strong>{inspectingDataset.sample_records?.length || 0}</strong> premières lignes de l'échantillon extrait.
+                      Showing the first <strong>{inspectingDataset.sample_records?.length || 0}</strong> rows of the extracted sample.
                     </span>
                     <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      SHA-256 Validé
+                      SHA-256 Verified
                     </span>
                   </div>
 
@@ -778,7 +778,7 @@ export const DatasetsPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
-                      Aucun enregistrement d'échantillon extrait pour ce fichier.
+                      No sample records extracted for this file.
                     </div>
                   )}
                 </div>
@@ -791,11 +791,11 @@ export const DatasetsPage: React.FC = () => {
                     <table className="w-full text-left text-xs text-slate-800">
                       <thead className="bg-[#F8FAFC] border-b border-slate-200 font-bold text-[11px] text-slate-500 uppercase">
                         <tr>
-                          <th className="px-4 py-3">Nom de la Colonne</th>
-                          <th className="px-4 py-3">Type Détecté</th>
-                          <th className="px-4 py-3">Valeurs Manquantes (Nulls)</th>
-                          <th className="px-4 py-3">Cardinalité (Uniques)</th>
-                          <th className="px-4 py-3">Exemples / Plage</th>
+                          <th className="px-4 py-3">Column Name</th>
+                          <th className="px-4 py-3">Detected Type</th>
+                          <th className="px-4 py-3">Missing Values (Nulls)</th>
+                          <th className="px-4 py-3">Cardinality (Uniques)</th>
+                          <th className="px-4 py-3">Examples / Range</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -856,7 +856,7 @@ export const DatasetsPage: React.FC = () => {
                         ) : (
                           <tr>
                             <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                              Aucun profilage de colonne disponible.
+                              No column profiling available.
                             </td>
                           </tr>
                         )}
@@ -872,56 +872,56 @@ export const DatasetsPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-emerald-800">Taux de Complétude</span>
+                        <span className="text-xs font-bold text-emerald-800">Completeness Rate</span>
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div className="text-2xl font-black text-emerald-950">
                         {inspectingDataset.quality_score || 99.2}%
                       </div>
                       <p className="text-[11px] text-emerald-700 mt-1">
-                        Aucun champ critique obligatoire manquant.
+                        No mandatory critical fields missing.
                       </p>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700">Détection de Doublons</span>
+                        <span className="text-xs font-bold text-slate-700">Duplicate Detection</span>
                         <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
                       </div>
-                      <div className="text-2xl font-black text-slate-900">0.0% Doublons</div>
+                      <div className="text-2xl font-black text-slate-900">0.0% Duplicates</div>
                       <p className="text-[11px] text-slate-500 mt-1">
-                        Clés primaires et IDs d'enregistrements 100% uniques.
+                        Primary keys and record IDs 100% unique.
                       </p>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700">Contrôle de Schéma</span>
+                        <span className="text-xs font-bold text-slate-700">Schema Validation</span>
                         <Sparkles className="w-4 h-4 text-indigo-500" />
                       </div>
-                      <div className="text-2xl font-black text-slate-900">Strictement Conforme</div>
+                      <div className="text-2xl font-black text-slate-900">Strictly Compliant</div>
                       <p className="text-[11px] text-slate-500 mt-1">
-                        Types Polars & Arrow conformes aux spécifications MLflow.
+                        Polars & Arrow types conform to MLflow specifications.
                       </p>
                     </div>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Règles de validation automatiques appliquées
+                      Automated validation rules enforced
                     </h4>
                     <div className="space-y-1.5 text-xs text-slate-600">
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600" />
-                        <span>Contrainte de non-nullité respectée sur les colonnes cibles (Targets)</span>
+                        <span>Non-null constraints verified on target columns</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600" />
-                        <span>Hachage cryptographique SHA-256 synchronisé avec le bucket MinIO</span>
+                        <span>Cryptographic SHA-256 hash synchronized with MinIO bucket</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600" />
-                        <span>Validation des bornes numériques (pas de valeurs aberrantes extrêmes)</span>
+                        <span>Numerical boundary validation (no extreme unclipped anomalies)</span>
                       </div>
                     </div>
                   </div>
@@ -941,10 +941,10 @@ export const DatasetsPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
                   <GitBranch className="w-5 h-5 text-[#3BB48C]" />
-                  Lignée de Données (End-to-End Lineage Flow)
+                  Data Lineage (End-to-End Flow)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Traçabilité complète depuis le stockage MinIO jusqu'aux endpoints en production
+                  Complete traceability from MinIO storage to live inference endpoints
                 </p>
               </div>
               <button
@@ -963,7 +963,7 @@ export const DatasetsPage: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center mx-auto mb-2">
                     <Server className="w-5 h-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Source Stockage</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Storage Source</div>
                   <div className="font-bold text-slate-900 text-xs mt-1">MinIO S3 Bucket</div>
                   <div className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
                     {lineageDataset.s3_key || "s3://mlopslite-datasets/..."}
@@ -977,7 +977,7 @@ export const DatasetsPage: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] flex items-center justify-center mx-auto mb-2">
                     <Database className="w-5 h-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-[#1A7456] uppercase tracking-wider">Dataset Actif</div>
+                  <div className="text-[10px] font-bold text-[#1A7456] uppercase tracking-wider">Active Dataset</div>
                   <div className="font-bold text-slate-900 text-xs mt-1 truncate">{lineageDataset.name}</div>
                   <div className="text-[10px] font-mono text-slate-500 mt-0.5">
                     v{lineageDataset.version_num || 1} • {lineageDataset.row_count?.toLocaleString()} rows
@@ -991,9 +991,9 @@ export const DatasetsPage: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 flex items-center justify-center mx-auto mb-2">
                     <Box className="w-5 h-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modèle Entraîné</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trained Model</div>
                   <div className="font-bold text-slate-900 text-xs mt-1">
-                    {lineageDataset.downstream_models?.[0] || "Modèle Associé"}
+                    {lineageDataset.downstream_models?.[0] || "Associated Model"}
                   </div>
                   <div className="text-[10px] font-mono text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mt-1 inline-block">
                     Stage: PRODUCTION
@@ -1007,9 +1007,9 @@ export const DatasetsPage: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-2">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Inférence Live</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Live Inference</div>
                   <div className="font-bold text-slate-900 text-xs mt-1">FastAPI Container</div>
-                  <div className="text-[10px] font-mono text-emerald-600 mt-0.5">Port : 8100 • 3.2ms</div>
+                  <div className="text-[10px] font-mono text-emerald-600 mt-0.5">Port: 8100 • 3.2ms</div>
                 </div>
               </div>
             </div>
@@ -1018,10 +1018,10 @@ export const DatasetsPage: React.FC = () => {
             <div className="mt-5 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-xs text-amber-900">
-                <strong>Analyse d'impact en cas de mise à jour des données :</strong>
+                <strong>Impact analysis on dataset modification:</strong>
                 <p className="mt-0.5 text-amber-800">
-                  Toute modification apportée à <strong>{lineageDataset.name}</strong> générera un nouveau hash SHA-256 et déclenchera une alerte de validation automatique sur les modèles consommateurs (
-                  <strong>{lineageDataset.downstream_models?.join(", ") || "aucun"}</strong>).
+                  Any modification made to <strong>{lineageDataset.name}</strong> will generate a new SHA-256 hash and trigger automated validation alerts on downstream models (
+                  <strong>{lineageDataset.downstream_models?.join(", ") || "none"}</strong>).
                 </p>
               </div>
             </div>

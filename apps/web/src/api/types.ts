@@ -138,3 +138,26 @@ export interface SystemStats {
   alerts_count: number;
   system_healthy: boolean;
 }
+
+export interface ExperimentRun {
+  run_id: string;
+  run_name?: string;
+  status: string;
+  start_time?: number;
+  end_time?: number;
+  metrics: Record<string, number>;
+  params: Record<string, string>;
+  tags?: Record<string, string>;
+}
+
+export interface Experiment {
+  experiment_id: string;
+  name: string;
+  artifact_location?: string;
+  lifecycle_stage?: string;
+  tags?: Record<string, string>;
+  created_at?: string;
+  runs_count?: number;
+  runs?: ExperimentRun[];
+}
+

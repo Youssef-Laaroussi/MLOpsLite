@@ -16,6 +16,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ExperimentsPage } from "./pages/ExperimentsPage";
 
 import { AIAgentWidget } from "./components/AIAgentWidget";
 
@@ -58,7 +59,7 @@ export const App: React.FC = () => {
               <Route path="overview" element={<DashboardOverview />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="datasets" element={<DatasetsPage />} />
-              <Route path="experiments" element={<Navigate to="/app" replace />} />
+              <Route path="experiments" element={<ExperimentsPage />} />
               <Route path="models" element={<ModelsPage />} />
               <Route path="deployments" element={<DeploymentsPage />} />
               <Route path="monitoring" element={<MonitoringPage />} />
@@ -78,7 +79,7 @@ export const App: React.FC = () => {
               <Route path="dashboard" element={<DashboardOverview />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="datasets" element={<DatasetsPage />} />
-              <Route path="experiments" element={<Navigate to="/app" replace />} />
+              <Route path="experiments" element={<ExperimentsPage />} />
               <Route path="models" element={<ModelsPage />} />
               <Route path="deployments" element={<DeploymentsPage />} />
               <Route path="monitoring" element={<MonitoringPage />} />

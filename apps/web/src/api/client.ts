@@ -9,6 +9,8 @@ import {
   AuthTokens,
   ApiKey,
   AuditLog,
+  Experiment,
+  ExperimentRun,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -217,3 +219,29 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
     };
   }
 };
+
+// ── Experiments & Runs (MLflow Proxy) ──────────────────────────────
+
+export const fetchExperiments = async (project?: string): Promise<Experiment[]> => {
+  try {
+    const res = await api.get("/experiments/", { params: { project } });
+    return res.data.experiments || [];
+  } catch {
+    return [];
+  }
+};
+
+export const fetchExperimentRuns = async (experimentId: string): Promise<ExperimentRun[]> => {
+  try {
+    const res = await api.get(`/experiments/${experimentId}/runs`);
+    return res.data.runs || [];
+  } catch {
+    return [];
+  }
+};
+
+export const createExperiment = async (data: { name: string; tags?: Record<string, string> }): Promise<any> => {
+  const res = await api.post("/experiments/", data);
+  return res.data;
+};
+

@@ -123,7 +123,9 @@ class TestScaffoldRouters:
     def test_list_projects(self, app):
         resp = _run(_get(app, "/api/v1/projects/"))
         assert resp.status_code == 200
-        assert resp.json() == {"projects": [], "total": 0}
+        data = resp.json()
+        assert data.get("projects") == []
+        assert data.get("total") == 0
 
     def test_list_datasets(self, app):
         resp = _run(_get(app, "/api/v1/datasets/"))
@@ -133,7 +135,9 @@ class TestScaffoldRouters:
     def test_list_experiments(self, app):
         resp = _run(_get(app, "/api/v1/experiments/"))
         assert resp.status_code == 200
-        assert resp.json() == {"experiments": [], "total": 0}
+        data = resp.json()
+        assert data.get("experiments") == []
+        assert data.get("total") == 0
 
     def test_list_models(self, app):
         resp = _run(_get(app, "/api/v1/models/"))

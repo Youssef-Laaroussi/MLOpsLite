@@ -23,6 +23,29 @@ from packages.monitoring.drift_detector import DataDriftDetector
 router = APIRouter(prefix="/api/v1/monitoring", tags=["Monitoring"])
 
 
+@router.get("/", status_code=status.HTTP_200_OK)
+async def list_monitoring(
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """List monitoring evaluation reports summary."""
+    query = select(DriftEvaluation).order_by(DriftEvaluation.created_at.desc()).limit(20)
+    result = await db.execute(query)
+    reports = list(result.scalars().all())
+    return {
+        "reports": [
+            {
+                "id": r.id,
+                "model_name": r.model_name,
+                "drift_share": r.drift_share,
+                "drift_status": r.drift_status.value if hasattr(r.drift_status, "value") else str(r.drift_status),
+                "created_at": r.created_at,
+            }
+            for r in reports
+        ],
+        "total": len(reports),
+    }
+
+
 @router.post("/drift/check", response_model=DriftEvaluationResponse, status_code=status.HTTP_201_CREATED)
 async def trigger_drift_check(
     payload: DriftCheckRequest,

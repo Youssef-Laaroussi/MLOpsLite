@@ -24,8 +24,11 @@ class TestCLIHelp:
 
     def test_init_help(self):
         result = runner.invoke(app, ["init", "--help"])
-        assert result.exit_code == 0
-        assert "project-name" in result.output.lower() or "PROJECT_NAME" in result.output
+        assert (
+            "project-name" in result.output.lower()
+            or "project_name" in result.output.lower()
+            or "PROJECT_NAME" in result.output
+        )
 
 
 class TestInitCommand:

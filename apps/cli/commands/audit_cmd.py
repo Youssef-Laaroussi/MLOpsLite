@@ -52,11 +52,14 @@ def list_audit_logs(
             console.print("[dim]No audit log entries matching criteria.[/dim]")
             return
 
-        table = Table(title="MLite Operational & Compliance Audit Logs", header_style="bold magenta")
-        table.add_column("Timestamp", style="dim", no_wrap=True)
-        table.add_column("Action", style="bold cyan")
+        table = Table(
+            title="MLite Operational & Compliance Audit Logs",
+            header_style="bold magenta",
+        )
+        table.add_column("Timestamp", style="dim")
+        table.add_column("Action", style="bold cyan", min_width=14, no_wrap=True)
         table.add_column("Resource", style="green")
-        table.add_column("Target Name", style="white")
+        table.add_column("Target Name", style="white", min_width=10, no_wrap=True)
         table.add_column("Actor", style="yellow")
         table.add_column("IP Address", style="dim")
         table.add_column("Details", style="dim")

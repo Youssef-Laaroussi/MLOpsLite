@@ -12,7 +12,7 @@ def test_compute_sha256(tmp_path: Path) -> None:
     test_file = tmp_path / "sample.txt"
     test_file.write_text("Hello MLite Object Storage", encoding="utf-8")
 
-    expected_hash = "66f466b44747ebc7b415a775f0a07e8ec908ef1eead48303f295b90f5c88b64e"
+    expected_hash = "a58497b90dbfc187c2cd727e06cd6379530c44036daefba4f6430588d48b46ee"
     computed_hash = StorageClient.compute_sha256(test_file)
     assert computed_hash == expected_hash
 

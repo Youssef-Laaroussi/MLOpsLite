@@ -19,10 +19,14 @@ class DatasetCreate(BaseModel):
 class DatasetVersionCreate(BaseModel):
     """Metadata supplied when registering or uploading a new dataset version."""
 
-    dataset_id: str = Field(..., description="Target dataset UUID")
+    dataset_id: Optional[str] = Field(None, description="Target dataset UUID")
     file_path: Optional[str] = Field(None, description="Local path to file to upload and inspect")
     s3_key: Optional[str] = Field(None, description="Pre-existing S3 key if already uploaded")
     description: Optional[str] = Field(None, description="Version changelog/notes")
+    row_count: Optional[int] = Field(None, description="Row count")
+    column_count: Optional[int] = Field(None, description="Column count")
+    size_bytes: Optional[int] = Field(None, description="File size in bytes")
+    sha256_hash: Optional[str] = Field(None, description="SHA-256 hash")
 
 
 class DatasetVersionResponse(BaseModel):

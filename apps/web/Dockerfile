@@ -27,6 +27,13 @@ RUN printf 'server {\n\
     add_header X-Content-Type-Options "nosniff" always;\n\
     add_header X-XSS-Protection "1; mode=block" always;\n\
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;\n\
+    location /api/ {\n\
+        proxy_pass http://mlite-api:8000/api/;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+        proxy_set_header X-Forwarded-Proto $scheme;\n\
+    }\n\
     location / {\n\
         root /usr/share/nginx/html;\n\
         index index.html index.htm;\n\

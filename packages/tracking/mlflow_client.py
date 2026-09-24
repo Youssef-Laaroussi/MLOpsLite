@@ -36,6 +36,8 @@ def configure_mlflow_environment(
     )
     os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
     os.environ.setdefault("MLFLOW_S3_IGNORE_TLS", "true")
+    os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "1")
+    os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "0")
 
     return uri
 

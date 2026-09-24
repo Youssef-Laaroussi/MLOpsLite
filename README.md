@@ -81,26 +81,9 @@ Data ──► Versioning ──► Experiment ──► Registry ──► Depl
 
 ## Core Lifecycle Pipeline
 
-```
- ┌────────────────────────────────────────────────────────────────────────┐
- │                              MLite CLI                                 │
- └───────┬──────────────┬─────────────┬─────────────┬─────────────┬───────┘
-         │              │             │             │             │
-   mlite data     mlite experiment  mlite model   mlite deploy  mlite monitor
-         │              │             │             │             │
-         ▼              ▼             ▼             ▼             ▼
-   ┌──────────┐   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-   │  DVC +   │   │  MLflow  │  │  Model   │  │ FastAPI  │  │ Evidently│
-   │  MinIO   │──►│ Tracking │─►│ Registry │─►│Container │─►│  Drift   │
-   │ Datasets │   │ Metrics  │  │  Stages  │  │ Serving  │  │  Alerts  │
-   └──────────┘   └──────────┘  └──────────┘  └──────────┘  └────┬─────┘
-                                                                 │
-                                                    mlite rollback
-                                                                 │
-                                                                 ▼
-                                                            Auto/Manual
-                                                             Recovery
-```
+<p align="center">
+  <img src="assets/core_lifecycle_pipeline.png" alt="MLite Core Lifecycle Pipeline" width="800" />
+</p>
 
 | Lifecycle Stage | Underlying Technology | Key Capabilities |
 | :--- | :---: | :--- |

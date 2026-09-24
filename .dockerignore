@@ -1,0 +1,42 @@
+# Virtual environments
+yzmenv/
+venv/
+.venv/
+env/
+
+# Git & IDE
+.git
+.github
+.gitignore
+.vscode
+.idea
+
+# Python caches & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Frontend caches & build artifacts
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.vite/
+
+# Databases & local files
+*.db
+*.sqlite3
+mlite.db
+
+# Documentation & temporary assets
+docs/
+mkdocs.yml
+.agents/
+.gemini/

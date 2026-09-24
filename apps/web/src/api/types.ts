@@ -1,0 +1,163 @@
+export type UserRole = "ADMIN" | "USER" | "DEVELOPER" | "MAINTAINER" | "VIEWER";
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name?: string;
+  role: UserRole;
+  is_active?: boolean;
+  permissions?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  full_key?: string;
+  created_at: string;
+  expires_at?: string | null;
+  last_used_at?: string | null;
+  is_revoked: boolean;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string | null;
+  resource_name?: string | null;
+  user_id?: string | null;
+  user_email?: string | null;
+  ip_address?: string | null;
+  status: string;
+  details?: Record<string, any>;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  git_url?: string;
+  status: "ACTIVE" | "ARCHIVED";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModelVersion {
+  version: number;
+  stage: "DEVELOPMENT" | "CANDIDATE" | "STAGING" | "PRODUCTION" | "ARCHIVED";
+  metrics?: Record<string, number>;
+  mlflow_run_id?: string;
+  artifact_path?: string;
+  created_at: string;
+}
+
+export interface RegisteredModel {
+  name: string;
+  version: number;
+  stage: string;
+  metrics?: Record<string, number>;
+  mlflow_run_id?: string;
+  created_at: string;
+}
+
+export interface Deployment {
+  id: string;
+  model_name: string;
+  model_version: number;
+  container_id?: string;
+  port: number;
+  endpoint_url: string;
+  status: "PENDING" | "RUNNING" | "STOPPED" | "FAILED";
+  error_message?: string;
+  created_at: string;
+}
+
+export interface DatasetColumn {
+  name: string;
+  dtype: string;
+  null_count: number;
+  null_pct?: number;
+  unique_count?: number;
+  min_val?: string | number;
+  max_val?: string | number;
+  sample_values?: (string | number)[];
+}
+
+export interface DatasetVersion {
+  id: string;
+  dataset_id: string;
+  version_num: number;
+  hash_sha256: string;
+  row_count: number;
+  column_count: number;
+  size_bytes: number;
+  schema_json?: Record<string, any>;
+  s3_key?: string;
+  description?: string;
+  created_at: string;
+}
+
+export interface Dataset {
+  id: string;
+  project_id?: string;
+  name: string;
+  format: string;
+  description?: string;
+  created_at: string;
+  updated_at?: string;
+  version_num?: number;
+  row_count?: number;
+  column_count?: number;
+  size_bytes?: number;
+  hash_sha256?: string;
+  s3_key?: string;
+  quality_score?: number;
+  downstream_models?: string[];
+  columns?: DatasetColumn[];
+  sample_records?: Record<string, any>[];
+  latest_version?: DatasetVersion;
+}
+
+export interface SystemStats {
+  projects_count: number;
+  models_count: number;
+  active_deployments: number;
+  alerts_count: number;
+  system_healthy: boolean;
+}
+
+export interface ExperimentRun {
+  run_id: string;
+  run_name?: string;
+  status: string;
+  start_time?: number;
+  end_time?: number;
+  metrics: Record<string, number>;
+  params: Record<string, string>;
+  tags?: Record<string, string>;
+}
+
+export interface Experiment {
+  experiment_id: string;
+  name: string;
+  artifact_location?: string;
+  lifecycle_stage?: string;
+  tags?: Record<string, string>;
+  created_at?: string;
+  runs_count?: number;
+  runs?: ExperimentRun[];
+}
+

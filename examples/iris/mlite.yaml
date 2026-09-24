@@ -1,0 +1,13 @@
+project:
+  name: iris-classification
+  slug: iris-classification
+  description: "End-to-End Iris flower classification starter tutorial"
+
+data:
+  dataset_name: iris-flowers
+  path: data/iris.csv
+
+model:
+  name: iris-classifier
+  framework: scikit-learn
+  target_stage: PRODUCTION

@@ -24,6 +24,15 @@ compose-up: ## Start local Docker Compose infrastructure
 compose-down: ## Stop Docker Compose infrastructure
 	docker compose down
 
+compose-config: ## Validate docker-compose.yml configuration
+	docker compose config
+
+compose-ps: ## View running Compose service status
+	docker compose ps
+
+compose-logs: ## Follow logs from all Compose services
+	docker compose logs -f
+
 clean: ## Remove build, cache, and test artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache htmlcov/ .coverage
 	find . -type d -name "__pycache__" -exec rm -rf {} +

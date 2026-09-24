@@ -1,0 +1,42 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: "0 4 * * 1"  # Weekly security audit on Mondays at 04:00 UTC
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-audit:
+    name: Bandit & Pip-Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: Run Bandit SAST scan
+        run: |
+          # Scan packages and apps for hardcoded secrets, unsafe eval, and SQL injections
+          bandit -r packages/ apps/ -ll -ii -x tests/,docs/
+
+      - name: Run Pip-Audit Dependency CVE scan
+        run: |
+          pip-audit --desc on || true

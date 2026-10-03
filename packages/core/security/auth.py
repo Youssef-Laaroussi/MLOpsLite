@@ -10,6 +10,12 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
+import bcrypt
+
+# Compatibility shim: passlib 1.7.4 expects bcrypt.__about__.__version__ which was removed in bcrypt 4.0.0+
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = type("about", (), {"__version__": getattr(bcrypt, "__version__", "4.0.0")})
+
 from passlib.context import CryptContext
 
 logger = logging.getLogger(__name__)

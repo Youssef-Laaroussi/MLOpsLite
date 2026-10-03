@@ -53,7 +53,6 @@ class Deployment(Base, UUIDMixin, TimestampMixin):
     status: Mapped[DeploymentStatus] = mapped_column(
         SAEnum(DeploymentStatus, name="deployment_status", create_constraint=True),
         default=DeploymentStatus.PENDING,
-        server_default="PENDING",
         nullable=False,
     )
     error_message: Mapped[str | None] = mapped_column(

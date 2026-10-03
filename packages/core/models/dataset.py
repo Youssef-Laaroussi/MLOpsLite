@@ -39,7 +39,6 @@ class Dataset(Base, UUIDMixin, TimestampMixin):
     format: Mapped[DatasetFormat] = mapped_column(
         SAEnum(DatasetFormat, name="dataset_format", create_constraint=True),
         default=DatasetFormat.CSV,
-        server_default="CSV",
         nullable=False,
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

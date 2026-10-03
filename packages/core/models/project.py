@@ -31,13 +31,12 @@ class Project(Base, UUIDMixin, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Project description")
     git_url: Mapped[str | None] = mapped_column(String(500), nullable=True, doc="Git repository URL")
     default_branch: Mapped[str] = mapped_column(
-        String(100), default="main", server_default="main", doc="Default Git branch"
+        String(100), default="main", doc="Default Git branch"
     )
     config_yaml: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Raw mlite.yaml content")
     status: Mapped[ProjectStatus] = mapped_column(
         SAEnum(ProjectStatus, name="project_status", create_constraint=True),
         default=ProjectStatus.ACTIVE,
-        server_default="active",
         nullable=False,
         doc="Project lifecycle status",
     )

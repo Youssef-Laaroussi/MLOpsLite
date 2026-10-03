@@ -58,7 +58,6 @@ class ModelVersion(Base, UUIDMixin, TimestampMixin):
     stage: Mapped[ModelStage] = mapped_column(
         SAEnum(ModelStage, name="model_stage", create_constraint=True),
         default=ModelStage.DEVELOPMENT,
-        server_default="DEVELOPMENT",
         nullable=False,
     )
     mlflow_run_id: Mapped[str | None] = mapped_column(

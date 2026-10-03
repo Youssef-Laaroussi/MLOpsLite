@@ -50,7 +50,6 @@ class User(Base, UUIDMixin, TimestampMixin):
     role: Mapped[UserRole] = mapped_column(
         SAEnum(UserRole, name="user_role", create_constraint=True),
         default=UserRole.USER,
-        server_default="USER",
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(

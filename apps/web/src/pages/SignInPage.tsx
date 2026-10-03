@@ -38,6 +38,7 @@ export const SignInPage: React.FC = () => {
       setTimeout(() => navigate("/app", { replace: true }), 800);
     } catch (err: any) {
       setError(
+        err.response?.data?.error ||
         err.response?.data?.detail ||
         err.message ||
         "Authentication failed. Please verify your credentials."

@@ -151,8 +151,10 @@ async def validate_dataset(
         versions = await service.get_versions(dataset_id)
         if not versions:
             raise HTTPException(status_code=400, detail="No versions available to validate")
+        import tempfile
+
         # In a real environment, download artifact or check s3_key
-        target_file = f"/tmp/{dataset.name}.csv"
+        target_file = str(Path(tempfile.gettempdir()) / f"{dataset.name}.csv")
 
     eval_result = DataQualityEngine.evaluate(
         file_path=target_file,

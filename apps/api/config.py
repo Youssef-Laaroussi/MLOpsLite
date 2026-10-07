@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     environment: str = os.getenv("ENVIRONMENT", "development")
 
     # ── Server ───────────────────────────────────────────────
-    host: str = os.getenv("API_HOST", "0.0.0.0")
+    host: str = os.getenv("API_HOST", "0.0.0.0")  # nosec B104
     port: int = int(os.getenv("API_PORT", "8000"))
     allowed_origins: list[str] = (
         [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()]

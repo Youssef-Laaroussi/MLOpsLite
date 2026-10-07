@@ -13,27 +13,25 @@ from typing import Any
 
 import bcrypt
 
-# Compatibility shim: passlib 1.7.4 expects bcrypt.__about__.__version__ which was removed in bcrypt 4.0.0+
-if not hasattr(bcrypt, "__about__"):
-    bcrypt.__about__ = type("about", (), {"__version__": getattr(bcrypt, "__version__", "4.0.0")})  # type: ignore[assignment]
-
-from passlib.context import CryptContext
-
 logger = logging.getLogger(__name__)
 
 # ── Password Hashing ────────────────────────────────────────────
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(plain_password: str) -> str:
     """Hash a plaintext password using bcrypt."""
-    return pwd_context.hash(plain_password)
+    pw_bytes = plain_password.encode("utf-8")[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plaintext password against its bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        pw_bytes = plain_password.encode("utf-8")[:72]
+        return bcrypt.checkpw(pw_bytes, hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
 # ── JWT Token Management ────────────────────────────────────────

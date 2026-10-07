@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.config import get_settings
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError, ConflictError
 from packages.core.models.user import User, UserRole, ApiKey
@@ -38,6 +39,7 @@ from packages.core.schemas.security import (
     LoginRequest,
     TokenResponse,
     RefreshRequest,
+    UserRegisterRequest,
     UserCreate,
     UserUpdate,
     UserResponse,
@@ -83,9 +85,10 @@ async def login(
             detail="User account is deactivated",
         )
 
+    settings = get_settings()
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
+    access_token = create_access_token(token_data, secret_key=settings.jwt_secret_key)
+    refresh_token = create_refresh_token(token_data, secret_key=settings.jwt_secret_key)
 
     # Audit log
     audit = AuditService(session=db)
@@ -109,11 +112,17 @@ async def login(
 
 @router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    payload: UserCreate,
+    payload: UserRegisterRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Register a new user account and receive JWT tokens for immediate login."""
+    """Register a new user account and receive JWT tokens for immediate login.
+
+    SECURITY ENFORCEMENT:
+    - Self-registration is strictly assigned standard USER role.
+    - Elevated administrative roles (ADMIN, MAINTAINER) cannot be self-assigned;
+      they must be granted explicitly by an administrator.
+    """
     from packages.core.security.audit import AuditService
     from sqlalchemy import func
 
@@ -126,10 +135,10 @@ async def register(
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
 
-    # If first user, make admin, otherwise keep role from payload (or DEVELOPER)
+    # If first user on a cold system, make admin; otherwise strictly USER
     count_res = await db.execute(select(func.count(User.id)))
     user_count = count_res.scalar() or 0
-    assigned_role = UserRole.ADMIN if user_count == 0 else (payload.role or UserRole.USER)
+    assigned_role = UserRole.ADMIN if user_count == 0 else UserRole.USER
 
     user = User(
         email=payload.email,
@@ -143,9 +152,10 @@ async def register(
     await db.flush()
     await db.refresh(user)
 
+    settings = get_settings()
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
+    access_token = create_access_token(token_data, secret_key=settings.jwt_secret_key)
+    refresh_token = create_refresh_token(token_data, secret_key=settings.jwt_secret_key)
 
     # Audit log
     audit = AuditService(session=db)
@@ -174,7 +184,8 @@ async def refresh_token(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Exchange a valid refresh token for a new access token pair."""
-    decoded = decode_token(payload.refresh_token)
+    settings = get_settings()
+    decoded = decode_token(payload.refresh_token, secret_key=settings.jwt_secret_key)
     if decoded is None or decoded.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -193,8 +204,8 @@ async def refresh_token(
 
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
     return {
-        "access_token": create_access_token(token_data),
-        "refresh_token": create_refresh_token(token_data),
+        "access_token": create_access_token(token_data, secret_key=settings.jwt_secret_key),
+        "refresh_token": create_refresh_token(token_data, secret_key=settings.jwt_secret_key),
         "token_type": "bearer",
         "expires_in": DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }

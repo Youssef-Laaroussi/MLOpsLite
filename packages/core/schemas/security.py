@@ -35,8 +35,21 @@ class RefreshRequest(BaseModel):
 
 # ── User Management ────────────────────────────────────────────
 
+class UserRegisterRequest(BaseModel):
+    """Payload for public user self-registration.
+
+    SECURITY: Does not expose role field. All self-registered users
+    are strictly assigned USER role to prevent privilege escalation.
+    """
+
+    email: str = Field(..., min_length=5, max_length=255)
+    username: str = Field(..., min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")
+    password: str = Field(..., min_length=8, max_length=200)
+    full_name: str | None = Field(None, max_length=200)
+
+
 class UserCreate(BaseModel):
-    """Payload to create a new user account."""
+    """Payload to create a new user account (Admin only)."""
 
     email: str = Field(..., min_length=5, max_length=255)
     username: str = Field(..., min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")

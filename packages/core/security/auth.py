@@ -7,6 +7,7 @@ Provides:
 """
 
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
@@ -37,11 +38,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # ── JWT Token Management ────────────────────────────────────────
 
-# Default settings (overridden via Settings in production)
-DEFAULT_SECRET_KEY = "mlite-dev-secret-key-change-in-production"
-DEFAULT_ALGORITHM = "HS256"
-DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = 60
-DEFAULT_REFRESH_TOKEN_EXPIRE_DAYS = 7
+# Default settings (dynamically loads SECRET_KEY from environment with dev fallback)
+DEFAULT_SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    os.getenv(
+        "JWT_SECRET_KEY",
+        os.getenv("MLITE_JWT_SECRET_KEY", "mlite-dev-secret-key-change-in-production"),
+    ),
+)
+DEFAULT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+DEFAULT_REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 
 def create_access_token(

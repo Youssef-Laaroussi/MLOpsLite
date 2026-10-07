@@ -2,6 +2,7 @@
 
 import json
 import logging
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -44,7 +45,7 @@ class EvidentlyEngine:
         run_id: str = "eval-run",
     ) -> Dict[str, Any]:
         """Generate data drift evaluation report and upload artifacts to MinIO."""
-        output_dir = Path(f"/tmp/mlite_eval_{run_id}")
+        output_dir = Path(tempfile.gettempdir()) / f"mlite_eval_{run_id}"
         output_dir.mkdir(parents=True, exist_ok=True)
         html_path = output_dir / "report.html"
         json_path = output_dir / "metrics.json"

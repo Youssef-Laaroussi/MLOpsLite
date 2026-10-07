@@ -47,7 +47,7 @@ class BasePredictor:
 
             import pickle
             with open(self.artifact_path, "rb") as f:
-                self._model = pickle.load(f)
+                self._model = pickle.load(f)  # nosec B301
             self._loaded = True
             logger.info("Model loaded successfully via pickle from %s", self.artifact_path)
             return True

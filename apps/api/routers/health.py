@@ -1,7 +1,7 @@
 """Health-check and system status endpoints."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -22,7 +22,7 @@ async def health_check(
     return {
         "status": "healthy",
         "version": settings.app_version,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -42,7 +42,7 @@ async def readiness_check() -> dict[str, Any]:
     return {
         "status": "ready" if overall else "degraded",
         "checks": checks,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

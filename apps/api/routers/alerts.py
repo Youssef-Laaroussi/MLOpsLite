@@ -1,18 +1,19 @@
 """Alerting and incident management REST endpoints (Issues #21, #22)."""
 
-from typing import Any, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
+from packages.alerting.engine import AlertEngine
 from packages.core.models.alert import AlertSeverity, AlertStatus
 from packages.core.schemas.alert import (
     AlertCreate,
-    AlertResponse,
     AlertListResponse,
+    AlertResponse,
 )
-from packages.alerting.engine import AlertEngine
 
 router = APIRouter(prefix="/api/v1/alerts", tags=["Alerts"])
 
@@ -30,7 +31,7 @@ async def create_alert(
     alert = await engine.trigger_alert(
         event_type=payload.event_type,
         title=payload.title,
-        message=payload.message,
+        message=payload.message or payload.description or payload.title,
         severity=payload.severity,
         model_name=payload.model_name,
         deployment_id=payload.deployment_id,
@@ -47,9 +48,13 @@ async def create_alert(
 
 @router.get("/", response_model=AlertListResponse)
 async def list_alerts(
-    status: Optional[AlertStatus] = Query(None, description="Filter by status (OPEN, ACKNOWLEDGED, RESOLVED)"),
-    severity: Optional[AlertSeverity] = Query(None, description="Filter by severity (INFO, WARNING, HIGH, CRITICAL)"),
-    model_name: Optional[str] = Query(None, description="Filter by model name"),
+    status: AlertStatus | None = Query(
+        None, description="Filter by status (OPEN, ACKNOWLEDGED, RESOLVED)"
+    ),
+    severity: AlertSeverity | None = Query(
+        None, description="Filter by severity (INFO, WARNING, HIGH, CRITICAL)"
+    ),
+    model_name: str | None = Query(None, description="Filter by model name"),
     limit: int = Query(50, ge=1, le=200),
     engine: AlertEngine = Depends(_get_engine),
 ) -> Any:

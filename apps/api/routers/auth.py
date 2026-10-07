@@ -8,47 +8,44 @@ Provides:
 - /api/v1/users — User CRUD (admin only)
 """
 
-import hashlib
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import get_settings
 from apps.api.dependencies import get_db
-from apps.api.errors import NotFoundError, ConflictError
-from packages.core.models.user import User, UserRole, ApiKey
+from apps.api.errors import ConflictError, NotFoundError
 from packages.core.models.audit import AuditAction
+from packages.core.models.user import ApiKey, User, UserRole
+from packages.core.schemas.security import (
+    ApiKeyCreate,
+    ApiKeyListResponse,
+    ApiKeyResponse,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+    UserCreate,
+    UserListResponse,
+    UserMeResponse,
+    UserRegisterRequest,
+    UserResponse,
+    UserUpdate,
+)
 from packages.core.security.auth import (
-    hash_password,
-    verify_password,
+    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
     create_access_token,
     create_refresh_token,
     decode_token,
-    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    hash_password,
+    verify_password,
 )
-from packages.core.security.rbac import get_permissions, Permission
 from packages.core.security.dependencies import (
     get_current_user,
     require_role,
-    require_permission,
 )
-from packages.core.schemas.security import (
-    LoginRequest,
-    TokenResponse,
-    RefreshRequest,
-    UserRegisterRequest,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserListResponse,
-    UserMeResponse,
-    ApiKeyCreate,
-    ApiKeyResponse,
-    ApiKeyListResponse,
-)
+from packages.core.security.rbac import get_permissions
 
 router = APIRouter(prefix="/api/v1", tags=["Authentication & Users"])
 
@@ -67,9 +64,7 @@ async def login(
 
     # Find user by username or email
     result = await db.execute(
-        select(User).where(
-            (User.username == payload.username) | (User.email == payload.username)
-        )
+        select(User).where((User.username == payload.username) | (User.email == payload.username))
     )
     user = result.scalar_one_or_none()
 
@@ -123,14 +118,13 @@ async def register(
     - Elevated administrative roles (ADMIN, MAINTAINER) cannot be self-assigned;
       they must be granted explicitly by an administrator.
     """
-    from packages.core.security.audit import AuditService
     from sqlalchemy import func
+
+    from packages.core.security.audit import AuditService
 
     # Check for existing email or username
     existing = await db.execute(
-        select(User).where(
-            (User.email == payload.email) | (User.username == payload.username)
-        )
+        select(User).where((User.email == payload.email) | (User.username == payload.username))
     )
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
@@ -286,9 +280,7 @@ async def list_api_keys(
 ) -> Any:
     """List all API keys for the authenticated user."""
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.user_id == current_user.id)
-        .order_by(ApiKey.created_at.desc())
+        select(ApiKey).where(ApiKey.user_id == current_user.id).order_by(ApiKey.created_at.desc())
     )
     keys = list(result.scalars().all())
     # Never return full key in list view
@@ -347,9 +339,7 @@ async def create_user(
 
     # Check for existing user
     existing = await db.execute(
-        select(User).where(
-            (User.email == payload.email) | (User.username == payload.username)
-        )
+        select(User).where((User.email == payload.email) | (User.username == payload.username))
     )
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
@@ -389,9 +379,7 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """List all user accounts (admin only)."""
-    result = await db.execute(
-        select(User).order_by(User.created_at.desc())
-    )
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
     users = list(result.scalars().all())
     return {"users": users, "total": len(users)}
 

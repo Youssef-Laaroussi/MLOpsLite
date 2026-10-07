@@ -3,7 +3,7 @@
 Proxies and indexes MLflow experiment metadata for the MLite platform.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -35,14 +35,16 @@ async def list_experiments(
         experiments = client.search_experiments(max_results=page_size)
         result = []
         for exp in experiments:
-            result.append({
-                "experiment_id": exp.experiment_id,
-                "name": exp.name,
-                "artifact_location": exp.artifact_location,
-                "lifecycle_stage": exp.lifecycle_stage,
-                "tags": dict(exp.tags) if exp.tags else {},
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            })
+            result.append(
+                {
+                    "experiment_id": exp.experiment_id,
+                    "name": exp.name,
+                    "artifact_location": exp.artifact_location,
+                    "lifecycle_stage": exp.lifecycle_stage,
+                    "tags": dict(exp.tags) if exp.tags else {},
+                    "created_at": datetime.now(UTC).isoformat(),
+                }
+            )
 
         return {
             "experiments": result,
@@ -75,20 +77,18 @@ async def list_runs(
         )
         result = []
         for run in runs:
-            result.append({
-                "run_id": run.info.run_id,
-                "run_name": run.info.run_name,
-                "status": run.info.status,
-                "start_time": run.info.start_time,
-                "end_time": run.info.end_time,
-                "metrics": dict(run.data.metrics),
-                "params": dict(run.data.params),
-                "tags": {
-                    k: v
-                    for k, v in run.data.tags.items()
-                    if not k.startswith("mlflow.")
-                },
-            })
+            result.append(
+                {
+                    "run_id": run.info.run_id,
+                    "run_name": run.info.run_name,
+                    "status": run.info.status,
+                    "start_time": run.info.start_time,
+                    "end_time": run.info.end_time,
+                    "metrics": dict(run.data.metrics),
+                    "params": dict(run.data.params),
+                    "tags": {k: v for k, v in run.data.tags.items() if not k.startswith("mlflow.")},
+                }
+            )
 
         return {"runs": result, "total": len(result)}
     except Exception:

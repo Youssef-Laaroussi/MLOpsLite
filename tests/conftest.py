@@ -10,22 +10,19 @@ Provides isolated in-memory fixtures for:
 """
 
 import asyncio
-from datetime import datetime, timezone
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from apps.api.main import create_app
-from packages.core.models.project import Project, ProjectStatus
-from packages.core.models.model_registry import RegisteredModel, ModelVersion, ModelStage
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.core.models.user import User, UserRole, ApiKey
-from packages.core.models.audit import AuditLog, AuditAction
+from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
+from packages.core.models.project import Project, ProjectStatus
+from packages.core.models.user import User, UserRole
 from packages.core.storage.client import StorageClient
 from packages.deployment.docker_manager import DockerManager
-
 
 # ── Event Loop Fixture ──────────────────────────────────────────
 
@@ -51,7 +48,9 @@ def mock_storage_client() -> MagicMock:
     client.download_file.return_value = b"col1,col2\n1,2\n3,4\n"
     client.delete_file.return_value = True
     client.list_objects.return_value = ["test.csv", "train.csv"]
-    client.generate_presigned_url.return_value = "http://mock-minio:9000/mlite-datasets/test.csv?token=xyz"
+    client.generate_presigned_url.return_value = (
+        "http://mock-minio:9000/mlite-datasets/test.csv?token=xyz"
+    )
     return client
 
 

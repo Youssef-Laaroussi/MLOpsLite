@@ -8,8 +8,7 @@ Provides injectable dependencies for route protection:
 
 import hashlib
 import logging
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
 
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -17,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
-from packages.core.models.user import User, UserRole, ApiKey
+from packages.core.models.user import ApiKey, User, UserRole
 from packages.core.security.auth import decode_token
 from packages.core.security.rbac import has_minimum_role, has_permission
 
@@ -30,8 +29,8 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
 ) -> User:
     """Extract and validate the current user from JWT bearer token or API key.
 
@@ -46,7 +45,7 @@ async def get_current_user(
     settings = get_settings()
     secret_key = getattr(settings, "jwt_secret_key", "mlite-dev-secret-key-change-in-production")
 
-    user: Optional[User] = None
+    user: User | None = None
 
     # 1. Try Bearer JWT
     if credentials and credentials.credentials:
@@ -54,36 +53,32 @@ async def get_current_user(
         if payload and payload.get("type") == "access":
             user_id = payload.get("sub")
             if user_id:
-                result = await db.execute(
-                    select(User).where(User.id == user_id)
-                )
+                result = await db.execute(select(User).where(User.id == user_id))
                 user = result.scalar_one_or_none()
 
     # 2. Try X-API-Key
     if user is None and x_api_key:
         key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
-        result = await db.execute(
+        key_result = await db.execute(
             select(ApiKey).where(
                 ApiKey.key_hash == key_hash,
                 ApiKey.is_revoked == False,  # noqa: E712
             )
         )
-        api_key = result.scalar_one_or_none()
+        api_key = key_result.scalar_one_or_none()
         if api_key:
             # Check expiration
-            if api_key.expires_at and api_key.expires_at < datetime.now(timezone.utc):
+            if api_key.expires_at and api_key.expires_at < datetime.now(UTC):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="API key has expired",
                 )
             # Update last_used_at
-            api_key.last_used_at = datetime.now(timezone.utc)
+            api_key.last_used_at = datetime.now(UTC)
             await db.flush()
 
             # Load user
-            user_result = await db.execute(
-                select(User).where(User.id == api_key.user_id)
-            )
+            user_result = await db.execute(select(User).where(User.id == api_key.user_id))
             user = user_result.scalar_one_or_none()
 
     if user is None:
@@ -110,6 +105,7 @@ def require_role(minimum_role: UserRole):
     Usage:
         @router.post("/...", dependencies=[Depends(require_role(UserRole.MAINTAINER))])
     """
+
     async def _check_role(
         current_user: User = Depends(get_current_user),
     ) -> User:
@@ -132,6 +128,7 @@ def require_permission(permission: str):
     Usage:
         @router.post("/...", dependencies=[Depends(require_permission("model:promote"))])
     """
+
     async def _check_permission(
         current_user: User = Depends(get_current_user),
     ) -> User:
@@ -151,9 +148,9 @@ def require_permission(permission: str):
 async def get_optional_user(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
-) -> Optional[User]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+) -> User | None:
     """Like get_current_user but returns None instead of raising 401.
 
     Useful for endpoints that work differently for authenticated vs anonymous users.

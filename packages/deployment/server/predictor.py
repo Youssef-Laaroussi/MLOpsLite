@@ -3,7 +3,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class BasePredictor:
         self,
         model_name: str = "default-model",
         model_version: str = "1",
-        artifact_path: Optional[str] = None,
+        artifact_path: str | None = None,
         framework: str = "scikit-learn",
     ) -> None:
         self.model_name = model_name
@@ -23,13 +23,15 @@ class BasePredictor:
         self.artifact_path = artifact_path or os.environ.get("MODEL_ARTIFACT_PATH")
         self.framework = framework
         self._model: Any = None
-        self._feature_names: List[str] = []
+        self._feature_names: list[str] = []
         self._loaded: bool = False
 
     def load(self) -> bool:
         """Attempt to load the model artifact from disk or MLflow store."""
         if not self.artifact_path or not Path(self.artifact_path).exists():
-            logger.info("No artifact found at %s. Using internal heuristic predictor.", self.artifact_path)
+            logger.info(
+                "No artifact found at %s. Using internal heuristic predictor.", self.artifact_path
+            )
             # Default / heuristic dummy model for testing & initial spins
             self._loaded = True
             return True
@@ -38,6 +40,7 @@ class BasePredictor:
             # Try pickle / joblib
             try:
                 import joblib
+
                 self._model = joblib.load(self.artifact_path)
                 self._loaded = True
                 logger.info("Model loaded successfully via joblib from %s", self.artifact_path)
@@ -46,6 +49,7 @@ class BasePredictor:
                 pass
 
             import pickle
+
             with open(self.artifact_path, "rb") as f:
                 self._model = pickle.load(f)  # nosec B301
             self._loaded = True
@@ -63,16 +67,16 @@ class BasePredictor:
 
     def predict(
         self,
-        inputs: Optional[List[List[Any]]] = None,
-        dataframe_records: Optional[List[Dict[str, Any]]] = None,
-        dataframe_split: Optional[Any] = None,
-    ) -> List[Any]:
+        inputs: list[list[Any]] | None = None,
+        dataframe_records: list[dict[str, Any]] | None = None,
+        dataframe_split: Any | None = None,
+    ) -> list[Any]:
         """Convert input representation and compute model predictions."""
         if not self.is_loaded:
             raise RuntimeError("Model is not loaded")
 
         # Convert to row list
-        rows: List[List[Any]] = []
+        rows: list[list[Any]] = []
         if inputs is not None:
             rows = inputs
         elif dataframe_records is not None:
@@ -90,6 +94,7 @@ class BasePredictor:
         if self._model is not None and hasattr(self._model, "predict"):
             try:
                 import numpy as np
+
                 preds = self._model.predict(np.array(rows))
                 return preds.tolist() if hasattr(preds, "tolist") else list(preds)
             except Exception as exc:
@@ -103,15 +108,14 @@ class BasePredictor:
             results.append(score)
         return results
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """Return model metadata and input schema."""
         return {
             "model": self.model_name,
             "version": str(self.model_version),
             "framework": self.framework,
             "features": [
-                {"name": name, "dtype": "float64", "required": True}
-                for name in self._feature_names
+                {"name": name, "dtype": "float64", "required": True} for name in self._feature_names
             ],
             "task": "classification",
         }

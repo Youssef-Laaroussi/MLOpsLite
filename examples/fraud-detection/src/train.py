@@ -3,12 +3,13 @@
 import argparse
 import os
 from pathlib import Path
+
 import mlflow
 import mlflow.sklearn
 import numpy as np
 import polars as pl
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
 
@@ -21,6 +22,7 @@ def train_model(version: int = 1):
     baseline_path = data_dir / "baseline_transactions.csv"
     if not baseline_path.exists():
         from generate_data import generate_data
+
         generate_data()
 
     df = pl.read_csv(baseline_path)

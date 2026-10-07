@@ -11,15 +11,13 @@ import pytest
 from fastapi import HTTPException
 
 from packages.core.models.user import User, UserRole
+from packages.core.security.dependencies import require_permission, require_role
 from packages.core.security.rbac import (
-    has_minimum_role,
-    has_permission,
-    get_permissions,
-    role_level,
     Permission,
-    ROLE_HIERARCHY,
+    get_permissions,
+    has_minimum_role,
+    role_level,
 )
-from packages.core.security.dependencies import require_role, require_permission
 
 
 class TestRoleHierarchy:
@@ -120,8 +118,11 @@ class TestFastAPISecurityDependencies:
     @pytest.mark.asyncio
     async def test_require_role_granted(self):
         user = User(
-            id="u1", username="lead", email="lead@mlite.local",
-            hashed_password="hash", role=UserRole.ADMIN,
+            id="u1",
+            username="lead",
+            email="lead@mlite.local",
+            hashed_password="hash",
+            role=UserRole.ADMIN,
         )
         checker = require_role(UserRole.MAINTAINER)
         result = await checker(current_user=user)
@@ -130,8 +131,11 @@ class TestFastAPISecurityDependencies:
     @pytest.mark.asyncio
     async def test_require_role_denied(self):
         user = User(
-            id="u2", username="reader", email="reader@mlite.local",
-            hashed_password="hash", role=UserRole.VIEWER,
+            id="u2",
+            username="reader",
+            email="reader@mlite.local",
+            hashed_password="hash",
+            role=UserRole.VIEWER,
         )
         checker = require_role(UserRole.MAINTAINER)
         with pytest.raises(HTTPException) as exc_info:
@@ -142,8 +146,11 @@ class TestFastAPISecurityDependencies:
     @pytest.mark.asyncio
     async def test_require_permission_granted(self):
         user = User(
-            id="u3", username="maint", email="maint@mlite.local",
-            hashed_password="hash", role=UserRole.MAINTAINER,
+            id="u3",
+            username="maint",
+            email="maint@mlite.local",
+            hashed_password="hash",
+            role=UserRole.MAINTAINER,
         )
         checker = require_permission(Permission.MODEL_PROMOTE)
         result = await checker(current_user=user)
@@ -152,8 +159,11 @@ class TestFastAPISecurityDependencies:
     @pytest.mark.asyncio
     async def test_require_permission_denied(self):
         user = User(
-            id="u4", username="dev", email="dev@mlite.local",
-            hashed_password="hash", role=UserRole.DEVELOPER,
+            id="u4",
+            username="dev",
+            email="dev@mlite.local",
+            hashed_password="hash",
+            role=UserRole.DEVELOPER,
         )
         checker = require_permission(Permission.MODEL_PROMOTE)
         with pytest.raises(HTTPException) as exc_info:

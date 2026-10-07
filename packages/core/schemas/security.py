@@ -3,13 +3,13 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 
-from packages.core.models.user import UserRole
 from packages.core.models.audit import AuditAction
-
+from packages.core.models.user import UserRole
 
 # ── Authentication ──────────────────────────────────────────────
+
 
 class LoginRequest(BaseModel):
     """OAuth2 password flow login payload."""
@@ -34,6 +34,7 @@ class RefreshRequest(BaseModel):
 
 
 # ── User Management ────────────────────────────────────────────
+
 
 class UserRegisterRequest(BaseModel):
     """Payload for public user self-registration.
@@ -103,6 +104,7 @@ class UserMeResponse(BaseModel):
 
 # ── API Keys ────────────────────────────────────────────────────
 
+
 class ApiKeyCreate(BaseModel):
     """Payload to create a new API key."""
 
@@ -135,6 +137,7 @@ class ApiKeyListResponse(BaseModel):
 
 
 # ── Audit Logs ──────────────────────────────────────────────────
+
 
 class AuditLogResponse(BaseModel):
     """Response for a single audit log entry."""

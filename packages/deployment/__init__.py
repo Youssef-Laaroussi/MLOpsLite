@@ -1,7 +1,7 @@
 """MLite Model Deployment package."""
 
-from packages.deployment.ports import PortAllocator, PortAllocationError
 from packages.deployment.docker_manager import DockerManager
+from packages.deployment.ports import PortAllocationError, PortAllocator
 from packages.deployment.service import DeploymentService
 from packages.deployment.supervisor import DeploymentSupervisor
 

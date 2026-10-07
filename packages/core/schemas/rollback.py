@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 from packages.core.models.rollback import RollbackStatus, RollbackTrigger
 
-
 # ── Rollback Request / Response ─────────────────────────────────
+
 
 class RollbackRequest(BaseModel):
     """Payload to initiate a manual rollback."""
@@ -56,14 +56,20 @@ class RollbackListResponse(BaseModel):
 
 # ── Auto-Rollback Policy Schemas ────────────────────────────────
 
+
 class PolicyCreate(BaseModel):
     """Payload to create or update an auto-rollback policy."""
 
     model_name: str = Field(..., min_length=1, max_length=200)
     deployment_id: str | None = None
-    enabled: bool = Field(False, description="Enable auto-rollback (disabled by default for safety)")
+    enabled: bool = Field(
+        False, description="Enable auto-rollback (disabled by default for safety)"
+    )
     require_approval: bool = Field(False, description="Require human approval before executing")
-    metric: str = Field("error_rate", description="Metric to evaluate: error_rate, latency_p95, accuracy, drift_share")
+    metric: str = Field(
+        "error_rate",
+        description="Metric to evaluate: error_rate, latency_p95, accuracy, drift_share",
+    )
     threshold: float = Field(0.05, ge=0.0, le=1.0, description="Breach threshold")
     evaluation_window_seconds: int = Field(300, ge=30, le=3600)
     consecutive_violations: int = Field(3, ge=1, le=20)

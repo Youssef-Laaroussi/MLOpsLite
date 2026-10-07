@@ -1,15 +1,15 @@
 """Unit tests for RollbackCoordinator (Issue #23)."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
 
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.core.models.model_registry import RegisteredModel, ModelVersion, ModelStage
-from packages.core.models.rollback import RollbackRecord, RollbackStatus, RollbackTrigger
-from packages.rollback.coordinator import RollbackCoordinator, RollbackError
+from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
+from packages.core.models.rollback import RollbackRecord, RollbackStatus
 from packages.deployment.docker_manager import DockerManager
 from packages.deployment.ports import PortAllocator
+from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 
 
 @pytest.fixture

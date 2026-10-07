@@ -1,16 +1,15 @@
 """Unit tests for Webhook, Slack, Discord, and Email notification dispatchers (Issue #22)."""
 
-import hmac
-import hashlib
-from datetime import datetime, timezone
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
-from packages.alerting.dispatchers.webhook import WebhookDispatcher
-from packages.alerting.dispatchers.slack import SlackDispatcher
+import pytest
+
 from packages.alerting.dispatchers.discord import DiscordDispatcher
 from packages.alerting.dispatchers.manager import NotificationManager
+from packages.alerting.dispatchers.slack import SlackDispatcher
+from packages.alerting.dispatchers.webhook import WebhookDispatcher
+from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
 
 
 @pytest.fixture
@@ -24,7 +23,7 @@ def sample_alert():
         model_name="fraud-detector",
         deployment_id="dep-456",
         status=AlertStatus.OPEN,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 

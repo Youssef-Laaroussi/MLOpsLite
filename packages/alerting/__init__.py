@@ -1,14 +1,14 @@
 """MLite Alerting package."""
 
-from packages.alerting.engine import AlertEngine
 from packages.alerting.dispatchers import (
     BaseDispatcher,
-    WebhookDispatcher,
-    SlackDispatcher,
     DiscordDispatcher,
     EmailDispatcher,
     NotificationManager,
+    SlackDispatcher,
+    WebhookDispatcher,
 )
+from packages.alerting.engine import AlertEngine
 
 __all__ = [
     "AlertEngine",

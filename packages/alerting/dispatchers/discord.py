@@ -1,7 +1,6 @@
 """Discord Webhook alert dispatcher using rich embeds."""
 
 import logging
-from typing import Optional
 
 import httpx
 
@@ -38,7 +37,11 @@ class DiscordDispatcher(BaseDispatcher):
                     "fields": [
                         {"name": "Event Type", "value": alert.event_type, "inline": True},
                         {"name": "Model", "value": alert.model_name or "N/A", "inline": True},
-                        {"name": "Deployment", "value": alert.deployment_id or "N/A", "inline": True},
+                        {
+                            "name": "Deployment",
+                            "value": alert.deployment_id or "N/A",
+                            "inline": True,
+                        },
                     ],
                     "footer": {"text": "MLite MLOps Platform"},
                     "timestamp": alert.created_at.isoformat() if alert.created_at else None,

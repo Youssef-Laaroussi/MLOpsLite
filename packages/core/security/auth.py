@@ -8,14 +8,14 @@ Provides:
 
 import logging
 import os
-from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import bcrypt
 
 # Compatibility shim: passlib 1.7.4 expects bcrypt.__about__.__version__ which was removed in bcrypt 4.0.0+
 if not hasattr(bcrypt, "__about__"):
-    bcrypt.__about__ = type("about", (), {"__version__": getattr(bcrypt, "__version__", "4.0.0")})
+    bcrypt.__about__ = type("about", (), {"__version__": getattr(bcrypt, "__version__", "4.0.0")})  # type: ignore[assignment]
 
 from passlib.context import CryptContext
 
@@ -55,7 +55,7 @@ def create_access_token(
     data: dict[str, Any],
     secret_key: str = DEFAULT_SECRET_KEY,
     algorithm: str = DEFAULT_ALGORITHM,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT access token.
 
@@ -71,14 +71,16 @@ def create_access_token(
     from jose import jwt
 
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "type": "access",
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": datetime.now(UTC),
+            "type": "access",
+        }
+    )
     return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
 
@@ -86,20 +88,22 @@ def create_refresh_token(
     data: dict[str, Any],
     secret_key: str = DEFAULT_SECRET_KEY,
     algorithm: str = DEFAULT_ALGORITHM,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT refresh token (longer-lived)."""
     from jose import jwt
 
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(days=DEFAULT_REFRESH_TOKEN_EXPIRE_DAYS)
     )
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "type": "refresh",
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": datetime.now(UTC),
+            "type": "refresh",
+        }
+    )
     return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
 
@@ -107,13 +111,13 @@ def decode_token(
     token: str,
     secret_key: str = DEFAULT_SECRET_KEY,
     algorithm: str = DEFAULT_ALGORITHM,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Decode and validate a JWT token.
 
     Returns:
         Decoded payload dict, or None if the token is invalid/expired.
     """
-    from jose import jwt, JWTError
+    from jose import JWTError, jwt
 
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])

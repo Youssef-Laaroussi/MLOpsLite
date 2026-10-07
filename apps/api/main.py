@@ -10,9 +10,8 @@ Creates the ASGI application with:
 """
 
 import logging
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
-from typing import Any
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,17 +20,17 @@ from apps.api.config import get_settings
 from apps.api.errors import register_exception_handlers
 from apps.api.middleware import register_middleware
 from apps.api.routers import (
-    health,
-    projects,
-    datasets,
-    experiments,
-    models,
-    deployments,
-    monitoring,
     alerts,
-    rollback,
-    auth,
     audit,
+    auth,
+    datasets,
+    deployments,
+    experiments,
+    health,
+    models,
+    monitoring,
+    projects,
+    rollback,
 )
 
 logger = logging.getLogger("mlite.api")
@@ -55,9 +54,9 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ensure database schema is created
     try:
-        from packages.core.db.session import engine
-        from packages.core.db.base import Base
         import packages.core.models  # noqa: F401
+        from packages.core.db.base import Base
+        from packages.core.db.session import engine
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -67,10 +66,11 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Bootstrap / synchronize administrator account (Issue #26)
     try:
+        from sqlalchemy import select
+
         from packages.core.db.session import async_session_factory
         from packages.core.models.user import User, UserRole
         from packages.core.security.auth import hash_password, verify_password
-        from sqlalchemy import select
 
         async with async_session_factory() as session:
             result = await session.execute(
@@ -97,7 +97,9 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                     admin.hashed_password = hash_password(settings.admin_password)
                     admin.role = UserRole.ADMIN
                     await session.commit()
-                    logger.info("🔐 Synchronized administrator credentials for '%s'", admin.username)
+                    logger.info(
+                        "🔐 Synchronized administrator credentials for '%s'", admin.username
+                    )
     except Exception as exc:
         logger.warning("⚠️ Admin bootstrap skipped or deferred: %s", exc)
 

@@ -3,7 +3,7 @@
 CRUD for registered models, version management, stage promotion, and comparison.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ from apps.api.errors import NotFoundError
 from packages.core.models.audit import AuditAction
 from packages.core.models.user import User
 from packages.core.security.audit import AuditService
-from packages.core.security.dependencies import require_permission, get_current_user
+from packages.core.security.dependencies import get_current_user, require_permission
 from packages.core.security.rbac import Permission
 from packages.registry.service import ModelRegistryService
 
@@ -35,7 +35,9 @@ class ModelRegisterRequest(BaseModel):
 
 class PromoteRequest(BaseModel):
     stage: str = Field(..., description="Target stage: CANDIDATE, STAGING, PRODUCTION, ARCHIVED")
-    version: Optional[int] = Field(None, description="Optional target version when promoting by model ID")
+    version: int | None = Field(
+        None, description="Optional target version when promoting by model ID"
+    )
 
 
 # ── Dependency ──────────────────────────────────────────────
@@ -86,14 +88,16 @@ async def list_models(
         for v in versions:
             if stage and v.stage.value != stage.upper():
                 continue
-            result.append({
-                "name": m.name,
-                "version": v.version,
-                "stage": v.stage.value,
-                "metrics": v.metrics,
-                "mlflow_run_id": v.mlflow_run_id,
-                "created_at": v.created_at.isoformat() if v.created_at else None,
-            })
+            result.append(
+                {
+                    "name": m.name,
+                    "version": v.version,
+                    "stage": v.stage.value,
+                    "metrics": v.metrics,
+                    "mlflow_run_id": v.mlflow_run_id,
+                    "created_at": v.created_at.isoformat() if v.created_at else None,
+                }
+            )
     return {"models": result, "total": len(result)}
 
 

@@ -7,9 +7,8 @@ Commands:
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from typing import Optional
+from rich.table import Table
 
 console = Console()
 
@@ -18,7 +17,7 @@ console = Console()
 
 def rollback(
     model_name: str = typer.Argument(..., help="Name of the model to roll back"),
-    to: Optional[int] = typer.Option(None, "--to", "-t", help="Target version to roll back to"),
+    to: int | None = typer.Option(None, "--to", "-t", help="Target version to roll back to"),
     reason: str = typer.Option(
         "Manual rollback via CLI", "--reason", "-r", help="Reason for the rollback"
     ),
@@ -32,8 +31,8 @@ def rollback(
 
     async def _execute():
         from packages.core.db.session import async_session_factory
-        from packages.rollback.coordinator import RollbackCoordinator, RollbackError
         from packages.core.models.rollback import RollbackTrigger
+        from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 
         async with async_session_factory() as session:
             coordinator = RollbackCoordinator(session=session)
@@ -100,7 +99,7 @@ app = typer.Typer(help="Manage auto-rollback policies")
 
 @app.command("list")
 def policy_list(
-    model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Filter by model name"),
+    model_name: str | None = typer.Option(None, "--model", "-m", help="Filter by model name"),
     enabled_only: bool = typer.Option(False, "--enabled", help="Show only enabled policies"),
 ) -> None:
     """List all auto-rollback policies."""
@@ -150,12 +149,16 @@ def policy_list(
 @app.command("create")
 def policy_create(
     model_name: str = typer.Argument(..., help="Model name"),
-    metric: str = typer.Option("error_rate", "--metric", help="Metric: error_rate, latency_p95, accuracy, drift_share"),
+    metric: str = typer.Option(
+        "error_rate", "--metric", help="Metric: error_rate, latency_p95, accuracy, drift_share"
+    ),
     threshold: float = typer.Option(0.05, "--threshold", help="Breach threshold"),
     enabled: bool = typer.Option(False, "--enabled", help="Enable immediately"),
     require_approval: bool = typer.Option(False, "--approval", help="Require human approval"),
     window: int = typer.Option(300, "--window", help="Evaluation window in seconds"),
-    violations: int = typer.Option(3, "--violations", help="Consecutive violations before triggering"),
+    violations: int = typer.Option(
+        3, "--violations", help="Consecutive violations before triggering"
+    ),
     cooldown: int = typer.Option(24, "--cooldown", help="Cooldown hours between auto-rollbacks"),
 ) -> None:
     """Create a new auto-rollback policy for a model."""
@@ -214,7 +217,9 @@ def policy_enable(
                 console.print(f"[bold red]Policy {policy_id} not found.[/bold red]")
                 raise typer.Exit(code=1)
             await session.commit()
-            console.print(f"[green]✅ Policy {policy_id[:8]}... enabled for {policy.model_name}[/green]")
+            console.print(
+                f"[green]✅ Policy {policy_id[:8]}... enabled for {policy.model_name}[/green]"
+            )
 
     asyncio.run(_enable())
 
@@ -237,7 +242,9 @@ def policy_disable(
                 console.print(f"[bold red]Policy {policy_id} not found.[/bold red]")
                 raise typer.Exit(code=1)
             await session.commit()
-            console.print(f"[yellow]❌ Policy {policy_id[:8]}... disabled for {policy.model_name}[/yellow]")
+            console.print(
+                f"[yellow]❌ Policy {policy_id[:8]}... disabled for {policy.model_name}[/yellow]"
+            )
 
     asyncio.run(_disable())
 
@@ -276,7 +283,9 @@ def policy_evaluate() -> None:
 
         async with async_session_factory() as session:
             evaluator = AutoRollbackEvaluator(session=session)
-            with console.status("[bold yellow]Evaluating policies...[/bold yellow]", spinner="dots"):
+            with console.status(
+                "[bold yellow]Evaluating policies...[/bold yellow]", spinner="dots"
+            ):
                 results = await evaluator.evaluate_all_policies()
             await session.commit()
 

@@ -44,6 +44,7 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from packages.core.db.base import Base, UUIDMixin, TimestampMixin
 
+
 class Project(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "projects"
 

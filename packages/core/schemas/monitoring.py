@@ -1,7 +1,8 @@
 """Pydantic v2 schemas for Monitoring and Data Quality."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field, model_validator
 
 from packages.core.models.monitoring import DataQualityStatus, DriftSeverity
@@ -12,8 +13,8 @@ class DataQualityRuleConfig(BaseModel):
 
     max_null_percentage: float = Field(5.0, ge=0.0, le=100.0)
     max_duplicate_percentage: float = Field(1.0, ge=0.0, le=100.0)
-    required_columns: Optional[List[str]] = None
-    column_ranges: Optional[Dict[str, Dict[str, float]]] = None
+    required_columns: list[str] | None = None
+    column_ranges: dict[str, dict[str, float]] | None = None
 
 
 class DataQualityReportResponse(BaseModel):
@@ -25,7 +26,7 @@ class DataQualityReportResponse(BaseModel):
     cols_count: int
     null_percentage: float
     duplicate_percentage: float
-    failed_constraints: Optional[List[Dict[str, Any]]] = None
+    failed_constraints: list[dict[str, Any]] | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -33,9 +34,9 @@ class DataQualityReportResponse(BaseModel):
 
 class DriftCheckRequest(BaseModel):
     model_name: str
-    deployment_id: Optional[str] = None
-    reference_dataset_id: Optional[str] = None
-    current_dataset_id: Optional[str] = None
+    deployment_id: str | None = None
+    reference_dataset_id: str | None = None
+    current_dataset_id: str | None = None
     drift_threshold: float = Field(0.20, ge=0.01, le=1.0)
     sample_limit: int = Field(5000, ge=50, le=100000)
 
@@ -55,12 +56,12 @@ class DriftCheckRequest(BaseModel):
 class DriftEvaluationResponse(BaseModel):
     id: str
     model_name: str
-    deployment_id: Optional[str]
+    deployment_id: str | None
     drift_share: float
     drift_status: DriftSeverity
-    drifted_features: Optional[List[str]] = None
-    metrics: Optional[Dict[str, Any]] = None
-    html_report_path: Optional[str] = None
+    drifted_features: list[str] | None = None
+    metrics: dict[str, Any] | None = None
+    html_report_path: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -70,11 +71,11 @@ class FeedbackRequest(BaseModel):
     """Delayed feedback ground-truth label ingestion."""
 
     prediction_id: str
-    ground_truth: Optional[Any] = None
-    actual_label: Optional[Any] = None
-    deployment_id: Optional[str] = None
-    predicted_value: Optional[Any] = None
-    latency_ms: Optional[float] = None
+    ground_truth: Any | None = None
+    actual_label: Any | None = None
+    deployment_id: str | None = None
+    predicted_value: Any | None = None
+    latency_ms: float | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -90,11 +91,11 @@ class FeedbackRequest(BaseModel):
 class ModelPerformanceResponse(BaseModel):
     id: str
     model_name: str
-    deployment_id: Optional[str]
+    deployment_id: str | None
     task_type: str
     sample_count: int
-    metrics: Dict[str, Any]
-    baseline_metrics: Optional[Dict[str, Any]] = None
+    metrics: dict[str, Any]
+    baseline_metrics: dict[str, Any] | None = None
     degraded: bool
     created_at: datetime
 

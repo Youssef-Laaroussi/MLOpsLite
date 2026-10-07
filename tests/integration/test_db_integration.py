@@ -9,20 +9,18 @@ Tests:
 
 import os
 import uuid
+
 import pytest
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from packages.core.models.audit import AuditAction, AuditLog
+from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
 from packages.core.models.project import Project, ProjectStatus
-from packages.core.models.model_registry import RegisteredModel, ModelVersion, ModelStage
-from packages.core.models.deployment import Deployment, DeploymentStatus
 from packages.core.models.user import User, UserRole
-from packages.core.models.audit import AuditLog, AuditAction
-
 
 TEST_DB_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+    "TEST_DATABASE_URL", os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 )
 
 
@@ -30,12 +28,13 @@ TEST_DB_URL = os.getenv(
 async def integration_db_session():
     """Create an isolated database session for integration testing."""
     engine = create_async_engine(TEST_DB_URL, echo=False)
-    
+
     # Create tables if using in-memory or test database
     from packages.core.db.base import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with session_maker() as session:
         yield session
@@ -64,9 +63,7 @@ class TestDatabaseIntegration:
         assert project.id is not None
 
         # Query back
-        res = await integration_db_session.execute(
-            select(Project).where(Project.id == project.id)
-        )
+        res = await integration_db_session.execute(select(Project).where(Project.id == project.id))
         fetched = res.scalar_one_or_none()
         assert fetched is not None
         assert fetched.name == project.name

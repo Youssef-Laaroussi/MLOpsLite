@@ -4,13 +4,14 @@ Tests model registration, sequential versioning, stage promotion,
 and the single-production exclusivity constraint with auto-demotion.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from packages.core.models.model_registry import (
-    RegisteredModel,
-    ModelVersion,
     ModelStage,
+    ModelVersion,
+    RegisteredModel,
 )
 from packages.registry.service import ModelRegistryService
 
@@ -116,7 +117,9 @@ class TestModelRegistryService:
     async def test_promote_to_staging(self):
         session = AsyncMock()
         model = RegisteredModel(id="model-1", name="churn-predictor")
-        version = ModelVersion(id="ver-1", model_id="model-1", version=1, stage=ModelStage.DEVELOPMENT)
+        version = ModelVersion(
+            id="ver-1", model_id="model-1", version=1, stage=ModelStage.DEVELOPMENT
+        )
 
         service = ModelRegistryService(session)
         service.get_model_by_name = AsyncMock(return_value=model)

@@ -2,8 +2,9 @@
 
 import argparse
 import math
-from pathlib import Path
 import time
+from pathlib import Path
+
 import httpx
 import polars as pl
 from rich.console import Console
@@ -36,14 +37,17 @@ def simulate(
 
     if not test_file.exists():
         from generate_data import generate_demand_data
+
         generate_demand_data(data_dir)
 
-    console.print(Panel(
-        f"[bold cyan]🚀 Starting Demand Forecast & Delayed Ground-Truth Simulation[/bold cyan]\n"
-        f"Serving Endpoint: http://localhost:{serving_port}/predict\n"
-        f"MLite Feedback API: {api_url}/api/v1/deployments/{deployment_id}/feedback",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel(
+            f"[bold cyan]🚀 Starting Demand Forecast & Delayed Ground-Truth Simulation[/bold cyan]\n"
+            f"Serving Endpoint: http://localhost:{serving_port}/predict\n"
+            f"MLite Feedback API: {api_url}/api/v1/deployments/{deployment_id}/feedback",
+            border_style="cyan",
+        )
+    )
 
     df_test = pl.read_csv(test_file)
     samples = df_test.head(n_queries).to_dicts()
@@ -65,7 +69,7 @@ def simulate(
     for idx, row in enumerate(samples):
         features = [float(row[col]) for col in FEATURE_COLS]
         actual_sales = float(row["sales"])
-        pred_id = f"sales-pred-{idx+1:04d}"
+        pred_id = f"sales-pred-{idx + 1:04d}"
 
         # 1. Query serving container
         predicted_val = None
@@ -102,11 +106,11 @@ def simulate(
             feedback_status = "[dim]API Offline[/dim]"
 
         abs_err = abs(predicted_val - actual_sales)
-        squared_errors.append(abs_err ** 2)
+        squared_errors.append(abs_err**2)
         absolute_errors.append(abs_err)
 
         table.add_row(
-            f"#{idx+1:02d}",
+            f"#{idx + 1:02d}",
             f"Store {int(row['store_id'])} / Item {int(row['item_id'])}",
             f"{predicted_val:.1f} units",
             f"{actual_sales:.1f} units",
@@ -119,23 +123,31 @@ def simulate(
     mean_rmse = math.sqrt(sum(squared_errors) / len(squared_errors))
     mean_mae = sum(absolute_errors) / len(absolute_errors)
 
-    console.print(Panel(
-        f"[bold green]Simulation Completed Successfully![/bold green]\n\n"
-        f"Total Ingested Records: [bold]{len(samples)}[/bold]\n"
-        f"Stream Realized RMSE:   [bold cyan]{mean_rmse:.2f}[/bold cyan] units\n"
-        f"Stream Realized MAE:    [bold cyan]{mean_mae:.2f}[/bold cyan] units\n"
-        f"Target Quality Sla:     [bold]RMSE < 25.0[/bold] ([green]PASSED[/green])",
-        title="Live Feedback Performance Summary",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold green]Simulation Completed Successfully![/bold green]\n\n"
+            f"Total Ingested Records: [bold]{len(samples)}[/bold]\n"
+            f"Stream Realized RMSE:   [bold cyan]{mean_rmse:.2f}[/bold cyan] units\n"
+            f"Stream Realized MAE:    [bold cyan]{mean_mae:.2f}[/bold cyan] units\n"
+            f"Target Quality Sla:     [bold]RMSE < 25.0[/bold] ([green]PASSED[/green])",
+            title="Live Feedback Performance Summary",
+            border_style="green",
+        )
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8200, help="Serving container port")
-    parser.add_argument("--api-url", type=str, default="http://localhost:8000", help="MLite API URL")
-    parser.add_argument("--deployment-id", type=str, default="dep-demand-forecaster", help="Deployment ID")
-    parser.add_argument("--queries", type=int, default=12, help="Number of sales queries to simulate")
+    parser.add_argument(
+        "--api-url", type=str, default="http://localhost:8000", help="MLite API URL"
+    )
+    parser.add_argument(
+        "--deployment-id", type=str, default="dep-demand-forecaster", help="Deployment ID"
+    )
+    parser.add_argument(
+        "--queries", type=int, default=12, help="Number of sales queries to simulate"
+    )
     args = parser.parse_args()
 
     simulate(

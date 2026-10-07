@@ -10,26 +10,22 @@ Tests:
 """
 
 import hashlib
-import time
 from datetime import timedelta
 from unittest.mock import patch
 
-import pytest
-
+from apps.cli.credentials import (
+    clear_credentials,
+    get_auth_headers,
+    load_credentials,
+    save_credentials,
+)
 from packages.core.models.user import ApiKey
 from packages.core.security.auth import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
-    DEFAULT_SECRET_KEY,
-)
-from apps.cli.credentials import (
-    save_credentials,
-    load_credentials,
-    clear_credentials,
-    get_auth_headers,
+    hash_password,
+    verify_password,
 )
 
 
@@ -134,9 +130,10 @@ class TestCredentialsStore:
         creds_file = tmp_path / "credentials"
         creds_dir = tmp_path
 
-        with patch("apps.cli.credentials.CREDENTIALS_DIR", creds_dir), \
-             patch("apps.cli.credentials.CREDENTIALS_FILE", creds_file):
-
+        with (
+            patch("apps.cli.credentials.CREDENTIALS_DIR", creds_dir),
+            patch("apps.cli.credentials.CREDENTIALS_FILE", creds_file),
+        ):
             assert load_credentials() is None
 
             data = {"access_token": "mock-jwt-token", "username": "alice"}
@@ -153,10 +150,11 @@ class TestCredentialsStore:
         creds_file = tmp_path / "credentials"
         creds_dir = tmp_path
 
-        with patch("apps.cli.credentials.CREDENTIALS_DIR", creds_dir), \
-             patch("apps.cli.credentials.CREDENTIALS_FILE", creds_file), \
-             patch.dict("os.environ", {}, clear=True):
-
+        with (
+            patch("apps.cli.credentials.CREDENTIALS_DIR", creds_dir),
+            patch("apps.cli.credentials.CREDENTIALS_FILE", creds_file),
+            patch.dict("os.environ", {}, clear=True),
+        ):
             # 1. No credentials
             assert get_auth_headers() == {}
 

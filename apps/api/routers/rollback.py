@@ -3,7 +3,7 @@
 Manual rollback operations, rollback history, and auto-rollback policy management.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,18 +11,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
 from packages.core.models.audit import AuditAction
+from packages.core.models.rollback import RollbackTrigger
 from packages.core.models.user import User
 from packages.core.schemas.rollback import (
+    PolicyCreate,
+    PolicyListResponse,
+    PolicyResponse,
+    RollbackListResponse,
     RollbackRequest,
     RollbackResponse,
-    RollbackListResponse,
-    PolicyCreate,
-    PolicyResponse,
-    PolicyListResponse,
 )
-from packages.core.models.rollback import RollbackTrigger
 from packages.core.security.audit import AuditService
-from packages.core.security.dependencies import require_permission, get_current_user
+from packages.core.security.dependencies import get_current_user, require_permission
 from packages.core.security.rbac import Permission
 from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 from packages.rollback.policies import AutoRollbackEvaluator
@@ -163,14 +163,12 @@ async def rollback_model(
 
 @router.get("/rollbacks", response_model=RollbackListResponse)
 async def list_rollbacks(
-    model_name: Optional[str] = Query(None, description="Filter by model name"),
+    model_name: str | None = Query(None, description="Filter by model name"),
     limit: int = Query(50, ge=1, le=500),
     coordinator: RollbackCoordinator = Depends(_get_coordinator),
 ) -> Any:
     """Query rollback audit log history."""
-    records = await coordinator.get_rollback_history(
-        model_name=model_name, limit=limit
-    )
+    records = await coordinator.get_rollback_history(model_name=model_name, limit=limit)
     return {"rollbacks": records, "total": len(records)}
 
 
@@ -215,14 +213,12 @@ async def create_policy(
 
 @router.get("/rollback-policies", response_model=PolicyListResponse)
 async def list_policies(
-    model_name: Optional[str] = Query(None, description="Filter by model name"),
+    model_name: str | None = Query(None, description="Filter by model name"),
     enabled_only: bool = Query(False, description="Only show enabled policies"),
     evaluator: AutoRollbackEvaluator = Depends(_get_evaluator),
 ) -> Any:
     """List all auto-rollback policies."""
-    policies = await evaluator.list_policies(
-        model_name=model_name, enabled_only=enabled_only
-    )
+    policies = await evaluator.list_policies(model_name=model_name, enabled_only=enabled_only)
     return {"policies": policies, "total": len(policies)}
 
 

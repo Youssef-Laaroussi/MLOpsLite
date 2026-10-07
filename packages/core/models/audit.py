@@ -1,14 +1,15 @@
 """SQLAlchemy model for immutable audit logs (Issue #27)."""
 
 import enum
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
-    Enum as SAEnum,
-    String,
-    Text,
-    DateTime,
     JSON,
+    DateTime,
+    String,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -74,11 +75,14 @@ class AuditLog(Base, UUIDMixin):
     )
     action: Mapped[AuditAction] = mapped_column(
         SAEnum(AuditAction, name="audit_action", create_constraint=True),
-        nullable=False, index=True,
+        nullable=False,
+        index=True,
     )
     resource_type: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True,
-        doc="Target resource type: project, model, deployment, etc."
+        String(50),
+        nullable=False,
+        index=True,
+        doc="Target resource type: project, model, deployment, etc.",
     )
     resource_id: Mapped[str | None] = mapped_column(
         String(36), nullable=True, index=True, doc="UUID of the target resource"
@@ -87,12 +91,11 @@ class AuditLog(Base, UUIDMixin):
         String(200), nullable=True, doc="Human-readable resource identifier"
     )
     changes_json: Mapped[dict | None] = mapped_column(
-        JSON, nullable=True,
-        doc="Before/after diff or action metadata"
+        JSON, nullable=True, doc="Before/after diff or action metadata"
     )
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
     )

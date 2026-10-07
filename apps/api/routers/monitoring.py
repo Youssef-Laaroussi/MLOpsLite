@@ -1,8 +1,9 @@
 """Monitoring and observability REST endpoints (Issues #18, #19, #20)."""
 
-from typing import Any, List, Optional
+from typing import Any
+
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +38,9 @@ async def list_monitoring(
                 "id": r.id,
                 "model_name": r.model_name,
                 "drift_share": r.drift_share,
-                "drift_status": r.drift_status.value if hasattr(r.drift_status, "value") else str(r.drift_status),
+                "drift_status": r.drift_status.value
+                if hasattr(r.drift_status, "value")
+                else str(r.drift_status),
                 "created_at": r.created_at,
             }
             for r in reports
@@ -46,7 +49,9 @@ async def list_monitoring(
     }
 
 
-@router.post("/drift/check", response_model=DriftEvaluationResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/drift/check", response_model=DriftEvaluationResponse, status_code=status.HTTP_201_CREATED
+)
 async def trigger_drift_check(
     payload: DriftCheckRequest,
     db: AsyncSession = Depends(get_db),
@@ -56,14 +61,18 @@ async def trigger_drift_check(
 
     # In production, pull reference from MinIO dataset and live from inference log buffer
     # Here, construct realistic baseline and test evaluation data
-    ref_df = pd.DataFrame({
-        "feature_1": [1.0, 2.0, 3.0, 4.0, 5.0] * 50,
-        "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 50,
-    })
-    curr_df = pd.DataFrame({
-        "feature_1": [1.2, 2.1, 3.1, 4.0, 5.2] * 50,
-        "feature_2": [10.5, 19.8, 30.2, 39.5, 50.1] * 50,
-    })
+    ref_df = pd.DataFrame(
+        {
+            "feature_1": [1.0, 2.0, 3.0, 4.0, 5.0] * 50,
+            "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 50,
+        }
+    )
+    curr_df = pd.DataFrame(
+        {
+            "feature_1": [1.2, 2.1, 3.1, 4.0, 5.2] * 50,
+            "feature_2": [10.5, 19.8, 30.2, 39.5, 50.1] * 50,
+        }
+    )
 
     eval_record = await detector.evaluate_drift(
         model_name=payload.model_name,
@@ -74,7 +83,7 @@ async def trigger_drift_check(
     return eval_record
 
 
-@router.get("/drift/{model_name}", response_model=List[DriftEvaluationResponse])
+@router.get("/drift/{model_name}", response_model=list[DriftEvaluationResponse])
 async def get_drift_evaluations(
     model_name: str,
     limit: int = Query(10, ge=1, le=100),
@@ -86,7 +95,7 @@ async def get_drift_evaluations(
     return evals
 
 
-@router.get("/performance/{model_name}", response_model=List[ModelPerformanceResponse])
+@router.get("/performance/{model_name}", response_model=list[ModelPerformanceResponse])
 async def get_performance_history(
     model_name: str,
     limit: int = Query(10, ge=1, le=100),
@@ -148,7 +157,7 @@ async def get_html_report(
     <div class="badge">{eval_rec.drift_status.value} DRIFT</div>
     <h1>Data Drift Report: {eval_rec.model_name}</h1>
     <p>Drift Share: <strong>{eval_rec.drift_share:.2%}</strong></p>
-    <p>Drifted Features: <strong>{', '.join(eval_rec.drifted_features or ['None'])}</strong></p>
+    <p>Drifted Features: <strong>{", ".join(eval_rec.drifted_features or ["None"])}</strong></p>
     <p>Generated At: {eval_rec.created_at.isoformat()}</p>
   </div>
 </body>

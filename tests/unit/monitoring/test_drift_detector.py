@@ -1,8 +1,9 @@
 """Unit tests for DataDriftDetector feature drift testing and severity classification (Issue #19)."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pandas as pd
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from packages.core.models.monitoring import DriftSeverity
 from packages.monitoring.drift_detector import DataDriftDetector

@@ -14,21 +14,17 @@ Executes the complete 11-step MLite developer journey:
   11. Verification: Validate production cutover to v1 and clean resource teardown
 """
 
-import json
-import os
-import sys
 import uuid
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from apps.cli.main import app as cli_app
-from packages.deployment.docker_manager import DockerManager
-from packages.rollback.coordinator import RollbackCoordinator
 from packages.core.models.model_registry import ModelStage
 from packages.core.models.rollback import RollbackStatus
+from packages.deployment.docker_manager import DockerManager
+from packages.rollback.coordinator import RollbackCoordinator
 
 runner = CliRunner()
 
@@ -42,7 +38,11 @@ class TestCompleteMLLifecycleE2E:
         project_dir = tmp_path / "credit_risk_project"
         result_init = runner.invoke(cli_app, ["init", "credit-risk", "--path", str(project_dir)])
         assert result_init.exit_code == 0
-        assert (project_dir / ".mlite").exists() or (project_dir / "mlite.yaml").exists() or "Initialized" in result_init.output
+        assert (
+            (project_dir / ".mlite").exists()
+            or (project_dir / "mlite.yaml").exists()
+            or "Initialized" in result_init.output
+        )
 
         # ── Step 2: Data Registration ──────────────────────────────
         dataset_file = project_dir / "data.csv"
@@ -127,10 +127,11 @@ class TestCompleteMLLifecycleE2E:
 
         # ── Step 10: Faulty Candidate v2 & Emergency Rollback ──────
         coordinator = RollbackCoordinator(session=mock_session, docker_manager=mock_docker)
-        with patch.object(coordinator, "_get_active_deployment") as mock_get_dep, \
-             patch.object(coordinator, "_get_model_version") as mock_get_ver, \
-             patch.object(coordinator, "_check_health", return_value=True):
-
+        with (
+            patch.object(coordinator, "_get_active_deployment") as mock_get_dep,
+            patch.object(coordinator, "_get_model_version") as mock_get_ver,
+            patch.object(coordinator, "_check_health", return_value=True),
+        ):
             from packages.core.models.deployment import Deployment, DeploymentStatus
             from packages.core.models.model_registry import ModelVersion
 

@@ -2,11 +2,11 @@
 
 import pytest
 from sqlalchemy import String, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from packages.core.db.base import Base, TimestampMixin, UUIDMixin
-from packages.core.db.session import get_db_url, create_engine_instance
+from packages.core.db.session import create_engine_instance, get_db_url
 
 
 class SampleModel(Base, UUIDMixin, TimestampMixin):

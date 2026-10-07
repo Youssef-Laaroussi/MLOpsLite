@@ -1,14 +1,14 @@
 """Alert engine for threshold evaluation, deduplication, cooldown, and notification dispatch."""
 
-from datetime import datetime, timezone, timedelta
 import logging
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
 from packages.alerting.dispatchers.manager import NotificationManager
+from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class AlertEngine:
     def __init__(
         self,
         session: AsyncSession,
-        notification_manager: Optional[NotificationManager] = None,
+        notification_manager: NotificationManager | None = None,
         cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS,
     ) -> None:
         self.session = session
@@ -31,11 +31,11 @@ class AlertEngine:
     async def is_in_cooldown(
         self,
         event_type: str,
-        model_name: Optional[str] = None,
-        deployment_id: Optional[str] = None,
+        model_name: str | None = None,
+        deployment_id: str | None = None,
     ) -> bool:
         """Check if an identical alert was recently created within the cooldown window."""
-        cutoff = datetime.now(timezone.utc) - timedelta(seconds=self.cooldown_seconds)
+        cutoff = datetime.now(UTC) - timedelta(seconds=self.cooldown_seconds)
 
         conditions = [
             Alert.event_type == event_type,
@@ -58,11 +58,11 @@ class AlertEngine:
         title: str,
         message: str,
         severity: AlertSeverity = AlertSeverity.WARNING,
-        model_name: Optional[str] = None,
-        deployment_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Alert]:
+        model_name: str | None = None,
+        deployment_id: str | None = None,
+        project_id: str | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> Alert | None:
         """Evaluate cooldown, persist alert, and broadcast to notification channels."""
         # 1. Cooldown / deduplication check
         if await self.is_in_cooldown(event_type, model_name, deployment_id):
@@ -93,7 +93,9 @@ class AlertEngine:
 
         return alert
 
-    async def acknowledge_alert(self, alert_id: str, acknowledged_by: str = "operator") -> Optional[Alert]:
+    async def acknowledge_alert(
+        self, alert_id: str, acknowledged_by: str = "operator"
+    ) -> Alert | None:
         """Transition alert status to ACKNOWLEDGED."""
         alert = await self.get_alert(alert_id)
         if alert is None:
@@ -105,19 +107,19 @@ class AlertEngine:
         await self.session.refresh(alert)
         return alert
 
-    async def resolve_alert(self, alert_id: str) -> Optional[Alert]:
+    async def resolve_alert(self, alert_id: str) -> Alert | None:
         """Transition alert status to RESOLVED."""
         alert = await self.get_alert(alert_id)
         if alert is None:
             return None
 
         alert.status = AlertStatus.RESOLVED
-        alert.resolved_at = datetime.now(timezone.utc)
+        alert.resolved_at = datetime.now(UTC)
         await self.session.flush()
         await self.session.refresh(alert)
         return alert
 
-    async def get_alert(self, alert_id: str) -> Optional[Alert]:
+    async def get_alert(self, alert_id: str) -> Alert | None:
         """Fetch alert by UUID."""
         query = select(Alert).where(Alert.id == alert_id)
         result = await self.session.execute(query)
@@ -125,11 +127,11 @@ class AlertEngine:
 
     async def list_alerts(
         self,
-        status: Optional[AlertStatus] = None,
-        severity: Optional[AlertSeverity] = None,
-        model_name: Optional[str] = None,
+        status: AlertStatus | None = None,
+        severity: AlertSeverity | None = None,
+        model_name: str | None = None,
         limit: int = 50,
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         """Query alert history ordered by creation time descending."""
         query = select(Alert).order_by(Alert.created_at.desc()).limit(limit)
         if status:

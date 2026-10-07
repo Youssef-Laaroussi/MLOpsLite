@@ -1,24 +1,23 @@
 """SQLAlchemy models for Data Quality, Drift Detection, and Performance Monitoring."""
 
 import enum
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import (
-    Enum as SAEnum,
+    JSON,
+    BigInteger,
+    Boolean,
+    Float,
     ForeignKey,
     Integer,
-    BigInteger,
     String,
-    Text,
-    Float,
-    Boolean,
-    DateTime,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class DataQualityStatus(str, enum.Enum):
@@ -45,9 +44,7 @@ class DataQualityReport(Base, UUIDMixin, TimestampMixin):
     dataset_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    score: Mapped[float] = mapped_column(
-        Float, nullable=False, doc="Composite quality score 0-100"
-    )
+    score: Mapped[float] = mapped_column(Float, nullable=False, doc="Composite quality score 0-100")
     status: Mapped[DataQualityStatus] = mapped_column(
         SAEnum(DataQualityStatus, name="data_quality_status", create_constraint=True),
         default=DataQualityStatus.PASS,
@@ -103,15 +100,11 @@ class ModelPerformanceHistory(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "model_performance_history"
 
-    model_name: Mapped[str] = mapped_column(
-        String(200), nullable=False, index=True
-    )
+    model_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     deployment_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("deployments.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    task_type: Mapped[str] = mapped_column(
-        String(50), default="classification", nullable=False
-    )
+    task_type: Mapped[str] = mapped_column(String(50), default="classification", nullable=False)
     sample_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     metrics_json: Mapped[dict] = mapped_column(
         JSON, nullable=False, doc="Calculated live metrics e.g. accuracy, f1, precision"

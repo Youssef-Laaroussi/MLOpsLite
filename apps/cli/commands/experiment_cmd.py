@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+from typing import Any
 
 import httpx
 import typer
@@ -51,7 +52,9 @@ def run(
         if result.returncode == 0:
             console.print("\n[bold green]✓ Training completed successfully![/bold green]")
         else:
-            console.print(f"\n[bold red]✗ Training failed (exit code {result.returncode})[/bold red]")
+            console.print(
+                f"\n[bold red]✗ Training failed (exit code {result.returncode})[/bold red]"
+            )
             raise typer.Exit(code=result.returncode)
     except FileNotFoundError:
         console.print(f"[red]✗ Script not found: {script}[/red]")
@@ -73,7 +76,7 @@ def list_experiments(
     table.add_column("Created", style="dim")
 
     try:
-        params = {"page_size": limit}
+        params: dict[str, Any] = {"page_size": limit}
         if project:
             params["project"] = project
         resp = httpx.get(f"{api_url}/api/v1/experiments/", params=params, timeout=5.0)

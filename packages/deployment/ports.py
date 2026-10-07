@@ -5,11 +5,11 @@ the designated serving range (default 8100–8200).
 """
 
 import socket
-from typing import Set
 
 
 class PortAllocationError(RuntimeError):
     """Raised when no ports are available in the designated range."""
+
     pass
 
 
@@ -28,7 +28,7 @@ class PortAllocator:
             raise ValueError(f"start_port ({start_port}) must be less than end_port ({end_port})")
         self.start_port = start_port
         self.end_port = end_port
-        self._reserved_ports: Set[int] = set()
+        self._reserved_ports: set[int] = set()
 
     def is_port_free_on_host(self, port: int) -> bool:
         """Check if a port is physically free by attempting to bind to it."""
@@ -37,10 +37,10 @@ class PortAllocator:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.bind(("0.0.0.0", port))  # nosec B104
                 return True
-        except (OSError, socket.error):
+        except OSError:
             return False
 
-    def is_available(self, port: int, active_db_ports: Set[int] | None = None) -> bool:
+    def is_available(self, port: int, active_db_ports: set[int] | None = None) -> bool:
         """Check if port is neither reserved in-memory, active in DB, nor occupied on host."""
         if port in self._reserved_ports:
             return False
@@ -51,7 +51,7 @@ class PortAllocator:
     def allocate(
         self,
         requested_port: int | None = None,
-        active_db_ports: Set[int] | None = None,
+        active_db_ports: set[int] | None = None,
     ) -> int:
         """Allocate a host port.
 
@@ -73,9 +73,7 @@ class PortAllocator:
                 self._reserved_ports.add(port)
                 return port
 
-        raise PortAllocationError(
-            f"No available ports in range {self.start_port}–{self.end_port}"
-        )
+        raise PortAllocationError(f"No available ports in range {self.start_port}–{self.end_port}")
 
     def release(self, port: int) -> None:
         """Release a previously reserved port."""

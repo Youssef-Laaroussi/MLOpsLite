@@ -1,7 +1,6 @@
 """CLI commands for querying immutable audit logs (Issue #27)."""
 
 import json
-from typing import Optional
 
 import httpx
 import typer
@@ -11,18 +10,29 @@ from rich.table import Table
 from apps.cli.credentials import get_auth_headers
 
 console = Console()
-app = typer.Typer(no_args_is_help=True, help="Inspect immutable compliance and operational audit logs")
+app = typer.Typer(
+    no_args_is_help=True, help="Inspect immutable compliance and operational audit logs"
+)
 
 DEFAULT_API_URL = "http://localhost:8000"
 
 
 @app.command("list")
 def list_audit_logs(
-    resource: Optional[str] = typer.Option(None, "--resource", "-r", help="Filter by resource type (e.g. model, deployment, user)"),
-    action: Optional[str] = typer.Option(None, "--action", "-a", help="Filter by action (e.g. MODEL_PROMOTE, DEPLOYMENT_CREATE, USER_LOGIN)"),
-    user_id: Optional[str] = typer.Option(None, "--user", "-u", help="Filter by user ID"),
+    resource: str | None = typer.Option(
+        None, "--resource", "-r", help="Filter by resource type (e.g. model, deployment, user)"
+    ),
+    action: str | None = typer.Option(
+        None,
+        "--action",
+        "-a",
+        help="Filter by action (e.g. MODEL_PROMOTE, DEPLOYMENT_CREATE, USER_LOGIN)",
+    ),
+    user_id: str | None = typer.Option(None, "--user", "-u", help="Filter by user ID"),
     limit: int = typer.Option(50, "--limit", "-n", help="Maximum entries to retrieve"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """📜 List immutable audit log entries."""
     headers = get_auth_headers()
@@ -39,9 +49,13 @@ def list_audit_logs(
         params["user_id"] = user_id
 
     try:
-        res = httpx.get(f"{api_url}/api/v1/audit/logs", params=params, headers=headers, timeout=10.0)
+        res = httpx.get(
+            f"{api_url}/api/v1/audit/logs", params=params, headers=headers, timeout=10.0
+        )
         if res.status_code == 403:
-            console.print("[bold red]Access denied:[/bold red] Only MAINTAINER and ADMIN roles can view audit logs.")
+            console.print(
+                "[bold red]Access denied:[/bold red] Only MAINTAINER and ADMIN roles can view audit logs."
+            )
             raise typer.Exit(code=1)
         elif res.status_code != 200:
             console.print(f"[bold red]Error {res.status_code}:[/bold red] {res.text}")

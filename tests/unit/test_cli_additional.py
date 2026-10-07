@@ -12,7 +12,8 @@ and formatted terminal outputs across:
 - mlite audit
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from typer.testing import CliRunner
 
 from apps.cli.main import app
@@ -70,8 +71,13 @@ class TestCliAuthCommands:
             "role": "MAINTAINER",
             "permissions": ["model:promote", "deployment:rollback"],
         }
-        with patch("apps.cli.commands.auth_cmd.get_auth_headers", return_value={"Authorization": "Bearer fake"}), \
-             patch("httpx.get", return_value=mock_response):
+        with (
+            patch(
+                "apps.cli.commands.auth_cmd.get_auth_headers",
+                return_value={"Authorization": "Bearer fake"},
+            ),
+            patch("httpx.get", return_value=mock_response),
+        ):
             res = runner.invoke(app, ["whoami"])
             assert res.exit_code == 0
             assert "lead_user" in res.output
@@ -104,8 +110,13 @@ class TestCliAuditCommand:
             ],
             "total": 1,
         }
-        with patch("apps.cli.commands.audit_cmd.get_auth_headers", return_value={"Authorization": "Bearer token"}), \
-             patch("httpx.get", return_value=mock_response):
+        with (
+            patch(
+                "apps.cli.commands.audit_cmd.get_auth_headers",
+                return_value={"Authorization": "Bearer token"},
+            ),
+            patch("httpx.get", return_value=mock_response),
+        ):
             res = runner.invoke(app, ["audit", "list"])
             assert res.exit_code == 0
             assert "MODEL_PROMOTE" in res.output

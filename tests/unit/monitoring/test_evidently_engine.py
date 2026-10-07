@@ -1,8 +1,9 @@
 """Unit tests for EvidentlyEngine automated evaluation and report generation (Issue #18)."""
 
+from unittest.mock import MagicMock
+
 import pandas as pd
 import pytest
-from unittest.mock import MagicMock
 
 from packages.core.storage.client import StorageClient
 from packages.monitoring.evidently_engine import EvidentlyEngine
@@ -11,15 +12,19 @@ from packages.monitoring.evidently_engine import EvidentlyEngine
 @pytest.fixture
 def synthetic_datasets():
     # Baseline reference dataset
-    ref = pd.DataFrame({
-        "feature_1": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
-        "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,
-    })
+    ref = pd.DataFrame(
+        {
+            "feature_1": [1.0, 2.0, 3.0, 4.0, 5.0] * 20,
+            "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,
+        }
+    )
     # Shifted current dataset
-    curr = pd.DataFrame({
-        "feature_1": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,  # heavily shifted
-        "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,  # stable
-    })
+    curr = pd.DataFrame(
+        {
+            "feature_1": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,  # heavily shifted
+            "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 20,  # stable
+        }
+    )
     return ref, curr
 
 

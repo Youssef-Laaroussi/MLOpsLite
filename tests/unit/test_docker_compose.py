@@ -1,6 +1,7 @@
 """Unit test verifying docker-compose.yml configuration and environment templates."""
 
 from pathlib import Path
+
 import yaml
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -27,7 +28,9 @@ def test_compose_file_exists_and_valid_yaml() -> None:
         "mlite-ui",
     ]
     for service_name in expected_services:
-        assert service_name in services, f"Service '{service_name}' is missing in docker-compose.yml"
+        assert service_name in services, (
+            f"Service '{service_name}' is missing in docker-compose.yml"
+        )
 
 
 def test_compose_networks_and_volumes() -> None:

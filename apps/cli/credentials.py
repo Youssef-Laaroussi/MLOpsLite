@@ -6,7 +6,7 @@ Manages local session token at ~/.mlite/credentials with secure permissions.
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 CREDENTIALS_DIR = Path.home() / ".mlite"
 CREDENTIALS_FILE = CREDENTIALS_DIR / "credentials"
@@ -22,7 +22,7 @@ def save_credentials(data: dict[str, Any]) -> None:
         pass
 
 
-def load_credentials() -> Optional[dict[str, Any]]:
+def load_credentials() -> dict[str, Any] | None:
     """Load credentials from ~/.mlite/credentials if available."""
     if not CREDENTIALS_FILE.exists():
         return None

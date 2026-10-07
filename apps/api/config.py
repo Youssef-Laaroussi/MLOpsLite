@@ -72,7 +72,9 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     admin_user: str = os.getenv("ADMIN_USER", os.getenv("MLITE_ADMIN_USER", "admin"))
     admin_email: str = os.getenv("ADMIN_EMAIL", os.getenv("MLITE_ADMIN_EMAIL", "admin@mlite.local"))
-    admin_password: str = os.getenv("ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456"))
+    admin_password: str = os.getenv(
+        "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456")
+    )
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":

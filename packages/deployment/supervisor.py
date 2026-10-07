@@ -1,7 +1,7 @@
 """Deployment supervisor — automated health monitoring, crash detection, and resource telemetry."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from sqlalchemy import select
@@ -23,16 +23,16 @@ class DeploymentSupervisor:
     def __init__(
         self,
         session: AsyncSession,
-        docker_manager: Optional[DockerManager] = None,
+        docker_manager: DockerManager | None = None,
         http_timeout: float = 3.0,
     ) -> None:
         self.session = session
         self.docker_manager = docker_manager or DockerManager()
         self.http_timeout = http_timeout
 
-    async def probe_deployment(self, deployment: Deployment) -> Dict[str, Any]:
+    async def probe_deployment(self, deployment: Deployment) -> dict[str, Any]:
         """Check container status, perform HTTP health probe, and collect resource metrics."""
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "deployment_id": deployment.id,
             "status": deployment.status.value,
             "healthy": False,
@@ -42,7 +42,10 @@ class DeploymentSupervisor:
         # 1. Inspect Docker container state
         if deployment.container_id:
             c_state = self.docker_manager.get_container_status(deployment.container_id)
-            if c_state.get("status") in ("STOPPED", "FAILED") and deployment.status == DeploymentStatus.RUNNING:
+            if (
+                c_state.get("status") in ("STOPPED", "FAILED")
+                and deployment.status == DeploymentStatus.RUNNING
+            ):
                 exit_code = c_state.get("exit_code")
                 error = c_state.get("error") or f"Container exited with code {exit_code}"
                 deployment.status = DeploymentStatus.FAILED
@@ -89,11 +92,9 @@ class DeploymentSupervisor:
         result["metrics"] = stats
         return result
 
-    async def poll_all_active_deployments(self) -> List[Dict[str, Any]]:
+    async def poll_all_active_deployments(self) -> list[dict[str, Any]]:
         """Probe all currently active deployments and record metric telemetry."""
-        query = select(Deployment).where(
-            Deployment.status == DeploymentStatus.RUNNING
-        )
+        query = select(Deployment).where(Deployment.status == DeploymentStatus.RUNNING)
         result = await self.session.execute(query)
         active_deployments = list(result.scalars().all())
 
@@ -104,11 +105,13 @@ class DeploymentSupervisor:
                 reports.append(report)
             except Exception as e:
                 logger.error("Supervisor failed to probe deployment %s: %s", dep.id, e)
-                reports.append({
-                    "deployment_id": dep.id,
-                    "status": dep.status.value,
-                    "healthy": False,
-                    "error": str(e),
-                })
+                reports.append(
+                    {
+                        "deployment_id": dep.id,
+                        "status": dep.status.value,
+                        "healthy": False,
+                        "error": str(e),
+                    }
+                )
 
         return reports

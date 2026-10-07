@@ -11,11 +11,17 @@ from packages.core.models.deployment import DeploymentStatus
 class DeploymentCreate(BaseModel):
     """Payload to deploy a registered model version to Docker."""
 
-    model_name: str = Field(..., min_length=1, max_length=200, description="Name of the registered model")
+    model_name: str = Field(
+        ..., min_length=1, max_length=200, description="Name of the registered model"
+    )
     model_version: int = Field(..., ge=1, description="Version number of the registered model")
-    port: int | None = Field(None, ge=1024, le=65535, description="Optional custom host port (default auto-allocated)")
+    port: int | None = Field(
+        None, ge=1024, le=65535, description="Optional custom host port (default auto-allocated)"
+    )
     project_id: str | None = Field(None, description="Optional associated project ID")
-    config: dict[str, Any] | None = Field(default_factory=dict, description="Deployment configuration flags")
+    config: dict[str, Any] | None = Field(
+        default_factory=dict, description="Deployment configuration flags"
+    )
 
 
 class DeploymentResponse(BaseModel):

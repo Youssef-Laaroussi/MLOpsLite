@@ -1,7 +1,7 @@
 """Verification of MLite monorepo workspace structure."""
 
-from pathlib import Path
 import importlib
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

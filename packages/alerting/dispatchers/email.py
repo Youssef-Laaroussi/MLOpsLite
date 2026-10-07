@@ -5,7 +5,6 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional
 
 from packages.alerting.dispatchers.base import BaseDispatcher
 from packages.core.models.alert import Alert
@@ -20,10 +19,10 @@ class EmailDispatcher(BaseDispatcher):
         self,
         smtp_host: str = "localhost",
         smtp_port: int = 587,
-        smtp_user: Optional[str] = None,
-        smtp_password: Optional[str] = None,
+        smtp_user: str | None = None,
+        smtp_password: str | None = None,
         from_email: str = "alerts@mlite.local",
-        recipients: Optional[List[str]] = None,
+        recipients: list[str] | None = None,
         use_tls: bool = True,
     ) -> None:
         self.smtp_host = smtp_host
@@ -50,7 +49,7 @@ class EmailDispatcher(BaseDispatcher):
   <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px;">
     <h2 style="color: #38bdf8; margin-top: 0;">[{alert.severity.value}] {alert.title}</h2>
     <p><strong>Event:</strong> {alert.event_type}</p>
-    <p><strong>Model:</strong> {alert.model_name or 'N/A'}</p>
+    <p><strong>Model:</strong> {alert.model_name or "N/A"}</p>
     <p style="background: #0f172a; padding: 12px; border-radius: 6px; font-family: monospace;">{alert.message}</p>
     <p style="color: #64748b; font-size: 12px;">Delivered by MLite Alert Engine</p>
   </div>

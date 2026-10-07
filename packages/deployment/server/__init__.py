@@ -3,9 +3,9 @@
 from packages.deployment.server.app import app
 from packages.deployment.server.predictor import BasePredictor
 from packages.deployment.server.schemas import (
+    ModelMetadataResponse,
     PredictionRequest,
     PredictionResponse,
-    ModelMetadataResponse,
 )
 
 __all__ = [

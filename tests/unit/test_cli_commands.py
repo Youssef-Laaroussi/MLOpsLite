@@ -1,10 +1,7 @@
 """Unit tests for MLite CLI commands (Issue #8)."""
 
 import json
-import os
-from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from apps.cli.main import app
@@ -65,11 +62,17 @@ class TestInitCommand:
         assert data["project_slug"] == "config-test"
 
     def test_init_with_description(self, tmp_path):
-        runner.invoke(app, [
-            "init", "desc-test",
-            "--dir", str(tmp_path),
-            "--description", "My test project",
-        ])
+        runner.invoke(
+            app,
+            [
+                "init",
+                "desc-test",
+                "--dir",
+                str(tmp_path),
+                "--description",
+                "My test project",
+            ],
+        )
         yaml_file = tmp_path / "desc-test" / "mlite.yaml"
         assert "My test project" in yaml_file.read_text()
 

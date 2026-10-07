@@ -1,18 +1,21 @@
 """Dataset and DatasetVersion SQLAlchemy models."""
 
 import enum
+
 from sqlalchemy import (
-    Enum as SAEnum,
+    JSON,
+    BigInteger,
     ForeignKey,
     Integer,
-    BigInteger,
     String,
     Text,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class DatasetFormat(str, enum.Enum):
@@ -45,7 +48,10 @@ class Dataset(Base, UUIDMixin, TimestampMixin):
 
     # Relationships
     versions: Mapped[list["DatasetVersion"]] = relationship(
-        "DatasetVersion", back_populates="dataset", cascade="all, delete-orphan", order_by="desc(DatasetVersion.version_num)"
+        "DatasetVersion",
+        back_populates="dataset",
+        cascade="all, delete-orphan",
+        order_by="desc(DatasetVersion.version_num)",
     )
 
 
@@ -81,6 +87,4 @@ class DatasetVersion(Base, UUIDMixin, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    dataset: Mapped["Dataset"] = relationship(
-        "Dataset", back_populates="versions"
-    )
+    dataset: Mapped["Dataset"] = relationship("Dataset", back_populates="versions")

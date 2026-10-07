@@ -78,6 +78,7 @@ Never perform direct network I/O in unit tests. Use `mock_session` to mock query
 ```python
 from unittest.mock import MagicMock
 
+
 def test_service_query(mock_session):
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = [my_entity]

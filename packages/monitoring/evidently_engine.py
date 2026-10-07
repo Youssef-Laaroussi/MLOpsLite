@@ -4,7 +4,7 @@ import json
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -13,8 +13,9 @@ from packages.core.storage.client import StorageClient, get_storage_client
 logger = logging.getLogger(__name__)
 
 try:
-    from evidently.report import Report
     from evidently.metric_preset import DataDriftPreset, DataQualityPreset
+    from evidently.report import Report
+
     _EVIDENTLY_AVAILABLE = True
 except ImportError:
     Report = None  # type: ignore
@@ -28,7 +29,7 @@ class EvidentlyEngine:
 
     DEFAULT_BUCKET = "mlite-evaluations"
 
-    def __init__(self, storage_client: Optional[StorageClient] = None) -> None:
+    def __init__(self, storage_client: StorageClient | None = None) -> None:
         self.storage = storage_client or get_storage_client()
 
     @property
@@ -43,7 +44,7 @@ class EvidentlyEngine:
         project_name: str = "default-project",
         model_version: str = "1",
         run_id: str = "eval-run",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate data drift evaluation report and upload artifacts to MinIO."""
         output_dir = Path(tempfile.gettempdir()) / f"mlite_eval_{run_id}"
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +68,8 @@ class EvidentlyEngine:
                 drift_metrics = metrics_dict.get("metrics", [{}])[0].get("result", {})
                 drift_share = drift_metrics.get("drift_share", 0.0)
                 drifted_features = [
-                    feat for feat, data in drift_metrics.get("drift_by_columns", {}).items()
+                    feat
+                    for feat, data in drift_metrics.get("drift_by_columns", {}).items()
                     if data.get("drift_detected")
                 ]
 
@@ -75,8 +77,12 @@ class EvidentlyEngine:
                 s3_html_key = f"{project_name}/v{model_version}/{run_id}/report.html"
                 s3_json_key = f"{project_name}/v{model_version}/{run_id}/metrics.json"
                 try:
-                    self.storage.upload_file(html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET)
-                    self.storage.upload_file(json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET)
+                    self.storage.upload_file(
+                        html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET
+                    )
+                    self.storage.upload_file(
+                        json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET
+                    )
                 except Exception as e:
                     logger.warning("Failed to upload Evidently reports to MinIO: %s", e)
 

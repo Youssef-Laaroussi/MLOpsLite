@@ -3,20 +3,21 @@
 import enum
 import hashlib
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import (
-    Enum as SAEnum,
-    String,
-    Text,
+    JSON,
     Boolean,
     DateTime,
-    JSON,
     ForeignKey,
+    String,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class UserRole(str, enum.Enum):
@@ -44,17 +45,18 @@ class User(Base, UUIDMixin, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(
         String(255), nullable=False, doc="Argon2/bcrypt hashed password"
     )
-    full_name: Mapped[str | None] = mapped_column(
-        String(200), nullable=True
-    )
+    full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         SAEnum(UserRole, name="user_role", create_constraint=True),
         default=UserRole.USER,
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, server_default="true", nullable=False,
-        doc="Deactivated users cannot authenticate"
+        Boolean,
+        default=True,
+        server_default="true",
+        nullable=False,
+        doc="Deactivated users cannot authenticate",
     )
 
     # Relationships
@@ -69,7 +71,11 @@ class ApiKey(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
     user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, doc="Owning user ID"
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Owning user ID",
     )
     name: Mapped[str] = mapped_column(
         String(100), nullable=False, doc="Human-readable key name (e.g. 'CI Pipeline')"
@@ -78,8 +84,7 @@ class ApiKey(Base, UUIDMixin, TimestampMixin):
         String(12), nullable=False, doc="First 8 chars of key for identification (mlite_xxxx)"
     )
     key_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, nullable=False, index=True,
-        doc="SHA-256 hash of the full API key"
+        String(64), unique=True, nullable=False, index=True, doc="SHA-256 hash of the full API key"
     )
     scopes: Mapped[dict | None] = mapped_column(
         JSON, nullable=True, doc="Optional scope restrictions"
@@ -88,12 +93,13 @@ class ApiKey(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True, doc="Optional expiration date"
     )
     is_revoked: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false", nullable=False,
-        doc="Revoked keys are immediately invalid"
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+        doc="Revoked keys are immediately invalid",
     )
-    last_used_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="api_keys")

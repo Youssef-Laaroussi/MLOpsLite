@@ -4,7 +4,7 @@ Provides dataset registration, schema extraction, MinIO synchronization, and ver
 """
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,15 +13,15 @@ from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
 from packages.core.schemas.dataset import (
     DatasetCreate,
-    DatasetResponse,
+    DatasetInspectionResponse,
     DatasetListResponse,
+    DatasetResponse,
     DatasetVersionCreate,
     DatasetVersionResponse,
-    DatasetInspectionResponse,
 )
+from packages.core.schemas.monitoring import DataQualityReportResponse
 from packages.data.parser import TabularDataParser
 from packages.data.service import DatasetService
-from packages.core.schemas.monitoring import DataQualityReportResponse
 
 router = APIRouter(prefix="/api/v1/datasets", tags=["Datasets"])
 
@@ -47,7 +47,7 @@ async def create_dataset(
 
 @router.get("/", response_model=DatasetListResponse)
 async def list_datasets(
-    project_id: Optional[str] = Query(None, description="Filter by project UUID"),
+    project_id: str | None = Query(None, description="Filter by project UUID"),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """List registered datasets."""
@@ -90,7 +90,11 @@ async def get_dataset(
     return dataset
 
 
-@router.post("/{dataset_id}/versions", response_model=DatasetVersionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{dataset_id}/versions",
+    response_model=DatasetVersionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_dataset_version(
     dataset_id: str,
     payload: DatasetVersionCreate,
@@ -105,7 +109,7 @@ async def create_dataset_version(
             description=payload.description,
         )
         return version
-    except ValueError as exc:
+    except ValueError:
         raise NotFoundError("Dataset", dataset_id)
     except Exception as exc:
         raise HTTPException(
@@ -128,10 +132,14 @@ async def list_dataset_versions(
     return versions
 
 
-@router.post("/{dataset_id}/validate", response_model=DataQualityReportResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{dataset_id}/validate",
+    response_model=DataQualityReportResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def validate_dataset(
     dataset_id: str,
-    file_path: Optional[str] = Query(None, description="Optional explicit file path to validate"),
+    file_path: str | None = Query(None, description="Optional explicit file path to validate"),
     max_null_pct: float = Query(5.0, ge=0.0, le=100.0),
     max_dup_pct: float = Query(1.0, ge=0.0, le=100.0),
     service: DatasetService = Depends(_get_service),

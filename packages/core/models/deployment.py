@@ -1,21 +1,23 @@
 """Deployment SQLAlchemy models — Deployment and DeploymentMetric."""
 
 import enum
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
-    Enum as SAEnum,
+    JSON,
+    DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    Float,
-    DateTime,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class DeploymentStatus(str, enum.Enum):
@@ -85,11 +87,9 @@ class DeploymentMetric(Base, UUIDMixin):
     latency_p95_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
     # Relationships
-    deployment: Mapped["Deployment"] = relationship(
-        "Deployment", back_populates="metrics"
-    )
+    deployment: Mapped["Deployment"] = relationship("Deployment", back_populates="metrics")

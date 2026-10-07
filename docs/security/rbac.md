@@ -82,12 +82,12 @@ from packages.core.security.rbac import Permission
 
 router = APIRouter()
 
+
 @router.post(
     "/deployments/{id}/rollback",
     dependencies=[Depends(require_permission(Permission.DEPLOYMENT_ROLLBACK))],
 )
-async def rollback(id: str):
-    ...
+async def rollback(id: str): ...
 ```
 
 ### 2. Enforcing Minimum Role Level
@@ -95,12 +95,12 @@ async def rollback(id: str):
 from packages.core.models.user import UserRole
 from packages.core.security.dependencies import require_role
 
+
 @router.get(
     "/admin/config",
     dependencies=[Depends(require_role(UserRole.ADMIN))],
 )
-async def get_system_config():
-    ...
+async def get_system_config(): ...
 ```
 
 ### 3. Error Responses

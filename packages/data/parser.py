@@ -4,19 +4,20 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
     import polars as pl
+
     _POLARS_AVAILABLE = True
 except ImportError:
     pl = None  # type: ignore
     _POLARS_AVAILABLE = False
 
 
-def compute_sha256(file_path: str | Path) -> Tuple[str, int]:
+def compute_sha256(file_path: str | Path) -> tuple[str, int]:
     """Compute cryptographic SHA-256 hash and byte size of a file in chunks."""
     path = Path(file_path)
     if not path.is_file():
@@ -36,7 +37,7 @@ class TabularDataParser:
     """Inspects and extracts schema, null counts, and stats from CSV, Parquet, and JSON files."""
 
     @staticmethod
-    def inspect(file_path: str | Path) -> Dict[str, Any]:
+    def inspect(file_path: str | Path) -> dict[str, Any]:
         """Parse file and return structural metadata and schema summary."""
         path = Path(file_path)
         sha256, size_bytes = compute_sha256(path)
@@ -51,8 +52,8 @@ class TabularDataParser:
         else:
             fmt = "OTHER"
 
-        columns_meta: List[Dict[str, Any]] = []
-        sample_records: List[Dict[str, Any]] = []
+        columns_meta: list[dict[str, Any]] = []
+        sample_records: list[dict[str, Any]] = []
         row_count = 0
         column_count = 0
 
@@ -77,11 +78,13 @@ class TabularDataParser:
                 # Schema & null counts
                 null_counts = df.null_count().to_dicts()[0]
                 for col_name, dtype in df.schema.items():
-                    columns_meta.append({
-                        "name": col_name,
-                        "dtype": str(dtype),
-                        "null_count": int(null_counts.get(col_name, 0)),
-                    })
+                    columns_meta.append(
+                        {
+                            "name": col_name,
+                            "dtype": str(dtype),
+                            "null_count": int(null_counts.get(col_name, 0)),
+                        }
+                    )
 
                 # Sample records (up to 5)
                 sample_records = df.head(5).to_dicts()
@@ -102,7 +105,8 @@ class TabularDataParser:
         try:
             if fmt == "CSV":
                 import csv
-                with open(path, "r", encoding="utf-8", errors="replace") as f:
+
+                with open(path, encoding="utf-8", errors="replace") as f:
                     reader = csv.reader(f)
                     header = next(reader, [])
                     column_count = len(header)
@@ -113,7 +117,7 @@ class TabularDataParser:
                     for row in rows[:5]:
                         sample_records.append(dict(zip(header, row)))
             elif fmt == "JSON":
-                with open(path, "r", encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list) and data and isinstance(data[0], dict):
                         row_count = len(data)

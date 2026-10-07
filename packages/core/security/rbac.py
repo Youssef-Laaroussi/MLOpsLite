@@ -8,8 +8,6 @@ Role Hierarchy (higher includes all lower permissions):
 """
 
 import logging
-from enum import IntEnum
-from typing import Any
 
 from packages.core.models.user import UserRole
 
@@ -38,6 +36,7 @@ def has_minimum_role(user_role: UserRole, required_role: UserRole) -> bool:
 
 
 # ── Permission Definitions ──────────────────────────────────────
+
 
 class Permission:
     """Named permission constants."""

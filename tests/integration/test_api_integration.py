@@ -9,6 +9,7 @@ Tests:
 """
 
 import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -36,6 +37,7 @@ class TestAPIIntegration:
 
     def test_health_endpoints(self, app):
         transport = ASGITransport(app=app)
+
         async def _test():
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 res = await client.get("/api/v1/health")
@@ -45,6 +47,7 @@ class TestAPIIntegration:
                 ready = await client.get("/api/v1/ready")
                 assert ready.status_code == 200
                 assert ready.json()["status"] == "ready"
+
         _run(_test())
 
     def test_authenticated_project_flow(self, app):
@@ -56,7 +59,9 @@ class TestAPIIntegration:
             role=UserRole.DEVELOPER,
             is_active=True,
         )
-        token = create_access_token({"sub": developer.id, "email": developer.email, "role": "DEVELOPER"})
+        token = create_access_token(
+            {"sub": developer.id, "email": developer.email, "role": "DEVELOPER"}
+        )
 
         app.dependency_overrides[get_current_user] = lambda: developer
         transport = ASGITransport(app=app)

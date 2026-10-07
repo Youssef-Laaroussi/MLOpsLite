@@ -5,13 +5,13 @@ timestamps, and before/after metadata diffs.
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.core.models.audit import AuditLog, AuditAction
+from packages.core.models.audit import AuditAction, AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +26,13 @@ class AuditService:
         self,
         action: AuditAction,
         resource_type: str,
-        resource_id: Optional[str] = None,
-        resource_name: Optional[str] = None,
-        user_id: Optional[str] = None,
-        user_email: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        changes: Optional[Dict[str, Any]] = None,
-        details: Optional[Dict[str, Any]] = None,
+        resource_id: str | None = None,
+        resource_name: str | None = None,
+        user_id: str | None = None,
+        user_email: str | None = None,
+        ip_address: str | None = None,
+        changes: dict[str, Any] | None = None,
+        details: dict[str, Any] | None = None,
     ) -> AuditLog:
         """Write an immutable audit log entry.
 
@@ -58,20 +58,22 @@ class AuditService:
         except Exception as exc:
             logger.error(
                 "Failed to write audit log: action=%s resource=%s error=%s",
-                action.value, resource_type, exc,
+                action.value,
+                resource_type,
+                exc,
             )
             raise
 
     async def query(
         self,
-        action: Optional[AuditAction] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        from_date: Optional[datetime] = None,
-        to_date: Optional[datetime] = None,
+        action: AuditAction | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        user_id: str | None = None,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
         limit: int = 50,
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Query audit log entries with optional filters."""
         query = select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit)
 
@@ -91,9 +93,7 @@ class AuditService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_entry(self, entry_id: str) -> Optional[AuditLog]:
+    async def get_entry(self, entry_id: str) -> AuditLog | None:
         """Fetch a specific audit log entry."""
-        result = await self.session.execute(
-            select(AuditLog).where(AuditLog.id == entry_id)
-        )
+        result = await self.session.execute(select(AuditLog).where(AuditLog.id == entry_id))
         return result.scalar_one_or_none()

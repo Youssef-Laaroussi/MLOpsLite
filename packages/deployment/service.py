@@ -1,7 +1,7 @@
 """Deployment service — orchestrates container creation, port management, and database persistence."""
 
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,14 +23,14 @@ class DeploymentService:
     def __init__(
         self,
         session: AsyncSession,
-        port_allocator: Optional[PortAllocator] = None,
-        docker_manager: Optional[DockerManager] = None,
+        port_allocator: PortAllocator | None = None,
+        docker_manager: DockerManager | None = None,
     ) -> None:
         self.session = session
         self.port_allocator = port_allocator or PortAllocator()
         self.docker_manager = docker_manager or DockerManager()
 
-    async def _get_active_ports(self) -> Set[int]:
+    async def _get_active_ports(self) -> set[int]:
         """Fetch all ports currently used by active (RUNNING/PENDING) deployments."""
         result = await self.session.execute(
             select(Deployment.port).where(
@@ -43,9 +43,9 @@ class DeploymentService:
         self,
         model_name: str,
         model_version: int,
-        requested_port: Optional[int] = None,
-        project_id: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        requested_port: int | None = None,
+        project_id: str | None = None,
+        config: dict[str, Any] | None = None,
     ) -> Deployment:
         """Allocate port, start inference container, and record deployment in database."""
         active_ports = await self._get_active_ports()
@@ -87,7 +87,7 @@ class DeploymentService:
             await self.session.refresh(deployment)
             return deployment
 
-    async def stop_deployment(self, deployment_id: str) -> Optional[Deployment]:
+    async def stop_deployment(self, deployment_id: str) -> Deployment | None:
         """Stop container and mark deployment status as STOPPED."""
         deployment = await self.get_deployment(deployment_id)
         if deployment is None:
@@ -102,7 +102,7 @@ class DeploymentService:
         await self.session.refresh(deployment)
         return deployment
 
-    async def get_deployment(self, deployment_id: str) -> Optional[Deployment]:
+    async def get_deployment(self, deployment_id: str) -> Deployment | None:
         """Retrieve deployment by UUID."""
         result = await self.session.execute(
             select(Deployment).where(Deployment.id == deployment_id)
@@ -111,9 +111,9 @@ class DeploymentService:
 
     async def list_deployments(
         self,
-        project_id: Optional[str] = None,
-        status: Optional[DeploymentStatus] = None,
-    ) -> List[Deployment]:
+        project_id: str | None = None,
+        status: DeploymentStatus | None = None,
+    ) -> list[Deployment]:
         """List deployments with optional filtering."""
         query = select(Deployment).order_by(Deployment.created_at.desc())
         if project_id:
@@ -132,8 +132,8 @@ class DeploymentService:
         memory_limit_mb: float,
         requests_count: int = 0,
         error_count: int = 0,
-        latency_p50_ms: Optional[float] = None,
-        latency_p95_ms: Optional[float] = None,
+        latency_p50_ms: float | None = None,
+        latency_p95_ms: float | None = None,
     ) -> DeploymentMetric:
         """Store historical resource and request metric snapshot."""
         metric = DeploymentMetric(
@@ -155,7 +155,7 @@ class DeploymentService:
         self,
         deployment_id: str,
         limit: int = 50,
-    ) -> List[DeploymentMetric]:
+    ) -> list[DeploymentMetric]:
         """Fetch latest metrics for a given deployment."""
         query = (
             select(DeploymentMetric)

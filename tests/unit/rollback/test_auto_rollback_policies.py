@@ -1,18 +1,16 @@
 """Unit tests for AutoRollbackEvaluator and auto-rollback policies (Issue #24)."""
 
-import pytest
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone, timedelta
 
-from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
+import pytest
+
+from packages.core.models.deployment import Deployment, DeploymentStatus
 from packages.core.models.rollback import (
     RollbackPolicy,
-    RollbackRecord,
-    RollbackStatus,
-    RollbackTrigger,
 )
-from packages.rollback.policies import AutoRollbackEvaluator
 from packages.rollback.coordinator import RollbackCoordinator
+from packages.rollback.policies import AutoRollbackEvaluator
 
 
 @pytest.fixture
@@ -144,7 +142,7 @@ class TestOscillationGuard:
             id="pol-1",
             model_name="test",
             cooldown_hours=24,
-            last_triggered_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            last_triggered_at=datetime.now(UTC) - timedelta(hours=1),
         )
         evaluator = AutoRollbackEvaluator(session=AsyncMock())
         assert evaluator._is_in_cooldown(policy) is True
@@ -154,7 +152,7 @@ class TestOscillationGuard:
             id="pol-1",
             model_name="test",
             cooldown_hours=24,
-            last_triggered_at=datetime.now(timezone.utc) - timedelta(hours=25),
+            last_triggered_at=datetime.now(UTC) - timedelta(hours=25),
         )
         evaluator = AutoRollbackEvaluator(session=AsyncMock())
         assert evaluator._is_in_cooldown(policy) is False
@@ -202,9 +200,7 @@ class TestPolicyEvaluation:
             last_triggered_at=None,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=None)
 
         result = await evaluator._evaluate_single_policy(policy)
@@ -223,7 +219,7 @@ class TestPolicyEvaluation:
             consecutive_violations=3,
             cooldown_hours=24,
             violation_count=0,
-            last_triggered_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            last_triggered_at=datetime.now(UTC) - timedelta(hours=1),
         )
 
         deployment = Deployment(
@@ -235,9 +231,7 @@ class TestPolicyEvaluation:
             status=DeploymentStatus.RUNNING,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=deployment)
 
         result = await evaluator._evaluate_single_policy(policy)
@@ -267,9 +261,7 @@ class TestPolicyEvaluation:
             status=DeploymentStatus.RUNNING,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=deployment)
         evaluator._compute_metric = AsyncMock(return_value=0.02)  # Below threshold
 
@@ -300,9 +292,7 @@ class TestPolicyEvaluation:
             status=DeploymentStatus.RUNNING,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=deployment)
         evaluator._compute_metric = AsyncMock(return_value=0.10)  # Above threshold
 
@@ -334,9 +324,7 @@ class TestPolicyEvaluation:
             status=DeploymentStatus.RUNNING,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=deployment)
         evaluator._compute_metric = AsyncMock(return_value=0.01)  # Below threshold
 
@@ -369,9 +357,7 @@ class TestPolicyEvaluation:
             status=DeploymentStatus.RUNNING,
         )
 
-        evaluator = AutoRollbackEvaluator(
-            session=mock_session, coordinator=mock_coordinator
-        )
+        evaluator = AutoRollbackEvaluator(session=mock_session, coordinator=mock_coordinator)
         evaluator._get_active_deployment = AsyncMock(return_value=deployment)
         evaluator._compute_metric = AsyncMock(return_value=0.10)  # Above threshold
 

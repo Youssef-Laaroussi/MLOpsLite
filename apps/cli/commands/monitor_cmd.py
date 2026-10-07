@@ -15,8 +15,12 @@ DEFAULT_API_URL = "http://localhost:8000"
 @app.command("drift")
 def check_drift(
     model_name: str = typer.Argument(..., help="Registered model name"),
-    threshold: float = typer.Option(0.20, "--threshold", "-t", help="Drift ratio threshold (default: 0.20)"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    threshold: float = typer.Option(
+        0.20, "--threshold", "-t", help="Drift ratio threshold (default: 0.20)"
+    ),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Run data drift detection comparing baseline vs live inference payloads."""
     console.print(f"[bold cyan]Running drift analysis[/bold cyan] for model '{model_name}'...")
@@ -52,7 +56,9 @@ def check_drift(
 @app.command("performance")
 def check_performance(
     model_name: str = typer.Argument(..., help="Registered model name"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Inspect live production performance metrics and concept degradation."""
     try:
@@ -63,7 +69,9 @@ def check_performance(
 
         records = res.json()
         if not records:
-            console.print(f"[yellow]No performance evaluations recorded for '{model_name}'.[/yellow]")
+            console.print(
+                f"[yellow]No performance evaluations recorded for '{model_name}'.[/yellow]"
+            )
             return
 
         table = Table(title=f"Performance History: {model_name}", header_style="bold cyan")
@@ -74,7 +82,11 @@ def check_performance(
 
         for r in records:
             metrics = r.get("metrics", {})
-            acc_str = f"Accuracy: {metrics.get('accuracy', 'N/A')}" if "accuracy" in metrics else str(metrics)
+            acc_str = (
+                f"Accuracy: {metrics.get('accuracy', 'N/A')}"
+                if "accuracy" in metrics
+                else str(metrics)
+            )
             deg = r.get("degraded", False)
             status_badge = "[red]DEGRADED[/red]" if deg else "[green]STABLE[/green]"
             table.add_row(

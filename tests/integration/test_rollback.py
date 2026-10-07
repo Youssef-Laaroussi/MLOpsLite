@@ -4,15 +4,16 @@ Tests launching v1 and v2, executing rollback to v1, and asserting
 the deployment state reflects the rolled-back version as active.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.core.models.model_registry import RegisteredModel, ModelVersion, ModelStage
+from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
 from packages.core.models.rollback import RollbackStatus, RollbackTrigger
-from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 from packages.deployment.docker_manager import DockerManager
 from packages.deployment.ports import PortAllocator
+from packages.rollback.coordinator import RollbackCoordinator
 
 
 def _mock_scalar_one_or_none(value):
@@ -49,7 +50,9 @@ def mock_docker():
 @pytest.fixture
 def model_v1():
     return ModelVersion(
-        id="mv-1", model_id="model-1", version=1,
+        id="mv-1",
+        model_id="model-1",
+        version=1,
         stage=ModelStage.ARCHIVED,
     )
 
@@ -57,7 +60,9 @@ def model_v1():
 @pytest.fixture
 def model_v2():
     return ModelVersion(
-        id="mv-2", model_id="model-1", version=2,
+        id="mv-2",
+        model_id="model-1",
+        version=2,
         stage=ModelStage.PRODUCTION,
     )
 

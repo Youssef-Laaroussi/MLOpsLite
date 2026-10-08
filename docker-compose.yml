@@ -138,6 +138,10 @@ services:
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@mlite.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123456}
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+    command: ["uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "${API_PORT:-8000}:8000"
     networks:
@@ -150,16 +154,22 @@ services:
       start_period: 15s
 
   # ----------------------------------------------------------------------------
-  # MLite React Dashboard Web UI
+  # MLite React Dashboard Web UI (Live HMR Development)
   # ----------------------------------------------------------------------------
   mlite-ui:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      dockerfile: apps/web/Dockerfile.dev
     container_name: mlite-ui
     restart: unless-stopped
     depends_on:
       - mlite-api
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     ports:
       - "${UI_PORT:-3000}:3000"
     networks:

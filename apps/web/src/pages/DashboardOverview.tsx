@@ -292,7 +292,7 @@ export const DashboardOverview: React.FC = () => {
     { time: "12:00", p50: 3.4, p95: 6.2, p99: 10.4, reqs: 1890 },
     { time: "16:00", p50: 3.1, p95: 5.9, p99: 9.3, reqs: 1650 },
     { time: "20:00", p50: 2.6, p95: 5.1, p99: 8.1, reqs: 920 },
-    { time: "Now",   p50: 2.8, p95: 5.4, p99: 8.4, reqs: 1420 },
+    { time: "Now", p50: 2.8, p95: 5.4, p99: 8.4, reqs: 1420 },
   ];
 
   // ── Stage Breakdown for Donut Chart ────────────────────────────────────
@@ -331,22 +331,20 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "governance"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "governance"
                     ? "bg-slate-900 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Shield className="w-3.5 h-3.5" />
                 Admin
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "ml"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "ml"
                     ? "bg-[#3BB48C] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Box className="w-3.5 h-3.5" />
                 ML View
@@ -374,11 +372,10 @@ export const DashboardOverview: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
-                      timeRange === range
+                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
                         ? "bg-[#EBF8F4] text-[#1A7456]"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -415,7 +412,7 @@ export const DashboardOverview: React.FC = () => {
                 </div>
                 <span className="text-xs font-bold text-slate-700">{res.name}</span>
               </div>
-              <div className="text-3xl font-bold text-slate-900 mt-4 mb-2 tracking-tight">
+              <div className="text-2xl font-semibold font-display text-slate-900 mt-4 mb-2 tracking-tight">
                 {res.count}
               </div>
               <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
@@ -445,7 +442,7 @@ export const DashboardOverview: React.FC = () => {
               <CartesianGrid {...GRID_PROPS} />
               <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <RechartsTooltip 
+              <RechartsTooltip
                 cursor={{ fill: "#F1F5F9" }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
@@ -495,11 +492,10 @@ export const DashboardOverview: React.FC = () => {
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${
-                      latencyMetricFilter === mode
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${latencyMetricFilter === mode
                         ? "bg-white text-slate-900 shadow-2xs"
                         : "text-slate-500 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     {mode}
                   </button>
@@ -531,9 +527,9 @@ export const DashboardOverview: React.FC = () => {
                   margin={{ top: 5, right: 0, left: -25, bottom: 0 }}
                 >
                   <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="time" tick={{...AXIS_TICK, fontSize: 10}} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="time" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                  <RechartsTooltip 
+                  <RechartsTooltip
                     cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }}
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
@@ -615,8 +611,8 @@ export const DashboardOverview: React.FC = () => {
                 >
                   <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
                   <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="stage" tick={{...AXIS_TICK, fontSize: 11}} axisLine={false} tickLine={false} width={80} />
-                  <RechartsTooltip 
+                  <YAxis type="category" dataKey="stage" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                  <RechartsTooltip
                     cursor={{ fill: "#F1F5F9" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;

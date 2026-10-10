@@ -415,7 +415,7 @@ export const DashboardOverview: React.FC = () => {
                 </div>
                 <span className="text-xs font-bold text-slate-700">{res.name}</span>
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-4 mb-2 tracking-tight">
+              <div className="text-3xl font-bold text-slate-900 mt-4 mb-2 tracking-tight">
                 {res.count}
               </div>
               <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">

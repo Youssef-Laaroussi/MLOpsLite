@@ -52,7 +52,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
 
         <div className="relative z-10">
-          <div className="text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-3xl font-bold text-slate-900 tracking-tight">
             {value}
           </div>
         </div>

@@ -415,9 +415,15 @@ export const ModelsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-slate-700 text-xs">{devCount} models</span>
-                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-slate-500 h-full rounded-full" style={{ width: `${(devCount / models.length) * 100}%` }} />
+                  <span className="font-mono font-bold text-slate-700 text-xs">{devCount} models</span>
+                  <div className="w-24 h-4 hidden sm:block">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart layout="vertical" data={[{ value: devCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                        <XAxis type="number" hide domain={[0, models.length || 1]} />
+                        <YAxis type="category" hide />
+                        <Bar dataKey="value" fill={PALETTE.slate} radius={4} background={{ fill: '#E2E8F0', radius: 4 }} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -441,9 +447,15 @@ export const ModelsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-amber-700 text-xs">{candidateCount} models</span>
-                  <div className="w-24 h-2 bg-amber-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${(candidateCount / models.length) * 100}%` }} />
+                  <span className="font-mono font-bold text-amber-700 text-xs">{candidateCount} models</span>
+                  <div className="w-24 h-4 hidden sm:block">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart layout="vertical" data={[{ value: candidateCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                        <XAxis type="number" hide domain={[0, models.length || 1]} />
+                        <YAxis type="category" hide />
+                        <Bar dataKey="value" fill={PALETTE.amber} radius={4} background={{ fill: '#FEF3C7', radius: 4 }} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -467,9 +479,15 @@ export const ModelsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-blue-700 text-xs">{stagingCount} models</span>
-                  <div className="w-24 h-2 bg-blue-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(stagingCount / models.length) * 100}%` }} />
+                  <span className="font-mono font-bold text-blue-700 text-xs">{stagingCount} models</span>
+                  <div className="w-24 h-4 hidden sm:block">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart layout="vertical" data={[{ value: stagingCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                        <XAxis type="number" hide domain={[0, models.length || 1]} />
+                        <YAxis type="category" hide />
+                        <Bar dataKey="value" fill={PALETTE.blue} radius={4} background={{ fill: '#DBEAFE', radius: 4 }} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -496,9 +514,15 @@ export const ModelsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-emerald-800 text-xs">{productionCount} models</span>
-                  <div className="w-24 h-2 bg-emerald-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${(productionCount / models.length) * 100}%` }} />
+                  <span className="font-mono font-bold text-emerald-800 text-xs">{productionCount} models</span>
+                  <div className="w-24 h-4 hidden sm:block">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart layout="vertical" data={[{ value: productionCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                        <XAxis type="number" hide domain={[0, models.length || 1]} />
+                        <YAxis type="category" hide />
+                        <Bar dataKey="value" fill={PALETTE.brand} radius={4} background={{ fill: '#D1FAE5', radius: 4 }} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>

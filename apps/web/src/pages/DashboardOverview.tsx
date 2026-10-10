@@ -20,8 +20,8 @@ import {
   Shield,
   HardDrive,
   Layers,
-  LineChart,
-  PieChart,
+  LineChart as LineChartIcon,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -37,6 +37,22 @@ import {
 import { RegisteredModel, Deployment, AuditLog, User } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 export const DashboardOverview: React.FC = () => {
   const { user, hasRole, hasPermission } = useAuth();
@@ -420,44 +436,35 @@ export const DashboardOverview: React.FC = () => {
         </h3>
 
         {/* Chart Canvas */}
-        <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 pb-8">
-          {/* Horizontal grid lines with Y-Axis values: 80, 60, 40, 20, 0 */}
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-4">
-            {[80, 60, 40, 20, 0].map((tick) => (
-              <div key={tick} className="flex items-center w-full">
-                <span className="text-[11px] font-bold text-slate-400 w-8 text-right pr-3 shrink-0 font-mono">
-                  {tick}
-                </span>
-                <div className="w-full border-t border-slate-100 border-dashed" />
-              </div>
-            ))}
-          </div>
-
-          {/* The 5 Colored Bars */}
-          <div className="relative z-10 w-full pl-8 flex items-end justify-around h-full pb-2">
-            {resourcesData.map((res) => {
-              const heightPct = (res.count / 80) * 100;
-              return (
-                <div key={res.name} className="flex flex-col items-center group h-full justify-end w-1/6">
-                  {/* Number label on top */}
-                  <span className="text-xs font-bold text-slate-700 mb-2 font-mono group-hover:scale-110 transition-transform">
-                    {res.count}
-                  </span>
-
-                  {/* Colored Bar */}
-                  <div
-                    className={`w-full max-w-[80px] ${res.barColor} ${res.barHover} rounded-md transition-all duration-300 shadow-xs cursor-pointer`}
-                    style={{ height: `${heightPct}%` }}
-                  />
-
-                  {/* Category label below */}
-                  <span className="text-xs font-bold text-slate-600 mt-3 group-hover:text-slate-900 transition-colors">
-                    {res.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+        <div className="h-64 w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={resourcesData}
+              margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <RechartsTooltip 
+                cursor={{ fill: "#F1F5F9" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <BiTooltip
+                      active
+                      label={label}
+                      payload={[{ name: "Count", value: payload[0].value, color: PALETTE.brand }]}
+                    />
+                  );
+                }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                {resourcesData.map((res, index) => (
+                  <Cell key={`cell-${index}`} fill={PALETTE.brand} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -516,94 +523,44 @@ export const DashboardOverview: React.FC = () => {
               </div>
             </div>
 
-            {/* SVG Multi-Line Latency Graph */}
-            <div className="relative h-48 w-full mt-2">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 border-b border-slate-200">
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
-              </div>
-
-              <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="latencyAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                  <path
-                    d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42 L 100 60 L 0 60 Z"
-                    fill="url(#latencyAreaGrad)"
+            {/* SVG Multi-Line Latency Graph -> Recharts LineChart */}
+            <div className="h-48 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={latencyData}
+                  margin={{ top: 5, right: 0, left: -25, bottom: 0 }}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="time" tick={{...AXIS_TICK, fontSize: 10}} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <RechartsTooltip 
+                    cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={label}
+                          payload={[
+                            { name: "P99 Spike", value: `${payload.find(p => p.dataKey === "p99")?.value} ms`, color: PALETTE.rose },
+                            { name: "P95 Tail", value: `${payload.find(p => p.dataKey === "p95")?.value} ms`, color: PALETTE.amber },
+                            { name: "P50 Median", value: `${payload.find(p => p.dataKey === "p50")?.value} ms`, color: PALETTE.brand }
+                          ]}
+                        />
+                      );
+                    }}
                   />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
-                  <path
-                    d="M 0 18 Q 16 22, 33 14 T 66 8 T 83 14 T 100 12"
-                    fill="none"
-                    stroke="#F43F5E"
-                    strokeWidth="1.8"
-                    strokeDasharray="2,2"
-                    strokeLinecap="round"
-                  />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
-                  <path
-                    d="M 0 30 Q 16 34, 33 26 T 66 22 T 83 28 T 100 24"
-                    fill="none"
-                    stroke="#F59E0B"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                  <path
-                    d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42"
-                    fill="none"
-                    stroke="#3BB48C"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    className="drop-shadow-[0_2px_4px_rgba(59,180,140,0.3)]"
-                  />
-                )}
-
-                {latencyData.map((pt, idx) => {
-                  const x = (idx / (latencyData.length - 1)) * 100;
-                  const yP50 = 60 - (pt.p50 / 12) * 60;
-                  return (
-                    <g key={idx} className="cursor-pointer" onMouseEnter={() => setHoveredLatencyPoint(pt)}>
-                      <circle
-                        cx={x}
-                        cy={yP50}
-                        r="2.5"
-                        fill="#FFFFFF"
-                        stroke="#3BB48C"
-                        strokeWidth="1.8"
-                        className="hover:r-[4.5] transition-all"
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {hoveredLatencyPoint && (
-                <div className="absolute top-2 right-4 bg-slate-900 text-white text-[11px] font-mono px-3 py-1.5 rounded-xl shadow-xl border border-slate-700 pointer-events-none animate-in fade-in">
-                  <span className="text-slate-400">{hoveredLatencyPoint.time}: </span>
-                  <span className="text-[#3BB48C] font-bold">P50: {hoveredLatencyPoint.p50}ms</span> •{" "}
-                  <span className="text-amber-400 font-bold">P95: {hoveredLatencyPoint.p95}ms</span> •{" "}
-                  <span className="text-slate-300">{hoveredLatencyPoint.reqs} req/s</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 mt-2 px-1">
-              {latencyData.map((d, i) => (
-                <span key={i}>{d.time}</span>
-              ))}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
+                    <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={2} strokeDasharray="4 4" dot={false} activeDot={{ r: 4 }} />
+                  )}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
+                    <Line type="monotone" dataKey="p95" stroke={PALETTE.amber} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  )}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
+                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -629,7 +586,7 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-[#3BB48C]" />
+                  <PieChartIcon className="w-5 h-5 text-[#3BB48C]" />
                   Model Registry Distribution
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -644,134 +601,48 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-4">
-              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="12" />
-
-                  {/* Production Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth={selectedStage === "PRODUCTION" ? "14" : "12"}
-                    strokeDasharray={`${prodStroke} ${circumference}`}
-                    strokeDashoffset="0"
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("PRODUCTION")}
-                    onMouseLeave={() => setSelectedStage(null)}
-                  />
-
-                  {/* Staging Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#F59E0B"
-                    strokeWidth={selectedStage === "STAGING" ? "14" : "12"}
-                    strokeDasharray={`${stagStroke} ${circumference}`}
-                    strokeDashoffset={-prodStroke}
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("STAGING")}
-                    onMouseLeave={() => setSelectedStage(null)}
-                  />
-
-                  {/* Development Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#0284C7"
-                    strokeWidth={selectedStage === "DEVELOPMENT" ? "14" : "12"}
-                    strokeDasharray={`${devStroke} ${circumference}`}
-                    strokeDashoffset={-(prodStroke + stagStroke)}
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("DEVELOPMENT")}
-                    onMouseLeave={() => setSelectedStage(null)}
-                  />
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {stageCounts.total}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Models
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3 w-full max-w-[200px]">
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "PRODUCTION"
-                      ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("PRODUCTION")}
-                  onMouseLeave={() => setSelectedStage(null)}
+            <div className="mt-4 h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { stage: "Production", count: stageCounts.PRODUCTION, color: PALETTE.brand },
+                    { stage: "Staging", count: stageCounts.STAGING, color: PALETTE.amber },
+                    { stage: "Development", count: stageCounts.DEVELOPMENT, color: PALETTE.blue },
+                  ].sort((a, b) => b.count - a.count)}
+                  layout="vertical"
+                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  barSize={24}
                 >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      Production
-                    </span>
-                    <span className="font-mono font-bold text-emerald-800">{prodPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.PRODUCTION} Active Endpoints
-                  </span>
-                </div>
-
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "STAGING"
-                      ? "bg-amber-50 border-amber-300 ring-2 ring-amber-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("STAGING")}
-                  onMouseLeave={() => setSelectedStage(null)}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      Staging
-                    </span>
-                    <span className="font-mono font-bold text-amber-800">{stagPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.STAGING} Validation Candidates
-                  </span>
-                </div>
-
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "DEVELOPMENT"
-                      ? "bg-sky-50 border-sky-300 ring-2 ring-sky-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("DEVELOPMENT")}
-                  onMouseLeave={() => setSelectedStage(null)}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
-                      Development
-                    </span>
-                    <span className="font-mono font-bold text-sky-800">{devPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.DEVELOPMENT} Experiments
-                  </span>
-                </div>
-              </div>
+                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
+                  <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="stage" tick={{...AXIS_TICK, fontSize: 11}} axisLine={false} tickLine={false} width={80} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={p.stage}
+                          payload={[
+                            { name: "Models", value: p.count, color: p.color }
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                    {[
+                      { stage: "Production", count: stageCounts.PRODUCTION, color: PALETTE.brand },
+                      { stage: "Staging", count: stageCounts.STAGING, color: PALETTE.amber },
+                      { stage: "Development", count: stageCounts.DEVELOPMENT, color: PALETTE.blue },
+                    ].sort((a, b) => b.count - a.count).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

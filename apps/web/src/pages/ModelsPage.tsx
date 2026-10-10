@@ -25,6 +25,17 @@ import { StatCard } from "../components/StatCard";
 import { fetchModels, promoteModelVersion } from "../api/client";
 import { RegisteredModel } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 // Realistic production baseline models for Data Analyst & MLOps evaluation
 const DEFAULT_MODELS: (RegisteredModel & { framework?: string; latency_ms?: number; size_mb?: number })[] = [
@@ -502,59 +513,68 @@ export const ModelsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* CARD 2: Model Latency & Memory Footprint (5 cols) - Multi-Metric Horizontal Progress Bars */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CARD 2: Model Latency & Memory Footprint (5 cols) - Multi-Metric Composed Chart */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
-                  Model Latency &amp; Footprint
+                  Model Footprint vs. Speed
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Inference speed (P95 ms) vs package footprint (MB)
+                <p className="text-sm text-slate-500 mt-1">
+                  Latency (ms) vs. Memory Size (MB) trade-off
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
-                Sub-15ms SLA Met
-              </span>
             </div>
 
-            {/* Benchmarking Comparison Rows */}
-            <div className="space-y-3.5">
-              {[
-                { name: "fraud-detector", framework: "XGBoost", latency: 2.4, size: "14.2 MB", barColor: "bg-emerald-500", pct: 92 },
-                { name: "customer-churn", framework: "LightGBM", latency: 3.8, size: "22.5 MB", barColor: "bg-blue-500", pct: 78 },
-                { name: "demand-forecaster", framework: "PyTorch", latency: 5.2, size: "38.4 MB", barColor: "bg-sky-500", pct: 64 },
-                { name: "sentiment-bert", framework: "Transformers", latency: 12.6, size: "145.0 MB", barColor: "bg-purple-500", pct: 40 },
-              ].map((bench) => (
-                <div key={bench.name} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:border-slate-200 transition">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-800 truncate max-w-[130px]">{bench.name}</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200/80 text-slate-700 font-bold">
-                        {bench.framework}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono text-[11px]">
-                      <span className="font-bold text-slate-900">{bench.latency} ms</span>
-                      <span className="text-slate-400">•</span>
-                      <span className="text-slate-500">{bench.size}</span>
-                    </div>
-                  </div>
-
-                  {/* Horizontal Speed Bar */}
-                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                    <div className={`h-full ${bench.barColor} rounded-full`} style={{ width: `${bench.pct}%` }} />
-                  </div>
-                </div>
-              ))}
+            <div className="h-[250px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={[
+                    { name: "fraud-det.", lat: 2.4, size: 14.2 },
+                    { name: "cust-churn", lat: 3.8, size: 22.5 },
+                    { name: "demand-c.", lat: 5.2, size: 38.4 },
+                    { name: "sent-bert", lat: 12.6, size: 145.0 },
+                  ]}
+                  margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="name" tick={{...AXIS_TICK, fontSize: 10}} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}MB`} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={label}
+                          payload={payload.map(p => ({
+                            name: p.name === "lat" ? "Inference Latency" : "Memory Footprint",
+                            value: p.name === "lat" ? `${p.value} ms` : `${p.value} MB`,
+                            color: p.color
+                          }))}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar yAxisId="left" dataKey="lat" fill={PALETTE.brand} radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Line yAxisId="right" type="monotone" dataKey="size" stroke={PALETTE.violet} strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>FastAPI Container Runtime</span>
-            <span className="text-slate-700 font-bold">P99 SLA: 14.8 ms</span>
+          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-100 text-sm font-medium">
+            <span className="flex items-center gap-2 text-slate-700">
+              <span className="w-3 h-3 rounded-[3px] bg-[#3BB48C]"></span>
+              Latency (ms)
+            </span>
+            <span className="flex items-center gap-2 text-slate-700">
+              <span className="w-3 h-[3px] bg-[#8B5CF6]"></span>
+              Footprint (MB)
+            </span>
           </div>
         </div>
       </div>

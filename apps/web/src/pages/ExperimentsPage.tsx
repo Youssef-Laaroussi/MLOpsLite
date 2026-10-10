@@ -28,6 +28,22 @@ import {
 import { StatCard } from "../components/StatCard";
 import { Experiment, ExperimentRun } from "../api/types";
 import { fetchExperiments, fetchExperimentRuns, createExperiment } from "../api/client";
+import {
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  ZAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+  ReferenceArea
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 // Realistic fallback experiments for local development & demonstration
 const FALLBACK_EXPERIMENTS: (Experiment & { runs: ExperimentRun[] })[] = [
@@ -436,32 +452,28 @@ export const ExperimentsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Multi-Run Convergence Curve & Hyperparameter Impact Ranking (NO DONUTS!) ── */}
+      {/* ── Visual Analytics Row: Multi-Run Convergence Curve & Hyperparameter Impact Ranking ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CHART 1: Training Loss & Metric Convergence (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CHART 1: Training Convergence Curves (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
-                  Training Convergence Curves
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                    Multi-Run
-                  </span>
+                  Training Convergence Trajectory
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Comparison of candidate runs across 100 training epochs
+                <p className="text-sm text-slate-500 mt-1">
+                  Comparing model fit and generalization across top 3 candidates
                 </p>
               </div>
 
-              {/* View Switcher: Loss vs Accuracy */}
-              <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold">
                 <button
                   onClick={() => setLossMetricView("loss")}
-                  className={`px-3 py-1 rounded-lg transition ${
+                  className={`px-3 py-1.5 rounded-[10px] transition ${
                     lossMetricView === "loss"
-                      ? "bg-white text-slate-900 shadow-2xs"
+                      ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
@@ -469,9 +481,9 @@ export const ExperimentsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setLossMetricView("accuracy")}
-                  className={`px-3 py-1 rounded-lg transition ${
+                  className={`px-3 py-1.5 rounded-[10px] transition ${
                     lossMetricView === "accuracy"
-                      ? "bg-white text-slate-900 shadow-2xs"
+                      ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
@@ -480,267 +492,141 @@ export const ExperimentsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Native SVG Multi-Line Chart */}
-            <div className="relative h-56 w-full pt-2">
-              <svg viewBox="0 0 520 215" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                {/* Horizontal Grid lines & Y-Axis Labels */}
-                {(lossMetricView === "loss"
-                  ? [
-                      { val: "0.8", y: 30 },
-                      { val: "0.6", y: 65 },
-                      { val: "0.4", y: 100 },
-                      { val: "0.2", y: 135 },
-                      { val: "0.0", y: 170 },
-                    ]
-                  : [
-                      { val: "1.0", y: 30 },
-                      { val: "0.8", y: 65 },
-                      { val: "0.6", y: 100 },
-                      { val: "0.4", y: 135 },
-                      { val: "0.2", y: 170 },
-                    ]
-                ).map((tick) => (
-                  <g key={tick.val}>
-                    <line
-                      x1="42"
-                      y1={tick.y}
-                      x2="505"
-                      y2={tick.y}
-                      stroke="#EEF2F6"
-                      strokeWidth="1.2"
-                    />
-                    <text
-                      x="30"
-                      y={tick.y + 4}
-                      textAnchor="end"
-                      className="text-[11px] font-bold fill-slate-400 font-sans"
-                    >
-                      {tick.val}
-                    </text>
-                  </g>
-                ))}
-
-                {/* X-Axis Ticks: Epochs 0, 20, 40, 60, 80, 100 */}
-                {[
-                  { step: "Epoch 0", x: 50 },
-                  { step: "Ep 20", x: 142 },
-                  { step: "Ep 40", x: 234 },
-                  { step: "Ep 60", x: 326 },
-                  { step: "Ep 80", x: 418 },
-                  { step: "Ep 100", x: 500 },
-                ].map((s, idx) => (
-                  <g key={s.step} onMouseEnter={() => setHoveredStepIndex(idx)} onMouseLeave={() => setHoveredStepIndex(null)}>
-                    <text
-                      x={s.x}
-                      y="196"
-                      textAnchor="middle"
-                      className={`text-[11px] font-bold font-sans transition-colors ${
-                        hoveredStepIndex === idx ? "fill-slate-900" : "fill-slate-400"
-                      }`}
-                    >
-                      {s.step}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Lines */}
-                {lossMetricView === "loss" ? (
-                  <>
-                    {/* Run 1: Optuna Tune (Emerald - Converges best to 0.142) */}
-                    <path
-                      d="M 50 51.0 L 142 96.5 L 234 121.0 L 326 136.75 L 418 143.75 L 500 145.15"
-                      fill="none"
-                      stroke="#10B981"
-                      strokeWidth="2.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="drop-shadow-sm"
-                    />
-                    {/* Run 2: Baseline XGB (Blue - Reaches 0.198) */}
-                    <path
-                      d="M 50 49.25 L 142 80.75 L 234 103.5 L 326 121.0 L 418 131.5 L 500 135.35"
-                      fill="none"
-                      stroke="#3B82F6"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Run 3: Deep Trees Overfit (Purple - Plateaus at 0.231) */}
-                    <path
-                      d="M 50 47.5 L 142 86.0 L 234 115.75 L 326 128.0 L 418 128.87 L 500 129.57"
-                      fill="none"
-                      stroke="#8B5CF6"
-                      strokeWidth="2.4"
-                      strokeDasharray="4 3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </>
-                ) : (
-                  <>
-                    {/* Accuracy curves */}
-                    {/* Run 1: Optuna Tune (Emerald - Reaches 0.942) */}
-                    <path
-                      d="M 50 96.5 L 142 66.75 L 234 51.0 L 326 44.0 L 418 40.85 L 500 40.15"
-                      fill="none"
-                      stroke="#10B981"
-                      strokeWidth="2.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Run 2: Baseline XGB (Blue - Reaches 0.912) */}
-                    <path
-                      d="M 50 101.75 L 142 79.0 L 234 63.25 L 326 52.75 L 418 48.37 L 500 45.4"
-                      fill="none"
-                      stroke="#3B82F6"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Run 3: Deep Trees Overfit (Purple - Plateaus at 0.895) */}
-                    <path
-                      d="M 50 98.25 L 142 72.0 L 234 58.0 L 326 51.0 L 418 49.07 L 500 48.37"
-                      fill="none"
-                      stroke="#8B5CF6"
-                      strokeWidth="2.4"
-                      strokeDasharray="4 3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </>
-                )}
-
-                {/* Hover indicator line if hovered */}
-                {hoveredStepIndex !== null && (
-                  <line
-                    x1={[50, 142, 234, 326, 418, 500][hoveredStepIndex]}
-                    y1="25"
-                    x2={[50, 142, 234, 326, 418, 500][hoveredStepIndex]}
-                    y2="175"
-                    stroke="#0F172A"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={[
+                    { epoch: 0, loss_optuna: 0.70, loss_baseline: 0.71, loss_deep: 0.72, acc_optuna: 0.55, acc_baseline: 0.52, acc_deep: 0.54 },
+                    { epoch: 20, loss_optuna: 0.45, loss_baseline: 0.52, loss_deep: 0.48, acc_optuna: 0.72, acc_baseline: 0.68, acc_deep: 0.70 },
+                    { epoch: 40, loss_optuna: 0.25, loss_baseline: 0.35, loss_deep: 0.28, acc_optuna: 0.85, acc_baseline: 0.79, acc_deep: 0.82 },
+                    { epoch: 60, loss_optuna: 0.17, loss_baseline: 0.26, loss_deep: 0.24, acc_optuna: 0.92, acc_baseline: 0.86, acc_deep: 0.88 },
+                    { epoch: 80, loss_optuna: 0.14, loss_baseline: 0.21, loss_deep: 0.23, acc_optuna: 0.94, acc_baseline: 0.89, acc_deep: 0.89 },
+                    { epoch: 100, loss_optuna: 0.142, loss_baseline: 0.198, loss_deep: 0.231, acc_optuna: 0.942, acc_baseline: 0.912, acc_deep: 0.895 },
+                  ]}
+                  margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="epoch" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `Ep ${v}`} />
+                  <YAxis 
+                    domain={lossMetricView === "loss" ? [0, 0.8] : [0.4, 1.0]} 
+                    tick={AXIS_TICK} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tickFormatter={(v) => lossMetricView === "accuracy" ? `${(v * 100).toFixed(0)}%` : v.toFixed(2)}
                   />
-                )}
-              </svg>
+                  <RechartsTooltip content={<BiTooltip labelPrefix="Epoch " valueFormatter={(v) => typeof v === "number" ? v.toFixed(3) : v} />} cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }} />
+                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_optuna" : "acc_optuna"} name="optuna-tune-d6" stroke={PALETTE.brand} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_baseline" : "acc_baseline"} name="baseline-xgb" stroke={PALETTE.blue} strokeWidth={2.5} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_deep" : "acc_deep"} name="deep-trees (overfit)" stroke={PALETTE.violet} strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
-            {/* Run Legend */}
-            <div className="flex flex-wrap items-center justify-between text-xs pt-3 border-t border-slate-100 gap-2">
-              <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                optuna-tune-depth6 (0.142 Best)
+            <div className="flex flex-wrap items-center justify-center text-sm pt-4 border-t border-slate-100 gap-6 mt-2">
+              <span className="flex items-center gap-2 font-medium text-slate-700">
+                <span className="w-3 h-3 rounded-[3px] bg-[#3BB48C]" />
+                optuna-tune-d6 <span className="font-bold">({lossMetricView === "loss" ? "0.142" : "94.2%"})</span>
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
-                baseline-xgb-default (0.198)
+              <span className="flex items-center gap-2 font-medium text-slate-700">
+                <span className="w-3 h-3 rounded-[3px] bg-[#3B82F6]" />
+                baseline-xgb <span className="font-bold">({lossMetricView === "loss" ? "0.198" : "91.2%"})</span>
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
-                deep-trees-overfit (0.231)
+              <span className="flex items-center gap-2 font-medium text-slate-700">
+                <span className="w-3 h-[3px] bg-[#8B5CF6]" />
+                deep-trees <span className="font-bold">({lossMetricView === "loss" ? "0.231" : "89.5%"})</span>
               </span>
             </div>
           </div>
         </div>
 
-        {/* CHART 2: Hyperparameter & Candidate Model Ranking (5 cols) - NO DONUT! */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CHART 2: Performance vs Latency Pareto (5 cols) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Sliders className="w-5 h-5 text-[#3BB48C]" />
-                  Model Ranking &amp; Tuning
+                  Quality vs. Cost Trade-off
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Top performing runs sorted by validation ROC-AUC
+                <p className="text-sm text-slate-500 mt-1">
+                  Pareto frontier: ROC-AUC vs Inference Latency
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Target: 0.95+
               </span>
             </div>
 
-            {/* Candidate Runs Horizontal Performance Ranking */}
-            <div className="space-y-4">
-              {/* Candidate 1 */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[#10B981] text-white font-black text-[10px] flex items-center justify-center">
-                      #1
-                    </span>
-                    <span className="font-bold text-slate-900 truncate max-w-[160px]">
-                      optuna-tune-depth6-lr0.03
-                    </span>
-                  </div>
-                  <span className="font-mono font-black text-emerald-700">0.971 ROC-AUC</span>
-                </div>
-                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden mb-2">
-                  <div className="h-full bg-[#10B981] rounded-full" style={{ width: "97.1%" }} />
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-                  <span>lr: 0.03 • depth: 6 • n_est: 350</span>
-                  <span className="text-emerald-700 font-bold">2.4 ms latency</span>
-                </div>
-              </div>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis 
+                    type="number" 
+                    dataKey="lat" 
+                    name="Latency" 
+                    domain={[0, 8]} 
+                    tick={AXIS_TICK} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tickFormatter={(v) => `${v}ms`}
+                  />
+                  <YAxis 
+                    type="number" 
+                    dataKey="auc" 
+                    name="ROC-AUC" 
+                    domain={[0.88, 1.0]} 
+                    tick={AXIS_TICK} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tickFormatter={(v) => v.toFixed(2)}
+                  />
+                  <ZAxis type="number" dataKey="depth" range={[100, 300]} name="Tree Depth" />
+                  <RechartsTooltip 
+                    cursor={{ strokeDasharray: "4 4", stroke: "#94A3B8" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={p.name}
+                          payload={[
+                            { name: "ROC-AUC", value: p.auc, color: p.color },
+                            { name: "Latency", value: `${p.lat} ms`, color: PALETTE.slate },
+                            { name: "Tree Depth", value: p.depth, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  
+                  {/* Target Reference Line */}
+                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" opacity={0.5} label={{ value: "Target AUC", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
+                  
+                  {/* Optimal Zone */}
+                  <ReferenceArea x1={0} x2={4} y1={0.95} y2={1.0} fill={PALETTE.brand} fillOpacity={0.05} />
 
-              {/* Candidate 2 */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[#3B82F6] text-white font-black text-[10px] flex items-center justify-center">
-                      #2
-                    </span>
-                    <span className="font-bold text-slate-900 truncate max-w-[160px]">
-                      baseline-xgb-default
-                    </span>
-                  </div>
-                  <span className="font-mono font-black text-blue-700">0.945 ROC-AUC</span>
-                </div>
-                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden mb-2">
-                  <div className="h-full bg-[#3B82F6] rounded-full" style={{ width: "94.5%" }} />
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-                  <span>lr: 0.10 • depth: 4 • n_est: 200</span>
-                  <span className="text-blue-700 font-bold">3.1 ms latency</span>
-                </div>
-              </div>
-
-              {/* Candidate 3 */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-purple-200 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[#8B5CF6] text-white font-black text-[10px] flex items-center justify-center">
-                      #3
-                    </span>
-                    <span className="font-bold text-slate-900 truncate max-w-[160px]">
-                      deep-trees-overfit-test
-                    </span>
-                  </div>
-                  <span className="font-mono font-black text-purple-700">0.928 ROC-AUC</span>
-                </div>
-                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden mb-2">
-                  <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: "92.8%" }} />
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-                  <span>lr: 0.01 • depth: 12 • n_est: 500</span>
-                  <span className="text-purple-700 font-bold">5.8 ms latency</span>
-                </div>
-              </div>
+                  <Scatter 
+                    data={[
+                      { name: "optuna-tune-d6", auc: 0.971, lat: 2.4, depth: 6, lr: 0.03, color: PALETTE.brand },
+                      { name: "baseline-xgb", auc: 0.945, lat: 3.1, depth: 4, lr: 0.10, color: PALETTE.blue },
+                      { name: "deep-trees-test", auc: 0.928, lat: 5.8, depth: 12, lr: 0.01, color: PALETTE.violet },
+                    ]} 
+                  >
+                    {[
+                      { name: "optuna-tune-d6", auc: 0.971, lat: 2.4, depth: 6, lr: 0.03, color: PALETTE.brand },
+                      { name: "baseline-xgb", auc: 0.945, lat: 3.1, depth: 4, lr: 0.10, color: PALETTE.blue },
+                      { name: "deep-trees-test", auc: 0.928, lat: 5.8, depth: 12, lr: 0.01, color: PALETTE.violet },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-
-          {/* Linear Execution Pipeline Meter (NO DONUT!) */}
-          <div className="pt-3 border-t border-slate-100">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="font-bold text-slate-700">Run Execution Pipeline Status</span>
-              <span className="font-mono text-slate-500 text-[11px]">85% Finished • 10% Running • 5% Failed</span>
-            </div>
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-              <div className="bg-[#10B981] h-full" style={{ width: "85%" }} title="Finished: 85%" />
-              <div className="bg-sky-400 h-full animate-pulse" style={{ width: "10%" }} title="Running: 10%" />
-              <div className="bg-rose-400 h-full" style={{ width: "5%" }} title="Failed: 5%" />
+            <div className="text-center text-xs text-slate-500 mt-2">
+              Bubble size represents tree depth parameter. Top-left is optimal.
             </div>
           </div>
         </div>

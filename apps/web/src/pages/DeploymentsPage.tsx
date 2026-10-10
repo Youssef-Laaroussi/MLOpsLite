@@ -39,6 +39,18 @@ import {
 } from "../api/client";
 import { Deployment } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 // Realistic production serving fleet for Data Analyst & MLOps evaluation
 const DEFAULT_DEPLOYMENTS: (Deployment & {
@@ -603,135 +615,80 @@ export const DeploymentsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* VISUAL 2: Stephen Few's Executive Bullet Charts (Target SLA vs Actuals) (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* VISUAL 2: Fleet SLA Benchmarking (Ranked Horizontal Bar Chart) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Gauge className="w-5 h-5 text-[#3BB48C]" />
-                  Executive SLA Bullet Graphs
+                  Fleet SLA Benchmarking
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Actual serving telemetry benchmarked against contract SLA thresholds
+                <p className="text-sm text-slate-500 mt-1">
+                  P95 Inference Latency (ms) ranked by endpoint
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                100% Passed
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                SLA: &lt; 15ms
               </span>
             </div>
 
-            {/* Stephen Few Bullet Graphs Stack */}
-            <div className="space-y-4 pt-1">
-              {/* Bullet 1: P95 Response Latency (ms) - Lower is better */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">P95 Inference Latency (ms)</span>
-                  <span className="font-mono text-emerald-700 font-bold">3.6 ms (Target &lt; 15.0ms)</span>
-                </div>
-                {/* Qualitative background bands: 0-5ms (Optimal), 5-15ms (Acceptable), 15-25ms (Breached) */}
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  {/* Band 1: Optimal (0-20% = 5ms/25ms) */}
-                  <div className="h-full bg-emerald-100/60" style={{ width: "20%" }} title="Optimal: < 5ms" />
-                  {/* Band 2: Acceptable (20-60% = 15ms/25ms) */}
-                  <div className="h-full bg-amber-100/50" style={{ width: "40%" }} title="Acceptable: 5-15ms" />
-                  {/* Band 3: Critical (60-100%) */}
-                  <div className="h-full bg-rose-100/50" style={{ width: "40%" }} title="Critical: > 15ms" />
-
-                  {/* Quantitative Value Bar (Actual = 3.6ms / 25ms = 14.4%) */}
-                  <div className="absolute left-0 h-2.5 bg-slate-900 rounded-r" style={{ width: "14.4%" }} />
-
-                  {/* Target SLA Marker Line (15ms / 25ms = 60%) */}
-                  <div className="absolute h-5 w-1 bg-rose-600 rounded" style={{ left: "60%" }} title="SLA Limit: 15ms" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>0ms (Optimal)</span>
-                  <span className="text-rose-600 font-bold">| Target SLA: 15ms</span>
-                  <span>25ms</span>
-                </div>
-              </div>
-
-              {/* Bullet 2: Fleet Cluster Uptime Availability (%) - Higher is better */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">Container Availability Uptime</span>
-                  <span className="font-mono text-emerald-700 font-bold">99.98% (Target &gt; 99.90%)</span>
-                </div>
-                {/* Qualitative background bands */}
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  <div className="h-full bg-rose-100/50" style={{ width: "70%" }} />
-                  <div className="h-full bg-amber-100/50" style={{ width: "20%" }} />
-                  <div className="h-full bg-emerald-100/60" style={{ width: "10%" }} />
-
-                  {/* Quantitative Value Bar (Actual = 99.98%) */}
-                  <div className="absolute left-0 h-2.5 bg-[#3BB48C] rounded-r" style={{ width: "99.8%" }} />
-
-                  {/* Target Marker (99.90%) */}
-                  <div className="absolute h-5 w-1 bg-slate-900 rounded" style={{ left: "90%" }} title="SLA: 99.9%" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>95.0%</span>
-                  <span className="text-slate-800 font-bold">| Target: 99.9%</span>
-                  <span>100.0%</span>
-                </div>
-              </div>
-
-              {/* Bullet 3: CPU Headroom Saturation (%) */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">Cluster CPU Saturation</span>
-                  <span className="font-mono text-slate-800 font-bold">36.4% (Autoscale at 75%)</span>
-                </div>
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  <div className="h-full bg-emerald-100/60" style={{ width: "50%" }} />
-                  <div className="h-full bg-amber-100/50" style={{ width: "25%" }} />
-                  <div className="h-full bg-rose-100/50" style={{ width: "25%" }} />
-
-                  {/* Quantitative Value Bar (Actual = 36.4%) */}
-                  <div className="absolute left-0 h-2.5 bg-blue-600 rounded-r" style={{ width: "36.4%" }} />
-
-                  {/* Threshold Marker (75%) */}
-                  <div className="absolute h-5 w-1 bg-amber-600 rounded" style={{ left: "75%" }} title="Scale Trigger: 75%" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>0% (Idle)</span>
-                  <span className="text-amber-600 font-bold">| Autoscale: 75%</span>
-                  <span>100% (Ceiling)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Semicircular Speedometer Telemetry Dials */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
-                {/* SVG 180-deg Speedometer Arc */}
-                <svg viewBox="0 0 60 36" className="w-12 h-8 select-none">
-                  <path d="M 6 30 A 24 24 0 0 1 54 30" fill="none" stroke="#E2E8F0" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 6 30 A 24 24 0 0 1 51 20" fill="none" stroke="#10B981" strokeWidth="6" strokeLinecap="round" />
-                </svg>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Error Budget</span>
-                  <span className="text-sm font-bold text-emerald-700 font-mono">98.4% Left</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
-                {/* SVG 180-deg Speedometer Arc */}
-                <svg viewBox="0 0 60 36" className="w-12 h-8 select-none">
-                  <path d="M 6 30 A 24 24 0 0 1 54 30" fill="none" stroke="#E2E8F0" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 6 30 A 24 24 0 0 1 36 8" fill="none" stroke="#3B82F6" strokeWidth="6" strokeLinecap="round" />
-                </svg>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mesh Ingress</span>
-                  <span className="text-sm font-bold text-blue-700 font-mono">18.4 MB/s</span>
-                </div>
-              </div>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
+                    { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
+                    { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
+                    { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
+                    { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
+                    { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
+                  ].sort((a, b) => b.lat - a.lat)}
+                  layout="vertical"
+                  margin={{ top: 0, right: 15, left: 10, bottom: 0 }}
+                  barSize={14}
+                >
+                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
+                  <XAxis type="number" domain={[0, 16]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={p.name}
+                          payload={[
+                            { name: "P95 Latency", value: `${p.lat} ms`, color: p.color },
+                            { name: "SLA Threshold", value: "15.0 ms", color: PALETTE.rose },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <ReferenceLine x={15} stroke={PALETTE.rose} strokeDasharray="4 4" opacity={0.6} label={{ value: "SLA limit", position: "insideTopLeft", fill: PALETTE.rose, fontSize: 10 }} />
+                  <Bar dataKey="lat" radius={[0, 4, 4, 0]}>
+                    {[
+                      { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
+                      { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
+                      { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
+                      { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
+                      { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
+                      { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
+                    ].sort((a, b) => b.lat - a.lat).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>SLA Standard: Tier-1 Production Contract</span>
-            <span className="text-slate-800 font-bold">Zero Violations in 30d</span>
+            <span className="text-slate-800 font-bold">100% Endpoints Compliant</span>
           </div>
         </div>
       </div>

@@ -50,7 +50,8 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
+  ReferenceLine,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
@@ -317,7 +318,7 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight">
             Overview
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -428,7 +429,7 @@ export const DashboardOverview: React.FC = () => {
       {/* ── (Matching user image with 0 to 80 Y-Axis and 5 Bars) ───── */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs hover:border-slate-300 transition-all">
-        <h3 className="text-base font-extrabold text-slate-900 mb-6">
+        <h3 className="text-base font-semibold text-slate-900 mb-6">
           Resources overview
         </h3>
 
@@ -474,7 +475,7 @@ export const DashboardOverview: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
                   Inference & Telemetry Latency Curve
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
@@ -506,16 +507,16 @@ export const DashboardOverview: React.FC = () => {
             {/* Quick KPI Ribbon */}
             <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-center">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Median (P50)</span>
-                <span className="text-sm font-black text-slate-900 font-mono">2.8 ms</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Median (P50)</span>
+                <span className="text-sm font-semibold text-slate-900 font-mono">2.8 ms</span>
               </div>
               <div className="border-x border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
-                <span className="text-sm font-black text-[#1A7456] font-mono">5.4 ms</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
+                <span className="text-sm font-semibold text-[#1A7456] font-mono">5.4 ms</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
-                <span className="text-sm font-black text-emerald-600 font-mono">99.98%</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
+                <span className="text-sm font-semibold text-emerald-600 font-mono">99.98%</span>
               </div>
             </div>
 
@@ -581,7 +582,7 @@ export const DashboardOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <PieChartIcon className="w-5 h-5 text-[#3BB48C]" />
                   Model Registry Distribution
                 </h3>
@@ -660,7 +661,7 @@ export const DashboardOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-[#3BB48C]" />
                   Infrastructure &amp; Resource Allocation Gauges
                 </h3>
@@ -746,66 +747,88 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Drift & Accuracy Matrix */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* Drift Telemetry Standard Bar Chart */}
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Model Drift vs Accuracy Telemetry Matrix
+                  Model Feature Drift (PSI Telemetry)
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Continuous evaluation of feature distributions (Evidently AI PSI Scores)
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Continuous statistical drift against baseline distributions (Evidently AI)
                 </p>
               </div>
               <Link
                 to="/app/monitoring"
-                className="text-xs font-bold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
               >
                 Monitoring <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="relative h-44 w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-2/3 bg-emerald-50/40 border-r border-emerald-200/60 pointer-events-none flex items-start p-2">
-                <span className="text-[9px] font-mono font-bold text-emerald-700 uppercase">
-                  Safe Zone (&lt;0.05 PSI)
-                </span>
-              </div>
-              <div className="absolute inset-y-0 right-0 w-1/3 bg-amber-50/30 pointer-events-none flex items-start p-2">
-                <span className="text-[9px] font-mono font-bold text-amber-700 uppercase">
-                  Warning Zone (0.05 - 0.10)
-                </span>
-              </div>
-
-              <div className="absolute inset-x-0 bottom-8 border-b border-slate-200 border-dashed" />
-              <div className="absolute inset-x-0 bottom-20 border-b border-slate-200 border-dashed" />
-
-              {[
-                { name: "transaction_amount", psi: 0.02, acc: 94.2, left: "20%", top: "35%", color: "bg-[#3BB48C]" },
-                { name: "distance_from_home", psi: 0.03, acc: 91.5, left: "34%", top: "48%", color: "bg-emerald-500" },
-                { name: "card_age_months", psi: 0.01, acc: 96.0, left: "12%", top: "25%", color: "bg-teal-500" },
-                { name: "daily_txn_count", psi: 0.04, acc: 88.4, left: "48%", top: "60%", color: "bg-indigo-500" },
-                { name: "merchant_risk_score", psi: 0.045, acc: 92.0, left: "55%", top: "42%", color: "bg-sky-500" },
-              ].map((pt, idx) => (
-                <div
-                  key={idx}
-                  className="absolute group cursor-pointer -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: pt.left, top: pt.top }}
+            <div className="h-44 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={[
+                    { feature: "card_age", psi: 0.01, full: "card_age_months", color: PALETTE.brand },
+                    { feature: "amount", psi: 0.02, full: "transaction_amount", color: PALETTE.brand },
+                    { feature: "dist_home", psi: 0.03, full: "distance_from_home", color: PALETTE.brand },
+                    { feature: "daily_txn", psi: 0.04, full: "daily_txn_count", color: PALETTE.brand },
+                    { feature: "risk_score", psi: 0.045, full: "merchant_risk_score", color: PALETTE.brand },
+                  ]}
+                  margin={{ top: 5, right: 30, left: 10, bottom: 0 }}
+                  barSize={12}
                 >
-                  <div className={`w-3.5 h-3.5 rounded-full ${pt.color} ring-4 ring-white shadow-md transition-transform group-hover:scale-150`} />
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-mono px-2 py-1 rounded-md whitespace-nowrap z-20 shadow-lg pointer-events-none">
-                    <strong>{pt.name}</strong> • PSI: {pt.psi} • Acc: {pt.acc}%
-                  </div>
-                </div>
-              ))}
-
-              <div className="absolute bottom-1 inset-x-3 flex justify-between text-[9px] font-mono text-slate-400">
-                <span>0.00 PSI (Zero Drift)</span>
-                <span>0.05 PSI (Threshold)</span>
-                <span>0.10 PSI (Critical)</span>
-              </div>
+                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
+                  <XAxis
+                    type="number"
+                    domain={[0, 0.08]}
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => v.toFixed(2)}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="feature"
+                    tick={{ ...AXIS_TICK, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={70}
+                  />
+                  <ReferenceLine
+                    x={0.05}
+                    stroke={PALETTE.amber}
+                    strokeDasharray="4 4"
+                    label={{ value: "Threshold (0.05)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full}
+                          payload={[
+                            { name: "PSI Score", value: d.psi.toFixed(3), color: PALETTE.brand },
+                            { name: "Safe Threshold", value: "< 0.050", color: PALETTE.amber },
+                            { name: "Status", value: "Stable (Passed)", color: PALETTE.brand },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="psi" fill={PALETTE.brand} radius={[0, 4, 4, 0]}>
+                    {[0, 1, 2, 3, 4].map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={PALETTE.brand} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

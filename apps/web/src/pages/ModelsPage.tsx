@@ -27,6 +27,7 @@ import { RegisteredModel } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import {
   ComposedChart,
+  BarChart,
   Bar,
   Line,
   XAxis,
@@ -34,6 +35,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
@@ -282,7 +284,7 @@ export const ModelsPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
             <Box className="w-7 h-7 text-[#3BB48C]" />
             Model Registry &amp; Governance
             <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
@@ -374,164 +376,82 @@ export const ModelsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Stepped Promotion Pipeline & Benchmark Footprint Matrix (NO DONUTS!) ── */}
+      {/* ── Visual Analytics Row: Promotion Pipeline Bar Chart & Benchmark Footprint Matrix ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CARD 1: Model Lifecycle & Promotion Pipeline (7 cols) - Stepped Flow / Pipeline Stage Bars */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CARD 1: Model Promotion Pipeline & Stages (7 cols) - Enterprise Standard Bar Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Layers className="w-5 h-5 text-[#3BB48C]" />
                   Model Promotion Pipeline &amp; Stages
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Gated progression from training sandbox to live production serving
+                <p className="text-sm text-slate-500 mt-1">
+                  Active model count distribution across lifecycle promotion stages
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Single-Active Enforced
               </span>
             </div>
 
-            {/* Stepped Progression Flow */}
-            <div className="space-y-3 pt-1">
-              {/* Stage 1: Development */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "DEVELOPMENT" ? "ALL" : "DEVELOPMENT")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "DEVELOPMENT"
-                    ? "bg-slate-100 border-slate-400"
-                    : "bg-slate-50 border-slate-200/80 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
-                    1
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Development (Sandbox)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Experimental training &amp; hyperparameter tuning</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-slate-700 text-xs">{devCount} models</span>
-                  <div className="w-24 h-4 hidden sm:block">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={[{ value: devCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <XAxis type="number" hide domain={[0, models.length || 1]} />
-                        <YAxis type="category" hide />
-                        <Bar dataKey="value" fill={PALETTE.slate} radius={4} background={{ fill: '#E2E8F0', radius: 4 }} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 2: Candidate */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "CANDIDATE" ? "ALL" : "CANDIDATE")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "CANDIDATE"
-                    ? "bg-amber-100/60 border-amber-400"
-                    : "bg-amber-50/50 border-amber-200/80 hover:border-amber-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-800 font-bold text-xs flex items-center justify-center">
-                    2
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Candidate (Validation)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Statistical profiling &amp; schema integrity testing</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-amber-700 text-xs">{candidateCount} models</span>
-                  <div className="w-24 h-4 hidden sm:block">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={[{ value: candidateCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <XAxis type="number" hide domain={[0, models.length || 1]} />
-                        <YAxis type="category" hide />
-                        <Bar dataKey="value" fill={PALETTE.amber} radius={4} background={{ fill: '#FEF3C7', radius: 4 }} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 3: Staging */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "STAGING" ? "ALL" : "STAGING")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "STAGING"
-                    ? "bg-blue-100/60 border-blue-400"
-                    : "bg-blue-50/50 border-blue-200/80 hover:border-blue-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-blue-200 text-blue-800 font-bold text-xs flex items-center justify-center">
-                    3
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Staging (Shadow / Canary)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Pre-release load testing &amp; drift calibration</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-blue-700 text-xs">{stagingCount} models</span>
-                  <div className="w-24 h-4 hidden sm:block">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={[{ value: stagingCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <XAxis type="number" hide domain={[0, models.length || 1]} />
-                        <YAxis type="category" hide />
-                        <Bar dataKey="value" fill={PALETTE.blue} radius={4} background={{ fill: '#DBEAFE', radius: 4 }} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 4: Production */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "PRODUCTION" ? "ALL" : "PRODUCTION")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "PRODUCTION"
-                    ? "bg-emerald-100/70 border-emerald-400"
-                    : "bg-emerald-50/60 border-emerald-200 hover:border-emerald-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-[#3BB48C] text-white font-bold text-xs flex items-center justify-center">
-                    4
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-900 block flex items-center gap-2">
-                      Production (Live Inference)
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Active endpoints serving sub-15ms predictions</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-emerald-800 text-xs">{productionCount} models</span>
-                  <div className="w-24 h-4 hidden sm:block">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={[{ value: productionCount }]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <XAxis type="number" hide domain={[0, models.length || 1]} />
-                        <YAxis type="category" hide />
-                        <Bar dataKey="value" fill={PALETTE.brand} radius={4} background={{ fill: '#D1FAE5', radius: 4 }} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
+            {/* Standard Recharts Column Bar Chart */}
+            <div className="h-[250px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: PALETTE.slate },
+                    { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: PALETTE.amber },
+                    { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: PALETTE.blue },
+                    { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: PALETTE.brand },
+                  ]}
+                  margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+                  barSize={44}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="stage" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <RechartsTooltip
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={label}
+                          payload={[
+                            { name: "Active Models", value: d.count, color: d.fill },
+                            { name: "Share of Registry", value: `${Math.round((d.count / (models.length || 1)) * 100)}%`, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    radius={[6, 6, 0, 0]}
+                    onClick={(entry) => setStageFilter(stageFilter === entry.stageKey ? "ALL" : entry.stageKey)}
+                    className="cursor-pointer"
+                  >
+                    {[
+                      { stage: "Development", fill: PALETTE.slate },
+                      { stage: "Candidate", fill: PALETTE.amber },
+                      { stage: "Staging", fill: PALETTE.blue },
+                      { stage: "Production", fill: PALETTE.brand },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 font-mono">
             <span>Promotion Gate: Cryptographic Hash Locked</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Audit Trail Enabled
             </span>
           </div>

@@ -40,6 +40,8 @@ import {
 import { Deployment } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -328,7 +330,7 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
             <Server className="w-7 h-7 text-[#3BB48C]" />
             Inference Deployments
             <span className="relative flex h-2.5 w-2.5">
@@ -448,165 +450,152 @@ export const DeploymentsPage: React.FC = () => {
 
       {/* ── Visual Analytics Row: Network Service Mesh Topology & Stephen Few Bullet Charts (NO BARS, NO DONUTS!) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* VISUAL 1: Interactive Service Mesh Topology & Traffic Ingress Map (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* VISUAL 1: Ingress Routing & Traffic Throughput (7 cols) - Enterprise Standard AreaChart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Workflow className="w-5 h-5 text-[#3BB48C]" />
-                  Service Mesh Topology &amp; Ingress Routing
+                  Ingress Traffic &amp; Route Throughput
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Reverse proxy gateway distributing real-time inference traffic to container pods
+                <p className="text-sm text-slate-500 mt-1">
+                  Real-time request volume distribution through NGINX gateway (Port 443 / SSL)
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                Mesh Active (mTLS)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+                  Peak: {totalRps} req/s
+                </span>
+              </div>
             </div>
 
-            {/* Interactive Topology Graph SVG */}
-            <div className="relative w-full overflow-hidden bg-slate-50/70 rounded-2xl border border-slate-200/80 p-3">
-              <svg viewBox="0 0 540 240" className="w-full h-auto select-none" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  {/* Glowing line gradients */}
-                  <linearGradient id="flowProd" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.9" />
-                  </linearGradient>
-                  <linearGradient id="flowCanary" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.9" />
-                  </linearGradient>
-                  <linearGradient id="flowStg" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.9" />
-                  </linearGradient>
-                </defs>
+            {/* Standard Recharts Multi-Area Traffic Timeline */}
+            <div className="h-[200px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={[
+                    { time: "10:00", prod: 2150, canary: 180, total: 2330 },
+                    { time: "11:00", prod: 2380, canary: 210, total: 2590 },
+                    { time: "12:00", prod: 2620, canary: 220, total: 2840 },
+                    { time: "13:00", prod: 2510, canary: 205, total: 2715 },
+                    { time: "14:00", prod: 2430, canary: 195, total: 2625 },
+                    { time: "15:00", prod: 2580, canary: 215, total: 2795 },
+                    { time: "16:00", prod: 2640, canary: 200, total: 2840 },
+                  ]}
+                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="ingressProdGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="ingressCanaryGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.blue} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={PALETTE.blue} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={`Ingress @ ${label}`}
+                          payload={[
+                            { name: "Production Endpoints", value: `${payload.find(p => p.dataKey === "prod")?.value} req/s`, color: PALETTE.brand },
+                            { name: "Canary / Staging", value: `${payload.find(p => p.dataKey === "canary")?.value} req/s`, color: PALETTE.blue },
+                            { name: "Total Ingress Throughput", value: `${payload.find(p => p.dataKey === "total")?.value} req/s`, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="prod"
+                    stroke={PALETTE.brand}
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#ingressProdGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="canary"
+                    stroke={PALETTE.blue}
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#ingressCanaryGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-                {/* Gateway Root Node (Left) */}
-                <g className="cursor-pointer">
-                  <rect x="20" y="75" width="105" height="90" rx="16" fill="#1E293B" stroke="#0F172A" strokeWidth="1.5" />
-                  <circle cx="72.5" cy="100" r="14" fill="#334155" />
-                  <path d="M 67 100 L 78 100 M 72.5 94.5 L 72.5 105.5" stroke="#3BB48C" strokeWidth="2.5" strokeLinecap="round" />
-                  <text x="72.5" y="125" fill="#F8FAFC" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">
-                    NGINX Gateway
-                  </text>
-                  <text x="72.5" y="138" fill="#94A3B8" fontSize="8.5" textAnchor="middle" fontFamily="monospace">
-                    Port 443 / SSL
-                  </text>
-                  <text x="72.5" y="152" fill="#3BB48C" fontSize="8.5" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
-                    {totalRps} req/s
-                  </text>
-                </g>
-
-                {/* Flowing Connecting Curves from Gateway (72.5, 120) to 6 Pods on Right */}
-                {[
-                  { y: 25, role: "PRODUCTION", label: "Port 8100 • 1,240 rps", name: "fraud-detector:v3", lat: "2.4ms", id: "dep-prod-01", color: "#10B981" },
-                  { y: 65, role: "PRODUCTION", label: "Port 8101 • 650 rps (90%)", name: "customer-churn:v2", lat: "3.8ms", id: "dep-prod-02", color: "#10B981" },
-                  { y: 105, role: "CANARY", label: "Port 8102 • 75 rps (10%)", name: "customer-churn:v3", lat: "3.2ms", id: "dep-canary-02", color: "#3B82F6" },
-                  { y: 145, role: "PRODUCTION", label: "Port 8103 • 420 rps", name: "demand-forecaster:v2", lat: "5.2ms", id: "dep-prod-03", color: "#10B981" },
-                  { y: 185, role: "PRODUCTION", label: "Port 8104 • 310 rps", name: "credit-risk:v1", lat: "3.1ms", id: "dep-prod-04", color: "#10B981" },
-                  { y: 215, role: "STAGING", label: "Port 8105 • 145 rps", name: "sentiment-bert:v1", lat: "12.6ms", id: "dep-stg-05", color: "#F59E0B" },
-                ].map((pod, idx) => {
-                  const isSelected = selectedNodeId === pod.id;
-                  const curveD = `M 125 120 C 180 120, 200 ${pod.y}, 260 ${pod.y}`;
-                  const gradId = pod.role === "CANARY" ? "url(#flowCanary)" : pod.role === "STAGING" ? "url(#flowStg)" : "url(#flowProd)";
-
-                  return (
-                    <g key={pod.id} onClick={() => setSelectedNodeId(pod.id)} className="cursor-pointer group">
-                      {/* Flow Path */}
-                      <path
-                        d={curveD}
-                        fill="none"
-                        stroke={gradId}
-                        strokeWidth={isSelected ? "2.6" : "1.6"}
-                        strokeDasharray={pod.role === "CANARY" ? "4 3" : undefined}
-                        opacity={isSelected ? "1" : "0.7"}
-                      />
-
-                      {/* Moving Particle on Wire */}
-                      <circle cx={190 + (idx * 10) % 40} cy={120 + ((pod.y - 120) * 0.45)} r="2" fill={pod.color} />
-
-                      {/* Pod Node Card (Right) */}
-                      <rect
-                        x="260"
-                        y={pod.y - 14}
-                        width="265"
-                        height="28"
-                        rx="8"
-                        fill={isSelected ? "#FFFFFF" : "#F8FAFC"}
-                        stroke={isSelected ? pod.color : "#E2E8F0"}
-                        strokeWidth={isSelected ? "2" : "1"}
-                        className="transition-all"
-                      />
-
-                      {/* Pod Status Dot */}
-                      <circle cx="275" cy={pod.y} r="4" fill={pod.color} />
-
-                      {/* Pod Name */}
-                      <text
-                        x="288"
-                        y={pod.y + 3.5}
-                        fill="#1E293B"
-                        fontSize="9.5"
-                        fontWeight={isSelected ? "bold" : "600"}
-                        fontFamily="monospace"
-                      >
-                        {pod.name}
-                      </text>
-
-                      {/* Telemetry Badge (Latency & Role) */}
-                      <text
-                        x="475"
-                        y={pod.y + 3.5}
-                        fill={pod.color}
-                        fontSize="9"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        fontFamily="monospace"
-                      >
-                        {pod.lat} • {pod.role === "CANARY" ? "Canary" : "Active"}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+            {/* Ingress Route Selector Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-3 pb-1 border-t border-slate-100">
+              {[
+                { name: "fraud-detector:v3", id: "dep-prod-01", rps: "1,240 rps", role: "PROD" },
+                { name: "customer-churn:v2", id: "dep-prod-02", rps: "650 rps", role: "PROD" },
+                { name: "customer-churn:v3", id: "dep-canary-02", rps: "75 rps", role: "CANARY" },
+                { name: "demand-forecaster:v2", id: "dep-prod-03", rps: "420 rps", role: "PROD" },
+                { name: "credit-risk:v1", id: "dep-prod-04", rps: "310 rps", role: "PROD" },
+                { name: "sentiment-bert:v1", id: "dep-stg-05", rps: "145 rps", role: "STG" },
+              ].map((pod) => {
+                const isSelected = selectedNodeId === pod.id;
+                return (
+                  <button
+                    key={pod.id}
+                    onClick={() => setSelectedNodeId(pod.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${pod.role === "CANARY" ? "bg-blue-400" : pod.role === "STG" ? "bg-amber-400" : "bg-emerald-400"}`} />
+                    <span>{pod.name}</span>
+                    <span className="opacity-70 text-[10px]">{pod.rps}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Selected Node Telemetry Strip */}
-            <div className="mt-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-              {activeNode ? (
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{activeNode.model_name}</span>
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
-                      v{activeNode.model_version} • Port {activeNode.port}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      activeNode.role === "CANARY"
-                        ? "bg-blue-100 text-blue-800"
-                        : activeNode.role === "STAGING"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}>
-                      {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 font-mono text-[11px]">
-                    <span className="text-emerald-700 font-bold">RPS: {activeNode.rps} req/s</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-blue-700 font-bold">P95: {activeNode.latency_p95}ms</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-purple-700 font-bold">RAM: {activeNode.memory_mb} MB</span>
-                  </div>
+            {activeNode && (
+              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-800">{activeNode.model_name}</span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
+                    v{activeNode.model_version} • Port {activeNode.port}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeNode.role === "CANARY"
+                      ? "bg-blue-100 text-blue-800"
+                      : activeNode.role === "STAGING"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-emerald-100 text-emerald-800"
+                  }`}>
+                    {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
+                  </span>
                 </div>
-              ) : (
-                <span className="text-slate-400">Click any pod node in the topology mesh to inspect routing telemetry</span>
-              )}
-            </div>
+                <div className="flex items-center gap-3 font-mono text-[11px]">
+                  <span className="text-emerald-700 font-bold">RPS: {activeNode.rps} req/s</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-blue-700 font-bold">P95: {activeNode.latency_p95}ms</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600 font-medium">RAM: {activeNode.memory_mb} MB</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">

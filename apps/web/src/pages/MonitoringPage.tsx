@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import {
-  LineChart,
+  LineChart as LineChartIcon,
   CheckCircle2,
   Activity,
   RefreshCw,
@@ -16,6 +16,19 @@ import {
   Check,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 interface FeatureDrift {
   feature: string;
@@ -26,6 +39,40 @@ interface FeatureDrift {
   ref_mean: string;
   curr_mean: string;
 }
+
+const FEATURE_DISTRIBUTIONS: Record<string, { bin: string; reference: number; serving: number }[]> = {
+  transaction_amount: [
+    { bin: "$0-40", reference: 5, serving: 4 },
+    { bin: "$40-80", reference: 14, serving: 13 },
+    { bin: "$80-120", reference: 28, serving: 25 },
+    { bin: "$120-160", reference: 34, serving: 36 },
+    { bin: "$160-200", reference: 12, serving: 15 },
+    { bin: "$200-240", reference: 5, serving: 5 },
+    { bin: "$240+", reference: 2, serving: 2 },
+  ],
+  distance_from_home: [
+    { bin: "0-5km", reference: 16, serving: 15 },
+    { bin: "5-10km", reference: 32, serving: 30 },
+    { bin: "10-15km", reference: 26, serving: 28 },
+    { bin: "15-20km", reference: 14, serving: 16 },
+    { bin: "20-25km", reference: 8, serving: 7 },
+    { bin: "25km+", reference: 4, serving: 4 },
+  ],
+  card_age_months: [
+    { bin: "0-6m", reference: 12, serving: 13 },
+    { bin: "6-12m", reference: 20, serving: 21 },
+    { bin: "12-24m", reference: 36, reference: 36, serving: 34 },
+    { bin: "24-36m", reference: 20, serving: 21 },
+    { bin: "36m+", reference: 12, serving: 11 },
+  ],
+  daily_txn_count: [
+    { bin: "1-2", reference: 26, serving: 24 },
+    { bin: "3-4", reference: 44, serving: 42 },
+    { bin: "5-6", reference: 20, serving: 22 },
+    { bin: "7-8", reference: 7, serving: 8 },
+    { bin: "9+", reference: 3, serving: 4 },
+  ],
+};
 
 export const MonitoringPage: React.FC = () => {
   const [evaluating, setEvaluating] = useState(false);
@@ -86,6 +133,14 @@ export const MonitoringPage: React.FC = () => {
     0.032, 0.041, 0.038, 0.052, 0.044, 0.039, 0.035,
   ]);
 
+  const psiChartData = useMemo(() => {
+    const dates = ["Sep 10", "Sep 12", "Sep 14", "Sep 16", "Sep 18", "Sep 20", "Sep 22"];
+    return dates.map((date, idx) => ({
+      date,
+      psi: psiTrend[idx] ?? 0.035,
+    }));
+  }, [psiTrend]);
+
   const handleRunEvaluation = () => {
     setEvaluating(true);
     setTimeout(() => {
@@ -118,8 +173,8 @@ export const MonitoringPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <LineChart className="w-7 h-7 text-[#3BB48C]" />
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
+            <LineChartIcon className="w-7 h-7 text-[#3BB48C]" />
             Model Monitoring &amp; Observability
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -250,119 +305,96 @@ export const MonitoringPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Clean Simple Graphs (NO DONUTS, NO SPARKLINES) ── */}
+      {/* ── Visual Analytics Row: Enterprise Standard Observability Charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* GRAPH 1: Population Stability Index (PSI) Drift Timeline (7 cols) - Simple, Clean Line Chart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* GRAPH 1: Population Stability Index (PSI) Drift Timeline (7 cols) - Enterprise Standard AreaChart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
                   Population Stability Index (PSI) Trend
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Daily aggregate statistical drift against baseline distribution
+                <p className="text-sm text-slate-500 mt-1">
+                  Daily aggregate statistical drift against baseline reference distribution
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   Current PSI: {currentPsi} (Stable)
                 </span>
               </div>
             </div>
 
-            {/* Clean SVG Line Chart */}
-            <div className="relative w-full overflow-hidden bg-slate-50/50 rounded-2xl border border-slate-100 p-3 pt-4">
-              <svg viewBox="0 0 540 180" className="w-full h-auto select-none" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  {/* Subtle area gradient under curve */}
-                  <linearGradient id="psiAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#3BB48C" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {/* Shaded Safe Zone (< 0.10 PSI: from y = 145 - (0.10/0.30)*120 = 105 to y = 145) */}
-                <rect x="45" y="105" width="470" height="40" fill="rgba(16, 185, 129, 0.05)" />
-
-                {/* Horizontal Threshold Lines */}
-                {/* 0.25 Significant Drift Line */}
-                <line x1="45" y1="45" x2="515" y2="45" stroke="#FCA5A5" strokeWidth="1" strokeDasharray="3 3" />
-                <text x="515" y="40" fill="#EF4444" fontSize="8.5" textAnchor="end" fontFamily="monospace">
-                  Drift Warning (0.25)
-                </text>
-                <text x="38" y="48" fill="#94A3B8" fontSize="8.5" textAnchor="end" fontFamily="monospace">0.25</text>
-
-                {/* 0.10 Moderate Shift Line */}
-                <line x1="45" y1="105" x2="515" y2="105" stroke="#FCD34D" strokeWidth="1" strokeDasharray="3 3" />
-                <text x="515" y="100" fill="#D97706" fontSize="8.5" textAnchor="end" fontFamily="monospace">
-                  Slight Shift (0.10)
-                </text>
-                <text x="38" y="108" fill="#94A3B8" fontSize="8.5" textAnchor="end" fontFamily="monospace">0.10</text>
-
-                {/* Baseline 0.00 Line */}
-                <line x1="45" y1="145" x2="515" y2="145" stroke="#CBD5E1" strokeWidth="1.2" />
-                <text x="38" y="148" fill="#94A3B8" fontSize="8.5" textAnchor="end" fontFamily="monospace">0.00</text>
-
-                {/* Area under PSI curve */}
-                {/* Points: x = 45 + idx * (470 / 6) = 45, 123.3, 201.6, 280, 358.3, 436.6, 515 */}
-                {/* y = 145 - (val / 0.30) * 120 */}
-                <path
-                  d={`M 45 145 L 45 ${145 - (psiTrend[0] / 0.3) * 120} L 123.3 ${145 - (psiTrend[1] / 0.3) * 120} L 201.6 ${145 - (psiTrend[2] / 0.3) * 120} L 280 ${145 - (psiTrend[3] / 0.3) * 120} L 358.3 ${145 - (psiTrend[4] / 0.3) * 120} L 436.6 ${145 - (psiTrend[5] / 0.3) * 120} L 515 ${145 - (psiTrend[6] / 0.3) * 120} L 515 145 Z`}
-                  fill="url(#psiAreaGrad)"
-                />
-
-                {/* The Clean PSI Line */}
-                <path
-                  d={`M 45 ${145 - (psiTrend[0] / 0.3) * 120} L 123.3 ${145 - (psiTrend[1] / 0.3) * 120} L 201.6 ${145 - (psiTrend[2] / 0.3) * 120} L 280 ${145 - (psiTrend[3] / 0.3) * 120} L 358.3 ${145 - (psiTrend[4] / 0.3) * 120} L 436.6 ${145 - (psiTrend[5] / 0.3) * 120} L 515 ${145 - (psiTrend[6] / 0.3) * 120}`}
-                  fill="none"
-                  stroke="#3BB48C"
-                  strokeWidth="2.5"
-                />
-
-                {/* Data Points on Line */}
-                {psiTrend.map((val, idx) => {
-                  const cx = 45 + idx * (470 / 6);
-                  const cy = 145 - (val / 0.3) * 120;
-                  return (
-                    <g key={idx}>
-                      <circle cx={cx} cy={cy} r="4" fill="#3BB48C" stroke="#FFFFFF" strokeWidth="1.5" />
-                      <text
-                        x={cx}
-                        y={cy - 8}
-                        fill="#0F172A"
-                        fontSize="8.5"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        fontFamily="monospace"
-                      >
-                        {val}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* X-Axis Date Labels */}
-                {["Sep 10", "Sep 12", "Sep 14", "Sep 16", "Sep 18", "Sep 20", "Sep 22"].map((date, idx) => (
-                  <text
-                    key={date}
-                    x={45 + idx * (470 / 6)}
-                    y="165"
-                    fill="#64748B"
-                    fontSize="9"
-                    fontWeight="500"
-                    textAnchor="middle"
-                    fontFamily="monospace"
-                  >
-                    {date}
-                  </text>
-                ))}
-              </svg>
+            {/* Standard Recharts PSI Line / Area Chart */}
+            <div className="h-[210px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={psiChartData}
+                  margin={{ top: 15, right: 20, left: -15, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="psiAreaGrad" x1="0%" y1="0%" x2="0%" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis
+                    domain={[0, 0.30]}
+                    ticks={[0.0, 0.10, 0.20, 0.30]}
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => v.toFixed(2)}
+                  />
+                  <ReferenceLine
+                    y={0.10}
+                    stroke={PALETTE.amber}
+                    strokeDasharray="4 4"
+                    label={{ value: "Slight Shift (0.10)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
+                  />
+                  <ReferenceLine
+                    y={0.25}
+                    stroke={PALETTE.rose}
+                    strokeDasharray="4 4"
+                    label={{ value: "Drift Warning (0.25)", position: "top", fill: PALETTE.rose, fontSize: 10, fontWeight: 600 }}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const val = payload[0].value as number;
+                      return (
+                        <BiTooltip
+                          active
+                          label={`Evaluation: ${label}`}
+                          payload={[
+                            { name: "PSI Score", value: val.toFixed(3), color: PALETTE.brand },
+                            { name: "Safe Threshold", value: "< 0.10", color: PALETTE.amber },
+                            { name: "Stability Status", value: val < 0.10 ? "Stable (In Bounds)" : "Investigate Drift", color: val < 0.10 ? PALETTE.brand : PALETTE.rose },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="psi"
+                    stroke={PALETTE.brand}
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#psiAreaGrad)"
+                    dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Bottom Status strip */}
-            <div className="mt-3.5 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex items-center justify-between text-xs text-[#1A7456]">
+            <div className="mt-3.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center justify-between text-xs text-[#1A7456]">
               <span className="font-semibold flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
                 All 7 evaluation checkpoints securely within the safe green band (&lt; 0.10 PSI).
@@ -377,20 +409,20 @@ export const MonitoringPage: React.FC = () => {
           </div>
         </div>
 
-        {/* GRAPH 2: Feature Distribution Comparison (5 cols) - Reference vs Current Serving */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* GRAPH 2: Feature Distribution Comparison (5 cols) - Enterprise Standard Histogram Overlay */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-[#3BB48C]" />
                   Distribution Overlay
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-1">
                   Reference baseline vs live serving distribution
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 {activeFeature.score}% Overlap
               </span>
             </div>
@@ -401,91 +433,83 @@ export const MonitoringPage: React.FC = () => {
                 <button
                   key={f.feature}
                   onClick={() => setSelectedFeatureIndex(fIdx)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap cursor-pointer ${
                     selectedFeatureIndex === fIdx
                       ? "bg-[#3BB48C] text-white shadow-xs"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  {f.feature.length > 12 ? f.feature.slice(0, 10) + ".." : f.feature}
+                  {f.feature.length > 14 ? f.feature.slice(0, 12) + ".." : f.feature}
                 </button>
               ))}
             </div>
 
-            {/* Clean Density Distribution SVG */}
-            <div className="relative w-full overflow-hidden bg-slate-50/50 rounded-2xl border border-slate-100 p-3 pt-3">
-              <div className="flex items-center justify-end gap-3 text-[10px] font-mono mb-2">
-                <span className="flex items-center gap-1 text-slate-500">
-                  <span className="w-3 h-0.5 border-t-2 border-dashed border-slate-400"></span>
-                  Reference
-                </span>
-                <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                  <span className="w-3 h-1 bg-[#3BB48C] rounded"></span>
-                  Serving
-                </span>
-              </div>
-
-              <svg viewBox="0 0 340 130" className="w-full h-auto select-none" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  <linearGradient id="distCurrGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#3BB48C" stopOpacity="0.02" />
-                  </linearGradient>
-                  <linearGradient id="distRefGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {/* Grid line */}
-                <line x1="20" y1="105" x2="320" y2="105" stroke="#CBD5E1" strokeWidth="1.2" />
-
-                {/* Reference Baseline Bell Curve (Dashed Slate) */}
-                <path
-                  d="M 20 105 Q 80 105, 120 70 T 170 25 T 220 70 T 320 105 Z"
-                  fill="url(#distRefGrad)"
-                />
-                <path
-                  d="M 20 105 Q 80 105, 120 70 T 170 25 T 220 70 T 320 105"
-                  fill="none"
-                  stroke="#94A3B8"
-                  strokeWidth="1.6"
-                  strokeDasharray="4 3"
-                />
-
-                {/* Current Serving Stream Bell Curve (Solid Emerald) */}
-                <path
-                  d="M 20 105 Q 85 105, 125 68 T 175 22 T 225 68 T 320 105 Z"
-                  fill="url(#distCurrGrad)"
-                />
-                <path
-                  d="M 20 105 Q 85 105, 125 68 T 175 22 T 225 68 T 320 105"
-                  fill="none"
-                  stroke="#3BB48C"
-                  strokeWidth="2.2"
-                />
-
-                {/* Mean marker lines */}
-                <line x1="170" y1="25" x2="170" y2="105" stroke="#94A3B8" strokeWidth="1" strokeDasharray="2 2" />
-                <line x1="175" y1="22" x2="175" y2="105" stroke="#10B981" strokeWidth="1.5" />
-
-                <text x="30" y="120" fill="#94A3B8" fontSize="8.5" fontFamily="monospace">Low Value</text>
-                <text x="172" y="120" fill="#475569" fontSize="8.5" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
-                  Mean: {activeFeature.curr_mean}
-                </text>
-                <text x="310" y="120" fill="#94A3B8" fontSize="8.5" textAnchor="end" fontFamily="monospace">High Value</text>
-              </svg>
+            {/* Standard Recharts Binned Density Area Chart */}
+            <div className="h-[210px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={FEATURE_DISTRIBUTIONS[activeFeature.feature] || FEATURE_DISTRIBUTIONS["transaction_amount"]}
+                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="distServingGrad" x1="0%" y1="0%" x2="0%" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="bin" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${v}%`}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={`Bucket: ${label}`}
+                          payload={[
+                            { name: "Live Serving", value: `${payload.find(p => p.dataKey === "serving")?.value}%`, color: PALETTE.brand },
+                            { name: "Reference Baseline", value: `${payload.find(p => p.dataKey === "reference")?.value}%`, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="reference"
+                    stroke={PALETTE.slate}
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    fill={PALETTE.slate}
+                    fillOpacity={0.1}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="serving"
+                    stroke={PALETTE.brand}
+                    strokeWidth={2.5}
+                    fill="url(#distServingGrad)"
+                    fillOpacity={1}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Test statistics strip */}
             <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-mono block">Statistical Test</span>
-                <span className="font-bold text-slate-800">{activeFeature.stat_test}</span>
+                <span className="font-semibold text-slate-800">{activeFeature.stat_test}</span>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-mono block">p-value (Threshold &gt; 0.05)</span>
-                <span className="font-bold text-emerald-700 font-mono">{activeFeature.p_val} (Passed)</span>
+                <span className="font-semibold text-emerald-700 font-mono">{activeFeature.p_val} (Passed)</span>
               </div>
             </div>
           </div>
@@ -501,7 +525,7 @@ export const MonitoringPage: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
               Feature Distribution &amp; Drift Scores (Evidently AI)
             </h3>

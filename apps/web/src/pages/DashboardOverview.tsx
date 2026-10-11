@@ -22,7 +22,7 @@ import {
   Layers,
   LineChart as LineChartIcon,
   PieChart as PieChartIcon,
-feat: update architecture diagram and replace storage treemap with model benchmark matrix in dashboard  BarChart3,
+  BarChart3,
   TrendingUp,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";

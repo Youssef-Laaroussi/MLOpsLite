@@ -38,6 +38,8 @@ import { RegisteredModel, Deployment, AuditLog, User } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
+  PieChart,
+  Pie,
   BarChart,
   Bar,
   LineChart,
@@ -456,9 +458,9 @@ export const DashboardOverview: React.FC = () => {
                   );
                 }}
               />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                {resourcesData.map((res, index) => (
-                  <Cell key={`cell-${index}`} fill={PALETTE.brand} />
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={54}>
+                {[PALETTE.brand, PALETTE.cyan, PALETTE.violet, PALETTE.amber, PALETTE.blue].map((col, index) => (
+                  <Cell key={`cell-${index}`} fill={col} />
                 ))}
               </Bar>
             </BarChart>
@@ -578,72 +580,102 @@ export const DashboardOverview: React.FC = () => {
         </div>
 
         {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <PieChartIcon className="w-5 h-5 text-[#3BB48C]" />
                   Model Registry Distribution
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-0.5">
                   Breakdown across lifecycle promotion stages
                 </p>
               </div>
               <Link
                 to="/app/models"
-                className="text-xs font-bold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
               >
                 Catalog <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="mt-4 h-64 w-full">
+            {/* Recharts Donut PieChart with Center Text */}
+            <div className="relative h-48 w-full my-2 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[
-                    { stage: "Production", count: stageCounts.PRODUCTION, color: PALETTE.brand },
-                    { stage: "Staging", count: stageCounts.STAGING, color: PALETTE.amber },
-                    { stage: "Development", count: stageCounts.DEVELOPMENT, color: PALETTE.blue },
-                  ].sort((a, b) => b.count - a.count)}
-                  layout="vertical"
-                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
-                  barSize={24}
-                >
-                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
-                  <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="stage" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Production", value: stageCounts.PRODUCTION || 6, color: PALETTE.brand },
+                      { name: "Development", value: stageCounts.DEVELOPMENT || 4, color: PALETTE.blue },
+                      { name: "Candidate", value: 3, color: PALETTE.violet },
+                      { name: "Staging", value: stageCounts.STAGING || 2, color: PALETTE.amber },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={78}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "Production", color: PALETTE.brand },
+                      { name: "Development", color: PALETTE.blue },
+                      { name: "Candidate", color: PALETTE.violet },
+                      { name: "Staging", color: PALETTE.amber },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
                   <RechartsTooltip
-                    cursor={{ fill: "#F1F5F9" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
-                      const p = payload[0].payload;
+                      const p = payload[0];
                       return (
                         <BiTooltip
                           active
-                          label={p.stage}
+                          label={p.name}
                           payload={[
-                            { name: "Models", value: p.count, color: p.color }
+                            { name: "Model Count", value: p.value, color: p.payload.color }
                           ]}
                         />
                       );
                     }}
                   />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {[
-                      { stage: "Production", count: stageCounts.PRODUCTION, color: PALETTE.brand },
-                      { stage: "Staging", count: stageCounts.STAGING, color: PALETTE.amber },
-                      { stage: "Development", count: stageCounts.DEVELOPMENT, color: PALETTE.blue },
-                    ].sort((a, b) => b.count - a.count).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold font-display text-slate-900">
+                  {stats.models_count || 15}
+                </span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                  Models
+                </span>
+              </div>
+            </div>
+
+            {/* Legend Pills */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" />
+                <span className="text-slate-600 font-medium">Production ({stageCounts.PRODUCTION || 6})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
+                <span className="text-slate-600 font-medium">Development ({stageCounts.DEVELOPMENT || 4})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
+                <span className="text-slate-600 font-medium">Candidate (3)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="text-slate-600 font-medium">Staging ({stageCounts.STAGING || 2})</span>
+              </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Registry Status: Verified</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Zero Unsigned Models
@@ -653,111 +685,89 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 5: RESOURCE GAUGES & DRIFT STABILITY MATRIX ────── */}
+      {/* ── SECTION 5: RESOURCE TELEMETRY & FEATURE DRIFT MATRIX ───── */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Microservices Resource Gauges */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* Microservices Resource Allocation Grouped BarChart */}
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-[#3BB48C]" />
-                  Infrastructure &amp; Resource Allocation Gauges
+                  Infrastructure &amp; Resource Telemetry
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Live CPU, memory consumption, and local container cluster telemetry
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Live CPU load (%) vs Memory allocation (%) across container pods
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-1 rounded-full">
+              <span className="text-xs font-mono font-semibold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-1 rounded-full">
                 Docker Engine
               </span>
             </div>
 
-            <div className="space-y-3.5 my-2">
-              {/* Service 1: FastAPI */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    FastAPI Core Backend Engine
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-[#1A7456]">
-                    24% CPU • 180 MB RAM • 3.2ms
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-[#3BB48C] to-emerald-400 h-full rounded-full w-[24%]" />
-                </div>
-              </div>
-
-              {/* Service 2: PostgreSQL */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    PostgreSQL 16 Persistence Engine
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-indigo-700">
-                    42% Buffer Pool • 8 Connections Active
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-indigo-500 to-sky-400 h-full rounded-full w-[42%]" />
-                </div>
-              </div>
-
-              {/* Service 3: MinIO S3 */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    MinIO Object Storage S3
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-amber-700">
-                    65% Storage Used • 88.6 MB / 1 GB
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full w-[65%]" />
-                </div>
-              </div>
-
-              {/* Service 4: MLflow */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    MLflow Experiment Tracking Server
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-purple-700">
-                    Port 5000 • 3 Experiments Active
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-400 h-full rounded-full w-[38%]" />
-                </div>
-              </div>
+            <div className="h-52 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { service: "FastAPI", cpu: 24, mem: 35, full: "FastAPI Core Backend Engine" },
+                    { service: "Postgres", cpu: 18, mem: 42, full: "PostgreSQL 16 Persistence Engine" },
+                    { service: "MinIO", cpu: 12, mem: 65, full: "MinIO S3 Object Storage" },
+                    { service: "MLflow", cpu: 15, mem: 38, full: "MLflow Experiment Server" },
+                  ]}
+                  margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
+                  barSize={16}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="service" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full}
+                          payload={[
+                            { name: "CPU Utilization", value: `${payload.find(p => p.dataKey === "cpu")?.value}%`, color: PALETTE.brand },
+                            { name: "Memory Utilization", value: `${payload.find(p => p.dataKey === "mem")?.value}%`, color: PALETTE.indigo },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.indigo} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Cluster Health: 100%</span>
-            <span className="text-[#1A7456] font-bold">All 4 Microservices Operational</span>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> CPU Load (%)
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#6366F1]" /> Memory (%)
+              </span>
+            </div>
+            <span className="text-[#1A7456] font-semibold">4/4 Operational</span>
           </div>
         </div>
 
-        {/* Drift Telemetry Standard Bar Chart */}
+        {/* Feature Drift & SHAP Importance Composed Chart */}
         <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Model Feature Drift (PSI Telemetry)
+                  Feature Drift vs. SHAP Importance
                 </h3>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  Continuous statistical drift against baseline distributions (Evidently AI)
+                  SHAP feature impact (Bar) vs Evidently AI PSI drift score (Line)
                 </p>
               </div>
               <Link
@@ -768,42 +778,28 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            <div className="h-44 w-full my-2">
+            <div className="h-52 w-full my-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
+                <ComposedChart
                   data={[
-                    { feature: "card_age", psi: 0.01, full: "card_age_months", color: PALETTE.brand },
-                    { feature: "amount", psi: 0.02, full: "transaction_amount", color: PALETTE.brand },
-                    { feature: "dist_home", psi: 0.03, full: "distance_from_home", color: PALETTE.brand },
-                    { feature: "daily_txn", psi: 0.04, full: "daily_txn_count", color: PALETTE.brand },
-                    { feature: "risk_score", psi: 0.045, full: "merchant_risk_score", color: PALETTE.brand },
+                    { feature: "card_age", shap: 0.35, psi: 0.01, full: "card_age_months" },
+                    { feature: "amount", shap: 0.28, psi: 0.02, full: "transaction_amount" },
+                    { feature: "dist_home", shap: 0.18, psi: 0.03, full: "distance_from_home" },
+                    { feature: "daily_txn", shap: 0.12, psi: 0.04, full: "daily_txn_count" },
+                    { feature: "risk_score", shap: 0.07, psi: 0.045, full: "merchant_risk_score" },
                   ]}
-                  margin={{ top: 5, right: 30, left: 10, bottom: 0 }}
-                  barSize={12}
+                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
-                  <XAxis
-                    type="number"
-                    domain={[0, 0.08]}
-                    tick={AXIS_TICK}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => v.toFixed(2)}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="feature"
-                    tick={{ ...AXIS_TICK, fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={70}
-                  />
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="feature" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[0, 0.40]} tickFormatter={(v) => v.toFixed(2)} />
+                  <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[0, 0.08]} tickFormatter={(v) => v.toFixed(2)} />
                   <ReferenceLine
-                    x={0.05}
+                    yAxisId="right"
+                    y={0.05}
                     stroke={PALETTE.amber}
                     strokeDasharray="4 4"
-                    label={{ value: "Threshold (0.05)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
+                    label={{ value: "Drift (0.05)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
                   />
                   <RechartsTooltip
                     content={({ active, payload }) => {
@@ -814,29 +810,33 @@ export const DashboardOverview: React.FC = () => {
                           active
                           label={d.full}
                           payload={[
-                            { name: "PSI Score", value: d.psi.toFixed(3), color: PALETTE.brand },
-                            { name: "Safe Threshold", value: "< 0.050", color: PALETTE.amber },
-                            { name: "Status", value: "Stable (Passed)", color: PALETTE.brand },
+                            { name: "SHAP Importance", value: d.shap.toFixed(2), color: PALETTE.blue },
+                            { name: "PSI Drift Score", value: d.psi.toFixed(3), color: PALETTE.brand },
+                            { name: "Status", value: "Stable (< 0.05)", color: PALETTE.brand },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Bar dataKey="psi" fill={PALETTE.brand} radius={[0, 4, 4, 0]}>
-                    {[0, 1, 2, 3, 4].map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={PALETTE.brand} />
-                    ))}
-                  </Bar>
-                </BarChart>
+                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2.5} dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span className="font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              100% In-Bounds • Zero Drift Alerts
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" /> SHAP Importance
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> PSI Drift
+              </span>
+            </div>
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Zero Drift Alerts
             </span>
-            <span className="text-slate-400 font-mono text-[11px]">Evidently AI Validated</span>
           </div>
         </div>
       </div>

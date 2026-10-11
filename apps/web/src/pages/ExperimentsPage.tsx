@@ -29,19 +29,22 @@ import { StatCard } from "../components/StatCard";
 import { Experiment, ExperimentRun } from "../api/types";
 import { fetchExperiments, fetchExperimentRuns, createExperiment } from "../api/client";
 import {
-  LineChart,
+  ComposedChart,
+  Bar,
   Line,
-  ScatterChart,
-  Scatter,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
   XAxis,
   YAxis,
-  ZAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
   ReferenceLine,
-  ReferenceArea
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
@@ -212,6 +215,37 @@ const FALLBACK_EXPERIMENTS: (Experiment & { runs: ExperimentRun[] })[] = [
   },
 ];
 
+const LEADERBOARD = [
+  { name: "optuna-tune-d6", auc: 0.971, loss: 0.142, color: PALETTE.brand },
+  { name: "baseline-xgb", auc: 0.945, loss: 0.198, color: PALETTE.blue },
+  { name: "deep-trees", auc: 0.928, loss: 0.231, color: PALETTE.violet },
+];
+
+const RUN_ACTIVITY = [
+  { week: "W1", finished: 8, failed: 2, best_auc: 0.928 },
+  { week: "W2", finished: 11, failed: 1, best_auc: 0.939 },
+  { week: "W3", finished: 14, failed: 3, best_auc: 0.945 },
+  { week: "W4", finished: 17, failed: 1, best_auc: 0.958 },
+  { week: "W5", finished: 21, failed: 2, best_auc: 0.966 },
+  { week: "W6", finished: 24, failed: 1, best_auc: 0.971 },
+];
+
+const HP_IMPORTANCE = [
+  { param: "learning_rate", importance: 0.42 },
+  { param: "max_depth", importance: 0.27 },
+  { param: "n_estimators", importance: 0.16 },
+  { param: "subsample", importance: 0.09 },
+  { param: "colsample_bytree", importance: 0.06 },
+];
+
+const RADAR_DATA = [
+  { axis: "ROC-AUC", "optuna-tune-d6": 97, "baseline-xgb": 94, "deep-trees": 92 },
+  { axis: "F1", "optuna-tune-d6": 94, "baseline-xgb": 90, "deep-trees": 89 },
+  { axis: "Latency", "optuna-tune-d6": 92, "baseline-xgb": 85, "deep-trees": 60 },
+  { axis: "Train speed", "optuna-tune-d6": 78, "baseline-xgb": 95, "deep-trees": 55 },
+  { axis: "Stability", "optuna-tune-d6": 93, "baseline-xgb": 88, "deep-trees": 62 },
+];
+
 export const ExperimentsPage: React.FC = () => {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -233,9 +267,6 @@ export const ExperimentsPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState<string>("Last 6 months");
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
 
-  // Convergence Curve Metric View: "loss" | "accuracy"
-  const [lossMetricView, setLossMetricView] = useState<"loss" | "accuracy">("loss");
-  const [hoveredStepIndex, setHoveredStepIndex] = useState<number | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -452,182 +483,119 @@ export const ExperimentsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Multi-Run Convergence Curve & Hyperparameter Impact Ranking ── */}
+      {/* ── Visual Analytics Row: Run Leaderboard & Multi-Dimensional Model Profile ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CHART 1: Training Convergence Curves (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#3BB48C]" />
-                  Training Convergence Trajectory
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  Comparing model fit and generalization across top 3 candidates
-                </p>
-              </div>
-
-              <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold">
-                <button
-                  onClick={() => setLossMetricView("loss")}
-                  className={`px-3 py-1.5 rounded-[10px] transition ${
-                    lossMetricView === "loss"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Log Loss
-                </button>
-                <button
-                  onClick={() => setLossMetricView("accuracy")}
-                  className={`px-3 py-1.5 rounded-[10px] transition ${
-                    lossMetricView === "accuracy"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Validation Accuracy
-                </button>
-              </div>
+        {/* CHART 1: Run Leaderboard — ROC-AUC (bars) vs Log Loss (line) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#3BB48C]" />
+                Run Leaderboard
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                ROC-AUC (bars) vs. log loss (line) with promotion threshold
+              </p>
             </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Champion: {LEADERBOARD[0].name}
+            </span>
+          </div>
 
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={[
-                    { epoch: 0, loss_optuna: 0.70, loss_baseline: 0.71, loss_deep: 0.72, acc_optuna: 0.55, acc_baseline: 0.52, acc_deep: 0.54 },
-                    { epoch: 20, loss_optuna: 0.45, loss_baseline: 0.52, loss_deep: 0.48, acc_optuna: 0.72, acc_baseline: 0.68, acc_deep: 0.70 },
-                    { epoch: 40, loss_optuna: 0.25, loss_baseline: 0.35, loss_deep: 0.28, acc_optuna: 0.85, acc_baseline: 0.79, acc_deep: 0.82 },
-                    { epoch: 60, loss_optuna: 0.17, loss_baseline: 0.26, loss_deep: 0.24, acc_optuna: 0.92, acc_baseline: 0.86, acc_deep: 0.88 },
-                    { epoch: 80, loss_optuna: 0.14, loss_baseline: 0.21, loss_deep: 0.23, acc_optuna: 0.94, acc_baseline: 0.89, acc_deep: 0.89 },
-                    { epoch: 100, loss_optuna: 0.142, loss_baseline: 0.198, loss_deep: 0.231, acc_optuna: 0.942, acc_baseline: 0.912, acc_deep: 0.895 },
-                  ]}
-                  margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="epoch" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `Ep ${v}`} />
-                  <YAxis 
-                    domain={lossMetricView === "loss" ? [0, 0.8] : [0.4, 1.0]} 
-                    tick={AXIS_TICK} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tickFormatter={(v) => lossMetricView === "accuracy" ? `${(v * 100).toFixed(0)}%` : v.toFixed(2)}
-                  />
-                  <RechartsTooltip content={<BiTooltip labelPrefix="Epoch " valueFormatter={(v) => typeof v === "number" ? v.toFixed(3) : v} />} cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }} />
-                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_optuna" : "acc_optuna"} name="optuna-tune-d6" stroke={PALETTE.brand} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_baseline" : "acc_baseline"} name="baseline-xgb" stroke={PALETTE.blue} strokeWidth={2.5} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey={lossMetricView === "loss" ? "loss_deep" : "acc_deep"} name="deep-trees (overfit)" stroke={PALETTE.violet} strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center text-sm pt-4 border-t border-slate-100 gap-6 mt-2">
-              <span className="flex items-center gap-2 font-medium text-slate-700">
-                <span className="w-3 h-3 rounded-[3px] bg-[#3BB48C]" />
-                optuna-tune-d6 <span className="font-bold">({lossMetricView === "loss" ? "0.142" : "94.2%"})</span>
-              </span>
-              <span className="flex items-center gap-2 font-medium text-slate-700">
-                <span className="w-3 h-3 rounded-[3px] bg-[#3B82F6]" />
-                baseline-xgb <span className="font-bold">({lossMetricView === "loss" ? "0.198" : "91.2%"})</span>
-              </span>
-              <span className="flex items-center gap-2 font-medium text-slate-700">
-                <span className="w-3 h-[3px] bg-[#8B5CF6]" />
-                deep-trees <span className="font-bold">({lossMetricView === "loss" ? "0.231" : "89.5%"})</span>
-              </span>
-            </div>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={LEADERBOARD} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="auc" domain={[0.88, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                <YAxis yAxisId="loss" orientation="right" domain={[0, 0.3]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : v)} />} cursor={{ fill: "#F1F5F9" }} />
+                <ReferenceLine yAxisId="auc" y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Promotion ≥ 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopRight" }} />
+                <Bar yAxisId="auc" dataKey="auc" name="ROC-AUC" radius={[8, 8, 0, 0]} barSize={46}>
+                  {LEADERBOARD.map((r, i) => (
+                    <Cell key={r.name} fill={r.color} fillOpacity={i === 0 ? 1 : 0.55} />
+                  ))}
+                </Bar>
+                <Line yAxisId="loss" type="monotone" dataKey="loss" name="Log Loss" stroke={PALETTE.slate} strokeWidth={2} dot={{ r: 4, fill: "#fff", strokeWidth: 2 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* CHART 2: Performance vs Latency Pareto (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-[#3BB48C]" />
-                  Quality vs. Cost Trade-off
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  Pareto frontier: ROC-AUC vs Inference Latency
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Target: 0.95+
-              </span>
-            </div>
+        {/* CHART 2: Multi-dimensional model profile (radar) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="mb-3">
+            <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-[#3BB48C]" />
+              Model Profile Comparison
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Normalized score (0–100) across quality, speed &amp; robustness
+            </p>
+          </div>
 
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis 
-                    type="number" 
-                    dataKey="lat" 
-                    name="Latency" 
-                    domain={[0, 8]} 
-                    tick={AXIS_TICK} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tickFormatter={(v) => `${v}ms`}
-                  />
-                  <YAxis 
-                    type="number" 
-                    dataKey="auc" 
-                    name="ROC-AUC" 
-                    domain={[0.88, 1.0]} 
-                    tick={AXIS_TICK} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tickFormatter={(v) => v.toFixed(2)}
-                  />
-                  <ZAxis type="number" dataKey="depth" range={[100, 300]} name="Tree Depth" />
-                  <RechartsTooltip 
-                    cursor={{ strokeDasharray: "4 4", stroke: "#94A3B8" }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const p = payload[0].payload;
-                      return (
-                        <BiTooltip
-                          active
-                          label={p.name}
-                          payload={[
-                            { name: "ROC-AUC", value: p.auc, color: p.color },
-                            { name: "Latency", value: `${p.lat} ms`, color: PALETTE.slate },
-                            { name: "Tree Depth", value: p.depth, color: PALETTE.slate },
-                          ]}
-                        />
-                      );
-                    }}
-                  />
-                  
-                  {/* Target Reference Line */}
-                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" opacity={0.5} label={{ value: "Target AUC", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
-                  
-                  {/* Optimal Zone */}
-                  <ReferenceArea x1={0} x2={4} y1={0.95} y2={1.0} fill={PALETTE.brand} fillOpacity={0.05} />
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={RADAR_DATA} outerRadius="72%">
+                <PolarGrid stroke="#E2E8F0" />
+                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: "#64748B", fontWeight: 600 }} />
+                <PolarRadiusAxis domain={[50, 100]} tick={false} axisLine={false} />
+                {LEADERBOARD.map((r) => (
+                  <Radar key={r.name} name={r.name} dataKey={r.name} stroke={r.color} fill={r.color} fillOpacity={r === LEADERBOARD[0] ? 0.28 : 0.08} strokeWidth={2} />
+                ))}
+                <RechartsTooltip />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
 
-                  <Scatter 
-                    data={[
-                      { name: "optuna-tune-d6", auc: 0.971, lat: 2.4, depth: 6, lr: 0.03, color: PALETTE.brand },
-                      { name: "baseline-xgb", auc: 0.945, lat: 3.1, depth: 4, lr: 0.10, color: PALETTE.blue },
-                      { name: "deep-trees-test", auc: 0.928, lat: 5.8, depth: 12, lr: 0.01, color: PALETTE.violet },
-                    ]} 
-                  >
-                    {[
-                      { name: "optuna-tune-d6", auc: 0.971, lat: 2.4, depth: 6, lr: 0.03, color: PALETTE.brand },
-                      { name: "baseline-xgb", auc: 0.945, lat: 3.1, depth: 4, lr: 0.10, color: PALETTE.blue },
-                      { name: "deep-trees-test", auc: 0.928, lat: 5.8, depth: 12, lr: 0.01, color: PALETTE.violet },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="text-center text-xs text-slate-500 mt-2">
-              Bubble size represents tree depth parameter. Top-left is optimal.
-            </div>
+      {/* ── Row 2: Run Activity & Hyperparameter Importance ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#3BB48C]" />
+            Run Activity &amp; Success Rate
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={RUN_ACTIVITY} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="week" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="n" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="auc" orientation="right" domain={[0.9, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                <RechartsTooltip content={<BiTooltip />} cursor={{ fill: "#F1F5F9" }} />
+                <Bar yAxisId="n" stackId="s" dataKey="finished" name="Finished" fill={PALETTE.brand} barSize={30} />
+                <Bar yAxisId="n" stackId="s" dataKey="failed" name="Failed" fill="#F43F5E" radius={[6, 6, 0, 0]} />
+                <Line yAxisId="auc" type="monotone" dataKey="best_auc" name="Best ROC-AUC" stroke={PALETTE.violet} strokeWidth={2.5} dot={{ r: 3 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Zap className="w-5 h-5 text-[#3BB48C]" />
+            Hyperparameter Importance
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={HP_IMPORTANCE} layout="vertical" margin={{ top: 0, right: 16, left: 24, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} horizontal={false} />
+                <XAxis type="number" domain={[0, 0.5]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+                <YAxis type="category" dataKey="param" tick={AXIS_TICK} axisLine={false} tickLine={false} width={96} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? `${(v * 100).toFixed(1)}%` : v)} />} cursor={{ fill: "#F1F5F9" }} />
+                <Bar dataKey="importance" name="Importance" radius={[0, 8, 8, 0]} barSize={18}>
+                  {HP_IMPORTANCE.map((h, i) => (
+                    <Cell key={h.param} fill={PALETTE.brand} fillOpacity={1 - i * 0.14} />
+                  ))}
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

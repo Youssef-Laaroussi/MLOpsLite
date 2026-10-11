@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Sliders,
   Filter,
+  Clock,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
@@ -27,7 +28,8 @@ import { RegisteredModel } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import {
   ComposedChart,
-  BarChart,
+  PieChart,
+  Pie,
   Bar,
   Line,
   XAxis,
@@ -36,8 +38,49 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
+  AreaChart,
+  Area,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  Legend,
+  ReferenceLine,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+
+const REGISTRY_GROWTH = [
+  { month: "May", registered: 4, promoted: 1 },
+  { month: "Jun", registered: 6, promoted: 2 },
+  { month: "Jul", registered: 9, promoted: 3 },
+  { month: "Aug", registered: 11, promoted: 4 },
+  { month: "Sep", registered: 13, promoted: 5 },
+  { month: "Oct", registered: 15, promoted: 6 },
+];
+
+const GOVERNANCE = [
+  { name: "Signature", value: 100, fill: PALETTE.brand },
+  { name: "Lineage", value: 93, fill: PALETTE.blue },
+  { name: "Approvals", value: 87, fill: PALETTE.violet },
+  { name: "Model Cards", value: 73, fill: PALETTE.amber },
+];
+
+const CHALLENGERS = [
+  { name: "fraud-detector v3 (champion)", acc: 0.971, lat: 2.4, mb: 14, fill: PALETTE.brand },
+  { name: "customer-churn v2", acc: 0.942, lat: 3.8, mb: 22, fill: PALETTE.blue },
+  { name: "demand-forecast v4", acc: 0.918, lat: 5.2, mb: 48, fill: PALETTE.violet },
+  { name: "sentiment-bert v1", acc: 0.954, lat: 12.6, mb: 130, fill: PALETTE.amber },
+  { name: "fraud-detector v2", acc: 0.935, lat: 3.1, mb: 12, fill: PALETTE.slate },
+];
+
+const PROMOTION_EVENTS = [
+  { id: 1, model: "fraud-detector", version: 3, from: "Staging", to: "Production", by: "a.benali", when: "2h ago", color: PALETTE.brand },
+  { id: 2, model: "customer-churn-xgb", version: 2, from: "Candidate", to: "Staging", by: "s.karim", when: "1d ago", color: PALETTE.blue },
+  { id: 3, model: "sentiment-bert", version: 1, from: "Development", to: "Candidate", by: "m.idrissi", when: "3d ago", color: PALETTE.amber },
+  { id: 4, model: "fraud-detector", version: 2, from: "Production", to: "Archived", by: "a.benali", when: "5d ago", color: PALETTE.slate },
+];
 
 // Realistic production baseline models for Data Analyst & MLOps evaluation
 const DEFAULT_MODELS: (RegisteredModel & { framework?: string; latency_ms?: number; size_mb?: number })[] = [
@@ -396,57 +439,82 @@ export const ModelsPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Standard Recharts Column Bar Chart */}
-            <div className="h-[250px] w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[
-                    { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: PALETTE.slate },
-                    { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: PALETTE.amber },
-                    { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: PALETTE.blue },
-                    { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: PALETTE.brand },
-                  ]}
-                  margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
-                  barSize={44}
-                >
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="stage" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <RechartsTooltip
-                    cursor={{ fill: "#F1F5F9" }}
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <BiTooltip
-                          active
-                          label={label}
-                          payload={[
-                            { name: "Active Models", value: d.count, color: d.fill },
-                            { name: "Share of Registry", value: `${Math.round((d.count / (models.length || 1)) * 100)}%`, color: PALETTE.slate },
-                          ]}
+            {/* Donut: stage distribution (click a slice to filter) */}
+            {(() => {
+              const stageData = [
+                { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: PALETTE.slate },
+                { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: PALETTE.amber },
+                { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: PALETTE.blue },
+                { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: PALETTE.brand },
+              ];
+              const total = models.length || 1;
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 mt-2">
+                  <div className="h-[230px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <BiTooltip
+                                active
+                                label={d.stage}
+                                payload={[
+                                  { name: "Active Models", value: d.count, color: d.fill },
+                                  { name: "Share of Registry", value: `${Math.round((d.count / total) * 100)}%`, color: PALETTE.slate },
+                                ]}
+                              />
+                            );
+                          }}
                         />
-                      );
-                    }}
-                  />
-                  <Bar
-                    dataKey="count"
-                    radius={[6, 6, 0, 0]}
-                    onClick={(entry) => setStageFilter(stageFilter === entry.stageKey ? "ALL" : entry.stageKey)}
-                    className="cursor-pointer"
-                  >
-                    {[
-                      { stage: "Development", fill: PALETTE.slate },
-                      { stage: "Candidate", fill: PALETTE.amber },
-                      { stage: "Staging", fill: PALETTE.blue },
-                      { stage: "Production", fill: PALETTE.brand },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                        <Pie
+                          data={stageData}
+                          dataKey="count"
+                          nameKey="stage"
+                          innerRadius="62%"
+                          outerRadius="92%"
+                          paddingAngle={3}
+                          cornerRadius={6}
+                          stroke="none"
+                          onClick={(entry) => setStageFilter(stageFilter === entry.stageKey ? "ALL" : entry.stageKey)}
+                          className="cursor-pointer"
+                        >
+                          {stageData.map((s) => (
+                            <Cell key={s.stageKey} fill={s.fill} fillOpacity={stageFilter === "ALL" || stageFilter === s.stageKey ? 1 : 0.3} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-3xl font-extrabold text-slate-900">{models.length}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Versions</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {stageData.map((s) => (
+                      <li key={s.stageKey}>
+                        <button
+                          onClick={() => setStageFilter(stageFilter === s.stageKey ? "ALL" : s.stageKey)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition ${
+                            stageFilter === s.stageKey ? "border-slate-300 bg-slate-50" : "border-slate-100 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 font-semibold text-slate-700">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} />
+                            {s.stage}
+                          </span>
+                          <span className="font-mono text-xs text-slate-500">
+                            <strong className="text-slate-900">{s.count}</strong> · {Math.round((s.count / total) * 100)}%
+                          </span>
+                        </button>
+                      </li>
                     ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 font-mono">
@@ -520,6 +588,132 @@ export const ModelsPage: React.FC = () => {
               Footprint (MB)
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Registry Growth & Governance Scorecard ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#3BB48C]" />
+            Registry Growth &amp; Promotion Velocity
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={REGISTRY_GROWTH} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gReg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gProd" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.violet} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={PALETTE.violet} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <RechartsTooltip content={<BiTooltip />} />
+                <Area type="monotone" dataKey="registered" name="Registered" stroke={PALETTE.brand} strokeWidth={2.5} fill="url(#gReg)" />
+                <Area type="monotone" dataKey="promoted" name="Promoted to Prod" stroke={PALETTE.violet} strokeWidth={2.5} fill="url(#gProd)" />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            Governance Scorecard
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-2">Registry compliance coverage (% of versions)</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart data={GOVERNANCE} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
+                <RechartsTooltip />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+            {GOVERNANCE.map((g) => (
+              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
+                  {g.name}
+                </span>
+                <strong className="text-slate-900">{g.value}%</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+            Champion vs. Challenger
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis type="number" dataKey="lat" name="Latency" domain={[0, 14]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                <YAxis type="number" dataKey="acc" name="Accuracy" domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                <ZAxis type="number" dataKey="mb" range={[90, 420]} />
+                <ReferenceLine y={0.94} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "SLA accuracy", fill: PALETTE.brand, fontSize: 10, position: "insideTopRight" }} />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0].payload;
+                    return (
+                      <BiTooltip
+                        active
+                        label={p.name}
+                        payload={[
+                          { name: "Accuracy", value: `${(p.acc * 100).toFixed(1)}%`, color: p.fill },
+                          { name: "p95 Latency", value: `${p.lat} ms`, color: PALETTE.slate },
+                          { name: "Footprint", value: `${p.mb} MB`, color: PALETTE.slate },
+                        ]}
+                      />
+                    );
+                  }}
+                />
+                <Scatter data={CHALLENGERS}>
+                  {CHALLENGERS.map((c) => (
+                    <Cell key={c.name} fill={c.fill} fillOpacity={0.85} stroke="#fff" strokeWidth={2} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#3BB48C]" />
+            Promotion Audit Trail
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Latest stage transitions with approver</p>
+          <ol className="relative border-l border-slate-200 ml-2 space-y-4">
+            {PROMOTION_EVENTS.map((e) => (
+              <li key={e.id} className="ml-4">
+                <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white" style={{ background: e.color }} />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-slate-900">{e.model} <span className="font-mono text-xs text-slate-400">v{e.version}</span></span>
+                  <span className="text-[11px] text-slate-400">{e.when}</span>
+                </div>
+                <div className="text-xs text-slate-500">{e.from} → <strong style={{ color: e.color }}>{e.to}</strong> · by {e.by}</div>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 

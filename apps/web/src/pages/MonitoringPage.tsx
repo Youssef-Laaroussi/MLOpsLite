@@ -61,7 +61,7 @@ const FEATURE_DISTRIBUTIONS: Record<string, { bin: string; reference: number; se
   card_age_months: [
     { bin: "0-6m", reference: 12, serving: 13 },
     { bin: "6-12m", reference: 20, serving: 21 },
-    { bin: "12-24m", reference: 36, reference: 36, serving: 34 },
+    { bin: "12-24m", reference: 36, serving: 34 },
     { bin: "24-36m", reference: 20, serving: 21 },
     { bin: "36m+", reference: 12, serving: 11 },
   ],

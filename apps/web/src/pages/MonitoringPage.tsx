@@ -27,8 +27,56 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   ReferenceLine,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  RadialBarChart,
+  RadialBar,
+  Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+const LATENCY_PCT = [
+  { t: "00h", p50: 2.8, p95: 5.1, p99: 8.2 },
+  { t: "04h", p50: 2.6, p95: 4.9, p99: 7.9 },
+  { t: "08h", p50: 3.1, p95: 5.8, p99: 9.4 },
+  { t: "12h", p50: 3.4, p95: 6.3, p99: 10.6 },
+  { t: "16h", p50: 3.2, p95: 5.9, p99: 9.1 },
+  { t: "20h", p50: 2.9, p95: 5.4, p99: 8.6 },
+  { t: "24h", p50: 2.8, p95: 5.2, p99: 8.9 },
+];
+
+const DRIFT_RADAR = [
+  { feature: "transaction_amt", prev: 0.04, curr: 0.05 },
+  { feature: "distance_home", prev: 0.06, curr: 0.08 },
+  { feature: "card_age", prev: 0.03, curr: 0.03 },
+  { feature: "daily_txn", prev: 0.09, curr: 0.14 },
+  { feature: "merchant_cat", prev: 0.05, curr: 0.06 },
+];
+
+const QUALITY_BAND = [
+  { d: "W1", f1: 0.942, band: [0.93, 0.954] },
+  { d: "W2", f1: 0.938, band: [0.925, 0.951] },
+  { d: "W3", f1: 0.935, band: [0.92, 0.95] },
+  { d: "W4", f1: 0.929, band: [0.912, 0.946] },
+  { d: "W5", f1: 0.931, band: [0.915, 0.947] },
+  { d: "W6", f1: 0.926, band: [0.907, 0.945] },
+];
+
+const DATA_QUALITY = [
+  { name: "Completeness", value: 99, fill: PALETTE.brand },
+  { name: "Validity", value: 97, fill: PALETTE.blue },
+  { name: "Freshness", value: 94, fill: PALETTE.violet },
+  { name: "Uniqueness", value: 91, fill: PALETTE.amber },
+];
+
+const INCIDENTS = [
+  { id: 1, level: "Info", color: PALETTE.brand, title: "Drift check passed", detail: "4/4 features in bounds · PSI 0.035", when: "2 min ago" },
+  { id: 2, level: "Warning", color: PALETTE.amber, title: "daily_txn trending up", detail: "PSI 0.14 — approaching slight-shift threshold", when: "1h ago" },
+  { id: 3, level: "Action", color: PALETTE.blue, title: "Shadow model evaluated", detail: "v4 candidate F1 +0.8% vs. production", when: "4h ago" },
+  { id: 4, level: "Resolved", color: PALETTE.violet, title: "Latency spike mitigated", detail: "Autoscaled 2 → 4 pods, p99 back < 10ms", when: "1d ago" },
+];
 
 interface FeatureDrift {
   feature: string;
@@ -518,6 +566,131 @@ export const MonitoringPage: React.FC = () => {
             <span>Reference: {activeFeature.ref_mean}</span>
             <span className="text-slate-800 font-bold">Serving: {activeFeature.curr_mean}</span>
           </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Latency Percentiles & Per-Feature Drift Radar ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <Zap className="w-5 h-5 text-[#3BB48C]" />
+                Inference Latency Percentiles
+              </h3>
+              <p className="text-sm text-slate-500 mt-1 mb-4">p50 / p95 / p99 over the last 24h against the 10 ms SLA</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">p99 8.9 ms</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={LATENCY_PCT} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                <RechartsTooltip content={<BiTooltip />} />
+                <ReferenceLine y={10} stroke={PALETTE.rose} strokeDasharray="4 4" label={{ value: "SLA 10ms", fill: PALETTE.rose, fontSize: 10, position: "insideTopRight" }} />
+                <Line type="monotone" dataKey="p50" name="p50" stroke={PALETTE.brand} strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="p95" name="p95" stroke={PALETTE.blue} strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="p99" name="p99" stroke={PALETTE.violet} strokeWidth={2.5} strokeDasharray="5 4" dot={false} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+            Feature Drift Radar
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">PSI per feature — current vs. last week</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={DRIFT_RADAR} outerRadius="70%">
+                <PolarGrid stroke="#E2E8F0" />
+                <PolarAngleAxis dataKey="feature" tick={{ fontSize: 10, fill: "#64748B", fontWeight: 600 }} />
+                <PolarRadiusAxis domain={[0, 0.3]} tick={false} axisLine={false} />
+                <Radar name="Last week" dataKey="prev" stroke={PALETTE.slate} fill={PALETTE.slate} fillOpacity={0.1} strokeWidth={2} />
+                <Radar name="Current" dataKey="curr" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.3} strokeWidth={2.5} />
+                <RechartsTooltip />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Model Quality Decay & Data Quality Gauges ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Activity className="w-5 h-5 text-[#3BB48C]" />
+            Model Quality Over Time
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Rolling F1 with 95% confidence band — retrain trigger at 0.90</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={QUALITY_BAND} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="d" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : String(v))} />} />
+                <ReferenceLine y={0.9} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Retrain trigger", fill: PALETTE.amber, fontSize: 10, position: "insideBottomRight" }} />
+                <Area type="monotone" dataKey="band" name="95% CI" stroke="none" fill={PALETTE.brand} fillOpacity={0.15} />
+                <Area type="monotone" dataKey="f1" name="F1 score" stroke={PALETTE.brand} strokeWidth={2.5} fill="none" dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            Data Quality Gauges
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">Live serving data health (%)</p>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart data={DATA_QUALITY} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
+                <RechartsTooltip />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
+            {DATA_QUALITY.map((g) => (
+              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
+                  {g.name}
+                </span>
+                <strong className="text-slate-900">{g.value}%</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 4: Live Incident Feed ── */}
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+          <Layers className="w-5 h-5 text-[#3BB48C]" />
+          Live Observability Feed
+        </h3>
+        <p className="text-sm text-slate-500 mt-1 mb-4">Latest drift checks, anomalies and automated actions</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {INCIDENTS.map((i) => (
+            <div key={i.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${i.color}` }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.color }}>{i.level}</span>
+                <span className="text-[11px] text-slate-400">{i.when}</span>
+              </div>
+              <div className="text-sm font-semibold text-slate-900 mt-2">{i.title}</div>
+              <div className="text-xs text-slate-500 mt-1">{i.detail}</div>
+            </div>
+          ))}
         </div>
       </div>
 

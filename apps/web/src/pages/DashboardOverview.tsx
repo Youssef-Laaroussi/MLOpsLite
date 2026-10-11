@@ -54,8 +54,66 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
+  Treemap,
+  FunnelChart,
+  Funnel,
+  LabelList,
+  Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TreemapCell: React.FC<any> = ({ x, y, width, height, name, size, fill }) => (
+  <g>
+    <rect x={x} y={y} width={width} height={height} rx={8} fill={fill} fillOpacity={0.85} stroke="#fff" strokeWidth={3} />
+    {width > 70 && height > 36 && (
+      <>
+        <text x={x + 10} y={y + 20} fill="#fff" fontSize={12} fontWeight={700}>{name}</text>
+        <text x={x + 10} y={y + 36} fill="#fff" fillOpacity={0.85} fontSize={11}>{size} GB</text>
+      </>
+    )}
+  </g>
+);
+
+const SPEND_DATA = [
+  { m: "May", training: 820, serving: 540, storage: 210 },
+  { m: "Jun", training: 910, serving: 580, storage: 225 },
+  { m: "Jul", training: 1040, serving: 640, storage: 240 },
+  { m: "Aug", training: 980, serving: 690, storage: 252 },
+  { m: "Sep", training: 890, serving: 720, storage: 261 },
+  { m: "Oct", training: 760, serving: 735, storage: 270 },
+];
+
+const FUNNEL_DATA = [
+  { name: "Datasets ingested", value: 100, fill: PALETTE.blue },
+  { name: "Experiments run", value: 78, fill: PALETTE.violet },
+  { name: "Models registered", value: 46, fill: PALETTE.amber },
+  { name: "Staged & validated", value: 28, fill: PALETTE.brand },
+  { name: "In production", value: 18, fill: "#1A7456" },
+];
+
+const STORAGE_TREE = [
+  { name: "fraud-detection", size: 142, fill: PALETTE.brand },
+  { name: "customer-churn", size: 96, fill: PALETTE.blue },
+  { name: "nlp-sentiment", size: 188, fill: PALETTE.violet },
+  { name: "demand-forecast", size: 64, fill: PALETTE.amber },
+  { name: "credit-risk", size: 38, fill: PALETTE.slate },
+];
+
+const SERVICES = [
+  { name: "MLflow Tracking", latency: "42ms", uptime: "99.98%", color: PALETTE.brand },
+  { name: "Model Serving", latency: "5ms", uptime: "99.99%", color: PALETTE.brand },
+  { name: "Feature Store", latency: "18ms", uptime: "99.95%", color: PALETTE.brand },
+  { name: "Artifact Store (S3)", latency: "61ms", uptime: "99.90%", color: PALETTE.amber },
+  { name: "Drift Evaluator", latency: "120ms", uptime: "99.97%", color: PALETTE.brand },
+];
+
+const ACTIVITY = [
+  { id: 1, kind: "Deploy", color: PALETTE.brand, title: "fraud-detector v3 canary live", who: "a.benali", when: "1h ago" },
+  { id: 2, kind: "Experiment", color: PALETTE.violet, title: "Optuna sweep finished (48 trials)", who: "s.karim", when: "3h ago" },
+  { id: 3, kind: "Dataset", color: PALETTE.blue, title: "transactions_2026Q3 v7 ingested", who: "m.idrissi", when: "6h ago" },
+  { id: 4, kind: "Registry", color: PALETTE.amber, title: "customer-churn v2 → Staging", who: "s.karim", when: "1d ago" },
+];
 
 export const DashboardOverview: React.FC = () => {
   const { user, hasRole, hasPermission } = useAuth();
@@ -335,8 +393,8 @@ export const DashboardOverview: React.FC = () => {
               <button
                 onClick={() => setAdminViewMode("governance")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "governance"
-                    ? "bg-slate-900 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
                   }`}
               >
                 <Shield className="w-3.5 h-3.5" />
@@ -345,8 +403,8 @@ export const DashboardOverview: React.FC = () => {
               <button
                 onClick={() => setAdminViewMode("ml")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "ml"
-                    ? "bg-[#3BB48C] text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#3BB48C] text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
                   }`}
               >
                 <Box className="w-3.5 h-3.5" />
@@ -376,8 +434,8 @@ export const DashboardOverview: React.FC = () => {
                       setIsTimeRangeOpen(false);
                     }}
                     className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
-                        : "text-slate-600 hover:bg-slate-50"
+                      ? "bg-[#EBF8F4] text-[#1A7456]"
+                      : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
                     {range}
@@ -496,8 +554,8 @@ export const DashboardOverview: React.FC = () => {
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
                     className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${latencyMetricFilter === mode
-                        ? "bg-white text-slate-900 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900"
+                      ? "bg-white text-slate-900 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-900"
                       }`}
                   >
                     {mode}
@@ -842,6 +900,123 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── SECTION 5B: PLATFORM SPEND, LIFECYCLE FUNNEL, STORAGE & HEALTH ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-[#3BB48C]" />
+                Platform Spend &amp; Compute
+              </h3>
+              <p className="text-sm text-slate-500 mt-1 mb-4">Monthly cost by workload (USD) — training, serving, storage</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={SPEND_DATA} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="m" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `$${v}`} />} />
+                <Area type="monotone" stackId="1" dataKey="training" name="Training" stroke={PALETTE.violet} fill={PALETTE.violet} fillOpacity={0.35} />
+                <Area type="monotone" stackId="1" dataKey="serving" name="Serving" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.35} />
+                <Area type="monotone" stackId="1" dataKey="storage" name="Storage" stroke={PALETTE.blue} fill={PALETTE.blue} fillOpacity={0.35} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#3BB48C]" />
+            MLOps Lifecycle Funnel
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">From raw dataset to production model</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <FunnelChart>
+                <RechartsTooltip />
+                <Funnel dataKey="value" data={FUNNEL_DATA} isAnimationActive>
+                  {FUNNEL_DATA.map((f) => (
+                    <Cell key={f.name} fill={f.fill} />
+                  ))}
+                  <LabelList position="right" fill="#334155" stroke="none" dataKey="name" fontSize={11} />
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <HardDrive className="w-5 h-5 text-[#3BB48C]" />
+            Artifact Storage by Project
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Treemap of S3 / MinIO usage (GB)</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={STORAGE_TREE}
+                dataKey="size"
+                stroke="#fff"
+                isAnimationActive={false}
+                content={<TreemapCell />}
+              />
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            Platform Health
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Core services status &amp; 30-day uptime</p>
+          <ul className="space-y-2.5">
+            {SERVICES.map((s) => (
+              <li key={s.name} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2 hover:bg-slate-50 transition">
+                <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
+                  <span className="relative flex w-2.5 h-2.5">
+                    <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: s.color }} />
+                    <span className="relative w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+                  </span>
+                  {s.name}
+                </span>
+                <span className="flex items-center gap-3 text-xs font-mono text-slate-500">
+                  <span>{s.latency}</span>
+                  <strong className="text-slate-900">{s.uptime}</strong>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
+        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+          <Users className="w-5 h-5 text-[#3BB48C]" />
+          Team Activity
+        </h3>
+        <p className="text-sm text-slate-500 mt-1 mb-4">Most recent actions across the workspace</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {ACTIVITY.map((a) => (
+            <div key={a.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${a.color}` }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: a.color }}>{a.kind}</span>
+                <span className="text-[11px] text-slate-400">{a.when}</span>
+              </div>
+              <div className="text-sm font-semibold text-slate-900 mt-2">{a.title}</div>
+              <div className="text-xs text-slate-500 mt-1">by {a.who}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

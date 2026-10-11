@@ -4,7 +4,6 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Optional
 
 import httpx
 
@@ -17,7 +16,9 @@ logger = logging.getLogger(__name__)
 class WebhookDispatcher(BaseDispatcher):
     """Sends JSON alert payloads via HTTP POST with optional HMAC signature."""
 
-    def __init__(self, endpoint_url: str, secret_key: Optional[str] = None, timeout: float = 5.0) -> None:
+    def __init__(
+        self, endpoint_url: str, secret_key: str | None = None, timeout: float = 5.0
+    ) -> None:
         self.endpoint_url = endpoint_url
         self.secret_key = secret_key
         self.timeout = timeout

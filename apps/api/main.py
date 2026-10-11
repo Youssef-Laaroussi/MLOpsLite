@@ -10,9 +10,8 @@ Creates the ASGI application with:
 """
 
 import logging
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
-from typing import Any
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,17 +20,17 @@ from apps.api.config import get_settings
 from apps.api.errors import register_exception_handlers
 from apps.api.middleware import register_middleware
 from apps.api.routers import (
-    health,
-    projects,
-    datasets,
-    experiments,
-    models,
-    deployments,
-    monitoring,
     alerts,
-    rollback,
-    auth,
     audit,
+    auth,
+    datasets,
+    deployments,
+    experiments,
+    health,
+    models,
+    monitoring,
+    projects,
+    rollback,
 )
 
 logger = logging.getLogger("mlite.api")
@@ -53,23 +52,25 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         settings.debug,
     )
 
-    # Ensure database schema is created (essential for SQLite / local testing)
+    # Ensure database schema is created
     try:
-        from packages.core.db.session import engine
-        from packages.core.db.base import Base
         import packages.core.models  # noqa: F401
+        from packages.core.db.base import Base
+        from packages.core.db.session import engine
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        logger.info(" Database schema tables verified/created successfully.")
     except Exception as exc:
-        logger.debug("Schema auto-create skipped or deferred: %s", exc)
+        logger.error("❌ Database schema auto-creation failed: %s", exc, exc_info=True)
 
-    # Bootstrap default admin account (Issue #26)
+    # Bootstrap / synchronize administrator account (Issue #26)
     try:
+        from sqlalchemy import select
+
         from packages.core.db.session import async_session_factory
         from packages.core.models.user import User, UserRole
-        from packages.core.security.auth import hash_password
-        from sqlalchemy import select
+        from packages.core.security.auth import hash_password, verify_password
 
         async with async_session_factory() as session:
             result = await session.execute(
@@ -83,15 +84,24 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                     username=settings.admin_user,
                     email=settings.admin_email,
                     hashed_password=hash_password(settings.admin_password),
-                    full_name="Default Administrator",
+                    full_name="Administrator",
                     role=UserRole.ADMIN,
                     is_active=True,
                 )
                 session.add(new_admin)
                 await session.commit()
-                logger.info("🔑 Created default bootstrap admin user '%s'", settings.admin_user)
+                logger.info("🔑 Initialized administrator account '%s'", settings.admin_user)
+            else:
+                # If custom admin password in environment differs, synchronize it
+                if not verify_password(settings.admin_password, admin.hashed_password):
+                    admin.hashed_password = hash_password(settings.admin_password)
+                    admin.role = UserRole.ADMIN
+                    await session.commit()
+                    logger.info(
+                        "🔐 Synchronized administrator credentials for '%s'", admin.username
+                    )
     except Exception as exc:
-        logger.debug("Admin bootstrap skipped or deferred: %s", exc)
+        logger.warning("⚠️ Admin bootstrap skipped or deferred: %s", exc)
 
     yield
     logger.info("🛑  %s shutting down", settings.app_name)
@@ -122,10 +132,12 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS ────────────────────────────────────────────────
+    origins = settings.allowed_origins
+    has_wildcard = "*" in origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_credentials=True,
+        allow_origins=origins,
+        allow_credentials=not has_wildcard,  # Security: never allow credentials with wildcard '*'
         allow_methods=["*"],
         allow_headers=["*"],
     )

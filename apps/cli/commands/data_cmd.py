@@ -1,7 +1,6 @@
 """CLI commands for dataset management, schema inspection, and DVC sync (Issues #15, #16)."""
 
 from pathlib import Path
-from typing import Optional
 
 import httpx
 import typer
@@ -20,10 +19,14 @@ DEFAULT_API_URL = "http://localhost:8000"
 @app.command("add")
 def add_dataset(
     file_path: str = typer.Argument(..., help="Path to local tabular file (CSV, Parquet, JSON)"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Dataset name (defaults to filename stem)"),
-    project_id: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID"),
-    description: Optional[str] = typer.Option(None, "--description", "-d", help="Version description"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"),
+    name: str | None = typer.Option(
+        None, "--name", "-n", help="Dataset name (defaults to filename stem)"
+    ),
+    project_id: str | None = typer.Option(None, "--project", "-p", help="Project ID"),
+    description: str | None = typer.Option(None, "--description", "-d", help="Version description"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"
+    ),
 ) -> None:
     """Register a new dataset or upload a new version with automatic schema extraction."""
     path = Path(file_path).resolve()
@@ -56,7 +59,9 @@ def add_dataset(
             "file_path": str(path),
             "description": description,
         }
-        ver_res = httpx.post(f"{api_url}/api/v1/datasets/{dataset_id}/versions", json=ver_payload, timeout=30.0)
+        ver_res = httpx.post(
+            f"{api_url}/api/v1/datasets/{dataset_id}/versions", json=ver_payload, timeout=30.0
+        )
         if ver_res.status_code in (200, 201):
             ver_data = ver_res.json()
             console.print(
@@ -82,7 +87,9 @@ def add_dataset(
 
 @app.command("list")
 def list_datasets(
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"
+    ),
 ) -> None:
     """List all registered datasets and their latest versions."""
     try:
@@ -119,7 +126,9 @@ def list_datasets(
 @app.command("info")
 def inspect_file_cli(
     file_path: str = typer.Argument(..., help="Local tabular file path to inspect"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="API URL"
+    ),
 ) -> None:
     """Inspect schema and column details of a local dataset file."""
     try:
@@ -156,8 +165,12 @@ def inspect_file_cli(
 @app.command("validate")
 def validate_dataset_cli(
     file_path: str = typer.Argument(..., help="Local tabular file path to validate"),
-    max_null_pct: float = typer.Option(5.0, "--max-null", help="Max allowed null percentage per column"),
-    max_dup_pct: float = typer.Option(1.0, "--max-dup", help="Max allowed duplicate row percentage"),
+    max_null_pct: float = typer.Option(
+        5.0, "--max-null", help="Max allowed null percentage per column"
+    ),
+    max_dup_pct: float = typer.Option(
+        1.0, "--max-dup", help="Max allowed duplicate row percentage"
+    ),
 ) -> None:
     """Run automated data quality checks and output score & constraint violations."""
     from packages.monitoring.quality import DataQualityEngine
@@ -187,17 +200,18 @@ def validate_dataset_cli(
                 f"[bold]Overall Nulls:[/bold] {res.get('null_percentage')}%\n"
                 f"[bold]Duplicate Rows:[/bold] {res.get('duplicate_percentage')}%\n"
                 f"[bold]Failed Constraints:[/bold] {len(res.get('failed_constraints', []))}",
-                title=f"📋 Data Quality Report",
+                title="📋 Data Quality Report",
                 border_style=color,
             )
         )
 
-        if res.get("failed_constraints"):
+        failed_constraints = res.get("failed_constraints") or []
+        if failed_constraints:
             table = Table(title="Failed Constraints", header_style="bold red")
             table.add_column("Rule")
             table.add_column("Column / Detail")
             table.add_column("Message")
-            for fc in res.get("failed_constraints"):
+            for fc in failed_constraints:
                 table.add_row(fc.get("rule"), fc.get("column", "—"), fc.get("message"))
             console.print(table)
 
@@ -266,7 +280,9 @@ def dvc_checkout() -> None:
     dvc = DVCManager()
     res = dvc.checkout()
     if res.get("success"):
-        console.print("[green]✓ Working directory files checked out to match .dvc pointers.[/green]")
+        console.print(
+            "[green]✓ Working directory files checked out to match .dvc pointers.[/green]"
+        )
     else:
         console.print(f"[red]DVC checkout failed:[/red] {res.get('stderr') or res.get('error')}")
         raise typer.Exit(code=1)

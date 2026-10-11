@@ -1,9 +1,7 @@
 """Feature data drift detector comparing reference datasets against production inference payloads."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +18,7 @@ class DataDriftDetector:
     def __init__(
         self,
         session: AsyncSession,
-        evidently_engine: Optional[EvidentlyEngine] = None,
+        evidently_engine: EvidentlyEngine | None = None,
         default_drift_threshold: float = 0.20,
     ) -> None:
         self.session = session
@@ -41,7 +39,7 @@ class DataDriftDetector:
         model_name: str,
         reference_df: pd.DataFrame,
         current_df: pd.DataFrame,
-        deployment_id: Optional[str] = None,
+        deployment_id: str | None = None,
         run_id: str = "drift-eval",
     ) -> DriftEvaluation:
         """Execute drift analysis, classify severity, and persist record."""
@@ -76,7 +74,7 @@ class DataDriftDetector:
         self,
         model_name: str,
         limit: int = 10,
-    ) -> List[DriftEvaluation]:
+    ) -> list[DriftEvaluation]:
         """Fetch historical drift evaluations for a model."""
         query = (
             select(DriftEvaluation)

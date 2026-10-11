@@ -3,7 +3,7 @@
 CRUD, lifecycle control, and real-time health monitoring for container deployments.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -16,12 +16,12 @@ from packages.core.models.deployment import DeploymentStatus
 from packages.core.models.user import User
 from packages.core.schemas.deployment import (
     DeploymentCreate,
-    DeploymentResponse,
     DeploymentListResponse,
     DeploymentMetricResponse,
+    DeploymentResponse,
 )
 from packages.core.security.audit import AuditService
-from packages.core.security.dependencies import require_permission, get_current_user
+from packages.core.security.dependencies import get_current_user, require_permission
 from packages.core.security.rbac import Permission
 from packages.deployment.service import DeploymentService
 
@@ -75,8 +75,8 @@ async def create_deployment(
 
 @router.get("/", response_model=DeploymentListResponse)
 async def list_deployments(
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
-    status: Optional[DeploymentStatus] = Query(None, description="Filter by status"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
+    status: DeploymentStatus | None = Query(None, description="Filter by status"),
     service: DeploymentService = Depends(_get_service),
 ) -> Any:
     """List all deployed model containers."""
@@ -159,7 +159,9 @@ async def check_deployment_health(
                 "status": "healthy" if resp.status_code == 200 else "degraded",
                 "healthy": resp.status_code == 200,
                 "http_status": resp.status_code,
-                "response": resp.json() if resp.headers.get("content-type", "").startswith("application/json") else resp.text,
+                "response": resp.json()
+                if resp.headers.get("content-type", "").startswith("application/json")
+                else resp.text,
             }
     except Exception as exc:
         return {

@@ -104,10 +104,13 @@ import httpx
 client = httpx.Client(base_url="http://localhost:8000")
 
 # Create
-resp = client.post("/api/v1/projects/", json={
-    "name": "Iris Classifier",
-    "slug": "iris-classifier",
-})
+resp = client.post(
+    "/api/v1/projects/",
+    json={
+        "name": "Iris Classifier",
+        "slug": "iris-classifier",
+    },
+)
 project = resp.json()
 
 # List

@@ -1,14 +1,15 @@
 """Train Random Forest demand forecasting model and log to MLflow (Issue #38)."""
 
 import os
-from pathlib import Path
 import pickle
+from pathlib import Path
+
 import mlflow
 import polars as pl
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from rich.console import Console
 from rich.table import Table
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 console = Console()
 
@@ -33,6 +34,7 @@ def train():
 
     if not train_file.exists() or not test_file.exists():
         from generate_data import generate_demand_data
+
         generate_demand_data(data_dir)
 
     console.print("[bold cyan]📊 Loading demand forecasting datasets...[/bold cyan]")

@@ -1,7 +1,8 @@
 """Pydantic v2 schemas for Dataset requests and responses."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from packages.core.models.dataset import DatasetFormat
@@ -11,22 +12,22 @@ class DatasetCreate(BaseModel):
     """Payload to register a new logical dataset."""
 
     name: str = Field(..., min_length=1, max_length=200, description="Dataset name")
-    project_id: Optional[str] = Field(None, description="Associated project UUID")
+    project_id: str | None = Field(None, description="Associated project UUID")
     format: DatasetFormat = Field(default=DatasetFormat.CSV, description="File format")
-    description: Optional[str] = Field(None, description="Dataset description")
+    description: str | None = Field(None, description="Dataset description")
 
 
 class DatasetVersionCreate(BaseModel):
     """Metadata supplied when registering or uploading a new dataset version."""
 
-    dataset_id: Optional[str] = Field(None, description="Target dataset UUID")
-    file_path: Optional[str] = Field(None, description="Local path to file to upload and inspect")
-    s3_key: Optional[str] = Field(None, description="Pre-existing S3 key if already uploaded")
-    description: Optional[str] = Field(None, description="Version changelog/notes")
-    row_count: Optional[int] = Field(None, description="Row count")
-    column_count: Optional[int] = Field(None, description="Column count")
-    size_bytes: Optional[int] = Field(None, description="File size in bytes")
-    sha256_hash: Optional[str] = Field(None, description="SHA-256 hash")
+    dataset_id: str | None = Field(None, description="Target dataset UUID")
+    file_path: str | None = Field(None, description="Local path to file to upload and inspect")
+    s3_key: str | None = Field(None, description="Pre-existing S3 key if already uploaded")
+    description: str | None = Field(None, description="Version changelog/notes")
+    row_count: int | None = Field(None, description="Row count")
+    column_count: int | None = Field(None, description="Column count")
+    size_bytes: int | None = Field(None, description="File size in bytes")
+    sha256_hash: str | None = Field(None, description="SHA-256 hash")
 
 
 class DatasetVersionResponse(BaseModel):
@@ -39,9 +40,9 @@ class DatasetVersionResponse(BaseModel):
     row_count: int
     column_count: int
     size_bytes: int
-    schema_json: Optional[Dict[str, Any]] = None
-    s3_key: Optional[str] = None
-    description: Optional[str] = None
+    schema_json: dict[str, Any] | None = None  # type: ignore[assignment]
+    s3_key: str | None = None
+    description: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -51,13 +52,13 @@ class DatasetResponse(BaseModel):
     """Detailed response for a dataset including latest version info."""
 
     id: str
-    project_id: Optional[str]
+    project_id: str | None
     name: str
     format: DatasetFormat
-    description: Optional[str]
+    description: str | None
     created_at: datetime
     updated_at: datetime
-    latest_version: Optional[DatasetVersionResponse] = None
+    latest_version: DatasetVersionResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -65,7 +66,7 @@ class DatasetResponse(BaseModel):
 class DatasetListResponse(BaseModel):
     """Listing of registered datasets."""
 
-    datasets: List[DatasetResponse]
+    datasets: list[DatasetResponse]
     total: int
 
 
@@ -77,5 +78,5 @@ class DatasetInspectionResponse(BaseModel):
     row_count: int
     column_count: int
     size_bytes: int
-    columns: List[Dict[str, Any]]
-    sample_records: List[Dict[str, Any]]
+    columns: list[dict[str, Any]]
+    sample_records: list[dict[str, Any]]

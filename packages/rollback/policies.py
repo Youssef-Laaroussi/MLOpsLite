@@ -12,20 +12,20 @@ Safety features:
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
+from packages.core.models.monitoring import DriftEvaluation, ModelPerformanceHistory
 from packages.core.models.rollback import (
     RollbackPolicy,
     RollbackRecord,
     RollbackStatus,
     RollbackTrigger,
 )
-from packages.core.models.monitoring import DriftEvaluation, ModelPerformanceHistory
 from packages.rollback.coordinator import RollbackCoordinator, RollbackError
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class AutoRollbackEvaluator:
     def __init__(
         self,
         session: AsyncSession,
-        coordinator: Optional[RollbackCoordinator] = None,
+        coordinator: RollbackCoordinator | None = None,
     ) -> None:
         self.session = session
         self.coordinator = coordinator or RollbackCoordinator(session=session)
@@ -76,7 +76,7 @@ class AutoRollbackEvaluator:
     async def create_policy(
         self,
         model_name: str,
-        deployment_id: Optional[str] = None,
+        deployment_id: str | None = None,
         enabled: bool = False,
         require_approval: bool = False,
         metric: str = "error_rate",
@@ -106,15 +106,19 @@ class AutoRollbackEvaluator:
         self,
         policy_id: str,
         **kwargs: Any,
-    ) -> Optional[RollbackPolicy]:
+    ) -> RollbackPolicy | None:
         """Update an existing policy."""
         policy = await self.get_policy(policy_id)
         if policy is None:
             return None
 
         allowed_fields = {
-            "enabled", "require_approval", "metric", "threshold",
-            "evaluation_window_seconds", "consecutive_violations",
+            "enabled",
+            "require_approval",
+            "metric",
+            "threshold",
+            "evaluation_window_seconds",
+            "consecutive_violations",
             "cooldown_hours",
         }
         for key, value in kwargs.items():
@@ -125,7 +129,7 @@ class AutoRollbackEvaluator:
         await self.session.refresh(policy)
         return policy
 
-    async def get_policy(self, policy_id: str) -> Optional[RollbackPolicy]:
+    async def get_policy(self, policy_id: str) -> RollbackPolicy | None:
         """Fetch a policy by ID."""
         result = await self.session.execute(
             select(RollbackPolicy).where(RollbackPolicy.id == policy_id)
@@ -134,9 +138,9 @@ class AutoRollbackEvaluator:
 
     async def list_policies(
         self,
-        model_name: Optional[str] = None,
+        model_name: str | None = None,
         enabled_only: bool = False,
-    ) -> List[RollbackPolicy]:
+    ) -> list[RollbackPolicy]:
         """List all auto-rollback policies."""
         query = select(RollbackPolicy).order_by(RollbackPolicy.created_at.desc())
         if model_name:
@@ -157,14 +161,14 @@ class AutoRollbackEvaluator:
 
     # ── Evaluation Loop ──────────────────────────────────────
 
-    async def evaluate_all_policies(self) -> List[Dict[str, Any]]:
+    async def evaluate_all_policies(self) -> list[dict[str, Any]]:
         """Evaluate all enabled policies against live metrics.
 
         Called periodically by the background scheduler.
         Returns a list of action summaries.
         """
         policies = await self.list_policies(enabled_only=True)
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         for policy in policies:
             try:
@@ -173,20 +177,22 @@ class AutoRollbackEvaluator:
             except Exception as exc:
                 logger.error(
                     "Error evaluating policy %s for %s: %s",
-                    policy.id, policy.model_name, exc,
+                    policy.id,
+                    policy.model_name,
+                    exc,
                 )
-                results.append({
-                    "policy_id": policy.id,
-                    "model_name": policy.model_name,
-                    "action": "ERROR",
-                    "error": str(exc),
-                })
+                results.append(
+                    {
+                        "policy_id": policy.id,
+                        "model_name": policy.model_name,
+                        "action": "ERROR",
+                        "error": str(exc),
+                    }
+                )
 
         return results
 
-    async def _evaluate_single_policy(
-        self, policy: RollbackPolicy
-    ) -> Dict[str, Any]:
+    async def _evaluate_single_policy(self, policy: RollbackPolicy) -> dict[str, Any]:
         """Evaluate a single policy against the active deployment's metrics."""
         # 1. Find active deployment
         deployment = await self._get_active_deployment(policy.model_name, policy.deployment_id)
@@ -260,7 +266,7 @@ class AutoRollbackEvaluator:
         policy: RollbackPolicy,
         deployment: Deployment,
         metric_value: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute or request approval for automatic rollback."""
         reason = (
             f"Auto-rollback triggered: {policy.metric}={metric_value:.4f} "
@@ -288,14 +294,15 @@ class AutoRollbackEvaluator:
             )
             self.session.add(record)
 
-            policy.last_triggered_at = datetime.now(timezone.utc)
+            policy.last_triggered_at = datetime.now(UTC)
             policy.violation_count = 0
             await self.session.flush()
             await self.session.refresh(record)
 
             logger.info(
                 "Auto-rollback PENDING_APPROVAL for %s: %s",
-                policy.model_name, reason,
+                policy.model_name,
+                reason,
             )
             return {
                 "policy_id": policy.id,
@@ -315,13 +322,15 @@ class AutoRollbackEvaluator:
                     initiated_by="auto-rollback-policy",
                 )
 
-                policy.last_triggered_at = datetime.now(timezone.utc)
+                policy.last_triggered_at = datetime.now(UTC)
                 policy.violation_count = 0
                 await self.session.flush()
 
                 logger.info(
                     "Auto-rollback EXECUTED for %s: %s (record=%s)",
-                    policy.model_name, reason, record.id,
+                    policy.model_name,
+                    reason,
+                    record.id,
                 )
                 return {
                     "policy_id": policy.id,
@@ -333,7 +342,8 @@ class AutoRollbackEvaluator:
             except RollbackError as exc:
                 logger.error(
                     "Auto-rollback FAILED for %s: %s",
-                    policy.model_name, exc,
+                    policy.model_name,
+                    exc,
                 )
                 return {
                     "policy_id": policy.id,
@@ -350,9 +360,9 @@ class AutoRollbackEvaluator:
         deployment: Deployment,
         metric: str,
         window_seconds: int,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Compute a metric value over the evaluation window."""
-        cutoff = datetime.now(timezone.utc) - timedelta(seconds=window_seconds)
+        cutoff = datetime.now(UTC) - timedelta(seconds=window_seconds)
 
         if metric == "error_rate":
             return await self._compute_error_rate(deployment.id, cutoff)
@@ -366,9 +376,7 @@ class AutoRollbackEvaluator:
             logger.warning("Unknown metric '%s' in policy", metric)
             return None
 
-    async def _compute_error_rate(
-        self, deployment_id: str, cutoff: datetime
-    ) -> Optional[float]:
+    async def _compute_error_rate(self, deployment_id: str, cutoff: datetime) -> float | None:
         """Error rate = total_errors / total_requests over the window."""
         result = await self.session.execute(
             select(
@@ -388,9 +396,7 @@ class AutoRollbackEvaluator:
         total_requests = row[1]
         return total_errors / total_requests
 
-    async def _compute_latency_p95(
-        self, deployment_id: str, cutoff: datetime
-    ) -> Optional[float]:
+    async def _compute_latency_p95(self, deployment_id: str, cutoff: datetime) -> float | None:
         """Average p95 latency over the window (ms)."""
         result = await self.session.execute(
             select(func.avg(DeploymentMetric.latency_p95_ms)).where(
@@ -408,16 +414,19 @@ class AutoRollbackEvaluator:
         model_name: str,
         deployment_id: str,
         cutoff: datetime,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Latest accuracy from ModelPerformanceHistory."""
         result = await self.session.execute(
-            select(ModelPerformanceHistory).where(
+            select(ModelPerformanceHistory)
+            .where(
                 and_(
                     ModelPerformanceHistory.model_name == model_name,
                     ModelPerformanceHistory.deployment_id == deployment_id,
                     ModelPerformanceHistory.created_at >= cutoff,
                 )
-            ).order_by(ModelPerformanceHistory.created_at.desc()).limit(1)
+            )
+            .order_by(ModelPerformanceHistory.created_at.desc())
+            .limit(1)
         )
         perf = result.scalar_one_or_none()
         if perf is None or not perf.metrics_json:
@@ -429,16 +438,19 @@ class AutoRollbackEvaluator:
         model_name: str,
         deployment_id: str,
         cutoff: datetime,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Latest drift share from DriftEvaluation."""
         result = await self.session.execute(
-            select(DriftEvaluation).where(
+            select(DriftEvaluation)
+            .where(
                 and_(
                     DriftEvaluation.model_name == model_name,
                     DriftEvaluation.deployment_id == deployment_id,
                     DriftEvaluation.created_at >= cutoff,
                 )
-            ).order_by(DriftEvaluation.created_at.desc()).limit(1)
+            )
+            .order_by(DriftEvaluation.created_at.desc())
+            .limit(1)
         )
         drift = result.scalar_one_or_none()
         return drift.drift_share if drift else None
@@ -448,8 +460,8 @@ class AutoRollbackEvaluator:
     async def _get_active_deployment(
         self,
         model_name: str,
-        deployment_id: Optional[str] = None,
-    ) -> Optional[Deployment]:
+        deployment_id: str | None = None,
+    ) -> Deployment | None:
         """Find the active deployment for a model."""
         if deployment_id:
             result = await self.session.execute(
@@ -462,12 +474,14 @@ class AutoRollbackEvaluator:
             )
         else:
             result = await self.session.execute(
-                select(Deployment).where(
+                select(Deployment)
+                .where(
                     and_(
                         Deployment.model_name == model_name,
                         Deployment.status == DeploymentStatus.RUNNING,
                     )
-                ).order_by(Deployment.created_at.desc())
+                )
+                .order_by(Deployment.created_at.desc())
             )
         return result.scalar_one_or_none()
 
@@ -476,7 +490,7 @@ class AutoRollbackEvaluator:
         if policy.last_triggered_at is None:
             return False
         cooldown_end = policy.last_triggered_at + timedelta(hours=policy.cooldown_hours)
-        return datetime.now(timezone.utc) < cooldown_end
+        return datetime.now(UTC) < cooldown_end
 
     @staticmethod
     def _check_threshold(metric: str, value: float, threshold: float) -> bool:

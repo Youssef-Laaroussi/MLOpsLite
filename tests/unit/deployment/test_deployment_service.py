@@ -1,12 +1,13 @@
 """Unit tests for DeploymentService lifecycle operations (Issue #11)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.deployment.service import DeploymentService
-from packages.deployment.ports import PortAllocator
 from packages.deployment.docker_manager import DockerManager
+from packages.deployment.ports import PortAllocator
+from packages.deployment.service import DeploymentService
 
 
 @pytest.fixture

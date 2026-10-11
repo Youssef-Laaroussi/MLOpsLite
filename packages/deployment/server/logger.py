@@ -1,10 +1,9 @@
 """Asynchronous inference payload logger for drift monitoring and auditing."""
 
 import asyncio
-import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,21 +13,21 @@ class InferencePayloadLogger:
 
     def __init__(self, buffer_capacity: int = 100) -> None:
         self.buffer_capacity = buffer_capacity
-        self._buffer: List[Dict[str, Any]] = []
+        self._buffer: list[dict[str, Any]] = []
         self._lock = asyncio.Lock()
 
     async def log_inference(
         self,
         model_name: str,
         model_version: str,
-        request_payload: Dict[str, Any],
-        predictions: List[Any],
+        request_payload: dict[str, Any],
+        predictions: list[Any],
         latency_ms: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """Record an inference event into the buffer."""
         record = {
-            "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat(),
+            "timestamp": (timestamp or datetime.now(UTC)).isoformat(),
             "model": model_name,
             "version": model_version,
             "inputs": request_payload,
@@ -41,7 +40,7 @@ class InferencePayloadLogger:
             if len(self._buffer) >= self.buffer_capacity:
                 await self.flush()
 
-    async def flush(self) -> List[Dict[str, Any]]:
+    async def flush(self) -> list[dict[str, Any]]:
         """Flush the current buffer and return stored records."""
         async with self._lock:
             flushed = list(self._buffer)

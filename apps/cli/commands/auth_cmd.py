@@ -1,19 +1,15 @@
 """CLI commands for authentication, API keys, and user management (Issues #25, #26)."""
 
-import os
-from typing import Optional
-
 import httpx
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 from apps.cli.credentials import (
-    save_credentials,
-    load_credentials,
     clear_credentials,
     get_auth_headers,
+    save_credentials,
 )
 
 console = Console()
@@ -24,9 +20,11 @@ DEFAULT_API_URL = "http://localhost:8000"
 
 
 def login(
-    username: Optional[str] = typer.Option(None, "--username", "-u", help="Username or email address"),
-    password: Optional[str] = typer.Option(None, "--password", "-p", help="User password"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    username: str | None = typer.Option(None, "--username", "-u", help="Username or email address"),
+    password: str | None = typer.Option(None, "--password", "-p", help="User password"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """🔑 Log in to MLite and save credentials locally."""
     if not username:
@@ -41,20 +39,24 @@ def login(
             timeout=10.0,
         )
         if res.status_code == 401:
-            console.print("[bold red]✗ Authentication failed:[/bold red] Incorrect username or password.")
+            console.print(
+                "[bold red]✗ Authentication failed:[/bold red] Incorrect username or password."
+            )
             raise typer.Exit(code=1)
         elif res.status_code != 200:
             console.print(f"[bold red]Error {res.status_code}:[/bold red] {res.text}")
             raise typer.Exit(code=1)
 
         data = res.json()
-        save_credentials({
-            "access_token": data["access_token"],
-            "refresh_token": data.get("refresh_token"),
-            "token_type": data.get("token_type", "bearer"),
-            "api_url": api_url,
-            "username": username,
-        })
+        save_credentials(
+            {
+                "access_token": data["access_token"],
+                "refresh_token": data.get("refresh_token"),
+                "token_type": data.get("token_type", "bearer"),
+                "api_url": api_url,
+                "username": username,
+            }
+        )
 
         console.print(
             Panel(
@@ -65,7 +67,9 @@ def login(
             )
         )
     except httpx.RequestError as exc:
-        console.print(f"[bold red]Connection error:[/bold red] Could not reach API at {api_url}: {exc}")
+        console.print(
+            f"[bold red]Connection error:[/bold red] Could not reach API at {api_url}: {exc}"
+        )
         raise typer.Exit(code=1)
 
 
@@ -79,18 +83,24 @@ def logout() -> None:
 
 
 def whoami(
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """👤 Display information about the currently logged in user."""
     headers = get_auth_headers()
     if not headers:
-        console.print("[yellow]Not logged in.[/yellow] Run [cyan]mlite login[/cyan] or set [cyan]MLITE_API_KEY[/cyan].")
+        console.print(
+            "[yellow]Not logged in.[/yellow] Run [cyan]mlite login[/cyan] or set [cyan]MLITE_API_KEY[/cyan]."
+        )
         raise typer.Exit(code=1)
 
     try:
         res = httpx.get(f"{api_url}/api/v1/auth/me", headers=headers, timeout=10.0)
         if res.status_code == 401:
-            console.print("[bold red]Session expired or invalid.[/bold red] Please run [cyan]mlite login[/cyan].")
+            console.print(
+                "[bold red]Session expired or invalid.[/bold red] Please run [cyan]mlite login[/cyan]."
+            )
             raise typer.Exit(code=1)
         elif res.status_code != 200:
             console.print(f"[bold red]Error {res.status_code}:[/bold red] {res.text}")
@@ -121,7 +131,9 @@ api_key_app = typer.Typer(no_args_is_help=True, help="Manage API keys for CI/CD 
 @api_key_app.command("create")
 def create_key(
     name: str = typer.Argument(..., help="Descriptive name for the API key (e.g. 'CI-Runner')"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Generate a new long-lived API key."""
     headers = get_auth_headers()
@@ -159,7 +171,9 @@ def create_key(
 
 @api_key_app.command("list")
 def list_keys(
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """List all API keys belonging to the current user."""
     headers = get_auth_headers()
@@ -175,7 +189,9 @@ def list_keys(
 
         keys = res.json().get("api_keys", [])
         if not keys:
-            console.print("[dim]No API keys found. Run [cyan]mlite api-key create <name>[/cyan] to create one.[/dim]")
+            console.print(
+                "[dim]No API keys found. Run [cyan]mlite api-key create <name>[/cyan] to create one.[/dim]"
+            )
             return
 
         table = Table(title="MLite API Keys")
@@ -205,7 +221,9 @@ def list_keys(
 @api_key_app.command("revoke")
 def revoke_key(
     key_id: str = typer.Argument(..., help="API key ID to revoke"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Revoke an API key immediately."""
     headers = get_auth_headers()
@@ -214,7 +232,9 @@ def revoke_key(
         raise typer.Exit(code=1)
 
     try:
-        res = httpx.delete(f"{api_url}/api/v1/auth/api-keys/{key_id}", headers=headers, timeout=10.0)
+        res = httpx.delete(
+            f"{api_url}/api/v1/auth/api-keys/{key_id}", headers=headers, timeout=10.0
+        )
         if res.status_code == 204:
             console.print(f"[green]✓ API key [cyan]{key_id}[/cyan] revoked successfully.[/green]")
         elif res.status_code == 404:
@@ -235,7 +255,9 @@ user_app = typer.Typer(no_args_is_help=True, help="Manage user accounts (Admin o
 
 @user_app.command("list")
 def list_users(
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """List all registered user accounts."""
     headers = get_auth_headers()
@@ -246,7 +268,9 @@ def list_users(
     try:
         res = httpx.get(f"{api_url}/api/v1/users", headers=headers, timeout=10.0)
         if res.status_code == 403:
-            console.print("[bold red]Access denied:[/bold red] Only ADMIN users can manage user accounts.")
+            console.print(
+                "[bold red]Access denied:[/bold red] Only ADMIN users can manage user accounts."
+            )
             raise typer.Exit(code=1)
         elif res.status_code != 200:
             console.print(f"[bold red]Error {res.status_code}:[/bold red] {res.text}")
@@ -281,10 +305,14 @@ def list_users(
 def create_user_cmd(
     email: str = typer.Argument(..., help="User email address"),
     username: str = typer.Argument(..., help="Unique username"),
-    role: str = typer.Option("DEVELOPER", "--role", "-r", help="Role: ADMIN, MAINTAINER, DEVELOPER, VIEWER"),
-    password: Optional[str] = typer.Option(None, "--password", "-p", help="Initial password"),
-    full_name: Optional[str] = typer.Option(None, "--name", help="Full name"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    role: str = typer.Option(
+        "DEVELOPER", "--role", "-r", help="Role: ADMIN, MAINTAINER, DEVELOPER, VIEWER"
+    ),
+    password: str | None = typer.Option(None, "--password", "-p", help="Initial password"),
+    full_name: str | None = typer.Option(None, "--name", help="Full name"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Create a new user account (Admin only)."""
     headers = get_auth_headers()
@@ -309,17 +337,23 @@ def create_user_cmd(
             timeout=10.0,
         )
         if res.status_code == 403:
-            console.print("[bold red]Access denied:[/bold red] Only ADMIN users can create accounts.")
+            console.print(
+                "[bold red]Access denied:[/bold red] Only ADMIN users can create accounts."
+            )
             raise typer.Exit(code=1)
         elif res.status_code == 409:
-            console.print("[bold red]Conflict:[/bold red] User with this email or username already exists.")
+            console.print(
+                "[bold red]Conflict:[/bold red] User with this email or username already exists."
+            )
             raise typer.Exit(code=1)
         elif res.status_code != 201:
             console.print(f"[bold red]Error {res.status_code}:[/bold red] {res.text}")
             raise typer.Exit(code=1)
 
         user = res.json()
-        console.print(f"[green]✓ User [cyan]{user.get('username')}[/cyan] ({user.get('role')}) created successfully.[/green]")
+        console.print(
+            f"[green]✓ User [cyan]{user.get('username')}[/cyan] ({user.get('role')}) created successfully.[/green]"
+        )
     except httpx.RequestError as exc:
         console.print(f"[bold red]Connection error:[/bold red] {exc}")
         raise typer.Exit(code=1)

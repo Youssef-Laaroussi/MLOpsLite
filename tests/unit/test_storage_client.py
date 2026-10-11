@@ -2,9 +2,10 @@
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 import pytest
 
-from packages.core.storage.client import StorageClient, StorageError
+from packages.core.storage.client import StorageClient
 
 
 def test_compute_sha256(tmp_path: Path) -> None:
@@ -61,7 +62,9 @@ def test_download_file(mock_boto_client: MagicMock, tmp_path: Path) -> None:
 def test_generate_presigned_url(mock_boto_client: MagicMock) -> None:
     """Verify presigned URL generation."""
     mock_s3 = MagicMock()
-    mock_s3.generate_presigned_url.return_value = "https://minio.local/test-bucket/model.pkl?sig=xyz"
+    mock_s3.generate_presigned_url.return_value = (
+        "https://minio.local/test-bucket/model.pkl?sig=xyz"
+    )
     mock_boto_client.return_value = mock_s3
 
     client = StorageClient(default_bucket="test-bucket")

@@ -1,7 +1,5 @@
 """CLI commands for model deployments and container management (Issues #11, #13)."""
 
-from typing import Optional
-
 import httpx
 import typer
 from rich.console import Console
@@ -18,8 +16,10 @@ DEFAULT_API_URL = "http://localhost:8000"
 def deploy_model_action(
     model_name: str = typer.Argument(..., help="Registered model name"),
     version: int = typer.Option(..., "--version", "-v", help="Model version number"),
-    port: Optional[int] = typer.Option(None, "--port", "-p", help="Explicit host port (optional)"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    port: int | None = typer.Option(None, "--port", "-p", help="Explicit host port (optional)"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Deploy a model version into an inference container."""
     payload = {
@@ -57,7 +57,9 @@ def deploy_model_action(
 
 @app.command("list")
 def list_deployments(
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """List all active and historical deployments."""
     try:
@@ -107,7 +109,9 @@ def list_deployments(
 @app.command("stop")
 def stop_deployment(
     deployment_id: str = typer.Argument(..., help="Deployment ID to stop"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Stop and tear down a running deployment container."""
     try:
@@ -125,7 +129,9 @@ def stop_deployment(
 @app.command("status")
 def deployment_status(
     deployment_id: str = typer.Argument(..., help="Deployment ID"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Display real-time health and resource metrics for a deployment container."""
     try:
@@ -138,17 +144,33 @@ def deployment_status(
 
         # Get health probe
         h_resp = httpx.get(f"{api_url}/api/v1/deployments/{deployment_id}/health", timeout=5.0)
-        health_info = h_resp.json() if h_resp.status_code == 200 else {"healthy": False, "status": "error"}
+        health_info = (
+            h_resp.json() if h_resp.status_code == 200 else {"healthy": False, "status": "error"}
+        )
 
         # Get metrics
-        m_resp = httpx.get(f"{api_url}/api/v1/deployments/{deployment_id}/metrics?limit=1", timeout=5.0)
+        m_resp = httpx.get(
+            f"{api_url}/api/v1/deployments/{deployment_id}/metrics?limit=1", timeout=5.0
+        )
         latest_metrics = m_resp.json()[0] if m_resp.status_code == 200 and m_resp.json() else None
 
         cpu_str = f"{latest_metrics.get('cpu_percent', 0.0)}%" if latest_metrics else "N/A"
-        mem_str = f"{latest_metrics.get('memory_mb', 0.0)} MB / {latest_metrics.get('memory_limit_mb', 0.0)} MB" if latest_metrics else "N/A"
-        p50_str = f"{latest_metrics.get('latency_p50_ms', 'N/A')} ms" if latest_metrics and latest_metrics.get('latency_p50_ms') is not None else "N/A"
+        mem_str = (
+            f"{latest_metrics.get('memory_mb', 0.0)} MB / {latest_metrics.get('memory_limit_mb', 0.0)} MB"
+            if latest_metrics
+            else "N/A"
+        )
+        p50_str = (
+            f"{latest_metrics.get('latency_p50_ms', 'N/A')} ms"
+            if latest_metrics and latest_metrics.get("latency_p50_ms") is not None
+            else "N/A"
+        )
 
-        health_badge = "[green]● HEALTHY[/green]" if health_info.get("healthy") else "[red]● UNHEALTHY / DOWN[/red]"
+        health_badge = (
+            "[green]● HEALTHY[/green]"
+            if health_info.get("healthy")
+            else "[red]● UNHEALTHY / DOWN[/red]"
+        )
 
         console.print(
             Panel.fit(

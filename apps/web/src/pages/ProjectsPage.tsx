@@ -305,10 +305,10 @@ export const ProjectsPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
             <FolderGit2 className="w-7 h-7 text-[#3BB48C]" />
             Workspaces &amp; Projects
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] font-sans">
               Git Ops Managed
             </span>
           </h2>

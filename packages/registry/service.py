@@ -1,12 +1,12 @@
 """Model Registry service — business logic for model registration, versioning, and promotion."""
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.model_registry import (
-    RegisteredModel,
-    ModelVersion,
     ModelStage,
+    ModelVersion,
+    RegisteredModel,
 )
 
 
@@ -48,9 +48,7 @@ class ModelRegistryService:
 
         # Determine next version number
         version_result = await self.session.execute(
-            select(func.max(ModelVersion.version)).where(
-                ModelVersion.model_id == model.id
-            )
+            select(func.max(ModelVersion.version)).where(ModelVersion.model_id == model.id)
         )
         max_version = version_result.scalar() or 0
         next_version = max_version + 1
@@ -84,6 +82,13 @@ class ModelRegistryService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
+    async def get_model(self, model_id: str) -> RegisteredModel | None:
+        """Get a registered model by ID."""
+        result = await self.session.execute(
+            select(RegisteredModel).where(RegisteredModel.id == model_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_model_by_name(self, name: str) -> RegisteredModel | None:
         """Get a registered model by name."""
         result = await self.session.execute(
@@ -91,9 +96,7 @@ class ModelRegistryService:
         )
         return result.scalar_one_or_none()
 
-    async def get_versions(
-        self, model_name: str
-    ) -> list[ModelVersion]:
+    async def get_versions(self, model_name: str) -> list[ModelVersion]:
         """Get all versions of a registered model."""
         model = await self.get_model_by_name(model_name)
         if model is None:
@@ -106,9 +109,7 @@ class ModelRegistryService:
         )
         return list(result.scalars().all())
 
-    async def get_version(
-        self, model_name: str, version_number: int
-    ) -> ModelVersion | None:
+    async def get_version(self, model_name: str, version_number: int) -> ModelVersion | None:
         """Get a specific version of a model."""
         model = await self.get_model_by_name(model_name)
         if model is None:

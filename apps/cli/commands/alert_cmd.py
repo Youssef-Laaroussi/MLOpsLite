@@ -13,9 +13,15 @@ DEFAULT_API_URL = "http://localhost:8000"
 
 @app.command("list")
 def list_alerts(
-    status: str = typer.Option(None, "--status", "-s", help="Filter by status: OPEN, ACKNOWLEDGED, RESOLVED"),
-    severity: str = typer.Option(None, "--severity", help="Filter by severity: INFO, WARNING, HIGH, CRITICAL"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    status: str = typer.Option(
+        None, "--status", "-s", help="Filter by status: OPEN, ACKNOWLEDGED, RESOLVED"
+    ),
+    severity: str = typer.Option(
+        None, "--severity", help="Filter by severity: INFO, WARNING, HIGH, CRITICAL"
+    ),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """List recent alerts and incident history."""
     try:
@@ -71,7 +77,9 @@ def list_alerts(
 @app.command("ack")
 def acknowledge_alert(
     alert_id: str = typer.Argument(..., help="Alert ID to acknowledge"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Acknowledge an open alert."""
     try:
@@ -89,7 +97,9 @@ def acknowledge_alert(
 @app.command("resolve")
 def resolve_alert(
     alert_id: str = typer.Argument(..., help="Alert ID to resolve"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """Mark an alert as resolved."""
     try:

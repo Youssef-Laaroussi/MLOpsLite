@@ -13,22 +13,26 @@ from packages.tracking.tracker import start_run
 
 with start_run(experiment_name="iris-classifier", project_slug="iris") as run:
     # Log hyperparameters
-    run.log_params({
-        "n_estimators": 100,
-        "max_depth": 5,
-        "learning_rate": 0.1,
-    })
+    run.log_params(
+        {
+            "n_estimators": 100,
+            "max_depth": 5,
+            "learning_rate": 0.1,
+        }
+    )
 
     # ... your training code ...
     model = train_model(X_train, y_train)
 
     # Log metrics
-    run.log_metrics({
-        "accuracy": 0.95,
-        "precision": 0.93,
-        "recall": 0.91,
-        "f1": 0.92,
-    })
+    run.log_metrics(
+        {
+            "accuracy": 0.95,
+            "precision": 0.93,
+            "recall": 0.91,
+            "f1": 0.92,
+        }
+    )
 
     # Log artifacts
     run.log_artifact("models/model.pkl")
@@ -87,10 +91,12 @@ with start_run(experiment_name="iris-rf", project_slug="iris-classifier") as run
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
-    run.log_metrics({
-        "accuracy": accuracy_score(y_test, y_pred),
-        "f1_macro": f1_score(y_test, y_pred, average="macro"),
-    })
+    run.log_metrics(
+        {
+            "accuracy": accuracy_score(y_test, y_pred),
+            "f1_macro": f1_score(y_test, y_pred, average="macro"),
+        }
+    )
 
     joblib.dump(clf, "models/iris_rf.pkl")
     run.log_artifact("models/iris_rf.pkl")

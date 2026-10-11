@@ -10,14 +10,12 @@ Tests:
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from apps.api.main import create_app
-from packages.core.models.user import User, UserRole, ApiKey
-from packages.core.models.audit import AuditLog, AuditAction
+from packages.core.models.user import User, UserRole
 from packages.core.security.auth import create_access_token
 
 
@@ -75,33 +73,41 @@ class TestUnauthenticatedAccess:
 
     def test_auth_me_requires_token(self, app):
         transport = ASGITransport(app=app)
+
         async def _test():
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 return await ac.get("/api/v1/auth/me")
+
         resp = _run(_test())
         assert resp.status_code == 401
 
     def test_api_keys_requires_token(self, app):
         transport = ASGITransport(app=app)
+
         async def _test():
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 return await ac.get("/api/v1/auth/api-keys")
+
         resp = _run(_test())
         assert resp.status_code == 401
 
     def test_users_list_requires_token(self, app):
         transport = ASGITransport(app=app)
+
         async def _test():
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 return await ac.get("/api/v1/users")
+
         resp = _run(_test())
         assert resp.status_code == 401
 
     def test_audit_logs_requires_token(self, app):
         transport = ASGITransport(app=app)
+
         async def _test():
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 return await ac.get("/api/v1/audit/logs")
+
         resp = _run(_test())
         assert resp.status_code == 401
 
@@ -110,7 +116,9 @@ class TestRBACAccessControl:
     """Verify role-based access restrictions (403 Forbidden)."""
 
     def test_viewer_denied_user_management(self, app, viewer_user):
-        token = create_access_token({"sub": viewer_user.id, "email": viewer_user.email, "role": "VIEWER"})
+        token = create_access_token(
+            {"sub": viewer_user.id, "email": viewer_user.email, "role": "VIEWER"}
+        )
         transport = ASGITransport(app=app)
 
         async def _test():
@@ -122,6 +130,7 @@ class TestRBACAccessControl:
 
         # Mock get_current_user to return viewer_user
         from packages.core.security.dependencies import get_current_user
+
         app.dependency_overrides[get_current_user] = lambda: viewer_user
         try:
             resp = _run(_test())
@@ -132,6 +141,7 @@ class TestRBACAccessControl:
 
     def test_viewer_denied_audit_logs(self, app, viewer_user):
         from packages.core.security.dependencies import get_current_user
+
         app.dependency_overrides[get_current_user] = lambda: viewer_user
         transport = ASGITransport(app=app)
 

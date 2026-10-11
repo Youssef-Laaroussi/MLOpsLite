@@ -1,10 +1,9 @@
 """Unit tests for dataset schema extraction and DatasetService operations (Issue #15)."""
 
 import csv
-import tempfile
-from pathlib import Path
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from packages.core.models.dataset import Dataset, DatasetFormat
 from packages.core.storage.client import StorageClient

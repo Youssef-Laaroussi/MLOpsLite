@@ -1,7 +1,6 @@
 """Base notification dispatcher interface."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
 
 from packages.core.models.alert import Alert
 

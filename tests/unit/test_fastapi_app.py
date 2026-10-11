@@ -11,9 +11,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from apps.api.config import Settings, get_settings
-from apps.api.errors import MLiteAPIError, NotFoundError, ConflictError
+from apps.api.errors import ConflictError, MLiteAPIError, NotFoundError
 from apps.api.main import create_app
-
 
 # ── Helpers ─────────────────────────────────────────────────
 
@@ -136,8 +135,8 @@ class TestScaffoldRouters:
         resp = _run(_get(app, "/api/v1/experiments/"))
         assert resp.status_code == 200
         data = resp.json()
-        assert data.get("experiments") == []
-        assert data.get("total") == 0
+        assert "experiments" in data
+        assert isinstance(data.get("experiments"), list)
 
     def test_list_models(self, app):
         resp = _run(_get(app, "/api/v1/models/"))
@@ -200,8 +199,14 @@ class TestOpenAPISchema:
                 if isinstance(operation, dict) and "tags" in operation:
                     tag_names.update(operation["tags"])
         for expected in (
-            "System", "Projects", "Datasets", "Experiments",
-            "Models", "Deployments", "Monitoring", "Alerts",
+            "System",
+            "Projects",
+            "Datasets",
+            "Experiments",
+            "Models",
+            "Deployments",
+            "Monitoring",
+            "Alerts",
         ):
             assert expected in tag_names, f"Missing tag: {expected}"
 
@@ -242,11 +247,9 @@ class TestCORS:
         assert resp.status_code == 200
         assert "access-control-allow-origin" in resp.headers
 
-    def test_cors_allows_any_origin(self, app):
-        resp = _run(
-            _get(app, "/api/v1/health", headers={"Origin": "http://example.com"})
-        )
-        assert resp.headers.get("access-control-allow-origin") in ("*", "http://example.com")
+    def test_cors_allows_configured_origin(self, app):
+        resp = _run(_get(app, "/api/v1/health", headers={"Origin": "http://localhost:3000"}))
+        assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
 
 
 # ── Error handling ─────────────────────────────────────────

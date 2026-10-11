@@ -39,6 +39,55 @@ import {
 } from "../api/client";
 import { Deployment } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import {
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+
+const CANARY_SPLIT = [
+  { name: "v2 stable", value: 80, fill: PALETTE.slate },
+  { name: "v3 canary", value: 20, fill: PALETTE.brand },
+];
+
+const RELIABILITY = [
+  { t: "00h", p99: 9.1, err: 0.05 },
+  { t: "04h", p99: 8.7, err: 0.04 },
+  { t: "08h", p99: 10.4, err: 0.12 },
+  { t: "10h", p99: 12.8, err: 0.38 },
+  { t: "12h", p99: 11.2, err: 0.21 },
+  { t: "16h", p99: 9.8, err: 0.08 },
+  { t: "20h", p99: 9.3, err: 0.06 },
+  { t: "24h", p99: 9.0, err: 0.04 },
+];
+
+const HEATMAP = [
+  { name: "fraud-v3", cpu: [32, 38, 45, 52, 61, 68, 74, 71, 66, 58, 49, 44] },
+  { name: "churn-v2", cpu: [20, 22, 25, 31, 40, 47, 52, 49, 41, 33, 27, 24] },
+  { name: "demand-v2", cpu: [41, 48, 55, 63, 72, 79, 84, 88, 81, 70, 58, 50] },
+  { name: "sentiment-v1", cpu: [55, 62, 70, 78, 85, 91, 94, 90, 86, 80, 72, 66] },
+  { name: "credit-v1", cpu: [18, 19, 24, 28, 35, 39, 42, 40, 34, 29, 24, 21] },
+];
+
+const RELEASES = [
+  { id: 1, title: "fraud-detector v3 canary → 20%", detail: "Auto-promote gate passed · a.benali", when: "1h ago", color: PALETTE.brand },
+  { id: 2, title: "sentiment-v1 autoscaled 2 → 4 pods", detail: "CPU > 85% for 5 min", when: "3h ago", color: PALETTE.blue },
+  { id: 3, title: "demand-v2 rolled back to v1", detail: "p99 regression > 15ms · symlink cutover 0.8s", when: "1d ago", color: "#F43F5E" },
+  { id: 4, title: "credit-v1 deployed", detail: "Blue/green · zero downtime · s.karim", when: "2d ago", color: PALETTE.violet },
+];
 
 // Realistic production serving fleet for Data Analyst & MLOps evaluation
 const DEFAULT_DEPLOYMENTS: (Deployment & {
@@ -316,7 +365,7 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
             <Server className="w-7 h-7 text-[#3BB48C]" />
             Inference Deployments
             <span className="relative flex h-2.5 w-2.5">
@@ -436,165 +485,152 @@ export const DeploymentsPage: React.FC = () => {
 
       {/* ── Visual Analytics Row: Network Service Mesh Topology & Stephen Few Bullet Charts (NO BARS, NO DONUTS!) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* VISUAL 1: Interactive Service Mesh Topology & Traffic Ingress Map (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* VISUAL 1: Ingress Routing & Traffic Throughput (7 cols) - Enterprise Standard AreaChart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Workflow className="w-5 h-5 text-[#3BB48C]" />
-                  Service Mesh Topology &amp; Ingress Routing
+                  Ingress Traffic &amp; Route Throughput
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Reverse proxy gateway distributing real-time inference traffic to container pods
+                <p className="text-sm text-slate-500 mt-1">
+                  Real-time request volume distribution through NGINX gateway (Port 443 / SSL)
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                Mesh Active (mTLS)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+                  Peak: {totalRps} req/s
+                </span>
+              </div>
             </div>
 
-            {/* Interactive Topology Graph SVG */}
-            <div className="relative w-full overflow-hidden bg-slate-50/70 rounded-2xl border border-slate-200/80 p-3">
-              <svg viewBox="0 0 540 240" className="w-full h-auto select-none" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  {/* Glowing line gradients */}
-                  <linearGradient id="flowProd" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.9" />
-                  </linearGradient>
-                  <linearGradient id="flowCanary" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.9" />
-                  </linearGradient>
-                  <linearGradient id="flowStg" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.9" />
-                  </linearGradient>
-                </defs>
+            {/* Standard Recharts Multi-Area Traffic Timeline */}
+            <div className="h-[200px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={[
+                    { time: "10:00", prod: 2150, canary: 180, total: 2330 },
+                    { time: "11:00", prod: 2380, canary: 210, total: 2590 },
+                    { time: "12:00", prod: 2620, canary: 220, total: 2840 },
+                    { time: "13:00", prod: 2510, canary: 205, total: 2715 },
+                    { time: "14:00", prod: 2430, canary: 195, total: 2625 },
+                    { time: "15:00", prod: 2580, canary: 215, total: 2795 },
+                    { time: "16:00", prod: 2640, canary: 200, total: 2840 },
+                  ]}
+                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="ingressProdGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="ingressCanaryGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={PALETTE.blue} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={PALETTE.blue} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={`Ingress @ ${label}`}
+                          payload={[
+                            { name: "Production Endpoints", value: `${payload.find(p => p.dataKey === "prod")?.value} req/s`, color: PALETTE.brand },
+                            { name: "Canary / Staging", value: `${payload.find(p => p.dataKey === "canary")?.value} req/s`, color: PALETTE.blue },
+                            { name: "Total Ingress Throughput", value: `${payload.find(p => p.dataKey === "total")?.value} req/s`, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="prod"
+                    stroke={PALETTE.brand}
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#ingressProdGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="canary"
+                    stroke={PALETTE.blue}
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#ingressCanaryGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-                {/* Gateway Root Node (Left) */}
-                <g className="cursor-pointer">
-                  <rect x="20" y="75" width="105" height="90" rx="16" fill="#1E293B" stroke="#0F172A" strokeWidth="1.5" />
-                  <circle cx="72.5" cy="100" r="14" fill="#334155" />
-                  <path d="M 67 100 L 78 100 M 72.5 94.5 L 72.5 105.5" stroke="#3BB48C" strokeWidth="2.5" strokeLinecap="round" />
-                  <text x="72.5" y="125" fill="#F8FAFC" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">
-                    NGINX Gateway
-                  </text>
-                  <text x="72.5" y="138" fill="#94A3B8" fontSize="8.5" textAnchor="middle" fontFamily="monospace">
-                    Port 443 / SSL
-                  </text>
-                  <text x="72.5" y="152" fill="#3BB48C" fontSize="8.5" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
-                    {totalRps} req/s
-                  </text>
-                </g>
-
-                {/* Flowing Connecting Curves from Gateway (72.5, 120) to 6 Pods on Right */}
-                {[
-                  { y: 25, role: "PRODUCTION", label: "Port 8100 • 1,240 rps", name: "fraud-detector:v3", lat: "2.4ms", id: "dep-prod-01", color: "#10B981" },
-                  { y: 65, role: "PRODUCTION", label: "Port 8101 • 650 rps (90%)", name: "customer-churn:v2", lat: "3.8ms", id: "dep-prod-02", color: "#10B981" },
-                  { y: 105, role: "CANARY", label: "Port 8102 • 75 rps (10%)", name: "customer-churn:v3", lat: "3.2ms", id: "dep-canary-02", color: "#3B82F6" },
-                  { y: 145, role: "PRODUCTION", label: "Port 8103 • 420 rps", name: "demand-forecaster:v2", lat: "5.2ms", id: "dep-prod-03", color: "#10B981" },
-                  { y: 185, role: "PRODUCTION", label: "Port 8104 • 310 rps", name: "credit-risk:v1", lat: "3.1ms", id: "dep-prod-04", color: "#10B981" },
-                  { y: 215, role: "STAGING", label: "Port 8105 • 145 rps", name: "sentiment-bert:v1", lat: "12.6ms", id: "dep-stg-05", color: "#F59E0B" },
-                ].map((pod, idx) => {
-                  const isSelected = selectedNodeId === pod.id;
-                  const curveD = `M 125 120 C 180 120, 200 ${pod.y}, 260 ${pod.y}`;
-                  const gradId = pod.role === "CANARY" ? "url(#flowCanary)" : pod.role === "STAGING" ? "url(#flowStg)" : "url(#flowProd)";
-
-                  return (
-                    <g key={pod.id} onClick={() => setSelectedNodeId(pod.id)} className="cursor-pointer group">
-                      {/* Flow Path */}
-                      <path
-                        d={curveD}
-                        fill="none"
-                        stroke={gradId}
-                        strokeWidth={isSelected ? "2.6" : "1.6"}
-                        strokeDasharray={pod.role === "CANARY" ? "4 3" : undefined}
-                        opacity={isSelected ? "1" : "0.7"}
-                      />
-
-                      {/* Moving Particle on Wire */}
-                      <circle cx={190 + (idx * 10) % 40} cy={120 + ((pod.y - 120) * 0.45)} r="2" fill={pod.color} />
-
-                      {/* Pod Node Card (Right) */}
-                      <rect
-                        x="260"
-                        y={pod.y - 14}
-                        width="265"
-                        height="28"
-                        rx="8"
-                        fill={isSelected ? "#FFFFFF" : "#F8FAFC"}
-                        stroke={isSelected ? pod.color : "#E2E8F0"}
-                        strokeWidth={isSelected ? "2" : "1"}
-                        className="transition-all"
-                      />
-
-                      {/* Pod Status Dot */}
-                      <circle cx="275" cy={pod.y} r="4" fill={pod.color} />
-
-                      {/* Pod Name */}
-                      <text
-                        x="288"
-                        y={pod.y + 3.5}
-                        fill="#1E293B"
-                        fontSize="9.5"
-                        fontWeight={isSelected ? "bold" : "600"}
-                        fontFamily="monospace"
-                      >
-                        {pod.name}
-                      </text>
-
-                      {/* Telemetry Badge (Latency & Role) */}
-                      <text
-                        x="475"
-                        y={pod.y + 3.5}
-                        fill={pod.color}
-                        fontSize="9"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        fontFamily="monospace"
-                      >
-                        {pod.lat} • {pod.role === "CANARY" ? "Canary" : "Active"}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+            {/* Ingress Route Selector Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-3 pb-1 border-t border-slate-100">
+              {[
+                { name: "fraud-detector:v3", id: "dep-prod-01", rps: "1,240 rps", role: "PROD" },
+                { name: "customer-churn:v2", id: "dep-prod-02", rps: "650 rps", role: "PROD" },
+                { name: "customer-churn:v3", id: "dep-canary-02", rps: "75 rps", role: "CANARY" },
+                { name: "demand-forecaster:v2", id: "dep-prod-03", rps: "420 rps", role: "PROD" },
+                { name: "credit-risk:v1", id: "dep-prod-04", rps: "310 rps", role: "PROD" },
+                { name: "sentiment-bert:v1", id: "dep-stg-05", rps: "145 rps", role: "STG" },
+              ].map((pod) => {
+                const isSelected = selectedNodeId === pod.id;
+                return (
+                  <button
+                    key={pod.id}
+                    onClick={() => setSelectedNodeId(pod.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${pod.role === "CANARY" ? "bg-blue-400" : pod.role === "STG" ? "bg-amber-400" : "bg-emerald-400"}`} />
+                    <span>{pod.name}</span>
+                    <span className="opacity-70 text-[10px]">{pod.rps}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Selected Node Telemetry Strip */}
-            <div className="mt-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-              {activeNode ? (
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{activeNode.model_name}</span>
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
-                      v{activeNode.model_version} • Port {activeNode.port}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      activeNode.role === "CANARY"
-                        ? "bg-blue-100 text-blue-800"
-                        : activeNode.role === "STAGING"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}>
-                      {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 font-mono text-[11px]">
-                    <span className="text-emerald-700 font-bold">RPS: {activeNode.rps} req/s</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-blue-700 font-bold">P95: {activeNode.latency_p95}ms</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-purple-700 font-bold">RAM: {activeNode.memory_mb} MB</span>
-                  </div>
+            {activeNode && (
+              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-800">{activeNode.model_name}</span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
+                    v{activeNode.model_version} • Port {activeNode.port}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeNode.role === "CANARY"
+                      ? "bg-blue-100 text-blue-800"
+                      : activeNode.role === "STAGING"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-emerald-100 text-emerald-800"
+                  }`}>
+                    {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
+                  </span>
                 </div>
-              ) : (
-                <span className="text-slate-400">Click any pod node in the topology mesh to inspect routing telemetry</span>
-              )}
-            </div>
+                <div className="flex items-center gap-3 font-mono text-[11px]">
+                  <span className="text-emerald-700 font-bold">RPS: {activeNode.rps} req/s</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-blue-700 font-bold">P95: {activeNode.latency_p95}ms</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600 font-medium">RAM: {activeNode.memory_mb} MB</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
@@ -603,136 +639,196 @@ export const DeploymentsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* VISUAL 2: Stephen Few's Executive Bullet Charts (Target SLA vs Actuals) (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* VISUAL 2: Fleet SLA Benchmarking (Ranked Horizontal Bar Chart) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Gauge className="w-5 h-5 text-[#3BB48C]" />
-                  Executive SLA Bullet Graphs
+                  Fleet SLA Benchmarking
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Actual serving telemetry benchmarked against contract SLA thresholds
+                <p className="text-sm text-slate-500 mt-1">
+                  P95 Inference Latency (ms) ranked by endpoint
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                100% Passed
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                SLA: &lt; 15ms
               </span>
             </div>
 
-            {/* Stephen Few Bullet Graphs Stack */}
-            <div className="space-y-4 pt-1">
-              {/* Bullet 1: P95 Response Latency (ms) - Lower is better */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">P95 Inference Latency (ms)</span>
-                  <span className="font-mono text-emerald-700 font-bold">3.6 ms (Target &lt; 15.0ms)</span>
-                </div>
-                {/* Qualitative background bands: 0-5ms (Optimal), 5-15ms (Acceptable), 15-25ms (Breached) */}
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  {/* Band 1: Optimal (0-20% = 5ms/25ms) */}
-                  <div className="h-full bg-emerald-100/60" style={{ width: "20%" }} title="Optimal: < 5ms" />
-                  {/* Band 2: Acceptable (20-60% = 15ms/25ms) */}
-                  <div className="h-full bg-amber-100/50" style={{ width: "40%" }} title="Acceptable: 5-15ms" />
-                  {/* Band 3: Critical (60-100%) */}
-                  <div className="h-full bg-rose-100/50" style={{ width: "40%" }} title="Critical: > 15ms" />
-
-                  {/* Quantitative Value Bar (Actual = 3.6ms / 25ms = 14.4%) */}
-                  <div className="absolute left-0 h-2.5 bg-slate-900 rounded-r" style={{ width: "14.4%" }} />
-
-                  {/* Target SLA Marker Line (15ms / 25ms = 60%) */}
-                  <div className="absolute h-5 w-1 bg-rose-600 rounded" style={{ left: "60%" }} title="SLA Limit: 15ms" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>0ms (Optimal)</span>
-                  <span className="text-rose-600 font-bold">| Target SLA: 15ms</span>
-                  <span>25ms</span>
-                </div>
-              </div>
-
-              {/* Bullet 2: Fleet Cluster Uptime Availability (%) - Higher is better */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">Container Availability Uptime</span>
-                  <span className="font-mono text-emerald-700 font-bold">99.98% (Target &gt; 99.90%)</span>
-                </div>
-                {/* Qualitative background bands */}
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  <div className="h-full bg-rose-100/50" style={{ width: "70%" }} />
-                  <div className="h-full bg-amber-100/50" style={{ width: "20%" }} />
-                  <div className="h-full bg-emerald-100/60" style={{ width: "10%" }} />
-
-                  {/* Quantitative Value Bar (Actual = 99.98%) */}
-                  <div className="absolute left-0 h-2.5 bg-[#3BB48C] rounded-r" style={{ width: "99.8%" }} />
-
-                  {/* Target Marker (99.90%) */}
-                  <div className="absolute h-5 w-1 bg-slate-900 rounded" style={{ left: "90%" }} title="SLA: 99.9%" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>95.0%</span>
-                  <span className="text-slate-800 font-bold">| Target: 99.9%</span>
-                  <span>100.0%</span>
-                </div>
-              </div>
-
-              {/* Bullet 3: CPU Headroom Saturation (%) */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-bold text-slate-800">Cluster CPU Saturation</span>
-                  <span className="font-mono text-slate-800 font-bold">36.4% (Autoscale at 75%)</span>
-                </div>
-                <div className="relative h-6 w-full rounded-lg overflow-hidden flex items-center bg-slate-100 border border-slate-200">
-                  <div className="h-full bg-emerald-100/60" style={{ width: "50%" }} />
-                  <div className="h-full bg-amber-100/50" style={{ width: "25%" }} />
-                  <div className="h-full bg-rose-100/50" style={{ width: "25%" }} />
-
-                  {/* Quantitative Value Bar (Actual = 36.4%) */}
-                  <div className="absolute left-0 h-2.5 bg-blue-600 rounded-r" style={{ width: "36.4%" }} />
-
-                  {/* Threshold Marker (75%) */}
-                  <div className="absolute h-5 w-1 bg-amber-600 rounded" style={{ left: "75%" }} title="Scale Trigger: 75%" />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
-                  <span>0% (Idle)</span>
-                  <span className="text-amber-600 font-bold">| Autoscale: 75%</span>
-                  <span>100% (Ceiling)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Semicircular Speedometer Telemetry Dials */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
-                {/* SVG 180-deg Speedometer Arc */}
-                <svg viewBox="0 0 60 36" className="w-12 h-8 select-none">
-                  <path d="M 6 30 A 24 24 0 0 1 54 30" fill="none" stroke="#E2E8F0" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 6 30 A 24 24 0 0 1 51 20" fill="none" stroke="#10B981" strokeWidth="6" strokeLinecap="round" />
-                </svg>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Error Budget</span>
-                  <span className="text-sm font-bold text-emerald-700 font-mono">98.4% Left</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
-                {/* SVG 180-deg Speedometer Arc */}
-                <svg viewBox="0 0 60 36" className="w-12 h-8 select-none">
-                  <path d="M 6 30 A 24 24 0 0 1 54 30" fill="none" stroke="#E2E8F0" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 6 30 A 24 24 0 0 1 36 8" fill="none" stroke="#3B82F6" strokeWidth="6" strokeLinecap="round" />
-                </svg>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mesh Ingress</span>
-                  <span className="text-sm font-bold text-blue-700 font-mono">18.4 MB/s</span>
-                </div>
-              </div>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
+                    { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
+                    { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
+                    { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
+                    { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
+                    { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
+                  ].sort((a, b) => b.lat - a.lat)}
+                  layout="vertical"
+                  margin={{ top: 0, right: 15, left: 10, bottom: 0 }}
+                  barSize={14}
+                >
+                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
+                  <XAxis type="number" domain={[0, 16]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={p.name}
+                          payload={[
+                            { name: "P95 Latency", value: `${p.lat} ms`, color: p.color },
+                            { name: "SLA Threshold", value: "15.0 ms", color: PALETTE.rose },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <ReferenceLine x={15} stroke={PALETTE.rose} strokeDasharray="4 4" opacity={0.6} label={{ value: "SLA limit", position: "insideTopLeft", fill: PALETTE.rose, fontSize: 10 }} />
+                  <Bar dataKey="lat" radius={[0, 4, 4, 0]}>
+                    {[
+                      { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
+                      { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
+                      { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
+                      { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
+                      { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
+                      { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
+                    ].sort((a, b) => b.lat - a.lat).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>SLA Standard: Tier-1 Production Contract</span>
-            <span className="text-slate-800 font-bold">Zero Violations in 30d</span>
+            <span className="text-slate-800 font-bold">100% Endpoints Compliant</span>
           </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Canary Traffic Split & Reliability (Error Rate vs p99) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+            Canary Traffic Split
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-2">fraud-detector · progressive rollout v2 → v3</p>
+          <div className="h-48 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <RechartsTooltip />
+                <Pie data={CANARY_SPLIT} dataKey="value" nameKey="name" innerRadius="64%" outerRadius="94%" startAngle={90} endAngle={-270} paddingAngle={3} cornerRadius={6} stroke="none">
+                  {CANARY_SPLIT.map((c) => (
+                    <Cell key={c.name} fill={c.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-3xl font-extrabold text-slate-900">{CANARY_SPLIT[1].value}%</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">on v3 canary</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-5 mt-3 text-xs font-medium text-slate-600">
+            {CANARY_SPLIT.map((c) => (
+              <span key={c.name} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.fill }} />
+                {c.name} · <strong className="text-slate-900">{c.value}%</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#3BB48C]" />
+                Reliability: Error Rate vs. p99 Latency
+              </h3>
+              <p className="text-sm text-slate-500 mt-1 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">SLO 99.9%</span>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={RELIABILITY} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="p99" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                <YAxis yAxisId="err" orientation="right" domain={[0, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <RechartsTooltip content={<BiTooltip />} />
+                <ReferenceLine yAxisId="err" y={0.5} stroke="#F43F5E" strokeDasharray="4 4" label={{ value: "Error budget", fill: "#F43F5E", fontSize: 10, position: "insideTopRight" }} />
+                <Line yAxisId="p99" type="monotone" dataKey="p99" name="p99 (ms)" stroke={PALETTE.violet} strokeWidth={2.5} dot={false} />
+                <Line yAxisId="err" type="stepAfter" dataKey="err" name="Error rate (%)" stroke="#F43F5E" strokeWidth={2} dot={{ r: 2.5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Resource Heatmap & Release Timeline ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-[#3BB48C]" />
+            CPU Utilization Heatmap
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Per container, last 12 hours — darker = hotter</p>
+          <div className="space-y-1.5">
+            {HEATMAP.map((row) => (
+              <div key={row.name} className="flex items-center gap-3">
+                <span className="w-28 shrink-0 text-xs font-mono text-slate-600 truncate">{row.name}</span>
+                <div className="flex-1 grid grid-cols-12 gap-1">
+                  {row.cpu.map((v, i) => (
+                    <div
+                      key={i}
+                      title={`${row.name} · ${v}% CPU`}
+                      className="h-6 rounded-md transition hover:scale-110 hover:ring-2 hover:ring-slate-300"
+                      style={{ background: v > 80 ? "#F43F5E" : PALETTE.brand, opacity: 0.15 + (v / 100) * 0.85 }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between mt-4 text-[11px] text-slate-400 font-mono">
+            <span>-12h</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#F43F5E]" /> &gt;80% saturation</span>
+            <span>now</span>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Workflow className="w-5 h-5 text-[#3BB48C]" />
+            Release Timeline
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Recent deploys, rollbacks and scaling events</p>
+          <ol className="relative border-l border-slate-200 ml-2 space-y-4">
+            {RELEASES.map((r) => (
+              <li key={r.id} className="ml-4">
+                <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white" style={{ background: r.color }} />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-slate-900">{r.title}</span>
+                  <span className="text-[11px] text-slate-400">{r.when}</span>
+                </div>
+                <div className="text-xs text-slate-500">{r.detail}</div>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 

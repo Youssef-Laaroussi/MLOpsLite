@@ -1,20 +1,21 @@
 """SQLAlchemy models for multi-channel alert engine."""
 
 import enum
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime
 
 from sqlalchemy import (
-    Enum as SAEnum,
+    JSON,
+    DateTime,
     ForeignKey,
     String,
     Text,
-    DateTime,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class AlertSeverity(str, enum.Enum):
@@ -42,26 +43,22 @@ class Alert(Base, UUIDMixin, TimestampMixin):
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    model_name: Mapped[str | None] = mapped_column(
-        String(200), nullable=True, index=True
-    )
+    model_name: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     deployment_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("deployments.id", ondelete="SET NULL"), nullable=True, index=True
     )
     event_type: Mapped[str] = mapped_column(
-        String(100), nullable=False, doc="Event type: DATA_DRIFT, PERFORMANCE_DROP, CONTAINER_CRASH, LATENCY_SPIKE"
+        String(100),
+        nullable=False,
+        doc="Event type: DATA_DRIFT, PERFORMANCE_DROP, CONTAINER_CRASH, LATENCY_SPIKE",
     )
     severity: Mapped[AlertSeverity] = mapped_column(
         SAEnum(AlertSeverity, name="alert_severity", create_constraint=True),
         default=AlertSeverity.WARNING,
         nullable=False,
     )
-    title: Mapped[str] = mapped_column(
-        String(300), nullable=False
-    )
-    message: Mapped[str] = mapped_column(
-        Text, nullable=False
-    )
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
     details_json: Mapped[dict | None] = mapped_column(
         JSON, nullable=True, doc="Metric scores, feature names, or stack traces"
     )
@@ -71,9 +68,5 @@ class Alert(Base, UUIDMixin, TimestampMixin):
         server_default="OPEN",
         nullable=False,
     )
-    acknowledged_by: Mapped[str | None] = mapped_column(
-        String(100), nullable=True
-    )
-    resolved_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    acknowledged_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

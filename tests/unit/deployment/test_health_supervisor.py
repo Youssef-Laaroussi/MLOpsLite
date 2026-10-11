@@ -1,11 +1,12 @@
 """Unit tests for DeploymentSupervisor health probing and crash detection (Issue #13)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.deployment.supervisor import DeploymentSupervisor
 from packages.deployment.docker_manager import DockerManager
+from packages.deployment.supervisor import DeploymentSupervisor
 
 
 @pytest.fixture

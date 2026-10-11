@@ -12,9 +12,9 @@ from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
 from packages.core.schemas.project import (
     ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
     ProjectListResponse,
+    ProjectResponse,
+    ProjectUpdate,
 )
 from packages.core.services.project_service import ProjectService
 

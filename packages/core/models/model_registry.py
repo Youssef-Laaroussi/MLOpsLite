@@ -3,17 +3,18 @@
 import enum
 
 from sqlalchemy import (
-    Enum as SAEnum,
+    JSON,
     ForeignKey,
     Integer,
     String,
     Text,
-    Float,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from packages.core.db.base import Base, UUIDMixin, TimestampMixin
+from packages.core.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class ModelStage(str, enum.Enum):
@@ -58,7 +59,6 @@ class ModelVersion(Base, UUIDMixin, TimestampMixin):
     stage: Mapped[ModelStage] = mapped_column(
         SAEnum(ModelStage, name="model_stage", create_constraint=True),
         default=ModelStage.DEVELOPMENT,
-        server_default="DEVELOPMENT",
         nullable=False,
     )
     mlflow_run_id: Mapped[str | None] = mapped_column(
@@ -76,6 +76,4 @@ class ModelVersion(Base, UUIDMixin, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    model: Mapped["RegisteredModel"] = relationship(
-        "RegisteredModel", back_populates="versions"
-    )
+    model: Mapped["RegisteredModel"] = relationship("RegisteredModel", back_populates="versions")

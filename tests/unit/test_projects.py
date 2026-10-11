@@ -4,9 +4,9 @@ Tests project CRUD, slug validation, pagination, and conflict detection.
 """
 
 import pytest
-from packages.core.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
-from packages.core.models.project import Project, ProjectStatus
 
+from packages.core.models.project import Project, ProjectStatus
+from packages.core.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 
 # ── Schema validation tests ─────────────────────────────────
 
@@ -70,9 +70,18 @@ class TestProjectModel:
 
     def test_model_has_expected_columns(self):
         column_names = {c.name for c in Project.__table__.columns}
-        expected = {"id", "name", "slug", "description", "git_url",
-                    "default_branch", "config_yaml", "status",
-                    "created_at", "updated_at"}
+        expected = {
+            "id",
+            "name",
+            "slug",
+            "description",
+            "git_url",
+            "default_branch",
+            "config_yaml",
+            "status",
+            "created_at",
+            "updated_at",
+        }
         assert expected.issubset(column_names)
 
     def test_slug_column_is_unique(self):

@@ -5,13 +5,15 @@ and collect live resource utilization metrics (CPU, Memory, I/O).
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
+    from docker.errors import APIError, DockerException, NotFound
+
     import docker
-    from docker.errors import DockerException, NotFound, APIError
+
     _DOCKER_AVAILABLE = True
 except ImportError:
     docker = None  # type: ignore
@@ -35,7 +37,7 @@ class DockerManager:
         """Lazily initialize the Docker client."""
         if self._client is None and _DOCKER_AVAILABLE:
             try:
-                self._client = docker.from_env()
+                self._client = docker.from_env()  # type: ignore[attr-defined,union-attr]
                 self._initialized = True
             except DockerException as e:
                 logger.warning("Docker daemon is not reachable: %s", e)
@@ -58,22 +60,26 @@ class DockerManager:
         model_version: int,
         host_port: int,
         image: str = DEFAULT_IMAGE,
-        environment: Optional[Dict[str, str]] = None,
+        environment: dict[str, str] | None = None,
         memory_limit: str = "1g",
         cpu_limit: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Launch an inference container bound to host_port."""
         container_name = f"mlite-{model_name}-v{model_version}-{host_port}"
         env = environment or {}
-        env.update({
-            "MODEL_NAME": model_name,
-            "MODEL_VERSION": str(model_version),
-            "PORT": "8000",
-        })
+        env.update(
+            {
+                "MODEL_NAME": model_name,
+                "MODEL_VERSION": str(model_version),
+                "PORT": "8000",
+            }
+        )
 
         if not self.is_available:
             # Simulated run for offline/testing environments
-            logger.info("Docker daemon unavailable; generating mock container info for %s", container_name)
+            logger.info(
+                "Docker daemon unavailable; generating mock container info for %s", container_name
+            )
             return {
                 "container_id": f"simulated-{container_name}",
                 "name": container_name,
@@ -127,7 +133,7 @@ class DockerManager:
             logger.warning("Error stopping container %s: %s", container_id, e)
             return False
 
-    def get_container_status(self, container_id: str) -> Dict[str, Any]:
+    def get_container_status(self, container_id: str) -> dict[str, Any]:
         """Inspect container state and exit code."""
         if not self.is_available:
             return {
@@ -143,7 +149,9 @@ class DockerManager:
             state = container.attrs.get("State", {})
             return {
                 "container_id": container.id,
-                "status": "RUNNING" if state.get("Running") else ("STOPPED" if state.get("ExitCode") == 0 else "FAILED"),
+                "status": "RUNNING"
+                if state.get("Running")
+                else ("STOPPED" if state.get("ExitCode") == 0 else "FAILED"),
                 "exit_code": state.get("ExitCode"),
                 "error": state.get("Error"),
                 "started_at": state.get("StartedAt"),
@@ -158,7 +166,7 @@ class DockerManager:
                 "simulated": False,
             }
 
-    def get_container_stats(self, container_id: str) -> Dict[str, float]:
+    def get_container_stats(self, container_id: str) -> dict[str, float]:
         """Collect live CPU % and Memory MB usage from Docker stats."""
         if not self.is_available:
             return {
@@ -176,13 +184,11 @@ class DockerManager:
             cpu_stats = stats.get("cpu_stats", {})
             precpu_stats = stats.get("precpu_stats", {})
 
-            cpu_delta = (
-                cpu_stats.get("cpu_usage", {}).get("total_usage", 0)
-                - precpu_stats.get("cpu_usage", {}).get("total_usage", 0)
-            )
-            system_delta = (
-                cpu_stats.get("system_cpu_usage", 0)
-                - precpu_stats.get("system_cpu_usage", 0)
+            cpu_delta = cpu_stats.get("cpu_usage", {}).get("total_usage", 0) - precpu_stats.get(
+                "cpu_usage", {}
+            ).get("total_usage", 0)
+            system_delta = cpu_stats.get("system_cpu_usage", 0) - precpu_stats.get(
+                "system_cpu_usage", 0
             )
             num_cpus = cpu_stats.get("online_cpus", 1) or 1
 

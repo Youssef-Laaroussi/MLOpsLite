@@ -19,12 +19,68 @@ import {
   ArrowRight,
   Sliders,
   Filter,
+  Clock,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
 import { fetchModels, promoteModelVersion } from "../api/client";
 import { RegisteredModel } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import {
+  ComposedChart,
+  PieChart,
+  Pie,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  AreaChart,
+  Area,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  Legend,
+  ReferenceLine,
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+
+const REGISTRY_GROWTH = [
+  { month: "May", registered: 4, promoted: 1 },
+  { month: "Jun", registered: 6, promoted: 2 },
+  { month: "Jul", registered: 9, promoted: 3 },
+  { month: "Aug", registered: 11, promoted: 4 },
+  { month: "Sep", registered: 13, promoted: 5 },
+  { month: "Oct", registered: 15, promoted: 6 },
+];
+
+const GOVERNANCE = [
+  { name: "Signature", value: 100, fill: PALETTE.brand },
+  { name: "Lineage", value: 93, fill: PALETTE.blue },
+  { name: "Approvals", value: 87, fill: PALETTE.violet },
+  { name: "Model Cards", value: 73, fill: PALETTE.amber },
+];
+
+const CHALLENGERS = [
+  { name: "fraud-detector v3 (champion)", acc: 0.971, lat: 2.4, mb: 14, fill: PALETTE.brand },
+  { name: "customer-churn v2", acc: 0.942, lat: 3.8, mb: 22, fill: PALETTE.blue },
+  { name: "demand-forecast v4", acc: 0.918, lat: 5.2, mb: 48, fill: PALETTE.violet },
+  { name: "sentiment-bert v1", acc: 0.954, lat: 12.6, mb: 130, fill: PALETTE.amber },
+  { name: "fraud-detector v2", acc: 0.935, lat: 3.1, mb: 12, fill: PALETTE.slate },
+];
+
+const PROMOTION_EVENTS = [
+  { id: 1, model: "fraud-detector", version: 3, from: "Staging", to: "Production", by: "a.benali", when: "2h ago", color: PALETTE.brand },
+  { id: 2, model: "customer-churn-xgb", version: 2, from: "Candidate", to: "Staging", by: "s.karim", when: "1d ago", color: PALETTE.blue },
+  { id: 3, model: "sentiment-bert", version: 1, from: "Development", to: "Candidate", by: "m.idrissi", when: "3d ago", color: PALETTE.amber },
+  { id: 4, model: "fraud-detector", version: 2, from: "Production", to: "Archived", by: "a.benali", when: "5d ago", color: PALETTE.slate },
+];
 
 // Realistic production baseline models for Data Analyst & MLOps evaluation
 const DEFAULT_MODELS: (RegisteredModel & { framework?: string; latency_ms?: number; size_mb?: number })[] = [
@@ -271,7 +327,7 @@ export const ModelsPage: React.FC = () => {
       {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
             <Box className="w-7 h-7 text-[#3BB48C]" />
             Model Registry &amp; Governance
             <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
@@ -363,199 +419,301 @@ export const ModelsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Stepped Promotion Pipeline & Benchmark Footprint Matrix (NO DONUTS!) ── */}
+      {/* ── Visual Analytics Row: Promotion Pipeline Bar Chart & Benchmark Footprint Matrix ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CARD 1: Model Lifecycle & Promotion Pipeline (7 cols) - Stepped Flow / Pipeline Stage Bars */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CARD 1: Model Promotion Pipeline & Stages (7 cols) - Enterprise Standard Bar Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Layers className="w-5 h-5 text-[#3BB48C]" />
                   Model Promotion Pipeline &amp; Stages
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Gated progression from training sandbox to live production serving
+                <p className="text-sm text-slate-500 mt-1">
+                  Active model count distribution across lifecycle promotion stages
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Single-Active Enforced
               </span>
             </div>
 
-            {/* Stepped Progression Flow */}
-            <div className="space-y-3 pt-1">
-              {/* Stage 1: Development */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "DEVELOPMENT" ? "ALL" : "DEVELOPMENT")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "DEVELOPMENT"
-                    ? "bg-slate-100 border-slate-400"
-                    : "bg-slate-50 border-slate-200/80 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
-                    1
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Development (Sandbox)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Experimental training &amp; hyperparameter tuning</span>
+            {/* Donut: stage distribution (click a slice to filter) */}
+            {(() => {
+              const stageData = [
+                { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: PALETTE.slate },
+                { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: PALETTE.amber },
+                { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: PALETTE.blue },
+                { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: PALETTE.brand },
+              ];
+              const total = models.length || 1;
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 mt-2">
+                  <div className="h-[230px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <BiTooltip
+                                active
+                                label={d.stage}
+                                payload={[
+                                  { name: "Active Models", value: d.count, color: d.fill },
+                                  { name: "Share of Registry", value: `${Math.round((d.count / total) * 100)}%`, color: PALETTE.slate },
+                                ]}
+                              />
+                            );
+                          }}
+                        />
+                        <Pie
+                          data={stageData}
+                          dataKey="count"
+                          nameKey="stage"
+                          innerRadius="62%"
+                          outerRadius="92%"
+                          paddingAngle={3}
+                          cornerRadius={6}
+                          stroke="none"
+                          onClick={(entry) => setStageFilter(stageFilter === entry.stageKey ? "ALL" : entry.stageKey)}
+                          className="cursor-pointer"
+                        >
+                          {stageData.map((s) => (
+                            <Cell key={s.stageKey} fill={s.fill} fillOpacity={stageFilter === "ALL" || stageFilter === s.stageKey ? 1 : 0.3} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-3xl font-extrabold text-slate-900">{models.length}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Versions</span>
+                    </div>
                   </div>
+                  <ul className="space-y-2.5">
+                    {stageData.map((s) => (
+                      <li key={s.stageKey}>
+                        <button
+                          onClick={() => setStageFilter(stageFilter === s.stageKey ? "ALL" : s.stageKey)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition ${
+                            stageFilter === s.stageKey ? "border-slate-300 bg-slate-50" : "border-slate-100 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 font-semibold text-slate-700">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} />
+                            {s.stage}
+                          </span>
+                          <span className="font-mono text-xs text-slate-500">
+                            <strong className="text-slate-900">{s.count}</strong> · {Math.round((s.count / total) * 100)}%
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-slate-700 text-xs">{devCount} models</span>
-                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-slate-500 h-full rounded-full" style={{ width: `${(devCount / models.length) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 2: Candidate */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "CANDIDATE" ? "ALL" : "CANDIDATE")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "CANDIDATE"
-                    ? "bg-amber-100/60 border-amber-400"
-                    : "bg-amber-50/50 border-amber-200/80 hover:border-amber-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-800 font-bold text-xs flex items-center justify-center">
-                    2
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Candidate (Validation)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Statistical profiling &amp; schema integrity testing</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-amber-700 text-xs">{candidateCount} models</span>
-                  <div className="w-24 h-2 bg-amber-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${(candidateCount / models.length) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 3: Staging */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "STAGING" ? "ALL" : "STAGING")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "STAGING"
-                    ? "bg-blue-100/60 border-blue-400"
-                    : "bg-blue-50/50 border-blue-200/80 hover:border-blue-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-blue-200 text-blue-800 font-bold text-xs flex items-center justify-center">
-                    3
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-800 block">Staging (Shadow / Canary)</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Pre-release load testing &amp; drift calibration</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-blue-700 text-xs">{stagingCount} models</span>
-                  <div className="w-24 h-2 bg-blue-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(stagingCount / models.length) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 4: Production */}
-              <div
-                onClick={() => setStageFilter(stageFilter === "PRODUCTION" ? "ALL" : "PRODUCTION")}
-                className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                  stageFilter === "PRODUCTION"
-                    ? "bg-emerald-100/70 border-emerald-400"
-                    : "bg-emerald-50/60 border-emerald-200 hover:border-emerald-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-[#3BB48C] text-white font-bold text-xs flex items-center justify-center">
-                    4
-                  </span>
-                  <div>
-                    <span className="font-bold text-xs text-slate-900 block flex items-center gap-2">
-                      Production (Live Inference)
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Active endpoints serving sub-15ms predictions</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-black text-emerald-800 text-xs">{productionCount} models</span>
-                  <div className="w-24 h-2 bg-emerald-100 rounded-full overflow-hidden hidden sm:block">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${(productionCount / models.length) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 font-mono">
             <span>Promotion Gate: Cryptographic Hash Locked</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Audit Trail Enabled
             </span>
           </div>
         </div>
 
-        {/* CARD 2: Model Latency & Memory Footprint (5 cols) - Multi-Metric Horizontal Progress Bars */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CARD 2: Model Latency & Memory Footprint (5 cols) - Multi-Metric Composed Chart */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
-                  Model Latency &amp; Footprint
+                  Model Footprint vs. Speed
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Inference speed (P95 ms) vs package footprint (MB)
+                <p className="text-sm text-slate-500 mt-1">
+                  Latency (ms) vs. Memory Size (MB) trade-off
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
-                Sub-15ms SLA Met
+            </div>
+
+            <div className="h-[250px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={[
+                    { name: "fraud-det.", lat: 2.4, size: 14.2 },
+                    { name: "cust-churn", lat: 3.8, size: 22.5 },
+                    { name: "demand-c.", lat: 5.2, size: 38.4 },
+                    { name: "sent-bert", lat: 12.6, size: 145.0 },
+                  ]}
+                  margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="name" tick={{...AXIS_TICK, fontSize: 10}} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}MB`} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "#F1F5F9" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={label}
+                          payload={payload.map(p => ({
+                            name: p.name === "lat" ? "Inference Latency" : "Memory Footprint",
+                            value: p.name === "lat" ? `${p.value} ms` : `${p.value} MB`,
+                            color: p.color
+                          }))}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar yAxisId="left" dataKey="lat" fill={PALETTE.brand} radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Line yAxisId="right" type="monotone" dataKey="size" stroke={PALETTE.violet} strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-100 text-sm font-medium">
+            <span className="flex items-center gap-2 text-slate-700">
+              <span className="w-3 h-3 rounded-[3px] bg-[#3BB48C]"></span>
+              Latency (ms)
+            </span>
+            <span className="flex items-center gap-2 text-slate-700">
+              <span className="w-3 h-[3px] bg-[#8B5CF6]"></span>
+              Footprint (MB)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Registry Growth & Governance Scorecard ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#3BB48C]" />
+            Registry Growth &amp; Promotion Velocity
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={REGISTRY_GROWTH} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gReg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gProd" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.violet} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={PALETTE.violet} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <RechartsTooltip content={<BiTooltip />} />
+                <Area type="monotone" dataKey="registered" name="Registered" stroke={PALETTE.brand} strokeWidth={2.5} fill="url(#gReg)" />
+                <Area type="monotone" dataKey="promoted" name="Promoted to Prod" stroke={PALETTE.violet} strokeWidth={2.5} fill="url(#gProd)" />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            Governance Scorecard
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-2">Registry compliance coverage (% of versions)</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart data={GOVERNANCE} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
+                <RechartsTooltip />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+            {GOVERNANCE.map((g) => (
+              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
+                  {g.name}
+                </span>
+                <strong className="text-slate-900">{g.value}%</strong>
               </span>
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            {/* Benchmarking Comparison Rows */}
-            <div className="space-y-3.5">
-              {[
-                { name: "fraud-detector", framework: "XGBoost", latency: 2.4, size: "14.2 MB", barColor: "bg-emerald-500", pct: 92 },
-                { name: "customer-churn", framework: "LightGBM", latency: 3.8, size: "22.5 MB", barColor: "bg-blue-500", pct: 78 },
-                { name: "demand-forecaster", framework: "PyTorch", latency: 5.2, size: "38.4 MB", barColor: "bg-sky-500", pct: 64 },
-                { name: "sentiment-bert", framework: "Transformers", latency: 12.6, size: "145.0 MB", barColor: "bg-purple-500", pct: 40 },
-              ].map((bench) => (
-                <div key={bench.name} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:border-slate-200 transition">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-800 truncate max-w-[130px]">{bench.name}</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200/80 text-slate-700 font-bold">
-                        {bench.framework}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono text-[11px]">
-                      <span className="font-bold text-slate-900">{bench.latency} ms</span>
-                      <span className="text-slate-400">•</span>
-                      <span className="text-slate-500">{bench.size}</span>
-                    </div>
-                  </div>
+      {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+            Champion vs. Challenger
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis type="number" dataKey="lat" name="Latency" domain={[0, 14]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                <YAxis type="number" dataKey="acc" name="Accuracy" domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                <ZAxis type="number" dataKey="mb" range={[90, 420]} />
+                <ReferenceLine y={0.94} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "SLA accuracy", fill: PALETTE.brand, fontSize: 10, position: "insideTopRight" }} />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0].payload;
+                    return (
+                      <BiTooltip
+                        active
+                        label={p.name}
+                        payload={[
+                          { name: "Accuracy", value: `${(p.acc * 100).toFixed(1)}%`, color: p.fill },
+                          { name: "p95 Latency", value: `${p.lat} ms`, color: PALETTE.slate },
+                          { name: "Footprint", value: `${p.mb} MB`, color: PALETTE.slate },
+                        ]}
+                      />
+                    );
+                  }}
+                />
+                <Scatter data={CHALLENGERS}>
+                  {CHALLENGERS.map((c) => (
+                    <Cell key={c.name} fill={c.fill} fillOpacity={0.85} stroke="#fff" strokeWidth={2} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-                  {/* Horizontal Speed Bar */}
-                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                    <div className={`h-full ${bench.barColor} rounded-full`} style={{ width: `${bench.pct}%` }} />
-                  </div>
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#3BB48C]" />
+            Promotion Audit Trail
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Latest stage transitions with approver</p>
+          <ol className="relative border-l border-slate-200 ml-2 space-y-4">
+            {PROMOTION_EVENTS.map((e) => (
+              <li key={e.id} className="ml-4">
+                <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white" style={{ background: e.color }} />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-slate-900">{e.model} <span className="font-mono text-xs text-slate-400">v{e.version}</span></span>
+                  <span className="text-[11px] text-slate-400">{e.when}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>FastAPI Container Runtime</span>
-            <span className="text-slate-700 font-bold">P99 SLA: 14.8 ms</span>
-          </div>
+                <div className="text-xs text-slate-500">{e.from} → <strong style={{ color: e.color }}>{e.to}</strong> · by {e.by}</div>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 

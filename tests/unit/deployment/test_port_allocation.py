@@ -1,13 +1,16 @@
 """Unit tests for PortAllocator and dynamic port collision handling (Issue #11)."""
 
-import socket
 import pytest
 
-from packages.deployment.ports import PortAllocator, PortAllocationError
+from packages.deployment.ports import PortAllocationError, PortAllocator
 
 
 class TestPortAllocator:
     """Tests for host port allocation, range scanning, and collision prevention."""
+
+    @pytest.fixture(autouse=True)
+    def mock_port_free(self, monkeypatch):
+        monkeypatch.setattr(PortAllocator, "is_port_free_on_host", lambda self, port: True)
 
     def test_default_initialization(self):
         allocator = PortAllocator()

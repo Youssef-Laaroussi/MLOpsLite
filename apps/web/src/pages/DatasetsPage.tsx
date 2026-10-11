@@ -29,6 +29,19 @@ import {
 import { StatCard } from "../components/StatCard";
 import { fetchDatasets } from "../api/client";
 import { Dataset, DatasetColumn } from "../api/types";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
 // Realistic baseline datasets tailored for Data Analyst exploration
 const SAMPLE_DATASETS: Dataset[] = [
@@ -469,85 +482,131 @@ export const DatasetsPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Segmented Capacity Progress Bar */}
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-700">Storage Volume by Format</span>
-                <span className="font-mono font-bold text-slate-900">{formatBytes(totalSizeBytes || 86700000)}</span>
+            {/* Format Distribution Donut Chart */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8 mt-2">
+              <div className="h-40 w-40 shrink-0 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Parquet", value: 45.1, color: PALETTE.blue },
+                        { name: "CSV", value: 26.0, color: PALETTE.violet },
+                        { name: "JSON", value: 15.6, color: PALETTE.amber }
+                      ]}
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={4}
+                      dataKey="value"
+                      stroke="none"
+                      cornerRadius={4}
+                    >
+                      {[
+                        { name: "Parquet", value: 45.1, color: PALETTE.blue },
+                        { name: "CSV", value: 26.0, color: PALETTE.violet },
+                        { name: "JSON", value: 15.6, color: PALETTE.amber }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      cursor={false}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <BiTooltip
+                            active
+                            label={p.name}
+                            payload={[{ name: "Size", value: `${p.value} MB`, color: p.color }]}
+                          />
+                        );
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                  <span className="text-xl font-bold text-slate-900 tracking-tight">86.6</span>
+                </div>
               </div>
-
-              {/* Multi-segment horizontal bar */}
-              <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                <div
-                  className="bg-blue-500 hover:bg-blue-600 transition-all"
-                  style={{ width: "52%" }}
-                  title="Parquet: 52% (45.1 MB)"
-                />
-                <div
-                  className="bg-purple-500 hover:bg-purple-600 transition-all"
-                  style={{ width: "30%" }}
-                  title="CSV: 30% (26.0 MB)"
-                />
-                <div
-                  className="bg-orange-400 hover:bg-orange-500 transition-all"
-                  style={{ width: "18%" }}
-                  title="JSON: 18% (15.6 MB)"
-                />
-              </div>
-
-              {/* Format Legend */}
-              <div className="flex items-center justify-between text-[11px] pt-1 text-slate-500 font-mono">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" /> Parquet (52%)
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" /> CSV (30%)
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-orange-400" /> JSON (18%)
-                </span>
+              
+              <div className="space-y-3 w-full max-w-[220px]">
+                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 font-bold text-slate-800">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
+                      Parquet
+                    </span>
+                    <span className="font-mono font-bold text-blue-700">52%</span>
+                  </div>
+                </div>
+                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 font-bold text-slate-800">
+                      <span className="w-2.5 h-2.5 rounded-full bg-violet-500 shadow-sm" />
+                      CSV
+                    </span>
+                    <span className="font-mono font-bold text-violet-700">30%</span>
+                  </div>
+                </div>
+                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 font-bold text-slate-800">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
+                      JSON
+                    </span>
+                    <span className="font-mono font-bold text-amber-700">18%</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Data Hygiene Linear Score Indicators */}
-            <div className="space-y-3.5 pt-1">
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Completeness &amp; Hygiene
-                  </span>
-                  <span className="font-mono font-bold text-emerald-700">{avgQualityScore}%</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full"
-                    style={{ width: `${avgQualityScore}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-blue-500" /> SHA-256 Checksum Integrity
-                  </span>
-                  <span className="font-mono font-bold text-blue-700">100%</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: "100%" }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-500" /> Storage Deduplication
-                  </span>
-                  <span className="font-mono font-bold text-purple-700">2.8x Ratio</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full" style={{ width: "85%" }} />
-                </div>
+            {/* Data Hygiene Scores - Clean Thin Horizontal Bars */}
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Data Quality & Health Index</h4>
+              <div className="h-44 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    layout="vertical"
+                    data={[
+                      { name: "Completeness", value: avgQualityScore, color: PALETTE.brand, display: `${avgQualityScore}%` },
+                      { name: "Integrity (SHA-256)", value: 100, color: PALETTE.blue, display: "100%" },
+                      { name: "Deduplication", value: 85, color: PALETTE.violet, display: "2.8x" },
+                    ]}
+                    margin={{ top: 0, right: 20, left: -10, bottom: 0 }}
+                    barSize={10}
+                  >
+                    <CartesianGrid {...GRID_PROPS} horizontal={false} vertical={true} />
+                    <XAxis type="number" hide domain={[0, 100]} />
+                    <YAxis type="category" dataKey="name" tick={{...AXIS_TICK, fontSize: 11, fontWeight: 600}} axisLine={false} tickLine={false} width={130} />
+                    <RechartsTooltip 
+                      cursor={{ fill: "#F8FAFC" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <BiTooltip
+                            active
+                            label={p.name}
+                            payload={[{ name: "Score", value: p.display, color: p.color }]}
+                          />
+                        );
+                      }}
+                    />
+                    <Bar dataKey="value" radius={4} background={{ fill: '#F1F5F9', radius: 4 }}>
+                      {
+                        [
+                          { name: "Completeness", value: avgQualityScore, color: PALETTE.brand, display: `${avgQualityScore}%` },
+                          { name: "Integrity (SHA-256)", value: 100, color: PALETTE.blue, display: "100%" },
+                          { name: "Deduplication", value: 85, color: PALETTE.violet, display: "2.8x" },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

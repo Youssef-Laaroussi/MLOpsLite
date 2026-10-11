@@ -16,7 +16,9 @@ class ProjectCreate(BaseModel):
     """Payload for creating a new project."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Human-readable project name")
-    slug: str | None = Field(None, min_length=3, max_length=50, description="URL-safe unique identifier")
+    slug: str | None = Field(
+        None, min_length=3, max_length=50, description="URL-safe unique identifier"
+    )
     description: str | None = Field(None, max_length=2000)
     git_url: str | None = Field(None, max_length=500)
     default_branch: str = Field("main", max_length=100)

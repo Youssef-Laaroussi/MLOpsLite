@@ -8,11 +8,10 @@ Tests:
 
 import os
 import uuid
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from packages.tracking.client import MLflowTrackingClient
-
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
@@ -45,9 +44,10 @@ class TestMLflowIntegration:
             pytest.skip("MLflow server unreachable; running in mock mode")
 
     def test_log_parameters_and_metrics(self, tracking_client):
-        with patch.object(tracking_client, "log_param") as mock_param, \
-             patch.object(tracking_client, "log_metric") as mock_metric:
-
+        with (
+            patch.object(tracking_client, "log_param") as mock_param,
+            patch.object(tracking_client, "log_metric") as mock_metric,
+        ):
             tracking_client.log_param("run-123", "learning_rate", 0.01)
             tracking_client.log_metric("run-123", "accuracy", 0.945)
 

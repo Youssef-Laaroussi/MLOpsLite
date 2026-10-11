@@ -1,8 +1,5 @@
 """Unit tests for ModelPerformanceMonitor and degradation detection (Issue #20)."""
 
-import pytest
-from unittest.mock import AsyncMock
-
 from packages.monitoring.model_monitor import ModelPerformanceMonitor
 
 

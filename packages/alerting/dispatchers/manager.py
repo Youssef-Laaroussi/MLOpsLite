@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from typing import List, Optional
 
 from packages.alerting.dispatchers.base import BaseDispatcher
 from packages.core.models.alert import Alert
@@ -15,7 +14,7 @@ class NotificationManager:
 
     def __init__(
         self,
-        dispatchers: Optional[List[BaseDispatcher]] = None,
+        dispatchers: list[BaseDispatcher] | None = None,
         max_retries: int = 3,
         initial_backoff: float = 1.0,
     ) -> None:
@@ -27,7 +26,7 @@ class NotificationManager:
         """Register a notification dispatcher."""
         self.dispatchers.append(dispatcher)
 
-    async def broadcast_alert(self, alert: Alert) -> List[bool]:
+    async def broadcast_alert(self, alert: Alert) -> list[bool]:
         """Deliver alert to all configured channels with exponential backoff retry."""
         results = []
         for dispatcher in self.dispatchers:

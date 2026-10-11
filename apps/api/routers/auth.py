@@ -8,45 +8,44 @@ Provides:
 - /api/v1/users — User CRUD (admin only)
 """
 
-import hashlib
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.config import get_settings
 from apps.api.dependencies import get_db
-from apps.api.errors import NotFoundError, ConflictError
-from packages.core.models.user import User, UserRole, ApiKey
+from apps.api.errors import ConflictError, NotFoundError
 from packages.core.models.audit import AuditAction
+from packages.core.models.user import ApiKey, User, UserRole
+from packages.core.schemas.security import (
+    ApiKeyCreate,
+    ApiKeyListResponse,
+    ApiKeyResponse,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+    UserCreate,
+    UserListResponse,
+    UserMeResponse,
+    UserRegisterRequest,
+    UserResponse,
+    UserUpdate,
+)
 from packages.core.security.auth import (
-    hash_password,
-    verify_password,
+    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
     create_access_token,
     create_refresh_token,
     decode_token,
-    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    hash_password,
+    verify_password,
 )
-from packages.core.security.rbac import get_permissions, Permission
 from packages.core.security.dependencies import (
     get_current_user,
     require_role,
-    require_permission,
 )
-from packages.core.schemas.security import (
-    LoginRequest,
-    TokenResponse,
-    RefreshRequest,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserListResponse,
-    UserMeResponse,
-    ApiKeyCreate,
-    ApiKeyResponse,
-    ApiKeyListResponse,
-)
+from packages.core.security.rbac import get_permissions
 
 router = APIRouter(prefix="/api/v1", tags=["Authentication & Users"])
 
@@ -65,9 +64,7 @@ async def login(
 
     # Find user by username or email
     result = await db.execute(
-        select(User).where(
-            (User.username == payload.username) | (User.email == payload.username)
-        )
+        select(User).where((User.username == payload.username) | (User.email == payload.username))
     )
     user = result.scalar_one_or_none()
 
@@ -83,9 +80,10 @@ async def login(
             detail="User account is deactivated",
         )
 
+    settings = get_settings()
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
+    access_token = create_access_token(token_data, secret_key=settings.jwt_secret_key)
+    refresh_token = create_refresh_token(token_data, secret_key=settings.jwt_secret_key)
 
     # Audit log
     audit = AuditService(session=db)
@@ -109,27 +107,32 @@ async def login(
 
 @router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    payload: UserCreate,
+    payload: UserRegisterRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Register a new user account and receive JWT tokens for immediate login."""
-    from packages.core.security.audit import AuditService
+    """Register a new user account and receive JWT tokens for immediate login.
+
+    SECURITY ENFORCEMENT:
+    - Self-registration is strictly assigned standard USER role.
+    - Elevated administrative roles (ADMIN, MAINTAINER) cannot be self-assigned;
+      they must be granted explicitly by an administrator.
+    """
     from sqlalchemy import func
+
+    from packages.core.security.audit import AuditService
 
     # Check for existing email or username
     existing = await db.execute(
-        select(User).where(
-            (User.email == payload.email) | (User.username == payload.username)
-        )
+        select(User).where((User.email == payload.email) | (User.username == payload.username))
     )
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
 
-    # If first user, make admin, otherwise keep role from payload (or DEVELOPER)
+    # If first user on a cold system, make admin; otherwise strictly USER
     count_res = await db.execute(select(func.count(User.id)))
     user_count = count_res.scalar() or 0
-    assigned_role = UserRole.ADMIN if user_count == 0 else (payload.role or UserRole.USER)
+    assigned_role = UserRole.ADMIN if user_count == 0 else UserRole.USER
 
     user = User(
         email=payload.email,
@@ -143,9 +146,10 @@ async def register(
     await db.flush()
     await db.refresh(user)
 
+    settings = get_settings()
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
+    access_token = create_access_token(token_data, secret_key=settings.jwt_secret_key)
+    refresh_token = create_refresh_token(token_data, secret_key=settings.jwt_secret_key)
 
     # Audit log
     audit = AuditService(session=db)
@@ -174,7 +178,8 @@ async def refresh_token(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Exchange a valid refresh token for a new access token pair."""
-    decoded = decode_token(payload.refresh_token)
+    settings = get_settings()
+    decoded = decode_token(payload.refresh_token, secret_key=settings.jwt_secret_key)
     if decoded is None or decoded.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -193,8 +198,8 @@ async def refresh_token(
 
     token_data = {"sub": user.id, "email": user.email, "role": user.role.value}
     return {
-        "access_token": create_access_token(token_data),
-        "refresh_token": create_refresh_token(token_data),
+        "access_token": create_access_token(token_data, secret_key=settings.jwt_secret_key),
+        "refresh_token": create_refresh_token(token_data, secret_key=settings.jwt_secret_key),
         "token_type": "bearer",
         "expires_in": DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
@@ -275,9 +280,7 @@ async def list_api_keys(
 ) -> Any:
     """List all API keys for the authenticated user."""
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.user_id == current_user.id)
-        .order_by(ApiKey.created_at.desc())
+        select(ApiKey).where(ApiKey.user_id == current_user.id).order_by(ApiKey.created_at.desc())
     )
     keys = list(result.scalars().all())
     # Never return full key in list view
@@ -336,9 +339,7 @@ async def create_user(
 
     # Check for existing user
     existing = await db.execute(
-        select(User).where(
-            (User.email == payload.email) | (User.username == payload.username)
-        )
+        select(User).where((User.email == payload.email) | (User.username == payload.username))
     )
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
@@ -378,9 +379,7 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """List all user accounts (admin only)."""
-    result = await db.execute(
-        select(User).order_by(User.created_at.desc())
-    )
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
     users = list(result.scalars().all())
     return {"users": users, "total": len(users)}
 

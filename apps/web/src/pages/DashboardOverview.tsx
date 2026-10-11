@@ -20,8 +20,10 @@ import {
   Shield,
   HardDrive,
   Layers,
-  LineChart,
-  PieChart,
+  LineChart as LineChartIcon,
+  PieChart as PieChartIcon,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -37,6 +39,75 @@ import {
 import { RegisteredModel, Deployment, AuditLog, User } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  PieChart,
+  Pie,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+  FunnelChart,
+  Funnel,
+  LabelList,
+  Legend,
+} from "recharts";
+import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+
+const SPEND_DATA = [
+  { m: "May", training: 820, serving: 540, storage: 210 },
+  { m: "Jun", training: 910, serving: 580, storage: 225 },
+  { m: "Jul", training: 1040, serving: 640, storage: 240 },
+  { m: "Aug", training: 980, serving: 690, storage: 252 },
+  { m: "Sep", training: 890, serving: 720, storage: 261 },
+  { m: "Oct", training: 760, serving: 735, storage: 270 },
+];
+
+const FUNNEL_DATA = [
+  { name: "Datasets ingested", value: 100, fill: PALETTE.blue },
+  { name: "Experiments run", value: 78, fill: PALETTE.violet },
+  { name: "Models registered", value: 46, fill: PALETTE.amber },
+  { name: "Staged & validated", value: 28, fill: PALETTE.brand },
+  { name: "In production", value: 18, fill: "#1A7456" },
+];
+
+const MODEL_BENCHMARK_FLEET = [
+  { model: "fraud-det v3", full_name: "fraud-detector (v3)", auc: 0.971, f1: 0.938, latency: "2.4ms", framework: "XGBoost", samples: "125,000" },
+  { model: "sentiment v1", full_name: "sentiment-bert (v1)", auc: 0.954, f1: 0.951, latency: "12.6ms", framework: "PyTorch", samples: "85,000" },
+  { model: "churn-xgb v2", full_name: "churn-xgboost (v2)", auc: 0.945, f1: 0.904, latency: "3.8ms", framework: "LightGBM", samples: "92,500" },
+  { model: "demand v2", full_name: "demand-forecast (v2)", auc: 0.928, f1: 0.892, latency: "5.2ms", framework: "Prophet", samples: "64,000" },
+  { model: "credit-sc v1", full_name: "credit-scoring (v1)", auc: 0.962, f1: 0.924, latency: "1.9ms", framework: "CatBoost", samples: "110,000" },
+];
+
+const FLEET_DRIFT_TRAJECTORY = [
+  { date: "Oct 01", fraud_f1: 0.942, churn_f1: 0.912, bert_f1: 0.950, avg_f1: 0.935 },
+  { date: "Oct 04", fraud_f1: 0.938, churn_f1: 0.908, bert_f1: 0.952, avg_f1: 0.933 },
+  { date: "Oct 08", fraud_f1: 0.931, churn_f1: 0.902, bert_f1: 0.949, avg_f1: 0.927 },
+  { date: "Oct 12", fraud_f1: 0.924, churn_f1: 0.898, bert_f1: 0.948, avg_f1: 0.923 },
+  { date: "Oct 15", fraud_f1: 0.915, churn_f1: 0.894, bert_f1: 0.947, avg_f1: 0.919 },
+  { date: "Oct 18", fraud_f1: 0.968, churn_f1: 0.942, bert_f1: 0.954, avg_f1: 0.955 },
+  { date: "Oct 22", fraud_f1: 0.971, churn_f1: 0.945, bert_f1: 0.953, avg_f1: 0.956 },
+  { date: "Oct 26", fraud_f1: 0.969, churn_f1: 0.943, bert_f1: 0.954, avg_f1: 0.955 },
+  { date: "Oct 30", fraud_f1: 0.972, churn_f1: 0.945, bert_f1: 0.955, avg_f1: 0.957 },
+  { date: "Nov 02", fraud_f1: 0.971, churn_f1: 0.944, bert_f1: 0.954, avg_f1: 0.956 },
+];
+
+const SERVICES = [
+  { name: "MLflow Tracking", latency: "42ms", uptime: "99.98%", color: PALETTE.brand },
+  { name: "Model Serving", latency: "5ms", uptime: "99.99%", color: PALETTE.brand },
+  { name: "Feature Store", latency: "18ms", uptime: "99.95%", color: PALETTE.brand },
+  { name: "Artifact Store (S3)", latency: "61ms", uptime: "99.90%", color: PALETTE.amber },
+  { name: "Drift Evaluator", latency: "120ms", uptime: "99.97%", color: PALETTE.brand },
+];
 
 export const DashboardOverview: React.FC = () => {
   const { user, hasRole, hasPermission } = useAuth();
@@ -276,7 +347,7 @@ export const DashboardOverview: React.FC = () => {
     { time: "12:00", p50: 3.4, p95: 6.2, p99: 10.4, reqs: 1890 },
     { time: "16:00", p50: 3.1, p95: 5.9, p99: 9.3, reqs: 1650 },
     { time: "20:00", p50: 2.6, p95: 5.1, p99: 8.1, reqs: 920 },
-    { time: "Now",   p50: 2.8, p95: 5.4, p99: 8.4, reqs: 1420 },
+    { time: "Now", p50: 2.8, p95: 5.4, p99: 8.4, reqs: 1420 },
   ];
 
   // ── Stage Breakdown for Donut Chart ────────────────────────────────────
@@ -301,7 +372,7 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight">
             Overview
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -315,22 +386,20 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "governance"
-                    ? "bg-slate-900 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "governance"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 <Shield className="w-3.5 h-3.5" />
                 Admin
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  adminViewMode === "ml"
-                    ? "bg-[#3BB48C] text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "ml"
+                  ? "bg-[#3BB48C] text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 <Box className="w-3.5 h-3.5" />
                 ML View
@@ -358,11 +427,10 @@ export const DashboardOverview: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
-                      timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
+                      ? "bg-[#EBF8F4] text-[#1A7456]"
+                      : "text-slate-600 hover:bg-slate-50"
+                      }`}
                   >
                     {range}
                   </button>
@@ -399,7 +467,7 @@ export const DashboardOverview: React.FC = () => {
                 </div>
                 <span className="text-xs font-bold text-slate-700">{res.name}</span>
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-4 mb-2 tracking-tight">
+              <div className="text-2xl font-semibold font-display text-slate-900 mt-4 mb-2 tracking-tight">
                 {res.count}
               </div>
               <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
@@ -415,49 +483,40 @@ export const DashboardOverview: React.FC = () => {
       {/* ── (Matching user image with 0 to 80 Y-Axis and 5 Bars) ───── */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs hover:border-slate-300 transition-all">
-        <h3 className="text-base font-extrabold text-slate-900 mb-6">
+        <h3 className="text-base font-semibold text-slate-900 mb-6">
           Resources overview
         </h3>
 
         {/* Chart Canvas */}
-        <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 pb-8">
-          {/* Horizontal grid lines with Y-Axis values: 80, 60, 40, 20, 0 */}
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-4">
-            {[80, 60, 40, 20, 0].map((tick) => (
-              <div key={tick} className="flex items-center w-full">
-                <span className="text-[11px] font-bold text-slate-400 w-8 text-right pr-3 shrink-0 font-mono">
-                  {tick}
-                </span>
-                <div className="w-full border-t border-slate-100 border-dashed" />
-              </div>
-            ))}
-          </div>
-
-          {/* The 5 Colored Bars */}
-          <div className="relative z-10 w-full pl-8 flex items-end justify-around h-full pb-2">
-            {resourcesData.map((res) => {
-              const heightPct = (res.count / 80) * 100;
-              return (
-                <div key={res.name} className="flex flex-col items-center group h-full justify-end w-1/6">
-                  {/* Number label on top */}
-                  <span className="text-xs font-bold text-slate-700 mb-2 font-mono group-hover:scale-110 transition-transform">
-                    {res.count}
-                  </span>
-
-                  {/* Colored Bar */}
-                  <div
-                    className={`w-full max-w-[80px] ${res.barColor} ${res.barHover} rounded-md transition-all duration-300 shadow-xs cursor-pointer`}
-                    style={{ height: `${heightPct}%` }}
-                  />
-
-                  {/* Category label below */}
-                  <span className="text-xs font-bold text-slate-600 mt-3 group-hover:text-slate-900 transition-colors">
-                    {res.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+        <div className="h-64 w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={resourcesData}
+              margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <RechartsTooltip
+                cursor={{ fill: "#F1F5F9" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <BiTooltip
+                      active
+                      label={label}
+                      payload={[{ name: "Count", value: payload[0].value, color: PALETTE.brand }]}
+                    />
+                  );
+                }}
+              />
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={54}>
+                {[PALETTE.brand, PALETTE.cyan, PALETTE.violet, PALETTE.amber, PALETTE.blue].map((col, index) => (
+                  <Cell key={`cell-${index}`} fill={col} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -470,7 +529,7 @@ export const DashboardOverview: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#3BB48C]" />
                   Inference & Telemetry Latency Curve
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
@@ -488,11 +547,10 @@ export const DashboardOverview: React.FC = () => {
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${
-                      latencyMetricFilter === mode
-                        ? "bg-white text-slate-900 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${latencyMetricFilter === mode
+                      ? "bg-white text-slate-900 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-900"
+                      }`}
                   >
                     {mode}
                   </button>
@@ -503,107 +561,57 @@ export const DashboardOverview: React.FC = () => {
             {/* Quick KPI Ribbon */}
             <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-center">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Median (P50)</span>
-                <span className="text-sm font-black text-slate-900 font-mono">2.8 ms</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Median (P50)</span>
+                <span className="text-sm font-semibold text-slate-900 font-mono">2.8 ms</span>
               </div>
               <div className="border-x border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
-                <span className="text-sm font-black text-[#1A7456] font-mono">5.4 ms</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
+                <span className="text-sm font-semibold text-[#1A7456] font-mono">5.4 ms</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
-                <span className="text-sm font-black text-emerald-600 font-mono">99.98%</span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
+                <span className="text-sm font-semibold text-emerald-600 font-mono">99.98%</span>
               </div>
             </div>
 
-            {/* SVG Multi-Line Latency Graph */}
-            <div className="relative h-48 w-full mt-2">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 border-b border-slate-200">
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
-              </div>
-
-              <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="latencyAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                  <path
-                    d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42 L 100 60 L 0 60 Z"
-                    fill="url(#latencyAreaGrad)"
+            {/* SVG Multi-Line Latency Graph -> Recharts LineChart */}
+            <div className="h-48 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={latencyData}
+                  margin={{ top: 5, right: 0, left: -25, bottom: 0 }}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="time" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <RechartsTooltip
+                    cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <BiTooltip
+                          active
+                          label={label}
+                          payload={[
+                            { name: "P99 Spike", value: `${payload.find(p => p.dataKey === "p99")?.value} ms`, color: PALETTE.rose },
+                            { name: "P95 Tail", value: `${payload.find(p => p.dataKey === "p95")?.value} ms`, color: PALETTE.amber },
+                            { name: "P50 Median", value: `${payload.find(p => p.dataKey === "p50")?.value} ms`, color: PALETTE.brand }
+                          ]}
+                        />
+                      );
+                    }}
                   />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
-                  <path
-                    d="M 0 18 Q 16 22, 33 14 T 66 8 T 83 14 T 100 12"
-                    fill="none"
-                    stroke="#F43F5E"
-                    strokeWidth="1.8"
-                    strokeDasharray="2,2"
-                    strokeLinecap="round"
-                  />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
-                  <path
-                    d="M 0 30 Q 16 34, 33 26 T 66 22 T 83 28 T 100 24"
-                    fill="none"
-                    stroke="#F59E0B"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                )}
-
-                {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                  <path
-                    d="M 0 45 Q 16 48, 33 42 T 66 38 T 83 44 T 100 42"
-                    fill="none"
-                    stroke="#3BB48C"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    className="drop-shadow-[0_2px_4px_rgba(59,180,140,0.3)]"
-                  />
-                )}
-
-                {latencyData.map((pt, idx) => {
-                  const x = (idx / (latencyData.length - 1)) * 100;
-                  const yP50 = 60 - (pt.p50 / 12) * 60;
-                  return (
-                    <g key={idx} className="cursor-pointer" onMouseEnter={() => setHoveredLatencyPoint(pt)}>
-                      <circle
-                        cx={x}
-                        cy={yP50}
-                        r="2.5"
-                        fill="#FFFFFF"
-                        stroke="#3BB48C"
-                        strokeWidth="1.8"
-                        className="hover:r-[4.5] transition-all"
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {hoveredLatencyPoint && (
-                <div className="absolute top-2 right-4 bg-slate-900 text-white text-[11px] font-mono px-3 py-1.5 rounded-xl shadow-xl border border-slate-700 pointer-events-none animate-in fade-in">
-                  <span className="text-slate-400">{hoveredLatencyPoint.time}: </span>
-                  <span className="text-[#3BB48C] font-bold">P50: {hoveredLatencyPoint.p50}ms</span> •{" "}
-                  <span className="text-amber-400 font-bold">P95: {hoveredLatencyPoint.p95}ms</span> •{" "}
-                  <span className="text-slate-300">{hoveredLatencyPoint.reqs} req/s</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 mt-2 px-1">
-              {latencyData.map((d, i) => (
-                <span key={i}>{d.time}</span>
-              ))}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
+                    <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={2} strokeDasharray="4 4" dot={false} activeDot={{ r: 4 }} />
+                  )}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
+                    <Line type="monotone" dataKey="p95" stroke={PALETTE.amber} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  )}
+                  {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
+                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -624,158 +632,102 @@ export const DashboardOverview: React.FC = () => {
         </div>
 
         {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                  <PieChartIcon className="w-5 h-5 text-[#3BB48C]" />
                   Model Registry Distribution
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-0.5">
                   Breakdown across lifecycle promotion stages
                 </p>
               </div>
               <Link
                 to="/app/models"
-                className="text-xs font-bold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
               >
                 Catalog <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-4">
-              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="12" />
-
-                  {/* Production Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth={selectedStage === "PRODUCTION" ? "14" : "12"}
-                    strokeDasharray={`${prodStroke} ${circumference}`}
-                    strokeDashoffset="0"
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("PRODUCTION")}
-                    onMouseLeave={() => setSelectedStage(null)}
+            {/* Recharts Donut PieChart with Center Text */}
+            <div className="relative h-48 w-full my-2 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Production", value: stageCounts.PRODUCTION || 6, color: PALETTE.brand },
+                      { name: "Development", value: stageCounts.DEVELOPMENT || 4, color: PALETTE.blue },
+                      { name: "Candidate", value: 3, color: PALETTE.violet },
+                      { name: "Staging", value: stageCounts.STAGING || 2, color: PALETTE.amber },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={78}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "Production", color: PALETTE.brand },
+                      { name: "Development", color: PALETTE.blue },
+                      { name: "Candidate", color: PALETTE.violet },
+                      { name: "Staging", color: PALETTE.amber },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0];
+                      return (
+                        <BiTooltip
+                          active
+                          label={p.name}
+                          payload={[
+                            { name: "Model Count", value: p.value, color: p.payload.color }
+                          ]}
+                        />
+                      );
+                    }}
                   />
-
-                  {/* Staging Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#F59E0B"
-                    strokeWidth={selectedStage === "STAGING" ? "14" : "12"}
-                    strokeDasharray={`${stagStroke} ${circumference}`}
-                    strokeDashoffset={-prodStroke}
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("STAGING")}
-                    onMouseLeave={() => setSelectedStage(null)}
-                  />
-
-                  {/* Development Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#0284C7"
-                    strokeWidth={selectedStage === "DEVELOPMENT" ? "14" : "12"}
-                    strokeDasharray={`${devStroke} ${circumference}`}
-                    strokeDashoffset={-(prodStroke + stagStroke)}
-                    strokeLinecap="round"
-                    className="transition-all duration-500 cursor-pointer"
-                    onMouseEnter={() => setSelectedStage("DEVELOPMENT")}
-                    onMouseLeave={() => setSelectedStage(null)}
-                  />
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {stageCounts.total}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Models
-                  </span>
-                </div>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold font-display text-slate-900">
+                  {stats.models_count || 15}
+                </span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                  Models
+                </span>
               </div>
+            </div>
 
-              <div className="space-y-3 w-full max-w-[200px]">
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "PRODUCTION"
-                      ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("PRODUCTION")}
-                  onMouseLeave={() => setSelectedStage(null)}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      Production
-                    </span>
-                    <span className="font-mono font-bold text-emerald-800">{prodPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.PRODUCTION} Active Endpoints
-                  </span>
-                </div>
-
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "STAGING"
-                      ? "bg-amber-50 border-amber-300 ring-2 ring-amber-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("STAGING")}
-                  onMouseLeave={() => setSelectedStage(null)}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      Staging
-                    </span>
-                    <span className="font-mono font-bold text-amber-800">{stagPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.STAGING} Validation Candidates
-                  </span>
-                </div>
-
-                <div
-                  className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                    selectedStage === "DEVELOPMENT"
-                      ? "bg-sky-50 border-sky-300 ring-2 ring-sky-200"
-                      : "bg-slate-50 border-slate-100 hover:border-slate-200"
-                  }`}
-                  onMouseEnter={() => setSelectedStage("DEVELOPMENT")}
-                  onMouseLeave={() => setSelectedStage(null)}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
-                      Development
-                    </span>
-                    <span className="font-mono font-bold text-sky-800">{devPct}%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {stageCounts.DEVELOPMENT} Experiments
-                  </span>
-                </div>
+            {/* Legend Pills */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" />
+                <span className="text-slate-600 font-medium">Production ({stageCounts.PRODUCTION || 6})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
+                <span className="text-slate-600 font-medium">Development ({stageCounts.DEVELOPMENT || 4})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
+                <span className="text-slate-600 font-medium">Candidate (3)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="text-slate-600 font-medium">Staging ({stageCounts.STAGING || 2})</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Registry Status: Verified</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Zero Unsigned Models
@@ -785,173 +737,407 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 5: RESOURCE GAUGES & DRIFT STABILITY MATRIX ────── */}
+      {/* ── SECTION 5: RESOURCE TELEMETRY & FEATURE DRIFT MATRIX ───── */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Microservices Resource Gauges */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* Microservices Resource Allocation Grouped BarChart */}
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <Cpu className="w-5 h-5 text-[#3BB48C]" />
-                  Infrastructure &amp; Resource Allocation Gauges
+                  Infrastructure &amp; Resource Telemetry
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Live CPU, memory consumption, and local container cluster telemetry
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Live CPU load (%) vs Memory allocation (%) across container pods
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-1 rounded-full">
+              <span className="text-xs font-mono font-semibold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-1 rounded-full">
                 Docker Engine
               </span>
             </div>
 
-            <div className="space-y-3.5 my-2">
-              {/* Service 1: FastAPI */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    FastAPI Core Backend Engine
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-[#1A7456]">
-                    24% CPU • 180 MB RAM • 3.2ms
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-[#3BB48C] to-emerald-400 h-full rounded-full w-[24%]" />
-                </div>
-              </div>
-
-              {/* Service 2: PostgreSQL */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    PostgreSQL 16 Persistence Engine
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-indigo-700">
-                    42% Buffer Pool • 8 Connections Active
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-indigo-500 to-sky-400 h-full rounded-full w-[42%]" />
-                </div>
-              </div>
-
-              {/* Service 3: MinIO S3 */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    MinIO Object Storage S3
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-amber-700">
-                    65% Storage Used • 88.6 MB / 1 GB
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full w-[65%]" />
-                </div>
-              </div>
-
-              {/* Service 4: MLflow */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <div className="flex items-center gap-2 font-bold text-slate-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    MLflow Experiment Tracking Server
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-purple-700">
-                    Port 5000 • 3 Experiments Active
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-400 h-full rounded-full w-[38%]" />
-                </div>
-              </div>
+            <div className="h-52 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { service: "FastAPI", cpu: 24, mem: 35, full: "FastAPI Core Backend Engine" },
+                    { service: "Postgres", cpu: 18, mem: 42, full: "PostgreSQL 16 Persistence Engine" },
+                    { service: "MinIO", cpu: 12, mem: 65, full: "MinIO S3 Object Storage" },
+                    { service: "MLflow", cpu: 15, mem: 38, full: "MLflow Experiment Server" },
+                  ]}
+                  margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
+                  barSize={16}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="service" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full}
+                          payload={[
+                            { name: "CPU Utilization", value: `${payload.find(p => p.dataKey === "cpu")?.value}%`, color: PALETTE.brand },
+                            { name: "Memory Utilization", value: `${payload.find(p => p.dataKey === "mem")?.value}%`, color: PALETTE.indigo },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.indigo} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Cluster Health: 100%</span>
-            <span className="text-[#1A7456] font-bold">All 4 Microservices Operational</span>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> CPU Load (%)
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#6366F1]" /> Memory (%)
+              </span>
+            </div>
+            <span className="text-[#1A7456] font-semibold">4/4 Operational</span>
           </div>
         </div>
 
-        {/* Drift & Accuracy Matrix */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* Feature Drift & SHAP Importance Composed Chart */}
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
-                  Model Drift vs Accuracy Telemetry Matrix
+                  Feature Drift vs. SHAP Importance
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Continuous evaluation of feature distributions (Evidently AI PSI Scores)
+                <p className="text-sm text-slate-500 mt-0.5">
+                  SHAP feature impact (Bar) vs Evidently AI PSI drift score (Line)
                 </p>
               </div>
               <Link
                 to="/app/monitoring"
-                className="text-xs font-bold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
               >
                 Monitoring <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="relative h-44 w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-2/3 bg-emerald-50/40 border-r border-emerald-200/60 pointer-events-none flex items-start p-2">
-                <span className="text-[9px] font-mono font-bold text-emerald-700 uppercase">
-                  Safe Zone (&lt;0.05 PSI)
-                </span>
-              </div>
-              <div className="absolute inset-y-0 right-0 w-1/3 bg-amber-50/30 pointer-events-none flex items-start p-2">
-                <span className="text-[9px] font-mono font-bold text-amber-700 uppercase">
-                  Warning Zone (0.05 - 0.10)
-                </span>
-              </div>
-
-              <div className="absolute inset-x-0 bottom-8 border-b border-slate-200 border-dashed" />
-              <div className="absolute inset-x-0 bottom-20 border-b border-slate-200 border-dashed" />
-
-              {[
-                { name: "transaction_amount", psi: 0.02, acc: 94.2, left: "20%", top: "35%", color: "bg-[#3BB48C]" },
-                { name: "distance_from_home", psi: 0.03, acc: 91.5, left: "34%", top: "48%", color: "bg-emerald-500" },
-                { name: "card_age_months", psi: 0.01, acc: 96.0, left: "12%", top: "25%", color: "bg-teal-500" },
-                { name: "daily_txn_count", psi: 0.04, acc: 88.4, left: "48%", top: "60%", color: "bg-indigo-500" },
-                { name: "merchant_risk_score", psi: 0.045, acc: 92.0, left: "55%", top: "42%", color: "bg-sky-500" },
-              ].map((pt, idx) => (
-                <div
-                  key={idx}
-                  className="absolute group cursor-pointer -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: pt.left, top: pt.top }}
+            <div className="h-52 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={[
+                    { feature: "card_age", shap: 0.35, psi: 0.01, full: "card_age_months" },
+                    { feature: "amount", shap: 0.28, psi: 0.02, full: "transaction_amount" },
+                    { feature: "dist_home", shap: 0.18, psi: 0.03, full: "distance_from_home" },
+                    { feature: "daily_txn", shap: 0.12, psi: 0.04, full: "daily_txn_count" },
+                    { feature: "risk_score", shap: 0.07, psi: 0.045, full: "merchant_risk_score" },
+                  ]}
+                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
                 >
-                  <div className={`w-3.5 h-3.5 rounded-full ${pt.color} ring-4 ring-white shadow-md transition-transform group-hover:scale-150`} />
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-mono px-2 py-1 rounded-md whitespace-nowrap z-20 shadow-lg pointer-events-none">
-                    <strong>{pt.name}</strong> • PSI: {pt.psi} • Acc: {pt.acc}%
-                  </div>
-                </div>
-              ))}
-
-              <div className="absolute bottom-1 inset-x-3 flex justify-between text-[9px] font-mono text-slate-400">
-                <span>0.00 PSI (Zero Drift)</span>
-                <span>0.05 PSI (Threshold)</span>
-                <span>0.10 PSI (Critical)</span>
-              </div>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="feature" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[0, 0.40]} tickFormatter={(v) => v.toFixed(2)} />
+                  <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[0, 0.08]} tickFormatter={(v) => v.toFixed(2)} />
+                  <ReferenceLine
+                    yAxisId="right"
+                    y={0.05}
+                    stroke={PALETTE.amber}
+                    strokeDasharray="4 4"
+                    label={{ value: "Drift (0.05)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full}
+                          payload={[
+                            { name: "SHAP Importance", value: d.shap.toFixed(2), color: PALETTE.blue },
+                            { name: "PSI Drift Score", value: d.psi.toFixed(3), color: PALETTE.brand },
+                            { name: "Status", value: "Stable (< 0.05)", color: PALETTE.brand },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2.5} dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span className="font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              100% In-Bounds • Zero Drift Alerts
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" /> SHAP Importance
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> PSI Drift
+              </span>
+            </div>
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Zero Drift Alerts
             </span>
-            <span className="text-slate-400 font-mono text-[11px]">Evidently AI Validated</span>
           </div>
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── SECTION 5B: PLATFORM SPEND, LIFECYCLE FUNNEL, STORAGE & HEALTH ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-[#3BB48C]" />
+                Platform Spend &amp; Compute
+              </h3>
+              <p className="text-sm text-slate-500 mt-1 mb-4">Monthly cost by workload (USD) — training, serving, storage</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={SPEND_DATA} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
+                <CartesianGrid {...GRID_PROPS} />
+                <XAxis dataKey="m" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `$${v}`} />} />
+                <Area type="monotone" stackId="1" dataKey="training" name="Training" stroke={PALETTE.violet} fill={PALETTE.violet} fillOpacity={0.35} />
+                <Area type="monotone" stackId="1" dataKey="serving" name="Serving" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.35} />
+                <Area type="monotone" stackId="1" dataKey="storage" name="Storage" stroke={PALETTE.blue} fill={PALETTE.blue} fillOpacity={0.35} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#3BB48C]" />
+            MLOps Lifecycle Funnel
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">From raw dataset to production model</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <FunnelChart>
+                <RechartsTooltip />
+                <Funnel dataKey="value" data={FUNNEL_DATA} isAnimationActive>
+                  {FUNNEL_DATA.map((f) => (
+                    <Cell key={f.name} fill={f.fill} />
+                  ))}
+                  <LabelList position="right" fill="#334155" stroke="none" dataKey="name" fontSize={11} />
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* GRAPH 1: Production Model Benchmark & Quality Matrix (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-[#3BB48C]" />
+                  Production Model Benchmark Matrix
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Validation ROC-AUC vs. F1-Score across active production candidate models
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                100% SLA Compliant
+              </span>
+            </div>
+
+            <div className="h-64 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={MODEL_BENCHMARK_FLEET}
+                  margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
+                  barSize={14}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0.80, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                  <ReferenceLine y={0.90} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Gate: 0.90", fill: PALETTE.amber, fontSize: 10, position: "insideBottomLeft" }} />
+                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Target: 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full_name || label}
+                          payload={[
+                            { name: "Framework", value: d.framework, color: PALETTE.slate },
+                            { name: "ROC-AUC", value: typeof d.auc === "number" ? d.auc.toFixed(3) : d.auc, color: PALETTE.brand },
+                            { name: "F1-Score", value: typeof d.f1 === "number" ? d.f1.toFixed(3) : d.f1, color: PALETTE.blue },
+                            { name: "p95 Latency", value: d.latency, color: PALETTE.slate },
+                            { name: "Holdout Samples", value: d.samples, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.blue} radius={[4, 4, 0, 0]} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <span>Holdout Validation: 100k Verified Test Samples</span>
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Zero Model Regressions
+            </span>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            Platform Health
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">Core services status &amp; 30-day uptime</p>
+          <ul className="space-y-2.5">
+            {SERVICES.map((s) => (
+              <li key={s.name} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2 hover:bg-slate-50 transition">
+                <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
+                  <span className="relative flex w-2.5 h-2.5">
+                    <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: s.color }} />
+                    <span className="relative w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+                  </span>
+                  {s.name}
+                </span>
+                <span className="flex items-center gap-3 text-xs font-mono text-slate-500">
+                  <span>{s.latency}</span>
+                  <strong className="text-slate-900">{s.uptime}</strong>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* ── GRAPH 2: Model Performance Trajectory & Continuous Retraining (12 cols) ── */}
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <TrendingUp className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight">
+                Model Performance Stability &amp; Continuous Retraining Trajectory
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                Auto-Retrain Active
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">
+              30-day continuous rolling F1-score tracking concept drift and automated retraining recovery events
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+              <span className="text-slate-400">Fleet Mean F1:</span> <strong className="text-slate-900 font-bold">0.956</strong>
+            </div>
+            <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-mono">
+              <span className="text-emerald-600">Recovery:</span> <strong>+3.7% F1</strong>
+            </div>
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+              <span className="text-slate-400">Drift Protection:</span> <strong className="text-emerald-600 font-bold">Enforced</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={FLEET_DRIFT_TRAJECTORY}
+              margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="gFleetAvg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis domain={[0.88, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+
+              {/* Drift Retrain Threshold */}
+              <ReferenceLine
+                y={0.92}
+                stroke={PALETTE.rose}
+                strokeDasharray="4 4"
+                label={{ value: "Drift Retrain Gate (0.92)", fill: PALETTE.rose, fontSize: 10, position: "insideBottomLeft" }}
+              />
+
+              {/* Retraining Event Marker */}
+              <ReferenceLine
+                x="Oct 18"
+                stroke={PALETTE.brand}
+                strokeWidth={2}
+                strokeDasharray="3 3"
+                label={{ value: "⚡ Automated Retrain & Promotion (v3)", fill: PALETTE.brand, fontSize: 11, fontWeight: 700, position: "top" }}
+              />
+
+              <RechartsTooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <BiTooltip
+                      active
+                      label={`Evaluation Date: ${label}`}
+                      payload={[
+                        { name: "Fleet Average F1", value: payload.find(p => p.dataKey === "avg_f1")?.value?.toFixed(3), color: PALETTE.brand },
+                        { name: "fraud-detector (v3)", value: payload.find(p => p.dataKey === "fraud_f1")?.value?.toFixed(3), color: PALETTE.emerald },
+                        { name: "sentiment-bert (v1)", value: payload.find(p => p.dataKey === "bert_f1")?.value?.toFixed(3), color: PALETTE.violet },
+                        { name: "churn-xgboost (v2)", value: payload.find(p => p.dataKey === "churn_f1")?.value?.toFixed(3), color: PALETTE.blue },
+                      ]}
+                    />
+                  );
+                }}
+              />
+
+              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={3} fill="url(#gFleetAvg)" dot={{ r: 4, fill: PALETTE.brand, strokeWidth: 2, stroke: "#fff" }} />
+              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.emerald} strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={2} dot={false} strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={2} dot={false} />
+
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Telemetry Frequency: Continuous (Every 1,000 Inferences)</span>
+          </div>
+          <span>Evidently AI PSI Engine + Prometheus Exporter Live</span>
+        </div>
+      </div>
+
       {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

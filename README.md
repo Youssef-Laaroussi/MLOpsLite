@@ -162,50 +162,9 @@ curl -X POST http://localhost:8000/predict \
 
 ## Architecture
 
-```
-                                 USER / DATA SCIENTIST
-                                           │
-                          ┌────────────────┴────────────────┐
-                          │                                 │
-                      MLite CLI                         React UI
-                     (Typer + Rich)                  (Vite + Tailwind)
-                          │                                 │
-                          └────────────────┬────────────────┘
-                                           │ REST API / JWT
-                                           ▼
-                                     FastAPI Core
-                                           │
-              ┌────────────────────────────┼────────────────────────────┐
-              ▼                            ▼                            ▼
-         Data Engine               Experiment Engine               Model Engine
-        (DVC + Polars)                  (MLflow)                    (Registry)
-              │                            │                            │
-              └────────────────────────────┼────────────────────────────┘
-                                           │
-                                           ▼
-                              MinIO S3-Compatible Storage
-                                           │
-                                           ▼
-                                   Deployment Engine
-                              (Docker Container Serving)
-                                           │
-                                           ▼
-                                  Prediction REST API
-                                (POST /predict, Health)
-                                           │
-                                           ▼
-                                   Monitoring Engine
-                              (Evidently AI Drift Checks)
-                                           │
-                                  ┌────────┴────────┐
-                                  ▼                 ▼
-                             Data Drift       Model Metrics
-                                  │                 │
-                                  └────────┬────────┘
-                                           ▼
-                                    Alerting Engine
-                             (Webhooks, Slack, Auto-Rollback)
-```
+<p align="center">
+  <img src="assets/architecture.png" alt="MLite System Architecture" width="800" />
+</p>
 
 ---
 

@@ -1,12 +1,12 @@
 """Unit tests for AlertEngine threshold evaluation, cooldown, and lifecycle states (Issue #21)."""
 
-from datetime import datetime, timezone, timedelta
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
-from packages.alerting.engine import AlertEngine
+import pytest
+
 from packages.alerting.dispatchers.manager import NotificationManager
+from packages.alerting.engine import AlertEngine
+from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
 
 
 class TestAlertEngine:

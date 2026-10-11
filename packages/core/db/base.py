@@ -1,25 +1,22 @@
 """SQLAlchemy declarative base and common model mixins."""
 
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
+
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 def utc_now() -> datetime:
     """Return current timezone-aware UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
     """Base declarative class for all MLite SQL entities."""
 
     def __repr__(self) -> str:
-        attrs = ", ".join(
-            f"{k}={v!r}"
-            for k, v in self.__dict__.items()
-            if not k.startswith("_")
-        )
+        attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items() if not k.startswith("_"))
         return f"{self.__class__.__name__}({attrs})"
 
 

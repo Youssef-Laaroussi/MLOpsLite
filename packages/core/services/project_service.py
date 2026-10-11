@@ -1,6 +1,6 @@
 """Project service — business logic for project CRUD operations."""
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.project import Project, ProjectStatus
@@ -15,9 +15,7 @@ class ProjectService:
 
     async def create(self, data: ProjectCreate) -> Project:
         """Create a new project, raising ConflictError on duplicate slug."""
-        existing = await self.session.execute(
-            select(Project).where(Project.slug == data.slug)
-        )
+        existing = await self.session.execute(select(Project).where(Project.slug == data.slug))
         if existing.scalar_one_or_none() is not None:
             from apps.api.errors import ConflictError
 
@@ -39,9 +37,7 @@ class ProjectService:
     async def get_by_slug_or_id(self, slug_or_id: str) -> Project | None:
         """Retrieve a project by slug or UUID."""
         result = await self.session.execute(
-            select(Project).where(
-                (Project.slug == slug_or_id) | (Project.id == slug_or_id)
-            )
+            select(Project).where((Project.slug == slug_or_id) | (Project.id == slug_or_id))
         )
         return result.scalar_one_or_none()
 

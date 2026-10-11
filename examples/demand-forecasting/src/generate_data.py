@@ -1,16 +1,19 @@
 """Synthetic data generator for retail demand forecasting (Issue #38)."""
 
-from datetime import date, timedelta
 import math
-from pathlib import Path
 import random
+from datetime import date, timedelta
+from pathlib import Path
+
 import polars as pl
 from rich.console import Console
 
 console = Console()
 
 
-def generate_demand_data(output_dir: Path | None = None, n_days: int = 180, n_stores: int = 3, n_items: int = 4):
+def generate_demand_data(
+    output_dir: Path | None = None, n_days: int = 180, n_stores: int = 3, n_items: int = 4
+):
     if output_dir is None:
         output_dir = Path(__file__).parent.parent / "data"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -41,26 +44,34 @@ def generate_demand_data(output_dir: Path | None = None, n_days: int = 180, n_st
                 noise = random.gauss(0, max(2.0, expected_sales * 0.08))
                 sales = max(0, int(round(expected_sales + noise)))
 
-                records.append({
-                    "date": current_date.isoformat(),
-                    "store_id": store_id,
-                    "item_id": item_id,
-                    "day_of_week": day_of_week,
-                    "is_weekend": is_weekend,
-                    "promo": promo,
-                    "sales": sales,
-                })
+                records.append(
+                    {
+                        "date": current_date.isoformat(),
+                        "store_id": store_id,
+                        "item_id": item_id,
+                        "day_of_week": day_of_week,
+                        "is_weekend": is_weekend,
+                        "promo": promo,
+                        "sales": sales,
+                    }
+                )
 
     df = pl.DataFrame(records)
 
     # Compute time-series lag and rolling statistics
     df = df.sort(["store_id", "item_id", "date"])
-    df = df.with_columns([
-        pl.col("sales").shift(1).over(["store_id", "item_id"]).alias("lag_1"),
-        pl.col("sales").shift(7).over(["store_id", "item_id"]).alias("lag_7"),
-        pl.col("sales").shift(14).over(["store_id", "item_id"]).alias("lag_14"),
-        pl.col("sales").shift(1).rolling_mean(window_size=7).over(["store_id", "item_id"]).alias("rolling_mean_7"),
-    ]).drop_nulls()
+    df = df.with_columns(
+        [
+            pl.col("sales").shift(1).over(["store_id", "item_id"]).alias("lag_1"),
+            pl.col("sales").shift(7).over(["store_id", "item_id"]).alias("lag_7"),
+            pl.col("sales").shift(14).over(["store_id", "item_id"]).alias("lag_14"),
+            pl.col("sales")
+            .shift(1)
+            .rolling_mean(window_size=7)
+            .over(["store_id", "item_id"])
+            .alias("rolling_mean_7"),
+        ]
+    ).drop_nulls()
 
     # Train / Test split (80% chronological split)
     unique_dates = df.select("date").unique().sort("date")["date"].to_list()
@@ -76,7 +87,7 @@ def generate_demand_data(output_dir: Path | None = None, n_days: int = 180, n_st
     train_df.write_csv(train_path)
     test_df.write_csv(test_path)
 
-    console.print(f"[bold green]✔ Generated demand forecasting datasets:[/bold green]")
+    console.print("[bold green]✔ Generated demand forecasting datasets:[/bold green]")
     console.print(f"  • Train set: {train_path} ({len(train_df)} records)")
     console.print(f"  • Test set:  {test_path} ({len(test_df)} records)")
     return train_path, test_path

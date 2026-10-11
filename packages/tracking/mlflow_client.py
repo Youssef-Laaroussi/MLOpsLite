@@ -2,6 +2,7 @@
 
 import os
 from typing import Any
+
 import mlflow
 from mlflow.tracking import MlflowClient
 
@@ -24,15 +25,15 @@ def configure_mlflow_environment(
     # Set S3/MinIO endpoint and credentials if not already present
     os.environ.setdefault(
         "MLFLOW_S3_ENDPOINT_URL",
-        s3_endpoint or os.getenv("MINIO_ENDPOINT", "http://localhost:9000"),
+        str(s3_endpoint or os.getenv("MINIO_ENDPOINT", "http://localhost:9000")),
     )
     os.environ.setdefault(
         "AWS_ACCESS_KEY_ID",
-        aws_access_key or os.getenv("MINIO_ROOT_USER", "mlite_minio_admin"),
+        str(aws_access_key or os.getenv("MINIO_ROOT_USER", "mlite_minio_admin")),
     )
     os.environ.setdefault(
         "AWS_SECRET_ACCESS_KEY",
-        aws_secret_key or os.getenv("MINIO_ROOT_PASSWORD", "mlite_minio_password"),
+        str(aws_secret_key or os.getenv("MINIO_ROOT_PASSWORD", "mlite_minio_password")),
     )
     os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
     os.environ.setdefault("MLFLOW_S3_IGNORE_TLS", "true")

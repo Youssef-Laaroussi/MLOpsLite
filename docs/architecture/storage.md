@@ -57,8 +57,8 @@ result = storage.upload_file(
     bucket_name="mlite-datasets",
 )
 
-print(result["s3_uri"])   # s3://mlite-datasets/projects/fraud-detection/v1/transactions.csv
-print(result["sha256"])   # 66f466b4...
+print(result["s3_uri"])  # s3://mlite-datasets/projects/fraud-detection/v1/transactions.csv
+print(result["sha256"])  # 66f466b4...
 print(result["size_bytes"])
 ```
 

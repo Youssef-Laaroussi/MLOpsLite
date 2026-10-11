@@ -1,10 +1,9 @@
 """Model performance monitor matching delayed ground-truth feedback with predictions."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.monitoring import (
@@ -26,8 +25,8 @@ class ModelPerformanceMonitor:
         deployment_id: str,
         prediction_id: str,
         ground_truth: Any,
-        predicted_value: Optional[Any] = None,
-        latency_ms: Optional[float] = None,
+        predicted_value: Any | None = None,
+        latency_ms: float | None = None,
     ) -> PredictionFeedback:
         """Store ground-truth observation linked to a prediction ID."""
         feedback = PredictionFeedback(
@@ -43,7 +42,7 @@ class ModelPerformanceMonitor:
         return feedback
 
     @staticmethod
-    def calculate_classification_metrics(y_true: List[Any], y_pred: List[Any]) -> Dict[str, float]:
+    def calculate_classification_metrics(y_true: list[Any], y_pred: list[Any]) -> dict[str, float]:
         """Compute standard classification metrics (accuracy, precision, recall, f1)."""
         if len(y_true) == 0:
             return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0}
@@ -70,7 +69,7 @@ class ModelPerformanceMonitor:
         }
 
     @staticmethod
-    def calculate_regression_metrics(y_true: List[float], y_pred: List[float]) -> Dict[str, float]:
+    def calculate_regression_metrics(y_true: list[float], y_pred: list[float]) -> dict[str, float]:
         """Compute standard regression metrics (MAE, MSE, RMSE, R2)."""
         if len(y_true) == 0:
             return {"mae": 0.0, "rmse": 0.0, "r2": 0.0}
@@ -94,8 +93,8 @@ class ModelPerformanceMonitor:
 
     @staticmethod
     def check_degradation(
-        current_metrics: Dict[str, float],
-        baseline_metrics: Dict[str, float],
+        current_metrics: dict[str, float],
+        baseline_metrics: dict[str, float],
         tolerance_pct: float = 10.0,
     ) -> bool:
         """Check if any primary metric (accuracy, f1) dropped by more than tolerance_pct."""
@@ -112,11 +111,11 @@ class ModelPerformanceMonitor:
     async def record_performance_snapshot(
         self,
         model_name: str,
-        deployment_id: Optional[str],
+        deployment_id: str | None,
         task_type: str,
-        y_true: List[Any],
-        y_pred: List[Any],
-        baseline_metrics: Optional[Dict[str, float]] = None,
+        y_true: list[Any],
+        y_pred: list[Any],
+        baseline_metrics: dict[str, float] | None = None,
         degradation_threshold_pct: float = 10.0,
     ) -> ModelPerformanceHistory:
         """Compute and persist live performance evaluation metrics."""

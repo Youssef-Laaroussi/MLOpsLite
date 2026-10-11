@@ -12,7 +12,7 @@ RUN npm install
 
 COPY apps/web/ ./
 
-RUN npm run build || mkdir -p dist && cp index.html dist/
+RUN npx vite build
 
 # Stage 2: Serve with lightweight Nginx
 FROM nginx:alpine

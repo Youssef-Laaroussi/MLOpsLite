@@ -1,7 +1,6 @@
 """Slack Incoming Webhook alert dispatcher using Block Kit formatting."""
 
 import logging
-from typing import Optional
 
 import httpx
 
@@ -39,7 +38,11 @@ class SlackDispatcher(BaseDispatcher):
                         {"title": "Event", "value": alert.event_type, "short": True},
                         {"title": "Model", "value": alert.model_name or "N/A", "short": True},
                         {"title": "Status", "value": alert.status.value, "short": True},
-                        {"title": "Deployment ID", "value": alert.deployment_id or "N/A", "short": True},
+                        {
+                            "title": "Deployment ID",
+                            "value": alert.deployment_id or "N/A",
+                            "short": True,
+                        },
                     ],
                     "footer": "MLite Alert Engine",
                     "ts": int(alert.created_at.timestamp()) if alert.created_at else None,

@@ -2,15 +2,14 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.dataset import (
     Dataset,
-    DatasetVersion,
     DatasetFormat,
+    DatasetVersion,
 )
 from packages.core.storage.client import StorageClient, get_storage_client
 from packages.data.parser import TabularDataParser
@@ -24,7 +23,7 @@ class DatasetService:
     def __init__(
         self,
         session: AsyncSession,
-        storage_client: Optional[StorageClient] = None,
+        storage_client: StorageClient | None = None,
     ) -> None:
         self.session = session
         self.storage = storage_client or get_storage_client()
@@ -32,9 +31,9 @@ class DatasetService:
     async def create_dataset(
         self,
         name: str,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         format: DatasetFormat = DatasetFormat.CSV,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Dataset:
         """Create a new dataset entry."""
         dataset = Dataset(
@@ -51,9 +50,9 @@ class DatasetService:
     async def register_version(
         self,
         dataset_id: str,
-        file_path: Optional[str | Path] = None,
-        s3_key: Optional[str] = None,
-        description: Optional[str] = None,
+        file_path: str | Path | None = None,
+        s3_key: str | None = None,
+        description: str | None = None,
     ) -> DatasetVersion:
         """Inspect schema, deduplicate via SHA-256, upload to MinIO, and create version."""
         dataset = await self.get_dataset(dataset_id)
@@ -118,8 +117,8 @@ class DatasetService:
 
     async def list_datasets(
         self,
-        project_id: Optional[str] = None,
-    ) -> List[Dataset]:
+        project_id: str | None = None,
+    ) -> list[Dataset]:
         """List registered datasets, optionally filtered by project."""
         query = select(Dataset).order_by(Dataset.created_at.desc())
         if project_id:
@@ -127,14 +126,12 @@ class DatasetService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_dataset(self, dataset_id: str) -> Optional[Dataset]:
+    async def get_dataset(self, dataset_id: str) -> Dataset | None:
         """Fetch dataset by ID."""
-        result = await self.session.execute(
-            select(Dataset).where(Dataset.id == dataset_id)
-        )
+        result = await self.session.execute(select(Dataset).where(Dataset.id == dataset_id))
         return result.scalar_one_or_none()
 
-    async def get_dataset_by_name(self, name: str, project_id: Optional[str] = None) -> Optional[Dataset]:
+    async def get_dataset_by_name(self, name: str, project_id: str | None = None) -> Dataset | None:
         """Fetch dataset by name."""
         query = select(Dataset).where(Dataset.name == name)
         if project_id:
@@ -142,7 +139,7 @@ class DatasetService:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_versions(self, dataset_id: str) -> List[DatasetVersion]:
+    async def get_versions(self, dataset_id: str) -> list[DatasetVersion]:
         """Fetch all versions of a dataset ordered by version descending."""
         query = (
             select(DatasetVersion)
@@ -152,7 +149,7 @@ class DatasetService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_version(self, dataset_id: str, version_num: int) -> Optional[DatasetVersion]:
+    async def get_version(self, dataset_id: str, version_num: int) -> DatasetVersion | None:
         """Fetch specific version of a dataset."""
         query = select(DatasetVersion).where(
             DatasetVersion.dataset_id == dataset_id,

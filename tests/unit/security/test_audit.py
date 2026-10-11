@@ -7,12 +7,12 @@ Tests:
 - Verifying audit records are append-only and cannot be mutated or deleted
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from packages.core.models.audit import AuditLog, AuditAction
+from packages.core.models.audit import AuditAction, AuditLog
 from packages.core.security.audit import AuditService
 
 
@@ -71,7 +71,7 @@ class TestAuditService:
                 id="log-1",
                 action=AuditAction.DEPLOYMENT_CREATE,
                 resource_type="deployment",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
         ]
         session.execute.return_value = mock_result
@@ -81,8 +81,8 @@ class TestAuditService:
             action=AuditAction.DEPLOYMENT_CREATE,
             resource_type="deployment",
             user_id="user-1",
-            from_date=datetime.now(timezone.utc) - timedelta(days=7),
-            to_date=datetime.now(timezone.utc),
+            from_date=datetime.now(UTC) - timedelta(days=7),
+            to_date=datetime.now(UTC),
             limit=25,
         )
 
@@ -97,7 +97,7 @@ class TestAuditService:
             id="log-42",
             action=AuditAction.DEPLOYMENT_ROLLBACK,
             resource_type="deployment",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = expected

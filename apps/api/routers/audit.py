@@ -7,7 +7,7 @@ Provides:
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,8 +16,8 @@ from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
 from packages.core.models.audit import AuditAction
 from packages.core.schemas.security import (
-    AuditLogResponse,
     AuditLogListResponse,
+    AuditLogResponse,
 )
 from packages.core.security.audit import AuditService
 from packages.core.security.dependencies import require_permission
@@ -32,12 +32,14 @@ router = APIRouter(prefix="/api/v1/audit", tags=["Audit Logs"])
     dependencies=[Depends(require_permission(Permission.AUDIT_VIEW))],
 )
 async def list_audit_logs(
-    action: Optional[AuditAction] = Query(None, description="Filter by action"),
-    resource_type: Optional[str] = Query(None, description="Filter by resource type"),
-    resource_id: Optional[str] = Query(None, description="Filter by resource ID"),
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
-    from_date: Optional[datetime] = Query(None, description="Filter logs starting from this timestamp"),
-    to_date: Optional[datetime] = Query(None, description="Filter logs up to this timestamp"),
+    action: AuditAction | None = Query(None, description="Filter by action"),
+    resource_type: str | None = Query(None, description="Filter by resource type"),
+    resource_id: str | None = Query(None, description="Filter by resource ID"),
+    user_id: str | None = Query(None, description="Filter by user ID"),
+    from_date: datetime | None = Query(
+        None, description="Filter logs starting from this timestamp"
+    ),
+    to_date: datetime | None = Query(None, description="Filter logs up to this timestamp"),
     limit: int = Query(50, ge=1, le=500, description="Max entries to return"),
     db: AsyncSession = Depends(get_db),
 ) -> Any:

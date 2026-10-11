@@ -1,16 +1,17 @@
 """Asynchronous database engine and session management."""
 
 import os
-from dotenv import load_dotenv
 from collections.abc import AsyncGenerator
 
-load_dotenv()
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+
+load_dotenv()
 
 
 def get_db_url() -> str:

@@ -5,8 +5,6 @@ Tests Git metadata extraction and tracker environment collection.
 
 import platform
 
-import pytest
-
 from packages.tracking.tracker import (
     _collect_environment_metadata,
     _get_git_sha,

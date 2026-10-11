@@ -9,6 +9,7 @@ import argparse
 import importlib
 import subprocess
 import sys
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -99,10 +100,13 @@ def test_cli_execution() -> bool:
 
 
 def test_database_init() -> bool:
-    console.print("\n[bold cyan]Step 3: Validating Database Engine & Schema Instantiation...[/bold cyan]")
+    console.print(
+        "\n[bold cyan]Step 3: Validating Database Engine & Schema Instantiation...[/bold cyan]"
+    )
     try:
-        from packages.db.session import engine, init_db
         import asyncio
+
+        from packages.db.session import engine, init_db
 
         async def _check():
             await init_db()
@@ -126,11 +130,13 @@ def test_database_init() -> bool:
 
 
 def run_smoke_tests(offline_only: bool = False) -> int:
-    console.print(Panel(
-        "[bold white on blue] MLite Release Candidate Pre-Flight Smoke Test [/bold white on blue]\n"
-        "Verifying architecture readiness for release tagging.",
-        border_style="blue",
-    ))
+    console.print(
+        Panel(
+            "[bold white on blue] MLite Release Candidate Pre-Flight Smoke Test [/bold white on blue]\n"
+            "Verifying architecture readiness for release tagging.",
+            border_style="blue",
+        )
+    )
 
     imports_ok = test_imports()
     cli_ok = test_cli_execution()
@@ -139,26 +145,32 @@ def run_smoke_tests(offline_only: bool = False) -> int:
     success = imports_ok and cli_ok and db_ok
 
     if success:
-        console.print(Panel(
-            "[bold green]ALL PRE-FLIGHT RELEASE CHECKS PASSED![/bold green]\n"
-            "Build is verified and safe for release distribution.",
-            title="Smoke Test Passed",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                "[bold green]ALL PRE-FLIGHT RELEASE CHECKS PASSED![/bold green]\n"
+                "Build is verified and safe for release distribution.",
+                title="Smoke Test Passed",
+                border_style="green",
+            )
+        )
         return 0
     else:
-        console.print(Panel(
-            "[bold red]PRE-FLIGHT RELEASE CHECKS FAILED![/bold red]\n"
-            "Inspect the failure messages above before creating release tag.",
-            title="Smoke Test Failed",
-            border_style="red",
-        ))
+        console.print(
+            Panel(
+                "[bold red]PRE-FLIGHT RELEASE CHECKS FAILED![/bold red]\n"
+                "Inspect the failure messages above before creating release tag.",
+                title="Smoke Test Failed",
+                border_style="red",
+            )
+        )
         return 1
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MLite Release Smoke Test")
-    parser.add_argument("--offline", action="store_true", help="Skip tests requiring external service access")
+    parser.add_argument(
+        "--offline", action="store_true", help="Skip tests requiring external service access"
+    )
     args = parser.parse_args()
 
     sys.exit(run_smoke_tests(offline_only=args.offline))

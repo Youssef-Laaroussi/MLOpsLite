@@ -3,13 +3,13 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 
-from packages.core.models.user import UserRole
 from packages.core.models.audit import AuditAction
-
+from packages.core.models.user import UserRole
 
 # ── Authentication ──────────────────────────────────────────────
+
 
 class LoginRequest(BaseModel):
     """OAuth2 password flow login payload."""
@@ -35,8 +35,22 @@ class RefreshRequest(BaseModel):
 
 # ── User Management ────────────────────────────────────────────
 
+
+class UserRegisterRequest(BaseModel):
+    """Payload for public user self-registration.
+
+    SECURITY: Does not expose role field. All self-registered users
+    are strictly assigned USER role to prevent privilege escalation.
+    """
+
+    email: str = Field(..., min_length=5, max_length=255)
+    username: str = Field(..., min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")
+    password: str = Field(..., min_length=8, max_length=200)
+    full_name: str | None = Field(None, max_length=200)
+
+
 class UserCreate(BaseModel):
-    """Payload to create a new user account."""
+    """Payload to create a new user account (Admin only)."""
 
     email: str = Field(..., min_length=5, max_length=255)
     username: str = Field(..., min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")
@@ -90,6 +104,7 @@ class UserMeResponse(BaseModel):
 
 # ── API Keys ────────────────────────────────────────────────────
 
+
 class ApiKeyCreate(BaseModel):
     """Payload to create a new API key."""
 
@@ -122,6 +137,7 @@ class ApiKeyListResponse(BaseModel):
 
 
 # ── Audit Logs ──────────────────────────────────────────────────
+
 
 class AuditLogResponse(BaseModel):
     """Response for a single audit log entry."""

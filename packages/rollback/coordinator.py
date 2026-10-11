@@ -10,15 +10,14 @@ Orchestrates zero-downtime rollback:
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
 
 import httpx
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.models.deployment import Deployment, DeploymentStatus
-from packages.core.models.model_registry import ModelVersion, ModelStage, RegisteredModel
+from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
 from packages.core.models.rollback import (
     RollbackRecord,
     RollbackStatus,
@@ -43,8 +42,8 @@ class RollbackCoordinator:
     def __init__(
         self,
         session: AsyncSession,
-        docker_manager: Optional[DockerManager] = None,
-        port_allocator: Optional[PortAllocator] = None,
+        docker_manager: DockerManager | None = None,
+        port_allocator: PortAllocator | None = None,
     ) -> None:
         self.session = session
         self.docker = docker_manager or DockerManager()
@@ -55,7 +54,7 @@ class RollbackCoordinator:
     async def execute_rollback(
         self,
         model_name: str,
-        target_version: Optional[int] = None,
+        target_version: int | None = None,
         reason: str = "Manual rollback",
         trigger: RollbackTrigger = RollbackTrigger.MANUAL,
         initiated_by: str = "operator",
@@ -125,15 +124,14 @@ class RollbackCoordinator:
 
                 logger.warning(
                     "Rollback aborted: %s v%d failed health check",
-                    model_name, target_version,
+                    model_name,
+                    target_version,
                 )
                 await self.session.refresh(record)
                 return record
 
             # 7. Update Model Registry stages
-            await self._update_registry_stages(
-                model_name, current_version, target_version
-            )
+            await self._update_registry_stages(model_name, current_version, target_version)
 
             # 8. Mark the new deployment as active and stop the old one
             target_deployment.status = DeploymentStatus.RUNNING
@@ -144,7 +142,7 @@ class RollbackCoordinator:
 
             # 9. Mark rollback complete
             record.status = RollbackStatus.COMPLETED
-            record.completed_at = datetime.now(timezone.utc)
+            record.completed_at = datetime.now(UTC)
             record.details_json = {
                 "health_check": "PASSED",
                 "from_version": current_version,
@@ -157,7 +155,10 @@ class RollbackCoordinator:
 
             logger.info(
                 "Rollback complete: %s v%d → v%d (record=%s)",
-                model_name, current_version, target_version, record.id,
+                model_name,
+                current_version,
+                target_version,
+                record.id,
             )
             return record
 
@@ -166,7 +167,7 @@ class RollbackCoordinator:
         except Exception as exc:
             record.status = RollbackStatus.FAILED
             record.error_message = str(exc)
-            record.completed_at = datetime.now(timezone.utc)
+            record.completed_at = datetime.now(UTC)
             await self.session.flush()
             await self.session.refresh(record)
             logger.error("Rollback failed for %s: %s", model_name, exc)
@@ -174,7 +175,7 @@ class RollbackCoordinator:
 
     async def get_rollback_history(
         self,
-        model_name: Optional[str] = None,
+        model_name: str | None = None,
         limit: int = 50,
     ) -> list[RollbackRecord]:
         """Query rollback audit log history."""
@@ -184,7 +185,7 @@ class RollbackCoordinator:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_rollback(self, rollback_id: str) -> Optional[RollbackRecord]:
+    async def get_rollback(self, rollback_id: str) -> RollbackRecord | None:
         """Get a specific rollback record by ID."""
         result = await self.session.execute(
             select(RollbackRecord).where(RollbackRecord.id == rollback_id)
@@ -193,21 +194,21 @@ class RollbackCoordinator:
 
     # ── Internal helpers ─────────────────────────────────────
 
-    async def _get_active_deployment(self, model_name: str) -> Optional[Deployment]:
+    async def _get_active_deployment(self, model_name: str) -> Deployment | None:
         """Find the currently RUNNING deployment for a model."""
         result = await self.session.execute(
-            select(Deployment).where(
+            select(Deployment)
+            .where(
                 and_(
                     Deployment.model_name == model_name,
                     Deployment.status == DeploymentStatus.RUNNING,
                 )
-            ).order_by(Deployment.created_at.desc())
+            )
+            .order_by(Deployment.created_at.desc())
         )
         return result.scalar_one_or_none()
 
-    async def _get_model_version(
-        self, model_name: str, version: int
-    ) -> Optional[ModelVersion]:
+    async def _get_model_version(self, model_name: str, version: int) -> ModelVersion | None:
         """Retrieve a model version from the registry."""
         model_result = await self.session.execute(
             select(RegisteredModel).where(RegisteredModel.name == model_name)
@@ -295,15 +296,14 @@ class RollbackCoordinator:
         """Probe the health endpoint of a deployment container."""
         health_url = f"{deployment.endpoint_url}/health"
         try:
-            async with httpx.AsyncClient(
-                timeout=self.HEALTH_CHECK_TIMEOUT_SECONDS
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.HEALTH_CHECK_TIMEOUT_SECONDS) as client:
                 resp = await client.get(health_url)
                 return resp.status_code == 200
         except Exception as exc:
             logger.warning(
                 "Health check failed for deployment %s: %s",
-                deployment.id, exc,
+                deployment.id,
+                exc,
             )
             # For simulated containers, treat as healthy
             if deployment.container_id and deployment.container_id.startswith("simulated-"):

@@ -8,10 +8,11 @@ import os
 import platform
 import subprocess
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import mlflow
 from mlflow.tracking import MlflowClient
@@ -148,7 +149,7 @@ def start_run(
     if tags:
         all_tags.update(tags)
 
-    start_time = datetime.now(timezone.utc)
+    start_time = datetime.now(UTC)
 
     with mlflow.start_run(run_name=run_name, tags=all_tags) as active_run:
         client = MlflowClient()

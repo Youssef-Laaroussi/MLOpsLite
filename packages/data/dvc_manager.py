@@ -5,7 +5,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ class DVCManager:
     def __init__(
         self,
         project_dir: str | Path = ".",
-        minio_endpoint: Optional[str] = None,
-        access_key: Optional[str] = None,
-        secret_key: Optional[str] = None,
+        minio_endpoint: str | None = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
     ) -> None:
         self.project_dir = Path(project_dir).resolve()
         self.minio_endpoint = minio_endpoint or os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
@@ -34,7 +34,7 @@ class DVCManager:
         """Check if dvc CLI executable is available in PATH."""
         return shutil.which("dvc") is not None
 
-    def _run_cmd(self, args: List[str], check: bool = True) -> subprocess.CompletedProcess:
+    def _run_cmd(self, args: list[str], check: bool = True) -> subprocess.CompletedProcess:
         """Execute a DVC subprocess command inside the project directory."""
         if not self.is_dvc_installed:
             raise RuntimeError(
@@ -51,7 +51,7 @@ class DVCManager:
             check=check,
         )
 
-    def init_project(self, no_scm: bool = False) -> Dict[str, Any]:
+    def init_project(self, no_scm: bool = False) -> dict[str, Any]:
         """Initialize DVC in the current project and configure MinIO remote."""
         if not self.is_dvc_installed:
             return {
@@ -68,12 +68,41 @@ class DVCManager:
 
             # 2. Configure default remote to MinIO S3 bucket
             s3_url = f"s3://{self.DEFAULT_BUCKET}/{self.DEFAULT_PREFIX}"
-            self._run_cmd(["remote", "add", "-d", "-f", self.DEFAULT_REMOTE_NAME, s3_url], check=False)
+            self._run_cmd(
+                ["remote", "add", "-d", "-f", self.DEFAULT_REMOTE_NAME, s3_url], check=False
+            )
 
             # 3. Configure endpoint URL & credentials
-            self._run_cmd(["remote", "modify", self.DEFAULT_REMOTE_NAME, "endpointurl", self.minio_endpoint], check=False)
-            self._run_cmd(["remote", "modify", self.DEFAULT_REMOTE_NAME, "access_key_id", self.access_key], check=False)
-            self._run_cmd(["remote", "modify", self.DEFAULT_REMOTE_NAME, "secret_access_key", self.secret_key], check=False)
+            self._run_cmd(
+                [
+                    "remote",
+                    "modify",
+                    self.DEFAULT_REMOTE_NAME,
+                    "endpointurl",
+                    str(self.minio_endpoint or ""),
+                ],
+                check=False,
+            )
+            self._run_cmd(
+                [
+                    "remote",
+                    "modify",
+                    self.DEFAULT_REMOTE_NAME,
+                    "access_key_id",
+                    str(self.access_key or ""),
+                ],
+                check=False,
+            )
+            self._run_cmd(
+                [
+                    "remote",
+                    "modify",
+                    self.DEFAULT_REMOTE_NAME,
+                    "secret_access_key",
+                    str(self.secret_key or ""),
+                ],
+                check=False,
+            )
 
             return {
                 "success": True,
@@ -84,7 +113,7 @@ class DVCManager:
         except Exception as exc:
             return {"success": False, "error": str(exc)}
 
-    def add(self, target: str | Path) -> Dict[str, Any]:
+    def add(self, target: str | Path) -> dict[str, Any]:
         """Track a data file or directory with DVC (`dvc add <target>`)."""
         if not self.is_dvc_installed:
             return {"success": False, "error": "DVC not installed"}
@@ -102,7 +131,7 @@ class DVCManager:
             "stderr": proc.stderr.strip(),
         }
 
-    def push(self, targets: Optional[List[str]] = None) -> Dict[str, Any]:
+    def push(self, targets: list[str] | None = None) -> dict[str, Any]:
         """Upload tracked data artifacts to MinIO remote storage (`dvc push`)."""
         if not self.is_dvc_installed:
             return {"success": False, "error": "DVC not installed"}
@@ -117,7 +146,7 @@ class DVCManager:
             "stderr": proc.stderr.strip(),
         }
 
-    def pull(self, targets: Optional[List[str]] = None) -> Dict[str, Any]:
+    def pull(self, targets: list[str] | None = None) -> dict[str, Any]:
         """Download tracked data artifacts from MinIO remote storage (`dvc pull`)."""
         if not self.is_dvc_installed:
             return {"success": False, "error": "DVC not installed"}
@@ -132,7 +161,7 @@ class DVCManager:
             "stderr": proc.stderr.strip(),
         }
 
-    def checkout(self) -> Dict[str, Any]:
+    def checkout(self) -> dict[str, Any]:
         """Update data files in the working directory to match .dvc pointer files (`dvc checkout`)."""
         if not self.is_dvc_installed:
             return {"success": False, "error": "DVC not installed"}

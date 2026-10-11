@@ -4,8 +4,6 @@ import httpx
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.columns import Columns
-from rich.panel import Panel
 
 console = Console()
 
@@ -98,7 +96,9 @@ def promote(
     name: str = typer.Argument(..., help="Model name"),
     version: int = typer.Option(..., "--version", "-v", help="Model version number"),
     stage: str = typer.Option(
-        ..., "--stage", "-s",
+        ...,
+        "--stage",
+        "-s",
         help="Target stage: CANDIDATE, STAGING, PRODUCTION, ARCHIVED",
     ),
     api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),

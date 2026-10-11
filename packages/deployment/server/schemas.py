@@ -1,14 +1,15 @@
 """Pydantic schemas for standardized inference prediction payloads and metadata."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field, model_validator
 
 
 class DataframeSplit(BaseModel):
     """Dataframe split format (pandas to_dict(orient='split'))."""
 
-    columns: List[str] = Field(..., description="Column names")
-    data: List[List[Any]] = Field(..., description="2D list of row values")
+    columns: list[str] = Field(..., description="Column names")
+    data: list[list[Any]] = Field(..., description="2D list of row values")
 
 
 class PredictionRequest(BaseModel):
@@ -20,13 +21,11 @@ class PredictionRequest(BaseModel):
       3. dataframe_split: {"columns": [...], "data": [[...], [...]]}
     """
 
-    inputs: Optional[List[List[Any]]] = Field(
-        None, description="2D matrix of input feature values"
-    )
-    dataframe_records: Optional[List[Dict[str, Any]]] = Field(
+    inputs: list[list[Any]] | None = Field(None, description="2D matrix of input feature values")
+    dataframe_records: list[dict[str, Any]] | None = Field(
         None, description="List of record dictionaries mapping feature name to value"
     )
-    dataframe_split: Optional[DataframeSplit] = Field(
+    dataframe_split: DataframeSplit | None = Field(
         None, description="Column-oriented split dataframe representation"
     )
 
@@ -79,7 +78,9 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     """Standardized prediction output contract."""
 
-    predictions: List[Any] = Field(..., description="List of predicted labels, probabilities, or regression values")
+    predictions: list[Any] = Field(
+        ..., description="List of predicted labels, probabilities, or regression values"
+    )
     model: str = Field(..., description="Model name")
     version: str = Field(..., description="Model version")
     latency_ms: float = Field(..., description="Total inference compute latency in milliseconds")
@@ -98,7 +99,13 @@ class ModelMetadataResponse(BaseModel):
 
     model: str
     version: str
-    framework: str = Field("scikit-learn", description="ML framework: scikit-learn, xgboost, pytorch, onnx")
-    features: List[FeatureSchema] = Field(default_factory=list, description="Expected input features")
-    task: str = Field("classification", description="Task type: classification, regression, clustering")
-    created_at: Optional[str] = None
+    framework: str = Field(
+        "scikit-learn", description="ML framework: scikit-learn, xgboost, pytorch, onnx"
+    )
+    features: list[FeatureSchema] = Field(
+        default_factory=list, description="Expected input features"
+    )
+    task: str = Field(
+        "classification", description="Task type: classification, regression, clustering"
+    )
+    created_at: str | None = None

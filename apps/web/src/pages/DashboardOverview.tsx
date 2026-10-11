@@ -22,6 +22,8 @@ import {
   Layers,
   LineChart as LineChartIcon,
   PieChart as PieChartIcon,
+feat: update architecture diagram and replace storage treemap with model benchmark matrix in dashboard  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -54,26 +56,12 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
-  Treemap,
   FunnelChart,
   Funnel,
   LabelList,
   Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const TreemapCell: React.FC<any> = ({ x, y, width, height, name, size, fill }) => (
-  <g>
-    <rect x={x} y={y} width={width} height={height} rx={8} fill={fill} fillOpacity={0.85} stroke="#fff" strokeWidth={3} />
-    {width > 70 && height > 36 && (
-      <>
-        <text x={x + 10} y={y + 20} fill="#fff" fontSize={12} fontWeight={700}>{name}</text>
-        <text x={x + 10} y={y + 36} fill="#fff" fillOpacity={0.85} fontSize={11}>{size} GB</text>
-      </>
-    )}
-  </g>
-);
 
 const SPEND_DATA = [
   { m: "May", training: 820, serving: 540, storage: 210 },
@@ -92,12 +80,25 @@ const FUNNEL_DATA = [
   { name: "In production", value: 18, fill: "#1A7456" },
 ];
 
-const STORAGE_TREE = [
-  { name: "fraud-detection", size: 142, fill: PALETTE.brand },
-  { name: "customer-churn", size: 96, fill: PALETTE.blue },
-  { name: "nlp-sentiment", size: 188, fill: PALETTE.violet },
-  { name: "demand-forecast", size: 64, fill: PALETTE.amber },
-  { name: "credit-risk", size: 38, fill: PALETTE.slate },
+const MODEL_BENCHMARK_FLEET = [
+  { model: "fraud-det v3", full_name: "fraud-detector (v3)", auc: 0.971, f1: 0.938, latency: "2.4ms", framework: "XGBoost", samples: "125,000" },
+  { model: "sentiment v1", full_name: "sentiment-bert (v1)", auc: 0.954, f1: 0.951, latency: "12.6ms", framework: "PyTorch", samples: "85,000" },
+  { model: "churn-xgb v2", full_name: "churn-xgboost (v2)", auc: 0.945, f1: 0.904, latency: "3.8ms", framework: "LightGBM", samples: "92,500" },
+  { model: "demand v2", full_name: "demand-forecast (v2)", auc: 0.928, f1: 0.892, latency: "5.2ms", framework: "Prophet", samples: "64,000" },
+  { model: "credit-sc v1", full_name: "credit-scoring (v1)", auc: 0.962, f1: 0.924, latency: "1.9ms", framework: "CatBoost", samples: "110,000" },
+];
+
+const FLEET_DRIFT_TRAJECTORY = [
+  { date: "Oct 01", fraud_f1: 0.942, churn_f1: 0.912, bert_f1: 0.950, avg_f1: 0.935 },
+  { date: "Oct 04", fraud_f1: 0.938, churn_f1: 0.908, bert_f1: 0.952, avg_f1: 0.933 },
+  { date: "Oct 08", fraud_f1: 0.931, churn_f1: 0.902, bert_f1: 0.949, avg_f1: 0.927 },
+  { date: "Oct 12", fraud_f1: 0.924, churn_f1: 0.898, bert_f1: 0.948, avg_f1: 0.923 },
+  { date: "Oct 15", fraud_f1: 0.915, churn_f1: 0.894, bert_f1: 0.947, avg_f1: 0.919 },
+  { date: "Oct 18", fraud_f1: 0.968, churn_f1: 0.942, bert_f1: 0.954, avg_f1: 0.955 },
+  { date: "Oct 22", fraud_f1: 0.971, churn_f1: 0.945, bert_f1: 0.953, avg_f1: 0.956 },
+  { date: "Oct 26", fraud_f1: 0.969, churn_f1: 0.943, bert_f1: 0.954, avg_f1: 0.955 },
+  { date: "Oct 30", fraud_f1: 0.972, churn_f1: 0.945, bert_f1: 0.955, avg_f1: 0.957 },
+  { date: "Nov 02", fraud_f1: 0.971, churn_f1: 0.944, bert_f1: 0.954, avg_f1: 0.956 },
 ];
 
 const SERVICES = [
@@ -106,13 +107,6 @@ const SERVICES = [
   { name: "Feature Store", latency: "18ms", uptime: "99.95%", color: PALETTE.brand },
   { name: "Artifact Store (S3)", latency: "61ms", uptime: "99.90%", color: PALETTE.amber },
   { name: "Drift Evaluator", latency: "120ms", uptime: "99.97%", color: PALETTE.brand },
-];
-
-const ACTIVITY = [
-  { id: 1, kind: "Deploy", color: PALETTE.brand, title: "fraud-detector v3 canary live", who: "a.benali", when: "1h ago" },
-  { id: 2, kind: "Experiment", color: PALETTE.violet, title: "Optuna sweep finished (48 trials)", who: "s.karim", when: "3h ago" },
-  { id: 3, kind: "Dataset", color: PALETTE.blue, title: "transactions_2026Q3 v7 ingested", who: "m.idrissi", when: "6h ago" },
-  { id: 4, kind: "Registry", color: PALETTE.amber, title: "customer-churn v2 → Staging", who: "s.karim", when: "1d ago" },
 ];
 
 export const DashboardOverview: React.FC = () => {
@@ -952,22 +946,68 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <HardDrive className="w-5 h-5 text-[#3BB48C]" />
-            Artifact Storage by Project
-          </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Treemap of S3 / MinIO usage (GB)</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={STORAGE_TREE}
-                dataKey="size"
-                stroke="#fff"
-                isAnimationActive={false}
-                content={<TreemapCell />}
-              />
-            </ResponsiveContainer>
+        {/* GRAPH 1: Production Model Benchmark & Quality Matrix (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-[#3BB48C]" />
+                  Production Model Benchmark Matrix
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Validation ROC-AUC vs. F1-Score across active production candidate models
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                100% SLA Compliant
+              </span>
+            </div>
+
+            <div className="h-64 w-full my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={MODEL_BENCHMARK_FLEET}
+                  margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
+                  barSize={14}
+                >
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0.80, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                  <ReferenceLine y={0.90} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Gate: 0.90", fill: PALETTE.amber, fontSize: 10, position: "insideBottomLeft" }} />
+                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Target: 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <BiTooltip
+                          active
+                          label={d.full_name || label}
+                          payload={[
+                            { name: "Framework", value: d.framework, color: PALETTE.slate },
+                            { name: "ROC-AUC", value: typeof d.auc === "number" ? d.auc.toFixed(3) : d.auc, color: PALETTE.brand },
+                            { name: "F1-Score", value: typeof d.f1 === "number" ? d.f1.toFixed(3) : d.f1, color: PALETTE.blue },
+                            { name: "p95 Latency", value: d.latency, color: PALETTE.slate },
+                            { name: "Holdout Samples", value: d.samples, color: PALETTE.slate },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.blue} radius={[4, 4, 0, 0]} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <span>Holdout Validation: 100k Verified Test Samples</span>
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Zero Model Regressions
+            </span>
           </div>
         </div>
 
@@ -997,23 +1037,104 @@ export const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
-        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-          <Users className="w-5 h-5 text-[#3BB48C]" />
-          Team Activity
-        </h3>
-        <p className="text-sm text-slate-500 mt-1 mb-4">Most recent actions across the workspace</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {ACTIVITY.map((a) => (
-            <div key={a.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${a.color}` }}>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: a.color }}>{a.kind}</span>
-                <span className="text-[11px] text-slate-400">{a.when}</span>
-              </div>
-              <div className="text-sm font-semibold text-slate-900 mt-2">{a.title}</div>
-              <div className="text-xs text-slate-500 mt-1">by {a.who}</div>
+      {/* ── GRAPH 2: Model Performance Trajectory & Continuous Retraining (12 cols) ── */}
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <TrendingUp className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight">
+                Model Performance Stability &amp; Continuous Retraining Trajectory
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                Auto-Retrain Active
+              </span>
             </div>
-          ))}
+            <p className="text-sm text-slate-500 mt-1">
+              30-day continuous rolling F1-score tracking concept drift and automated retraining recovery events
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+              <span className="text-slate-400">Fleet Mean F1:</span> <strong className="text-slate-900 font-bold">0.956</strong>
+            </div>
+            <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-mono">
+              <span className="text-emerald-600">Recovery:</span> <strong>+3.7% F1</strong>
+            </div>
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+              <span className="text-slate-400">Drift Protection:</span> <strong className="text-emerald-600 font-bold">Enforced</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={FLEET_DRIFT_TRAJECTORY}
+              margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="gFleetAvg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis domain={[0.88, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+
+              {/* Drift Retrain Threshold */}
+              <ReferenceLine
+                y={0.92}
+                stroke={PALETTE.rose}
+                strokeDasharray="4 4"
+                label={{ value: "Drift Retrain Gate (0.92)", fill: PALETTE.rose, fontSize: 10, position: "insideBottomLeft" }}
+              />
+
+              {/* Retraining Event Marker */}
+              <ReferenceLine
+                x="Oct 18"
+                stroke={PALETTE.brand}
+                strokeWidth={2}
+                strokeDasharray="3 3"
+                label={{ value: "⚡ Automated Retrain & Promotion (v3)", fill: PALETTE.brand, fontSize: 11, fontWeight: 700, position: "top" }}
+              />
+
+              <RechartsTooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <BiTooltip
+                      active
+                      label={`Evaluation Date: ${label}`}
+                      payload={[
+                        { name: "Fleet Average F1", value: payload.find(p => p.dataKey === "avg_f1")?.value?.toFixed(3), color: PALETTE.brand },
+                        { name: "fraud-detector (v3)", value: payload.find(p => p.dataKey === "fraud_f1")?.value?.toFixed(3), color: PALETTE.emerald },
+                        { name: "sentiment-bert (v1)", value: payload.find(p => p.dataKey === "bert_f1")?.value?.toFixed(3), color: PALETTE.violet },
+                        { name: "churn-xgboost (v2)", value: payload.find(p => p.dataKey === "churn_f1")?.value?.toFixed(3), color: PALETTE.blue },
+                      ]}
+                    />
+                  );
+                }}
+              />
+
+              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={3} fill="url(#gFleetAvg)" dot={{ r: 4, fill: PALETTE.brand, strokeWidth: 2, stroke: "#fff" }} />
+              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.emerald} strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={2} dot={false} strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={2} dot={false} />
+
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Telemetry Frequency: Continuous (Every 1,000 Inferences)</span>
+          </div>
+          <span>Evidently AI PSI Engine + Prometheus Exporter Live</span>
         </div>
       </div>
 

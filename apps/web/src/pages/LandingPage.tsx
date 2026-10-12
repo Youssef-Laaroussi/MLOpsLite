@@ -225,12 +225,28 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ── Hero Section (Split 2-Column: Text Left "A GAUCHE" / Terminal Graphic Right) ── */}
-      <section className="relative pt-28 sm:pt-36 lg:pt-40 pb-24 lg:pb-32 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/80 via-white to-white border-b border-slate-100">
+      <section className="relative pt-28 sm:pt-36 lg:pt-40 pb-24 lg:pb-32 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/80 via-white to-white border-b border-slate-100 bg-mlops-grid">
+        {/* Subtle Tensor Matrix Dot Accents */}
+        <div className="absolute top-12 left-6 w-72 h-44 bg-tensor-dots opacity-40 pointer-events-none -z-10 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
+        <div className="absolute bottom-8 right-12 w-96 h-56 bg-diagonal-hatch opacity-60 pointer-events-none -z-10" />
+
+        {/* MLOps Pipeline Node Orbit Vector Graphic */}
+        <div className="absolute top-28 right-1/3 w-64 h-64 pointer-events-none -z-10 opacity-30 hidden lg:block">
+          <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full animate-float-subtle">
+            <circle cx="100" cy="100" r="70" stroke="#3BB48C" strokeWidth="1" strokeDasharray="4 6" opacity="0.6" />
+            <circle cx="100" cy="100" r="45" stroke="#6366F1" strokeWidth="1" strokeDasharray="2 4" opacity="0.4" />
+            <circle cx="100" cy="30" r="4" fill="#3BB48C" />
+            <circle cx="145" cy="100" r="3.5" fill="#10B981" />
+            <circle cx="68" cy="140" r="3" fill="#6366F1" />
+            <path d="M100 30 L145 100 L68 140 Z" stroke="#3BB48C" strokeWidth="0.75" opacity="0.3" fill="rgba(59, 180, 140, 0.04)" />
+          </svg>
+        </div>
+
         {/* Animated ambient glow spheres for vibrancy */}
         <div className="absolute -top-20 left-1/4 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/20 to-teal-200/30 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
         <div className="absolute top-24 right-10 w-80 h-80 bg-gradient-to-br from-emerald-100/40 to-[#3BB48C]/15 rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* ── Left Column ("A GAUCHE") ── */}
             <div className="lg:col-span-6 space-y-5 text-left">
@@ -496,7 +512,11 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Features Grid with Dynamic Hover & Category Filter ── */}
-      <section id="features" className="py-20 max-w-7xl mx-auto px-6">
+      <section id="features" className="py-20 max-w-7xl mx-auto px-6 relative">
+        {/* Subtle Decorative Geometry in Features background */}
+        <div className="absolute top-10 right-4 w-72 h-72 bg-tensor-dots opacity-30 pointer-events-none -z-10 [mask-image:radial-gradient(circle_at_center,black,transparent_70%)]" />
+        <div className="absolute bottom-10 left-4 w-80 h-40 bg-diagonal-hatch opacity-40 pointer-events-none -z-10" />
+
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
           <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
             Enterprise Capabilities
@@ -587,8 +607,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Architecture & Stack Blueprint ── */}
-      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid">
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
               Production Architecture
@@ -648,8 +668,10 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── 3-Step Workflow Section ── */}
-      <section id="workflow" className="py-20 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="workflow" className="py-20 bg-white border-t border-slate-100 relative">
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-tensor-dots opacity-25 pointer-events-none -z-10 [mask-image:radial-gradient(circle_at_center,black,transparent_75%)]" />
+
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
               Developer Workflow
@@ -684,9 +706,12 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Bottom CTA Banner (Frameless Logo) ── */}
-      <section className="py-20 bg-[#F8FAFC] border-t border-slate-100">
-        <div className="max-w-5xl mx-auto px-6">
+      <section className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid">
+        <div className="max-w-5xl mx-auto px-6 relative">
           <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-[#EBF8F4] via-[#F0FDF9] to-white border border-[#BCE9DA] shadow-xl text-center space-y-6 relative overflow-hidden">
+            {/* Ambient vector decorations inside the CTA banner */}
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-tensor-dots opacity-40 pointer-events-none -z-10" />
+            <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-diagonal-hatch opacity-50 pointer-events-none -z-10" />
             {/* White squircle framed logo */}
             <div className="w-16 h-16 mx-auto bg-slate-50/90 rounded-2xl p-3 shadow-sm border border-slate-200/90 flex items-center justify-center">
               <img

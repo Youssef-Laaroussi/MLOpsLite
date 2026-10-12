@@ -1109,10 +1109,10 @@ export const DashboardOverview: React.FC = () => {
                       active
                       label={`Evaluation Date: ${label}`}
                       payload={[
-                        { name: "Fleet Average F1", value: payload.find(p => p.dataKey === "avg_f1")?.value?.toFixed(3), color: PALETTE.brand },
-                        { name: "fraud-detector (v3)", value: payload.find(p => p.dataKey === "fraud_f1")?.value?.toFixed(3), color: PALETTE.emerald },
-                        { name: "sentiment-bert (v1)", value: payload.find(p => p.dataKey === "bert_f1")?.value?.toFixed(3), color: PALETTE.violet },
-                        { name: "churn-xgboost (v2)", value: payload.find(p => p.dataKey === "churn_f1")?.value?.toFixed(3), color: PALETTE.blue },
+                        { name: "Fleet Average F1", value: Number(payload.find(p => p.dataKey === "avg_f1")?.value || 0).toFixed(3), color: PALETTE.brand },
+                        { name: "fraud-detector (v3)", value: Number(payload.find(p => p.dataKey === "fraud_f1")?.value || 0).toFixed(3), color: PALETTE.brandDark },
+                        { name: "sentiment-bert (v1)", value: Number(payload.find(p => p.dataKey === "bert_f1")?.value || 0).toFixed(3), color: PALETTE.violet },
+                        { name: "churn-xgboost (v2)", value: Number(payload.find(p => p.dataKey === "churn_f1")?.value || 0).toFixed(3), color: PALETTE.blue },
                       ]}
                     />
                   );
@@ -1120,7 +1120,7 @@ export const DashboardOverview: React.FC = () => {
               />
 
               <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={3} fill="url(#gFleetAvg)" dot={{ r: 4, fill: PALETTE.brand, strokeWidth: 2, stroke: "#fff" }} />
-              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.emerald} strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.brandDark} strokeWidth={2} dot={false} strokeDasharray="5 5" />
               <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={2} dot={false} strokeDasharray="3 3" />
               <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={2} dot={false} />
 

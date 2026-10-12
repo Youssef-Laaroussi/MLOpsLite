@@ -234,3 +234,37 @@
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out both;
 }
+
+/* ── MLOps-Themed Original Vector Background Patterns & Decors ── */
+.bg-mlops-grid {
+  background-image: 
+    linear-gradient(to right, rgba(59, 180, 140, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 180, 140, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bg-tensor-dots {
+  background-image: radial-gradient(rgba(59, 180, 140, 0.12) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+.bg-pipeline-nodes {
+  background-image: 
+    radial-gradient(circle at 10px 10px, rgba(59, 180, 140, 0.18) 2px, transparent 2px),
+    radial-gradient(circle at 30px 30px, rgba(99, 102, 241, 0.12) 2px, transparent 2px);
+  background-size: 40px 40px;
+}
+
+.bg-diagonal-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(59, 180, 140, 0.035),
+    rgba(59, 180, 140, 0.035) 1.5px,
+    transparent 1.5px,
+    transparent 14px
+  );
+}
+
+.bg-data-stream {
+  background: linear-gradient(135deg, rgba(240, 253, 249, 0.8) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(248, 250, 252, 0.9) 100%);
+}

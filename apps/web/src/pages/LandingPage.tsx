@@ -224,36 +224,36 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Hero Section (Senior Tech SaaS Layout with Vivid Neural Plexus Mesh Architecture) ── */}
-      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100 bg-mlops-grid">
-        {/* Vivid Top-Right Neural Plexus Wave (Completely Visible, High Opacity, High Definition) */}
-        <div className="absolute -top-10 -right-16 w-[42rem] sm:w-[52rem] lg:w-[62rem] pointer-events-none z-0 opacity-90 select-none">
+      {/* ── Hero Section (Sans carrés de grille, vraies couleurs éclatantes et fond image 100% transparent) ── */}
+      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
+        {/* Vraies couleurs éclatantes : Neural Network Plexus supérieur droit sans ternissement */}
+        <div className="absolute -top-12 -right-16 w-[38rem] sm:w-[46rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply">
           <img
             src="/neural-plexus.jpg"
             alt=""
-            className="w-full h-auto object-contain mix-blend-multiply"
+            className="w-full h-auto object-contain"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, black 70%, transparent 98%)",
-              maskImage: "radial-gradient(ellipse at 75% 35%, black 70%, transparent 98%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 78% 30%, black 60%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse at 78% 30%, black 60%, transparent 95%)",
             }}
           />
         </div>
 
-        {/* Vivid Bottom-Left Neural Constellation Mesh (Completely Visible, Just Like in the CTA Banner) */}
-        <div className="absolute -bottom-16 -left-16 w-[36rem] sm:w-[44rem] lg:w-[50rem] pointer-events-none z-0 opacity-85 select-none transform rotate-180">
+        {/* Vraies couleurs éclatantes : Neural Network Plexus inférieur gauche sans ternissement */}
+        <div className="absolute -bottom-16 -left-20 w-[34rem] sm:w-[42rem] lg:w-[48rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply transform rotate-180">
           <img
             src="/neural-plexus.jpg"
             alt=""
-            className="w-full h-auto object-contain mix-blend-multiply"
+            className="w-full h-auto object-contain"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 70% 35%, black 70%, transparent 98%)",
-              maskImage: "radial-gradient(ellipse at 70% 35%, black 70%, transparent 98%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 70% 35%, black 55%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse at 70% 35%, black 55%, transparent 95%)",
             }}
           />
         </div>
 
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-1/4 left-1/3 w-[34rem] h-[34rem] bg-gradient-to-br from-[#3BB48C]/20 to-teal-100/30 rounded-full blur-3xl pointer-events-none z-0" />
+        {/* Halo lumineux d'ambiance vif */}
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[40rem] h-[40rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/30 to-emerald-100/15 rounded-full blur-3xl pointer-events-none z-0" />
 
         <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
@@ -319,20 +319,20 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration ── */}
-            <div className="lg:col-span-6 relative flex items-center justify-center">
+            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration (Abaissée légèrement) ── */}
+            <div className="lg:col-span-6 relative flex items-center justify-center pt-6 lg:pt-10 translate-y-3 sm:translate-y-5">
               {/* Soft Ambient Glow */}
-              <div className="absolute w-[30rem] h-[30rem] bg-gradient-to-tr from-[#3BB48C]/25 via-teal-100/40 to-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+              <div className="absolute w-[32rem] h-[32rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Seamless 3D Isometric Illustration with organic transparent fade */}
+              {/* Illustration 3D Isométrique totalement fondue, fond blanc supprimé par mix-blend-multiply et masque doux */}
               <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
                 <img
                   src="/hero-isometric.jpg"
                   alt="MLite Real-time MLOps Platform Isometric Illustration"
                   className="w-full h-auto object-contain block select-none mix-blend-multiply"
                   style={{
-                    WebkitMaskImage: "radial-gradient(ellipse at center, black 60%, transparent 95%)",
-                    maskImage: "radial-gradient(ellipse at center, black 60%, transparent 95%)",
+                    WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 65%, transparent 92%)",
+                    maskImage: "radial-gradient(ellipse at 50% 50%, black 65%, transparent 92%)",
                   }}
                   loading="eager"
                 />

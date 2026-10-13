@@ -224,253 +224,116 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Hero Section (Split 2-Column: Text Left "A GAUCHE" / Terminal Graphic Right) ── */}
-      <section className="relative pt-28 sm:pt-36 lg:pt-40 pb-24 lg:pb-32 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/80 via-white to-white border-b border-slate-100 bg-mlops-grid">
-        {/* Subtle Tensor Matrix Dot Accents */}
-        <div className="absolute top-12 left-6 w-72 h-44 bg-tensor-dots opacity-40 pointer-events-none -z-10 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-        <div className="absolute bottom-8 right-12 w-96 h-56 bg-diagonal-hatch opacity-60 pointer-events-none -z-10" />
-
-        {/* MLOps Pipeline Node Orbit Vector Graphic */}
-        <div className="absolute top-28 right-1/3 w-64 h-64 pointer-events-none -z-10 opacity-30 hidden lg:block">
-          <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full animate-float-subtle">
-            <circle cx="100" cy="100" r="70" stroke="#3BB48C" strokeWidth="1" strokeDasharray="4 6" opacity="0.6" />
-            <circle cx="100" cy="100" r="45" stroke="#6366F1" strokeWidth="1" strokeDasharray="2 4" opacity="0.4" />
-            <circle cx="100" cy="30" r="4" fill="#3BB48C" />
-            <circle cx="145" cy="100" r="3.5" fill="#10B981" />
-            <circle cx="68" cy="140" r="3" fill="#6366F1" />
-            <path d="M100 30 L145 100 L68 140 Z" stroke="#3BB48C" strokeWidth="0.75" opacity="0.3" fill="rgba(59, 180, 140, 0.04)" />
-          </svg>
+      {/* ── Hero Section (Qubly Layout with Side/Border Neural Plexus Mesh Decorations) ── */}
+      <section className="relative pt-28 sm:pt-36 lg:pt-36 pb-20 lg:pb-28 overflow-hidden bg-gradient-to-b from-[#F7FCFA]/90 via-white to-white border-b border-slate-100">
+        {/* Decorative Neural Plexus Network Wave on Top-Right / Side Border (User Reference Style) */}
+        <div className="absolute top-0 right-0 w-[42rem] sm:w-[50rem] lg:w-[60rem] pointer-events-none z-0 opacity-80 mix-blend-multiply select-none">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, black 60%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse at 75% 35%, black 60%, transparent 95%)",
+            }}
+          />
         </div>
 
-        {/* Animated ambient glow spheres for vibrancy */}
-        <div className="absolute -top-20 left-1/4 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/20 to-teal-200/30 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
-        <div className="absolute top-24 right-10 w-80 h-80 bg-gradient-to-br from-emerald-100/40 to-[#3BB48C]/15 rounded-full blur-3xl pointer-events-none -z-10" />
+        {/* Decorative Neural Constellation Mesh on Bottom-Left / Side Border */}
+        <div className="absolute -bottom-16 -left-20 w-[34rem] sm:w-[42rem] lg:w-[48rem] pointer-events-none z-0 opacity-55 mix-blend-multiply select-none transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 70% 30%, black 50%, transparent 90%)",
+              maskImage: "radial-gradient(ellipse at 70% 30%, black 50%, transparent 90%)",
+            }}
+          />
+        </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* ── Left Column ("A GAUCHE") ── */}
-            <div className="lg:col-span-6 space-y-5 text-left">
-              {/* High-Impact Headline */}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.08]">
-                Deploy &amp; Monitor ML. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-[#2FA07B]">
-                  Zero Cloud Lock-In.
+        {/* Subtle Ambient Glow for Vitality */}
+        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/15 to-teal-100/25 rounded-full blur-3xl pointer-events-none z-0" />
+
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+            {/* ── Left Column: Senior SaaS Typography & Layout (Qubly Style) ── */}
+            <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left">
+              {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-semibold shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#3BB48C]" />
+                <span>v1.0 Production-Ready</span>
+                <span className="text-slate-300">•</span>
+                <a href="#features" className="text-[#3BB48C] hover:text-[#1A7456] underline font-bold transition">
+                  Learn more
+                </a>
+              </div>
+
+              {/* Refined Compact Heading */}
+              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.65rem] font-bold text-[#16192E] leading-[1.2] tracking-tight">
+                Modern MLOps <br />
+                <span className="text-[#3BB48C]">
+                  Infrastructure, Self-Hosted
                 </span>
               </h1>
 
-              {/* Punchy, Short Subtitle */}
-              <p className="text-base sm:text-lg text-slate-600 max-w-lg leading-relaxed font-normal">
-                The lightweight, self-hosted platform for Python. Track models, deploy in sub-50ms Docker containers, and detect drift on your own servers.
+              {/* Light, Airy, Relaxed Subtitle */}
+              <p className="text-sm sm:text-base text-slate-500 max-w-md leading-relaxed font-normal">
+                Track experiments, deploy low-latency Docker containers in sub-50ms, and detect statistical data drift — on your own servers.
               </p>
 
-              {/* Quickstart Command Box */}
-              <div className="pt-1">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0D1F2D] text-white shadow-xl font-mono text-xs border border-slate-800">
-                  <div className="flex items-center gap-2 overflow-x-auto py-1">
-                    <Terminal className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                    <span className="text-[#3BB48C] font-bold">$</span>
-                    <span className="truncate text-slate-200">{installCmd}</span>
-                  </div>
-                  <button
-                    onClick={handleCopy}
-                    className="ml-3 shrink-0 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-[#3BB48C]" />
-                        <span className="text-[#3BB48C]">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Dual Action CTAs */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+              {/* Action Buttons (Qubly Rounded Pill Style) */}
+              <div className="flex flex-wrap items-center gap-4 pt-1">
                 <Link
                   to="/app"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-extrabold text-sm transition shadow-lg shadow-[#3BB48C]/30 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+                  className="px-7 py-3 rounded-full bg-[#3BB48C] hover:bg-[#2FA07B] text-white font-semibold text-sm transition-all shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
                 >
-                  Open Dashboard Console <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  Start free console <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
                   href="http://localhost:8000/docs"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold text-sm transition shadow-xs flex items-center justify-center gap-2 hover:border-slate-400"
+                  className="px-7 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
                 >
-                  <FileCode2 className="w-4 h-4 text-[#3BB48C]" />
-                  Interactive API Docs
+                  Learn More
                 </a>
               </div>
 
-              {/* Trust Specs */}
-              <div className="pt-2 grid grid-cols-2 gap-3 text-xs font-semibold text-slate-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>100% Air-Gapped / Self-Hosted</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Sub-50ms Docker Serving</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Automated Drift Guardrails</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Apache 2.0 Open Source</span>
+              {/* Minimalist, Clean Quickstart Command Bar */}
+              <div className="pt-2 flex items-center gap-2">
+                <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-xs font-mono shadow-xs max-w-md">
+                  <Terminal className="w-3.5 h-3.5 text-[#3BB48C]" />
+                  <span className="text-[#3BB48C] font-bold select-none">$</span>
+                  <span className="text-slate-300 select-all truncate">{installCmd}</span>
+                  <button
+                    onClick={handleCopy}
+                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Copy command"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-[#3BB48C]" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* ── Right Column: macOS Developer Terminal with Glowing Circuit Traces (Reference Image) ── */}
-            <div className="lg:col-span-6 relative">
-              {/* Decorative Circuit Lines and Nodes matching Image 2 */}
-              <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none hidden sm:block">
-                <svg className="w-full h-full text-[#3BB48C]/40" viewBox="0 0 100 100" fill="none">
-                  <path d="M10 80 H60 V30 H90" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                  <circle cx="90" cy="30" r="4" fill="#3BB48C" />
-                  <circle cx="60" cy="80" r="3" fill="#3BB48C" />
-                </svg>
-              </div>
-              <div className="absolute -bottom-8 -left-6 w-32 h-32 pointer-events-none hidden sm:block">
-                <svg className="w-full h-full text-[#3BB48C]/40" viewBox="0 0 100 100" fill="none">
-                  <path d="M90 20 H40 V70 H10" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                  <circle cx="10" cy="70" r="4" fill="#3BB48C" />
-                  <circle cx="40" cy="20" r="3" fill="#3BB48C" />
-                </svg>
-              </div>
+            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration ── */}
+            <div className="lg:col-span-6 relative flex items-center justify-center">
+              {/* Soft Ambient Glow */}
+              <div className="absolute w-[30rem] h-[30rem] bg-gradient-to-tr from-[#3BB48C]/25 via-teal-100/40 to-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Terminal Window Frame */}
-              <div className="relative rounded-2xl bg-[#0D1F2D] border border-slate-800 shadow-2xl shadow-[#3BB48C]/15 overflow-hidden">
-                {/* macOS Window Title Bar */}
-                <div className="h-10 bg-[#081520] px-4 flex items-center justify-between border-b border-slate-800/80">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#EF4444] inline-block shadow-xs" />
-                    <span className="w-3 h-3 rounded-full bg-[#F59E0B] inline-block shadow-xs" />
-                    <span className="w-3 h-3 rounded-full bg-[#10B981] inline-block shadow-xs" />
-                  </div>
-                  <div className="text-[11px] font-mono font-medium text-slate-400 flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-[#3BB48C]" />
-                    mlite — zsh — 80x24
-                  </div>
-                  <div className="w-12 text-right">
-                    <span className="inline-block w-2 h-2 rounded-full bg-[#3BB48C] animate-pulse" />
-                  </div>
-                </div>
-
-                {/* Interactive Workflow Tab Selector */}
-                <div className="bg-[#0A1926] px-4 py-2 border-b border-slate-800/60 flex items-center gap-2 text-xs font-mono">
-                  <button
-                    onClick={() => setActiveTab("deploy")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "deploy"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    1. CLI Deploy
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("drift")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "drift"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    2. Drift Detection
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("curl")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "curl"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    3. Inference Curl
-                  </button>
-                </div>
-
-                {/* Terminal Screen Body */}
-                <div className="p-5 font-mono text-xs leading-relaxed min-h-[330px] flex flex-col justify-between text-slate-200">
-                  {activeTab === "deploy" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlops init fraud-detection</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Creating repository structure with DVC and MLflow tracking...
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlops deploy model --name fraud-detector</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Deploying to container runtime: mlite-serving-fraud-detector
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400 font-semibold">[2026-09-19 19:12:04] Logging deployment started</div>
-                        <div className="text-slate-300">[2026-09-19 19:12:05] Node allocation: active (port 8001)</div>
-                        <div className="text-emerald-400 font-semibold">[2026-09-19 19:12:05] Model weights: verified SHA-256 (4f8b9e...)</div>
-                        <div className="text-slate-300">[2026-09-19 19:12:06] Health check: 200 OK (latency: 18ms)</div>
-                        <div className="text-[#3BB48C] font-bold">[2026-09-19 19:12:06] Status: Successfully started &amp; serving</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "drift" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlite monitor drift --model fraud-detector</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Running Evidently AI Kolmogorov-Smirnov statistical tests...
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400">[TEST] Feature &#39;amount&#39;: p-val = 0.842 (No Drift)</div>
-                        <div className="text-emerald-400">[TEST] Feature &#39;user_score&#39;: p-val = 0.618 (No Drift)</div>
-                        <div className="text-amber-400 font-semibold">[DRIFT] Feature &#39;device_trust&#39;: p-val = 0.018 (Drift detected)</div>
-                        <div className="text-sky-300 font-semibold mt-1">[ALERT] Webhook dispatched to Slack #ml-alerts</div>
-                        <div className="text-[#3BB48C] font-bold">[SAFETY] Automated zero-downtime rollback ready</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "curl" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; curl -X POST http://localhost:8001/predict \</span>
-                        <div className="text-slate-400 text-[11px] pl-3">
-                          -H &quot;Content-Type: application/json&quot; \<br />
-                          -d &#39;&#123;&quot;features&quot;: [0.42, 128.5, 0.9]&#125;&#39;
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400">&#123;</div>
-                        <div className="text-slate-300 pl-3">&quot;prediction&quot;: [0.082],</div>
-                        <div className="text-slate-300 pl-3">&quot;decision&quot;: &quot;APPROVE&quot;,</div>
-                        <div className="text-teal-300 pl-3">&quot;inference_ms&quot;: 14.8,</div>
-                        <div className="text-[#3BB48C] pl-3 font-bold">&quot;status&quot;: &quot;HEALTHY&quot;</div>
-                        <div className="text-emerald-400">&#125;</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Active prompt indicator */}
-                  <div className="flex items-center gap-2 pt-2 text-[#3BB48C] font-bold">
-                    <span>$</span>
-                    <span className="w-2 h-4 bg-[#3BB48C] animate-pulse inline-block" />
-                  </div>
-                </div>
+              {/* Seamless 3D Isometric Illustration (Blended directly into the background without white rectangular border) */}
+              <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
+                <img
+                  src="/hero-isometric.jpg"
+                  alt="MLite Real-time MLOps Platform Isometric Illustration"
+                  className="w-full h-auto object-contain block select-none mix-blend-multiply"
+                  style={{
+                    WebkitMaskImage: "radial-gradient(ellipse at center, black 65%, transparent 95%)",
+                    maskImage: "radial-gradient(ellipse at center, black 65%, transparent 95%)",
+                  }}
+                  loading="eager"
+                />
               </div>
             </div>
           </div>

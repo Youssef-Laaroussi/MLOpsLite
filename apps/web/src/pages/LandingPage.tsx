@@ -224,43 +224,43 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Hero Section (Qubly Layout with Side/Border Neural Plexus Mesh Decorations) ── */}
-      <section className="relative pt-28 sm:pt-36 lg:pt-36 pb-20 lg:pb-28 overflow-hidden bg-gradient-to-b from-[#F7FCFA]/90 via-white to-white border-b border-slate-100">
-        {/* Decorative Neural Plexus Network Wave on Top-Right / Side Border (User Reference Style) */}
-        <div className="absolute top-0 right-0 w-[42rem] sm:w-[50rem] lg:w-[60rem] pointer-events-none z-0 opacity-80 mix-blend-multiply select-none">
+      {/* ── Hero Section (Senior Tech SaaS Layout with Vivid Neural Plexus Mesh Architecture) ── */}
+      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100 bg-mlops-grid">
+        {/* Vivid Top-Right Neural Plexus Wave (Completely Visible, High Opacity, High Definition) */}
+        <div className="absolute -top-10 -right-16 w-[42rem] sm:w-[52rem] lg:w-[62rem] pointer-events-none z-0 opacity-90 select-none">
           <img
             src="/neural-plexus.jpg"
             alt=""
-            className="w-full h-auto object-contain"
+            className="w-full h-auto object-contain mix-blend-multiply"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, black 60%, transparent 95%)",
-              maskImage: "radial-gradient(ellipse at 75% 35%, black 60%, transparent 95%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 75% 35%, black 70%, transparent 98%)",
             }}
           />
         </div>
 
-        {/* Decorative Neural Constellation Mesh on Bottom-Left / Side Border */}
-        <div className="absolute -bottom-16 -left-20 w-[34rem] sm:w-[42rem] lg:w-[48rem] pointer-events-none z-0 opacity-55 mix-blend-multiply select-none transform rotate-180">
+        {/* Vivid Bottom-Left Neural Constellation Mesh (Completely Visible, Just Like in the CTA Banner) */}
+        <div className="absolute -bottom-16 -left-16 w-[36rem] sm:w-[44rem] lg:w-[50rem] pointer-events-none z-0 opacity-85 select-none transform rotate-180">
           <img
             src="/neural-plexus.jpg"
             alt=""
-            className="w-full h-auto object-contain"
+            className="w-full h-auto object-contain mix-blend-multiply"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 70% 30%, black 50%, transparent 90%)",
-              maskImage: "radial-gradient(ellipse at 70% 30%, black 50%, transparent 90%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 70% 35%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 70% 35%, black 70%, transparent 98%)",
             }}
           />
         </div>
 
-        {/* Subtle Ambient Glow for Vitality */}
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/15 to-teal-100/25 rounded-full blur-3xl pointer-events-none z-0" />
+        {/* Subtle Ambient Radial Glow */}
+        <div className="absolute top-1/4 left-1/3 w-[34rem] h-[34rem] bg-gradient-to-br from-[#3BB48C]/20 to-teal-100/30 rounded-full blur-3xl pointer-events-none z-0" />
 
         <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
-            {/* ── Left Column: Senior SaaS Typography & Layout (Qubly Style) ── */}
-            <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left">
+            {/* ── Left Column: Natural, Frameless & Seamless Layout (No Box Border) ── */}
+            <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left relative z-20">
               {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-semibold shadow-xs">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4]/90 backdrop-blur-xs border border-[#BCE9DA] text-[#1A7456] text-xs font-semibold shadow-xs">
                 <Sparkles className="w-3.5 h-3.5 text-[#3BB48C]" />
                 <span>v1.0 Production-Ready</span>
                 <span className="text-slate-300">•</span>
@@ -269,16 +269,16 @@ export const LandingPage: React.FC = () => {
                 </a>
               </div>
 
-              {/* Refined Compact Heading */}
-              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.65rem] font-bold text-[#16192E] leading-[1.2] tracking-tight">
+              {/* Bold High-Contrast Heading */}
+              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.85rem] font-extrabold text-slate-900 leading-[1.18] tracking-tight">
                 Modern MLOps <br />
-                <span className="text-[#3BB48C]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-teal-600">
                   Infrastructure, Self-Hosted
                 </span>
               </h1>
 
-              {/* Light, Airy, Relaxed Subtitle */}
-              <p className="text-sm sm:text-base text-slate-500 max-w-md leading-relaxed font-normal">
+              {/* Crystal Clear Subtitle */}
+              <p className="text-base text-slate-700 max-w-lg leading-relaxed font-normal">
                 Track experiments, deploy low-latency Docker containers in sub-50ms, and detect statistical data drift — on your own servers.
               </p>
 
@@ -286,7 +286,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-4 pt-1">
                 <Link
                   to="/app"
-                  className="px-7 py-3 rounded-full bg-[#3BB48C] hover:bg-[#2FA07B] text-white font-semibold text-sm transition-all shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                  className="px-7 py-3.5 rounded-full bg-[#3BB48C] hover:bg-[#2FA07B] text-white font-bold text-sm transition-all shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
                 >
                   Start free console <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -294,24 +294,26 @@ export const LandingPage: React.FC = () => {
                   href="http://localhost:8000/docs"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-7 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
+                  className="px-7 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
                 >
                   Learn More
                 </a>
               </div>
 
               {/* Minimalist, Clean Quickstart Command Bar */}
-              <div className="pt-2 flex items-center gap-2">
-                <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-xs font-mono shadow-xs max-w-md">
-                  <Terminal className="w-3.5 h-3.5 text-[#3BB48C]" />
-                  <span className="text-[#3BB48C] font-bold select-none">$</span>
-                  <span className="text-slate-300 select-all truncate">{installCmd}</span>
+              <div className="pt-2 w-full max-w-md">
+                <div className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 text-xs font-mono shadow-sm">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Terminal className="w-3.5 h-3.5 text-[#3BB48C] shrink-0" />
+                    <span className="text-[#3BB48C] font-bold select-none">$</span>
+                    <span className="text-slate-200 select-all truncate">{installCmd}</span>
+                  </div>
                   <button
                     onClick={handleCopy}
-                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
                     title="Copy command"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-[#3BB48C]" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -322,15 +324,15 @@ export const LandingPage: React.FC = () => {
               {/* Soft Ambient Glow */}
               <div className="absolute w-[30rem] h-[30rem] bg-gradient-to-tr from-[#3BB48C]/25 via-teal-100/40 to-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Seamless 3D Isometric Illustration (Blended directly into the background without white rectangular border) */}
+              {/* Seamless 3D Isometric Illustration with organic transparent fade */}
               <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
                 <img
                   src="/hero-isometric.jpg"
                   alt="MLite Real-time MLOps Platform Isometric Illustration"
                   className="w-full h-auto object-contain block select-none mix-blend-multiply"
                   style={{
-                    WebkitMaskImage: "radial-gradient(ellipse at center, black 65%, transparent 95%)",
-                    maskImage: "radial-gradient(ellipse at center, black 65%, transparent 95%)",
+                    WebkitMaskImage: "radial-gradient(ellipse at center, black 60%, transparent 95%)",
+                    maskImage: "radial-gradient(ellipse at center, black 60%, transparent 95%)",
                   }}
                   loading="eager"
                 />
@@ -568,9 +570,33 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Bottom CTA Banner (Frameless Logo) ── */}
-      <section className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid">
-        <div className="max-w-5xl mx-auto px-6 relative">
+      {/* ── Bottom CTA Banner (Frameless Logo + Plexus Mesh Art) ── */}
+      <section className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid overflow-hidden">
+        {/* Subtle Decorative Neural Network Plexus on side of CTA */}
+        <div className="absolute -top-16 -right-20 w-[36rem] pointer-events-none z-0 opacity-45 mix-blend-multiply select-none">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 70% 40%, black 50%, transparent 90%)",
+              maskImage: "radial-gradient(ellipse at 70% 40%, black 50%, transparent 90%)",
+            }}
+          />
+        </div>
+        <div className="absolute -bottom-20 -left-24 w-[32rem] pointer-events-none z-0 opacity-40 mix-blend-multiply select-none transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 60% 40%, black 50%, transparent 90%)",
+              maskImage: "radial-gradient(ellipse at 60% 40%, black 50%, transparent 90%)",
+            }}
+          />
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
           <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-[#EBF8F4] via-[#F0FDF9] to-white border border-[#BCE9DA] shadow-xl text-center space-y-6 relative overflow-hidden">
             {/* Ambient vector decorations inside the CTA banner */}
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-tensor-dots opacity-40 pointer-events-none -z-10" />
@@ -602,8 +628,32 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Enterprise Dark Footer with Official Brand Palette & Complete Logo ── */}
-      <footer className="bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
+      <footer className="relative bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
+        {/* Glowing Neural Plexus Watermark in Dark Footer */}
+        <div className="absolute top-0 right-0 w-[42rem] h-full pointer-events-none z-0 opacity-15 mix-blend-screen select-none">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-full object-cover object-center invert brightness-125"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 80% 20%, black 40%, transparent 90%)",
+              maskImage: "radial-gradient(ellipse at 80% 20%, black 40%, transparent 90%)",
+            }}
+          />
+        </div>
+        <div className="absolute bottom-0 left-0 w-[36rem] h-full pointer-events-none z-0 opacity-10 mix-blend-screen select-none transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-full object-cover object-center invert brightness-125"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 20% 80%, black 40%, transparent 85%)",
+              maskImage: "radial-gradient(ellipse at 20% 80%, black 40%, transparent 85%)",
+            }}
+          />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Main Footer: Simple & Clean (No multiple columns) */}
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-12 border-b border-slate-800/80">
             {/* Brand & Description */}

@@ -31,6 +31,8 @@ import {
   Send,
   Heart,
   Star,
+  ChevronDown,
+  HelpCircle,
 } from "lucide-react";
 
 export const LandingPage: React.FC = () => {
@@ -49,6 +51,32 @@ export const LandingPage: React.FC = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+
+  // FAQ Accordion State
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const faqItems = [
+    {
+      q: "What is MLite and how is it different from cloud MLOps platforms?",
+      a: "MLite is a 100% self-hosted, open-source MLOps platform. Unlike AWS SageMaker or GCP Vertex AI, MLite has zero vendor lock-in and zero per-model egress fees. You run PostgreSQL, MinIO S3 storage, MLflow tracking, and Docker-based container serving directly on your own hardware with complete data sovereignty.",
+    },
+    {
+      q: "Is MLite completely free and open source?",
+      a: "Yes! MLite is licensed under the Apache 2.0 open-source license. The core features—model registry, Docker container serving endpoints, and automated drift detection—are free forever for individual developers, research labs, and enterprise teams.",
+    },
+    {
+      q: "How does Docker model serving work in MLite?",
+      a: "When you deploy a model version, MLite packages your artifact into an isolated Docker container with an embedded FastAPI web server, live health probes, and automatic port binding. You achieve sub-50ms inference latency without proprietary vendor runtimes.",
+    },
+    {
+      q: "How does MLite monitor data drift and model degradation?",
+      a: "MLite runs statistical drift evaluations (Population Stability Index / PSI, Wasserstein distance, KS-tests) powered by Evidently AI. When feature distributions shift between baseline training and live inference, MLite alerts you and can trigger automatic rollback.",
+    },
+    {
+      q: "Can I integrate MLite into my existing CI/CD or Python pipelines?",
+      a: "Yes. MLite offers a unified Python client (import mlite), an intuitive terminal CLI (mlite deployments create ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
+    },
+  ];
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +238,7 @@ export const LandingPage: React.FC = () => {
             <a href="#features" className="hover:text-[#3BB48C] transition">Features</a>
             <a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a>
             <a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a>
+            <a href="#faq" className="hover:text-[#3BB48C] transition">FAQ</a>
             <a href="#contact" className="hover:text-[#3BB48C] transition">Contact</a>
             <a
               href="http://localhost:8000/docs"
@@ -594,6 +623,97 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── FAQ Section (Interactive Accordion + Updated Male Engineer Illustration) ── */}
+      <section id="faq" className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden bg-mlops-grid">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section Heading */}
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-bold tracking-wide uppercase">
+              <HelpCircle className="w-3.5 h-3.5 text-[#3BB48C]" />
+              Frequently Asked Questions
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+              Got Questions? <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">We Have Answers</span>
+            </h2>
+            <p className="text-slate-600 text-base sm:text-lg">
+              Everything you need to know about self-hosting, Docker serving, and our 100% open-source MLOps architecture.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left: Illustration with MLOps Tech Context */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="relative w-full max-w-md rounded-3xl overflow-hidden border border-emerald-100/80 shadow-xl bg-white p-3 group transition-transform duration-500 hover:scale-[1.01]">
+                {/* Glow backdrop */}
+                <div className="absolute -inset-1 bg-gradient-to-tr from-[#3BB48C]/20 to-teal-100/30 rounded-3xl blur-xl pointer-events-none -z-10" />
+                <img
+                  src="/faq-illustration.jpg"
+                  alt="MLite FAQ and Open Source Technical Support"
+                  className="w-full h-auto object-contain rounded-2xl select-none"
+                />
+              </div>
+              <div className="mt-6 text-center max-w-sm">
+                <p className="text-xs text-slate-500">
+                  Still have questions? Check our{" "}
+                  <a
+                    href="http://localhost:8000/docs"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#3BB48C] font-semibold hover:underline"
+                  >
+                    API Documentation
+                  </a>{" "}
+                  or send us a message in the contact form below.
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Expandable Accordion */}
+            <div className="lg:col-span-7 space-y-4">
+              {faqItems.map((item, idx) => {
+                const isOpen = openFaq === idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                      isOpen
+                        ? "bg-white border-[#3BB48C] shadow-lg shadow-[#3BB48C]/5"
+                        : "bg-white/80 border-slate-200/90 hover:bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : idx)}
+                      className="w-full py-5 px-6 flex items-center justify-between text-left gap-4 cursor-pointer select-none"
+                    >
+                      <span className={`text-base font-bold transition-colors ${isOpen ? "text-slate-900" : "text-slate-700"}`}>
+                        {item.q}
+                      </span>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          isOpen ? "bg-[#EBF8F4] text-[#3BB48C]" : "bg-slate-100 text-slate-400"
+                        }`}
+                      >
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-300 ${
+                            isOpen ? "rotate-180 text-[#3BB48C]" : ""
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100/80 animate-fadeIn">
+                        {item.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Contact Us & Open-Source Community Section (Split Premium Layout) ── */}
       <section id="contact" className="py-24 bg-white relative overflow-hidden border-t border-slate-100">
         {/* Subtle background ambient gradients */}
@@ -934,6 +1054,7 @@ export const LandingPage: React.FC = () => {
                   <li><a href="#features" className="hover:text-[#3BB48C] transition">Features</a></li>
                   <li><a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a></li>
                   <li><a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a></li>
+                  <li><a href="#faq" className="hover:text-[#3BB48C] transition">FAQ / Support</a></li>
                   <li><a href="#contact" className="hover:text-[#3BB48C] transition">Contact & Community</a></li>
                   <li>
                     <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">

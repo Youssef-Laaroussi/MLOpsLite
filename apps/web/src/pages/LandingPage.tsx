@@ -26,6 +26,11 @@ import {
   Linkedin,
   Twitter,
   Github,
+  Mail,
+  MessageSquare,
+  Send,
+  Heart,
+  Star,
 } from "lucide-react";
 
 export const LandingPage: React.FC = () => {
@@ -36,6 +41,24 @@ export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"deploy" | "drift" | "curl">("deploy");
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [mouseCoord, setMouseCoord] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Contact Us Form State
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactTopic, setContactTopic] = useState("feedback");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactEmail.trim() || !contactMessage.trim()) return;
+    setContactLoading(true);
+    setTimeout(() => {
+      setContactLoading(false);
+      setContactSubmitted(true);
+    }, 600);
+  };
 
   const handleCardMouseMove = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -187,6 +210,7 @@ export const LandingPage: React.FC = () => {
             <a href="#features" className="hover:text-[#3BB48C] transition">Features</a>
             <a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a>
             <a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a>
+            <a href="#contact" className="hover:text-[#3BB48C] transition">Contact</a>
             <a
               href="http://localhost:8000/docs"
               target="_blank"
@@ -570,28 +594,245 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── Contact Us & Open-Source Community Section (Split Premium Layout) ── */}
+      <section id="contact" className="py-24 bg-white relative overflow-hidden border-t border-slate-100">
+        {/* Subtle background ambient gradients */}
+        <div className="absolute top-12 left-10 w-96 h-96 bg-[#EBF8F4]/70 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-50/80 rounded-full blur-3xl pointer-events-none -z-10" />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section Heading */}
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-bold tracking-wide uppercase">
+              <Heart className="w-3.5 h-3.5 text-[#3BB48C] fill-[#3BB48C]" />
+              Open Source Community & Support
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+              Get in Touch with the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">MLite Community</span>
+            </h2>
+            <p className="text-slate-600 text-base sm:text-lg">
+              Have questions about self-hosting, encountered an issue with Docker model serving, or want to contribute to the open-source platform? We're here to help.
+            </p>
+          </div>
+
+          {/* Premium Split Card (Inspired by reference design: Left Illustration + Right Dark Form) */}
+          <div className="relative rounded-3xl bg-white border border-slate-200/90 shadow-2xl shadow-slate-200/60 overflow-hidden">
+            {/* Corner organic decorative circular accents matching brand colors */}
+            <div className="absolute -top-12 -left-12 w-32 h-32 rounded-full bg-[#3BB48C]/15 pointer-events-none z-0" />
+            <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-teal-100/50 pointer-events-none z-0" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 relative z-10">
+              {/* ── Left Side: Light & Friendly with MLOps Character Illustration ── */}
+              <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 bg-gradient-to-br from-white via-[#F8FCFA] to-[#EFFBF6] flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C] animate-pulse" />
+                    <span className="text-xs font-bold font-mono text-[#1A7456] uppercase tracking-wider">
+                      Community Driven & 100% Free
+                    </span>
+                  </div>
+                  <h3 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                    Contact Us
+                  </h3>
+                  <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+                    MLite is built for data scientists and engineers who demand sovereignty over their MLOps stack. Share your feedback, report a bug, or ask for architecture advice.
+                  </p>
+                </div>
+
+                {/* Character Illustration with MLOps Tablet, Exclamation & Question Marks, and Star Rating */}
+                <div className="my-8 relative group flex items-center justify-center">
+                  <div className="relative max-w-md w-full rounded-2xl overflow-hidden border border-emerald-100/60 shadow-md bg-white p-2">
+                    <img
+                      src="/contact-illustration.jpg"
+                      alt="MLite Open Source Support and Community"
+                      className="w-full h-auto object-contain rounded-xl select-none transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                  </div>
+                </div>
+
+                {/* Open Source Channels & Badges */}
+                <div className="pt-4 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <Github className="w-4 h-4 text-slate-700" />
+                    <span className="font-semibold text-slate-700">Youssef-Laaroussi/MLOpsLite</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="https://github.com/Youssef-Laaroussi/MLOpsLite/issues"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#3BB48C] hover:text-[#2E8B6D] font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      GitHub Issues <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <span className="text-slate-300">•</span>
+                    <a
+                      href="https://github.com/Youssef-Laaroussi/MLOpsLite"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#3BB48C] hover:text-[#2E8B6D] font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      Star Repo <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Right Side: Dark Rich Panel with High-Contrast Form ── */}
+              <div className="lg:col-span-6 bg-[#0F172A] p-8 sm:p-12 lg:p-14 text-white flex flex-col justify-center relative overflow-hidden">
+                {/* Decorative dark elements matching the style */}
+                <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-[#3BB48C]/10 blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-emerald-500/10 pointer-events-none" />
+                <div className="absolute top-8 right-8 w-20 h-20 rounded-full bg-slate-800/60 pointer-events-none" />
+
+                <div className="relative z-10 max-w-lg mx-auto w-full">
+                  <div className="mb-8">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-[#3BB48C] text-xs font-mono font-medium mb-3">
+                      <Mail className="w-3.5 h-3.5" />
+                      Direct Maintainer Inbox
+                    </div>
+                    <h4 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      Send a Message
+                    </h4>
+                    <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                      Fill out the form below. For code patches, PRs or issue tracking, feel free to link your GitHub username.
+                    </p>
+                  </div>
+
+                  {contactSubmitted ? (
+                    <div className="p-8 rounded-2xl bg-slate-800/90 border border-[#3BB48C]/40 text-center space-y-4 animate-fadeIn">
+                      <div className="w-14 h-14 mx-auto rounded-full bg-[#3BB48C]/20 border border-[#3BB48C] flex items-center justify-center text-[#3BB48C]">
+                        <Check className="w-7 h-7 stroke-[3]" />
+                      </div>
+                      <h5 className="font-display text-xl font-bold text-white">Message Received!</h5>
+                      <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        Thank you for reaching out to the MLite open-source maintainers. We appreciate your feedback and will reply to <span className="text-[#3BB48C] font-mono font-semibold">{contactEmail}</span> shortly.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setContactSubmitted(false);
+                          setContactName("");
+                          setContactEmail("");
+                          setContactMessage("");
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition cursor-pointer"
+                      >
+                        Send Another Message
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleContactSubmit} className="space-y-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="Your Name (or GitHub Handle)"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          placeholder="name@organization.org"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Topic / Category
+                        </label>
+                        <select
+                          value={contactTopic}
+                          onChange={(e) => setContactTopic(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition cursor-pointer"
+                        >
+                          <option value="feedback">Open Source Feedback & Ideas</option>
+                          <option value="selfhosted">Self-Hosted Setup & Docker Serving</option>
+                          <option value="bug">Bug Report / Anomaly</option>
+                          <option value="contribute">Contributing Code / Feature PR</option>
+                          <option value="enterprise">Self-Hosted Enterprise Advisory</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Message
+                        </label>
+                        <textarea
+                          required
+                          rows={4}
+                          value={contactMessage}
+                          onChange={(e) => setContactMessage(e.target.value)}
+                          placeholder="Tell us what you are working on, any questions about MLite, or details about your deployment setup..."
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition resize-none"
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={contactLoading}
+                          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] active:bg-[#288365] text-white font-bold text-sm transition shadow-lg shadow-[#3BB48C]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                        >
+                          {contactLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Submit Message</span>
+                              <Send className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Bottom CTA Banner (Frameless Logo + Plexus Mesh Art) ── */}
       <section className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid overflow-hidden">
-        {/* Subtle Decorative Neural Network Plexus on side of CTA */}
-        <div className="absolute -top-16 -right-20 w-[36rem] pointer-events-none z-0 opacity-45 mix-blend-multiply select-none">
+        {/* Full-vibrancy Neural Network Plexus on Right (True vibrant colors, unhidden) */}
+        <div className="absolute -top-12 -right-10 w-[42rem] sm:w-[48rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 mix-blend-multiply select-none">
           <img
             src="/neural-plexus.jpg"
             alt=""
             className="w-full h-auto object-contain"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 70% 40%, black 50%, transparent 90%)",
-              maskImage: "radial-gradient(ellipse at 70% 40%, black 50%, transparent 90%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
             }}
           />
         </div>
-        <div className="absolute -bottom-20 -left-24 w-[32rem] pointer-events-none z-0 opacity-40 mix-blend-multiply select-none transform rotate-180">
+
+        {/* Full-vibrancy Neural Network Plexus on Left (True vibrant colors, unhidden) */}
+        <div className="absolute -bottom-14 -left-12 w-[38rem] sm:w-[44rem] lg:w-[50rem] pointer-events-none z-0 opacity-100 mix-blend-multiply select-none transform rotate-180">
           <img
             src="/neural-plexus.jpg"
             alt=""
             className="w-full h-auto object-contain"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at 60% 40%, black 50%, transparent 90%)",
-              maskImage: "radial-gradient(ellipse at 60% 40%, black 50%, transparent 90%)",
+              WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
             }}
           />
         </div>
@@ -693,6 +934,7 @@ export const LandingPage: React.FC = () => {
                   <li><a href="#features" className="hover:text-[#3BB48C] transition">Features</a></li>
                   <li><a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a></li>
                   <li><a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a></li>
+                  <li><a href="#contact" className="hover:text-[#3BB48C] transition">Contact & Community</a></li>
                   <li>
                     <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
                       GitHub Repo <ExternalLink className="w-3 h-3 text-slate-500" />

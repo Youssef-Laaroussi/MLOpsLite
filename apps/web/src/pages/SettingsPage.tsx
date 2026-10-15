@@ -220,9 +220,6 @@ export const SettingsPage: React.FC = () => {
                   >
                     Role: {isAdmin ? "ADMINISTRATOR (ADMIN)" : "MLOPS MEMBER (USER)"}
                   </span>
-                  <span className="text-[11px] text-slate-400">
-                    Simplified 2-role model: ADMIN & USER
-                  </span>
                 </div>
               </div>
             </div>
@@ -283,7 +280,7 @@ export const SettingsPage: React.FC = () => {
                     Registered Members ({teamUsers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Strict 2-role model: <span className="font-semibold text-rose-700">ADMIN</span> (Governance) and <span className="font-semibold text-emerald-700">USER</span> (MLOps Operations)
+                    Manage workspace accounts and access roles
                   </p>
                 </div>
               </div>

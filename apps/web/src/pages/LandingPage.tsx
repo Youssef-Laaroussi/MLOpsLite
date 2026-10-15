@@ -33,6 +33,8 @@ import {
   Star,
   ChevronDown,
   HelpCircle,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 export const LandingPage: React.FC = () => {
@@ -655,41 +657,32 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Expandable Accordion */}
-            <div className="lg:col-span-7 space-y-4">
+            {/* Right: Expandable Accordion (Databricks Minimalist Divider Style) */}
+            <div className="lg:col-span-7 border-t border-slate-200 divide-y divide-slate-200">
               {faqItems.map((item, idx) => {
                 const isOpen = openFaq === idx;
                 return (
-                  <div
-                    key={idx}
-                    className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
-                      isOpen
-                        ? "bg-white border-[#3BB48C] shadow-lg shadow-[#3BB48C]/5"
-                        : "bg-white/80 border-slate-200/90 hover:bg-white hover:border-slate-300"
-                    }`}
-                  >
+                  <div key={idx} className="transition-colors">
                     <button
                       onClick={() => setOpenFaq(isOpen ? null : idx)}
-                      className="w-full py-5 px-6 flex items-center justify-between text-left gap-4 cursor-pointer select-none"
+                      className="w-full py-5 flex items-center justify-between text-left gap-4 cursor-pointer select-none group"
                     >
-                      <span className={`text-base font-bold transition-colors ${isOpen ? "text-slate-900" : "text-slate-700"}`}>
+                      <span className={`text-base sm:text-lg font-semibold transition-colors ${
+                        isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
+                      }`}>
                         {item.q}
                       </span>
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                          isOpen ? "bg-[#EBF8F4] text-[#3BB48C]" : "bg-slate-100 text-slate-400"
-                        }`}
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-300 ${
-                            isOpen ? "rotate-180 text-[#3BB48C]" : ""
-                          }`}
-                        />
+                      <div className="shrink-0 text-slate-500 group-hover:text-[#3BB48C] transition-colors ml-4">
+                        {isOpen ? (
+                          <Minus className="w-5 h-5 text-[#3BB48C] stroke-[2.5]" />
+                        ) : (
+                          <Plus className="w-5 h-5 stroke-[2]" />
+                        )}
                       </div>
                     </button>
 
                     {isOpen && (
-                      <div className="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100/80 animate-fadeIn">
+                      <div className="pb-5 pr-8 text-sm sm:text-base text-slate-600 leading-relaxed animate-fadeIn">
                         {item.a}
                       </div>
                     )}

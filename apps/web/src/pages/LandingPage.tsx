@@ -618,11 +618,11 @@ export const LandingPage: React.FC = () => {
       <section id="faq" className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Got Questions? <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">We Have Answers</span>
             </h2>
-            <p className="text-slate-600 text-base sm:text-lg">
+            <p className="text-slate-600 text-sm sm:text-base">
               Everything you need to know about self-hosting, Docker serving, and our 100% open-source MLOps architecture.
             </p>
           </div>
@@ -709,11 +709,11 @@ export const LandingPage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Get in Touch with the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">MLite Community</span>
             </h2>
-            <p className="text-slate-600 text-base sm:text-lg">
+            <p className="text-slate-600 text-sm sm:text-base">
               Have questions about self-hosting, encountered an issue with Docker model serving, or want to contribute to the open-source platform? We're here to help.
             </p>
           </div>
@@ -727,17 +727,11 @@ export const LandingPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 relative z-10">
               {/* ── Left Side: Light & Friendly with MLOps Character Illustration ── */}
               <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 bg-gradient-to-br from-white via-[#F8FCFA] to-[#EFFBF6] flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C] animate-pulse" />
-                    <span className="text-xs font-bold font-mono text-[#1A7456] uppercase tracking-wider">
-                      Community Driven & 100% Free
-                    </span>
-                  </div>
-                  <h3 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                <div className="space-y-3">
+                  <h3 className="font-display text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     Contact Us
                   </h3>
-                  <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+                  <p className="text-slate-600 text-sm leading-relaxed">
                     MLite is built for data scientists and engineers who demand sovereignty over their MLOps stack. Share your feedback, report a bug, or ask for architecture advice.
                   </p>
                 </div>

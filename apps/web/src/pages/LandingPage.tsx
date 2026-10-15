@@ -522,7 +522,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Architecture & Stack Blueprint ── */}
-      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid">
+      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative">
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
@@ -615,7 +615,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── FAQ Section (Interactive Accordion + Updated Male Engineer Illustration) ── */}
-      <section id="faq" className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden bg-mlops-grid">
+      <section id="faq" className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section Heading */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -913,7 +913,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Bottom CTA Banner (Frameless Logo + Plexus Mesh Art) ── */}
-      <section className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid overflow-hidden">
+      <section className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden">
         {/* Full-vibrancy Neural Network Plexus on Right (True vibrant colors, unhidden) */}
         <div className="absolute -top-12 -right-10 w-[42rem] sm:w-[48rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 mix-blend-multiply select-none">
           <img

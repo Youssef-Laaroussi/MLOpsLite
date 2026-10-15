@@ -61,7 +61,7 @@ export const SignInPage: React.FC = () => {
           <path d="M120 180 C 260 120, 380 240, 560 140" stroke="#3BB48C" strokeWidth="2" strokeDasharray="6 6" opacity="0.45" />
           <path d="M80 320 C 220 220, 360 380, 580 260" stroke="#1A7456" strokeWidth="2.5" opacity="0.4" />
           <path d="M160 440 C 300 340, 420 480, 600 360" stroke="#2DD4BF" strokeWidth="2" strokeDasharray="4 4" opacity="0.35" />
-          
+
           {/* Node Clusters (Connected Data Graph) */}
           <line x1="280" y1="160" x2="380" y2="240" stroke="#3BB48C" strokeWidth="1.5" opacity="0.5" />
           <line x1="380" y1="240" x2="480" y2="180" stroke="#3BB48C" strokeWidth="1.5" opacity="0.5" />
@@ -71,10 +71,10 @@ export const SignInPage: React.FC = () => {
           {/* Glowing Data Nodes (Circles) */}
           <circle cx="280" cy="160" r="7" fill="#3BB48C" fillOpacity="0.8" />
           <circle cx="280" cy="160" r="14" stroke="#3BB48C" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5" />
-          
+
           <circle cx="380" cy="240" r="9" fill="#1A7456" />
           <circle cx="380" cy="240" r="18" stroke="#1A7456" strokeWidth="1.5" opacity="0.3" />
-          
+
           <circle cx="480" cy="180" r="6" fill="#2DD4BF" />
           <circle cx="420" cy="340" r="7.5" fill="#3BB48C" />
           <circle cx="240" cy="280" r="6" fill="#14B8A6" />
@@ -139,11 +139,11 @@ export const SignInPage: React.FC = () => {
           <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-xs p-1.5 flex items-center justify-center transition-all group-hover:border-[#3BB48C]">
             <img src="/logo.png" alt="MLite" className="w-full h-full object-contain" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-2">
             <span className="font-display font-black text-slate-900 text-lg tracking-tight">
               MLite
             </span>
-            <span className="text-[10px] font-mono font-bold text-[#1A7456] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80">
+            <span className="text-xs text-slate-400 font-medium">
               MLOps Platform
             </span>
           </div>

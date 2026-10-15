@@ -6,9 +6,6 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
-  Database,
-  Activity,
-  Layers,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -257,22 +254,6 @@ export const SignInPage: React.FC = () => {
               </Link>
             </p>
           </div>
-        </div>
-
-        {/* ── Real Data & MLOps Infrastructure Indicators ── */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-medium text-slate-400">
-          <span className="flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5 text-[#3BB48C]" />
-            MinIO Lineage
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-[#3BB48C]" />
-            Drift Telemetry
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#3BB48C]" />
-            MLflow Registry
-          </span>
         </div>
       </main>
     </div>

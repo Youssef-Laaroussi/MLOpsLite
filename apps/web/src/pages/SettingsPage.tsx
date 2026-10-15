@@ -16,6 +16,9 @@ import {
   Lock,
   ShieldCheck,
   Layers,
+  Mail,
+  Calendar,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { fetchApiKeys, createApiKey, revokeApiKey, fetchUsers } from "../api/client";
@@ -196,88 +199,123 @@ export const SettingsPage: React.FC = () => {
       {/* ── TAB 1: PROFILE & ROLE ── */}
       {activeTab === "profile" && (
         <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md ${
-                  isAdmin
-                    ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
-                    : "bg-gradient-to-tr from-[#3BB48C] to-teal-400 shadow-[#3BB48C]/20"
-                }`}
-              >
-                {user?.username?.charAt(0).toUpperCase() || "U"}
+          {/* User Account Card */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-sm ${
+                    isAdmin
+                      ? "bg-slate-900 shadow-slate-900/10"
+                      : "bg-[#3BB48C] shadow-[#3BB48C]/15"
+                  }`}
+                >
+                  {user?.username?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                      {user?.full_name || user?.username}
+                    </h3>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border ${
+                        isAdmin
+                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                          : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
+                      }`}
+                    >
+                      {user?.role || (isAdmin ? "ADMIN" : "USER")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      {user?.email || "user@organization.local"}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500">ID: {user?.id?.slice(0, 8) || "usr_active"}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{user?.full_name || user?.username}</h3>
-                <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
-                      isAdmin
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
-                    }`}
-                  >
-                    Role: {isAdmin ? "ADMINISTRATOR (ADMIN)" : "MLOPS MEMBER (USER)"}
-                  </span>
+
+              <div className="flex items-center gap-2">
+                <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Account Active</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Permissions Scope ({isAdmin ? "Comprehensive Governance & Supervision" : "MLOps Operational Lifecycle"})
+            {/* Scope / Capabilities */}
+            <div className="pt-6">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">
+                Assigned Workspace Entitlements
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Full modeling & promotion lifecycle</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">Model Registry & Training</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Track runs, register models & log metrics</div>
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Container serving & rollback triggers</span>
+                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">Inference & Serving</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Trigger deployments and test predictions</div>
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Evidently AI drift monitoring & alerts</span>
+                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">Drift & Quality Telemetry</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Evidently AI monitoring & data profiling</div>
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>MinIO S3 dataset profiling & sync</span>
+                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">Object Storage & Datasets</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">S3/MinIO bucket access & versioning</div>
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>MLflow experiment runs execution</span>
+                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">CLI & Pipeline Access</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Personal access tokens for mlite CLI</div>
+                  </div>
                 </div>
                 {isAdmin ? (
-                  <>
-                    <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
-                      <Shield className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>User account management & roles</span>
+                  <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200 flex items-start gap-2.5">
+                    <Shield className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-rose-950">Administrative Control</div>
+                      <div className="text-[11px] text-rose-700/80 mt-0.5">User provisioning & system settings</div>
                     </div>
-                    <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
-                      <Lock className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>Security audit logs & system keys</span>
-                    </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-600">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Personal CLI key generation</span>
+                  <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-900">Collaborative Workspace</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Shared experimentation across team</div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Team Members List (Real DB data, visible to Admin) */}
+          {/* Team Members List (Visible to Admin) */}
           {isAdmin && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <UserIcon className="w-5 h-5 text-[#3BB48C]" />
-                    Registered Members ({teamUsers.length})
+                    Team Members ({teamUsers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Manage workspace accounts and access roles
@@ -286,15 +324,15 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
-                <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase">
+                <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider">
                   <span>User</span>
-                  <span>Assigned Role</span>
+                  <span>Role</span>
                 </div>
                 {teamUsers.map((u) => (
-                  <div key={u.id} className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50 transition">
+                  <div key={u.id} className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50/60 transition">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center ${
+                        className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center ${
                           u.role === "ADMIN"
                             ? "bg-rose-100 text-rose-700"
                             : "bg-[#EBF8F4] text-[#1A7456]"

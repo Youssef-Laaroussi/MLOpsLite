@@ -436,9 +436,6 @@ export const LandingPage: React.FC = () => {
         <div className="absolute bottom-10 left-4 w-80 h-40 bg-diagonal-hatch opacity-40 pointer-events-none -z-10" />
 
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-            Enterprise Capabilities
-          </span>
           <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Everything You Need to Run Models in Production
           </h2>
@@ -528,9 +525,6 @@ export const LandingPage: React.FC = () => {
       <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative bg-mlops-grid">
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-              Production Architecture
-            </span>
             <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Self-Hosted Stack. Zero Black Boxes.
             </h2>
@@ -591,9 +585,6 @@ export const LandingPage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-              Developer Workflow
-            </span>
             <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               From Raw Code to Live Serving in 3 Commands
             </h2>
@@ -628,10 +619,6 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section Heading */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-bold tracking-wide uppercase">
-              <HelpCircle className="w-3.5 h-3.5 text-[#3BB48C]" />
-              Frequently Asked Questions
-            </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
               Got Questions? <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">We Have Answers</span>
             </h2>
@@ -723,10 +710,6 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Section Heading */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] text-xs font-bold tracking-wide uppercase">
-              <Heart className="w-3.5 h-3.5 text-[#3BB48C] fill-[#3BB48C]" />
-              Open Source Community & Support
-            </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
               Get in Touch with the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">MLite Community</span>
             </h2>

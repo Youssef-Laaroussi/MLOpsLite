@@ -379,7 +379,7 @@ export const DatasetsPage: React.FC = () => {
         {/* CARD 1: Datasets by type (7 cols) - Exact Vertical Bar Chart from User Screenshot */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">
               Datasets by type
             </h3>
 
@@ -470,7 +470,7 @@ export const DatasetsPage: React.FC = () => {
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-extrabold text-slate-800 tracking-tight">
+              <h3 className="text-sm font-semibold text-slate-900">
                 Storage &amp; Data Hygiene
               </h3>
               <span className="text-xs font-mono font-bold text-slate-400">

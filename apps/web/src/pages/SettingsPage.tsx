@@ -310,8 +310,8 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <UserIcon className="w-5 h-5 text-[#3BB48C]" />
+                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                    <UserIcon className="w-4 h-4 text-[#3BB48C]" />
                     Team Members ({teamUsers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">

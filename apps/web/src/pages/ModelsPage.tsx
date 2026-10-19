@@ -422,11 +422,11 @@ export const ModelsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#3BB48C]" />
                   Model Promotion Pipeline &amp; Stages
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Active model count distribution across lifecycle promotion stages
                 </p>
               </div>
@@ -526,11 +526,11 @@ export const ModelsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#3BB48C]" />
                   Model Footprint vs. Speed
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Latency (ms) vs. Memory Size (MB) trade-off
                 </p>
               </div>
@@ -590,11 +590,11 @@ export const ModelsPage: React.FC = () => {
       {/* ── Row 2: Registry Growth & Governance Scorecard ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#3BB48C]" />
             Registry Growth &amp; Promotion Velocity
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={REGISTRY_GROWTH} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
@@ -621,11 +621,11 @@ export const ModelsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
             Governance Scorecard
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-2">Registry compliance coverage (% of versions)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-2">Registry compliance coverage (% of versions)</p>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart data={GOVERNANCE} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>

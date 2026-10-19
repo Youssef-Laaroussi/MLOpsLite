@@ -407,8 +407,8 @@ export const ProjectsPage: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <GitBranch className="w-4 h-4 text-emerald-600" />
                   Project Activity &amp; Training Velocity
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                     8-Week Velocity
@@ -489,8 +489,8 @@ export const ProjectsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <PieChart className="w-4 h-4 text-emerald-600" />
                   ML Framework &amp; Domains
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -610,7 +610,7 @@ export const ProjectsPage: React.FC = () => {
         {/* CARD 1: Project activity */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-2">
+            <h3 className="text-sm font-semibold text-slate-900 mb-2">
               Project activity
             </h3>
 
@@ -705,7 +705,7 @@ export const ProjectsPage: React.FC = () => {
         {/* CARD 2: Projects by status */}
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">
               Projects by status
             </h3>
 
@@ -883,7 +883,7 @@ export const ProjectsPage: React.FC = () => {
       {filteredProjects.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-xs">
           <FolderGit2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800">No Projects Found</h3>
+          <h3 className="text-sm font-semibold text-slate-800">No Projects Found</h3>
           <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
             No projects match your filter criteria. Create a new workspace or reset search.
           </p>
@@ -1065,7 +1065,7 @@ export const ProjectsPage: React.FC = () => {
                   <StatusBadge status={proj.status} />
                 </div>
 
-                <h3 className="text-base font-black text-slate-900 mb-1.5 group-hover:text-[#3BB48C] transition-colors line-clamp-1">
+                <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-1">
                   {proj.name}
                 </h3>
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">

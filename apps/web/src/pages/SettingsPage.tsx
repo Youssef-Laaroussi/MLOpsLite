@@ -368,8 +368,8 @@ export const SettingsPage: React.FC = () => {
       {activeTab === "apikeys" && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-            <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Key className="w-5 h-5 text-[#3BB48C]" />
+            <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-[#3BB48C]" />
               Generate a New API Key
             </h3>
             <p className="text-xs text-slate-500 mb-4">
@@ -457,8 +457,8 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
                   Internal Microservices Health
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">

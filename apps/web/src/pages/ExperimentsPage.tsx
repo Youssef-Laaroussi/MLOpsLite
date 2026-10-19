@@ -485,11 +485,11 @@ export const ExperimentsPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-start justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-[#3BB48C]" />
                 Run Leaderboard
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-0.5">
                 ROC-AUC (bars) vs. log loss (line) with promotion threshold
               </p>
             </div>
@@ -521,11 +521,11 @@ export const ExperimentsPage: React.FC = () => {
         {/* CHART 2: Multi-dimensional model profile (radar) */}
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="mb-3">
-            <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-[#3BB48C]" />
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+              <Sliders className="w-4 h-4 text-[#3BB48C]" />
               Model Profile Comparison
             </h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Normalized score (0–100) across quality, speed &amp; robustness
             </p>
           </div>
@@ -550,11 +550,11 @@ export const ExperimentsPage: React.FC = () => {
       {/* ── Row 2: Run Activity & Hyperparameter Importance ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#3BB48C]" />
             Run Activity &amp; Success Rate
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={RUN_ACTIVITY} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
@@ -573,11 +573,11 @@ export const ExperimentsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Zap className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Zap className="w-4 h-4 text-[#3BB48C]" />
             Hyperparameter Importance
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={HP_IMPORTANCE} layout="vertical" margin={{ top: 0, right: 16, left: 24, bottom: 0 }}>
@@ -632,7 +632,7 @@ export const ExperimentsPage: React.FC = () => {
               </div>
 
               {/* Title & Path */}
-              <h3 className="font-extrabold text-slate-900 text-base tracking-tight line-clamp-1 group-hover:text-[#3BB48C] transition-colors">
+              <h3 className="text-sm font-semibold text-slate-900 tracking-tight line-clamp-1 group-hover:text-[#3BB48C] transition-colors">
                 {exp.name}
               </h3>
               <p className="text-xs font-mono text-slate-400 truncate mt-1">

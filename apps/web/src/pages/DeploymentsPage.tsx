@@ -491,11 +491,11 @@ export const DeploymentsPage: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Workflow className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Workflow className="w-4 h-4 text-[#3BB48C]" />
                   Ingress Traffic &amp; Route Throughput
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Real-time request volume distribution through NGINX gateway (Port 443 / SSL)
                 </p>
               </div>
@@ -645,11 +645,11 @@ export const DeploymentsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Gauge className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Gauge className="w-4 h-4 text-[#3BB48C]" />
                   Fleet SLA Benchmarking
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   P95 Inference Latency (ms) ranked by endpoint
                 </p>
               </div>
@@ -721,11 +721,11 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Row 2: Canary Traffic Split & Reliability (Error Rate vs p99) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <GitBranch className="w-4 h-4 text-[#3BB48C]" />
             Canary Traffic Split
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-2">fraud-detector · progressive rollout v2 → v3</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-2">fraud-detector · progressive rollout v2 → v3</p>
           <div className="h-48 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -755,11 +755,11 @@ export const DeploymentsPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-[#3BB48C]" />
                 Reliability: Error Rate vs. p99 Latency
               </h3>
-              <p className="text-sm text-slate-500 mt-1 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">SLO 99.9%</span>
           </div>
@@ -783,11 +783,11 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Row 3: Resource Heatmap & Release Timeline ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Cpu className="w-4 h-4 text-[#3BB48C]" />
             CPU Utilization Heatmap
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Per container, last 12 hours — darker = hotter</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Per container, last 12 hours — darker = hotter</p>
           <div className="space-y-1.5">
             {HEATMAP.map((row) => (
               <div key={row.name} className="flex items-center gap-3">
@@ -813,11 +813,11 @@ export const DeploymentsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Workflow className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Workflow className="w-4 h-4 text-[#3BB48C]" />
             Release Timeline
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Recent deploys, rollbacks and scaling events</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Recent deploys, rollbacks and scaling events</p>
           <ol className="relative border-l border-slate-200 ml-2 space-y-4">
             {RELEASES.map((r) => (
               <li key={r.id} className="ml-4">

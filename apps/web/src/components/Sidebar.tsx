@@ -59,7 +59,7 @@ export const Sidebar: React.FC = () => {
             <Link to="/app" className="font-extrabold text-slate-900 text-lg tracking-tight hover:text-[#3BB48C] transition">
               MLite
             </Link>
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
               v1.0.0
             </span>
           </div>

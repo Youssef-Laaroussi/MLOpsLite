@@ -208,7 +208,7 @@ export const AIAgentWidget: React.FC = () => {
             key={index}
             className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-semibold ${isUser
                 ? "bg-white/20 text-white"
-                : "bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]"
+                : "bg-slate-100 text-slate-800 border border-slate-200"
               }`}
           >
             {content}
@@ -355,8 +355,8 @@ export const AIAgentWidget: React.FC = () => {
                   >
                     {/* Avatar */}
                     {msg.sender === "agent" ? (
-                      <div className="w-7 h-7 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                        <Bot className="w-4 h-4 text-[#1A7456]" />
+                      <div className="w-7 h-7 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                        <Bot className="w-4 h-4 text-emerald-600" />
                       </div>
                     ) : (
                       <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 mt-0.5 text-[11px] font-bold shadow-2xs">
@@ -413,10 +413,10 @@ export const AIAgentWidget: React.FC = () => {
                             setIsOpen(false);
                             navigate(msg.actionLink!.path);
                           }}
-                          className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#EBF8F4] text-[#1A7456] hover:bg-[#D5F2E8] font-bold text-[11px] border border-[#BCE9DA] transition-all cursor-pointer shadow-2xs"
+                          className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 font-semibold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-2xs"
                         >
                           <span>{msg.actionLink.label}</span>
-                          <ArrowRight className="w-3 h-3 text-[#1A7456]" />
+                          <ArrowRight className="w-3 h-3 text-slate-600" />
                         </button>
                       )}
 
@@ -430,8 +430,8 @@ export const AIAgentWidget: React.FC = () => {
                 {/* Typing Indicator */}
                 {isTyping && (
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center shrink-0 shadow-2xs">
-                      <Bot className="w-4 h-4 text-[#1A7456]" />
+                    <div className="w-7 h-7 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Bot className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C] animate-bounce" />
@@ -452,7 +452,7 @@ export const AIAgentWidget: React.FC = () => {
                     <button
                       key={idx}
                       onClick={() => handleSendMessage(item.query)}
-                      className="shrink-0 flex items-center gap-1.5 text-[10.5px] font-semibold px-3 py-1.5 rounded-full bg-white hover:bg-[#EBF8F4] hover:text-[#1A7456] hover:border-[#3BB48C] border border-slate-200 text-slate-700 transition shadow-2xs cursor-pointer group"
+                      className="shrink-0 flex items-center gap-1.5 text-[10.5px] font-semibold px-3 py-1.5 rounded-full bg-white hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 border border-slate-200 text-slate-700 transition shadow-2xs cursor-pointer group"
                     >
                       <Icon className="w-3.5 h-3.5 text-[#3BB48C] group-hover:scale-110 transition-transform" />
                       <span>{item.label}</span>

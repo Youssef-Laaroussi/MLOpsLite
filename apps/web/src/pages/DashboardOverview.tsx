@@ -24,6 +24,7 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   TrendingUp,
+  Search,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -366,60 +367,160 @@ export const DashboardOverview: React.FC = () => {
   const devStroke = (devPct / 100) * circumference;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 1: SIGNATURE OVERVIEW HEADER & DATE PICKER ─────── */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-7xl mx-auto animate-in fade-in duration-150">
+      {/* ── SNOWFLAKE GLOBAL SEARCH BAR ────────────────────────────── */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          id="snowflake-global-search"
+          type="text"
+          placeholder="Search this account, models, datasets, deployments, and documentation..."
+          className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] transition"
+        />
+      </div>
+
+      {/* ── SNOWFLAKE QUICK ACTIONS ROW ────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900 mb-2">Quick actions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Link
+            to="/app/datasets"
+            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+          >
+            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
+              <Database className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
+              Upload local files
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              Quickly convert data into versioned datasets
+            </div>
+          </Link>
+
+          <Link
+            to="/app/deployments"
+            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+          >
+            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2">
+              <Server className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-emerald-600 transition">
+              Deploy model container
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              Launch dedicated HTTP inference endpoint
+            </div>
+          </Link>
+
+          <Link
+            to="/app/experiments"
+            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+          >
+            <div className="w-6 h-6 rounded-md bg-purple-500/10 text-purple-600 flex items-center justify-center mb-2">
+              <FlaskConical className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-purple-600 transition">
+              Create Experiment run
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              Develop SQL or Python ML training workflows
+            </div>
+          </Link>
+
+          <Link
+            to="/app/projects"
+            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+          >
+            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center mb-2">
+              <FolderGit2 className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-amber-600 transition">
+              Manage Projects
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              Collaborate with others on your team
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── SNOWFLAKE ACTIONABLE POLICY / CALLOUT BANNER ───────────── */}
+      <div className="p-4 rounded-lg bg-white border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] flex items-center justify-center shrink-0 mt-0.5">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold text-slate-900">
+              Reduce exfiltration risk with Data Movement Policies
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5 max-w-2xl">
+              Start with alert rules to see how much sensitive data is leaving, then add enforce rules that block oversized exports. Coverage applies account-wide or follows your tags.
+            </div>
+          </div>
+        </div>
+        <Link
+          to="/app/monitoring"
+          className="px-3.5 py-1.5 rounded-md bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold shrink-0 transition"
+        >
+          Get Started
+        </Link>
+      </div>
+
+      {/* ── SECTION 1: HEADER & DATE PICKER ────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
             Overview
           </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             A global view of your ML platform
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Admin Toggle */}
           {isAdmin && (
-            <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl shadow-2xs">
+            <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "governance"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-                  }`}
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${
+                  adminViewMode === "governance"
+                    ? "bg-slate-900 text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
               >
-                <Shield className="w-3.5 h-3.5" />
+                <Shield className="w-3 h-3" />
                 Admin
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${adminViewMode === "ml"
-                  ? "bg-[#3BB48C] text-white shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-                  }`}
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${
+                  adminViewMode === "ml"
+                    ? "bg-[#0284C7] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
               >
-                <Box className="w-3.5 h-3.5" />
+                <Box className="w-3 h-3" />
                 ML View
               </button>
             </div>
           )}
 
-          {/* Time Range Dropdown (Matching Screenshot) */}
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 7 days", "Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -427,10 +528,11 @@ export const DashboardOverview: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
-                      ? "bg-[#EBF8F4] text-[#1A7456]"
-                      : "text-slate-600 hover:bg-slate-50"
-                      }`}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
+                      timeRange === range
+                        ? "bg-[#E0F2FE] text-[#0284C7] font-semibold"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
                   >
                     {range}
                   </button>
@@ -441,19 +543,16 @@ export const DashboardOverview: React.FC = () => {
 
           <button
             onClick={loadData}
-            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-[#3BB48C] hover:border-[#3BB48C]/40 transition shadow-2xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-[#0284C7] hover:border-[#0284C7]/40 transition shadow-2xs"
             title="Refresh metrics"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#0284C7]" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 2: THE 5 SIGNATURE RESOURCE KPI CARDS ─────────── */}
-      {/* ── (Projects, Datasets, Experiments, Models, Deployments) ── */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* ── SECTION 2: THE 5 RESOURCE KPI CARDS ────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {resourcesData.map((res) => {
           const Icon = res.icon;
           const href = `/app/${res.name === "Models" ? "models" : res.name.toLowerCase()}`;
@@ -462,42 +561,42 @@ export const DashboardOverview: React.FC = () => {
               key={res.name}
               to={href}
               id={`kpi-${res.name.toLowerCase()}`}
-              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-[#3BB48C]/50 hover:-translate-y-0.5 transition-all hover:shadow-md group cursor-pointer block"
+              className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs hover:border-slate-300 transition-all group cursor-pointer block"
             >
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl border ${res.iconBg} ${res.iconColor} group-hover:scale-105 transition-transform`}>
-                  <Icon className="w-5 h-5 stroke-[2.2]" />
+              <div className="flex items-center gap-2.5">
+                <div className={`p-1.5 rounded-md border ${res.iconBg} ${res.iconColor}`}>
+                  <Icon className="w-4 h-4 stroke-[2]" />
                 </div>
-                <span className="text-xs font-bold text-slate-700 flex-1">{res.name}</span>
-                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-[#3BB48C] transition" />
+                <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{res.name}</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0284C7] transition" />
               </div>
-              <div className="text-2xl font-semibold font-display text-slate-900 mt-4 mb-2 tracking-tight">
+              <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
                 {res.count}
               </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
                 <span>{res.trend}</span>
-                <span className="text-slate-400 font-medium">vs prev. period</span>
+                <span className="text-slate-400 font-normal">vs prev. period</span>
               </div>
             </Link>
           );
         })}
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 3: SIGNATURE "RESOURCES OVERVIEW" BAR CHART ─────── */}
-      {/* ── (Matching user image with 0 to 80 Y-Axis and 5 Bars) ───── */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs hover:border-slate-300 transition-all">
-        <h3 className="text-base font-semibold text-slate-900 mb-6">
-          Resources overview
-        </h3>
+      {/* ── SECTION 3: "RESOURCES OVERVIEW" BAR CHART ──────────────── */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Resources overview
+          </h3>
+          <span className="text-xs text-slate-400">Inventory counts</span>
+        </div>
 
         {/* Chart Canvas */}
-        <div className="h-64 w-full mt-4">
+        <div className="h-52 w-full mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={resourcesData}
-              margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+              margin={{ top: 15, right: 0, left: -20, bottom: 0 }}
             >
               <CartesianGrid {...GRID_PROPS} />
               <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -515,7 +614,7 @@ export const DashboardOverview: React.FC = () => {
                   );
                 }}
               />
-              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={54}>
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
                 {[PALETTE.brand, PALETTE.cyan, PALETTE.violet, PALETTE.amber, PALETTE.blue].map((col, index) => (
                   <Cell key={`cell-${index}`} fill={col} />
                 ))}
@@ -528,16 +627,16 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* ── SECTION 4: ADVANCED LATENCY CURVE & MODEL REGISTRY DONUT ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Latency Percentiles Curve (7 cols / 58%) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#3BB48C]" />
-                  Inference & Telemetry Latency Curve
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#0284C7]" />
+                  Inference &amp; Telemetry Latency Curve
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                     P95: 5.4ms
                   </span>
                 </h3>
@@ -547,12 +646,12 @@ export const DashboardOverview: React.FC = () => {
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md">
                 {(["all", "p50", "p95", "p99"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition uppercase ${latencyMetricFilter === mode
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition uppercase ${latencyMetricFilter === mode
                       ? "bg-white text-slate-900 shadow-2xs"
                       : "text-slate-500 hover:text-slate-900"
                       }`}
@@ -564,23 +663,23 @@ export const DashboardOverview: React.FC = () => {
             </div>
 
             {/* Quick KPI Ribbon */}
-            <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-center">
+            <div className="grid grid-cols-3 gap-2 mb-3 p-2.5 bg-slate-50 border border-slate-100 rounded-md text-center">
               <div>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Median (P50)</span>
-                <span className="text-sm font-semibold text-slate-900 font-mono">2.8 ms</span>
+                <span className="text-xs font-semibold text-slate-900 font-mono">2.8 ms</span>
               </div>
               <div className="border-x border-slate-200">
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
-                <span className="text-sm font-semibold text-[#1A7456] font-mono">5.4 ms</span>
+                <span className="text-xs font-semibold text-[#0284C7] font-mono">5.4 ms</span>
               </div>
               <div>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
-                <span className="text-sm font-semibold text-emerald-600 font-mono">99.98%</span>
+                <span className="text-xs font-semibold text-emerald-600 font-mono">99.98%</span>
               </div>
             </div>
 
             {/* SVG Multi-Line Latency Graph -> Recharts LineChart */}
-            <div className="h-48 w-full mt-4">
+            <div className="h-44 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={latencyData}
@@ -613,52 +712,52 @@ export const DashboardOverview: React.FC = () => {
                     <Line type="monotone" dataKey="p95" stroke={PALETTE.amber} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   )}
                   {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
                   )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 font-bold text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> P50 Median
+          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> P50 Median
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> P95 Tail
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> P95 Tail
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> P99 Spike
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-rose-500" /> P99 Spike
               </span>
             </div>
-            <span className="text-[11px] font-mono text-slate-400">Target SLA: &lt;15ms</span>
+            <span className="font-mono text-slate-400">Target SLA: &lt;15ms</span>
           </div>
         </div>
 
         {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <PieChartIcon className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <PieChartIcon className="w-4 h-4 text-[#0284C7]" />
                   Model Registry Distribution
                 </h3>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Breakdown across lifecycle promotion stages
                 </p>
               </div>
               <Link
                 to="/app/models"
-                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#0284C7] hover:underline flex items-center gap-1"
               >
                 Catalog <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             {/* Recharts Donut PieChart with Center Text */}
-            <div className="relative h-48 w-full my-2 flex items-center justify-center">
+            <div className="relative h-44 w-full my-1 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -670,8 +769,8 @@ export const DashboardOverview: React.FC = () => {
                     ]}
                     cx="50%"
                     cy="50%"
-                    innerRadius={52}
-                    outerRadius={78}
+                    innerRadius={50}
+                    outerRadius={72}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -702,7 +801,7 @@ export const DashboardOverview: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-bold font-display text-slate-900">
+                <span className="text-xl font-bold font-sans text-slate-900">
                   {stats.models_count || 15}
                 </span>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
@@ -714,27 +813,27 @@ export const DashboardOverview: React.FC = () => {
             {/* Legend Pills */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" />
+                <span className="w-2 h-2 rounded-full bg-[#0284C7]" />
                 <span className="text-slate-600 font-medium">Production ({stageCounts.PRODUCTION || 6})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
+                <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
                 <span className="text-slate-600 font-medium">Development ({stageCounts.DEVELOPMENT || 4})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
+                <span className="w-2 h-2 rounded-full bg-[#8B5CF6]" />
                 <span className="text-slate-600 font-medium">Candidate (3)</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
                 <span className="text-slate-600 font-medium">Staging ({stageCounts.STAGING || 2})</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Registry Status: Verified</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
               Zero Unsigned Models
             </span>
           </div>
@@ -744,26 +843,26 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* ── SECTION 5: RESOURCE TELEMETRY & FEATURE DRIFT MATRIX ───── */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Microservices Resource Allocation Grouped BarChart */}
-        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Cpu className="w-4 h-4 text-[#0284C7]" />
                   Infrastructure &amp; Resource Telemetry
                 </h3>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Live CPU load (%) vs Memory allocation (%) across container pods
                 </p>
               </div>
-              <span className="text-xs font-mono font-semibold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] px-2.5 py-1 rounded-full">
+              <span className="text-[10px] font-mono font-semibold bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD] px-2 py-0.5 rounded-md">
                 Docker Engine
               </span>
             </div>
 
-            <div className="h-52 w-full my-2">
+            <div className="h-48 w-full my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={[
@@ -773,7 +872,7 @@ export const DashboardOverview: React.FC = () => {
                     { service: "MLflow", cpu: 15, mem: 38, full: "MLflow Experiment Server" },
                   ]}
                   margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
-                  barSize={16}
+                  barSize={14}
                 >
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="service" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -794,48 +893,48 @@ export const DashboardOverview: React.FC = () => {
                       );
                     }}
                   />
-                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.indigo} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.indigo} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <div className="flex items-center gap-4">
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> CPU Load (%)
+                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> CPU Load (%)
               </span>
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#6366F1]" /> Memory (%)
+                <span className="w-2 h-2 rounded-full bg-[#6366F1]" /> Memory (%)
               </span>
             </div>
-            <span className="text-[#1A7456] font-semibold">4/4 Operational</span>
+            <span className="text-[#0284C7] font-semibold text-[11px]">4/4 Operational</span>
           </div>
         </div>
 
         {/* Feature Drift & SHAP Importance Composed Chart */}
-        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
                   Feature Drift vs. SHAP Importance
                 </h3>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   SHAP feature impact (Bar) vs Evidently AI PSI drift score (Line)
                 </p>
               </div>
               <Link
                 to="/app/monitoring"
-                className="text-xs font-semibold text-[#3BB48C] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#0284C7] hover:underline flex items-center gap-1"
               >
                 Monitoring <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="h-52 w-full my-2">
+            <div className="h-48 w-full my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={[
@@ -875,23 +974,23 @@ export const DashboardOverview: React.FC = () => {
                       );
                     }}
                   />
-                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2.5} dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.blue} radius={[3, 3, 0, 0]} maxBarSize={24} />
+                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2} dot={{ r: 3, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <div className="flex items-center gap-4">
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" /> SHAP Importance
+                <span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> SHAP Importance
               </span>
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> PSI Drift
+                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> PSI Drift
               </span>
             </div>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
               Zero Drift Alerts
             </span>
           </div>
@@ -900,19 +999,19 @@ export const DashboardOverview: React.FC = () => {
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* ── SECTION 5B: PLATFORM SPEND, LIFECYCLE FUNNEL, STORAGE & HEALTH ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+          <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-[#0284C7]" />
                 Platform Spend &amp; Compute
               </h3>
-              <p className="text-sm text-slate-500 mt-1 mb-4">Monthly cost by workload (USD) — training, serving, storage</p>
+              <p className="text-xs text-slate-500 mt-0.5">Monthly cost by workload (USD) — training, serving, storage</p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
           </div>
-          <div className="h-64">
+          <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={SPEND_DATA} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} />
@@ -928,13 +1027,13 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#3BB48C]" />
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#0284C7]" />
             MLOps Lifecycle Funnel
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">From raw dataset to production model</p>
-          <div className="h-64">
+          <p className="text-xs text-slate-500 mt-0.5 mb-2">From raw dataset to production model</p>
+          <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <FunnelChart>
                 <RechartsTooltip />
@@ -950,34 +1049,34 @@ export const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* GRAPH 1: Production Model Benchmark & Quality Matrix (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-[#0284C7]" />
                   Production Model Benchmark Matrix
                 </h3>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Validation ROC-AUC vs. F1-Score across active production candidate models
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                 100% SLA Compliant
               </span>
             </div>
 
-            <div className="h-64 w-full my-2">
+            <div className="h-52 w-full my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={MODEL_BENCHMARK_FLEET}
                   margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
-                  barSize={14}
+                  barSize={12}
                 >
                   <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0.80, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
                   <ReferenceLine y={0.90} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Gate: 0.90", fill: PALETTE.amber, fontSize: 10, position: "insideBottomLeft" }} />
                   <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Target: 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
@@ -1000,39 +1099,36 @@ export const DashboardOverview: React.FC = () => {
                       );
                     }}
                   />
-                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.blue} radius={[4, 4, 0, 0]} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.blue} radius={[3, 3, 0, 0]} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Holdout Validation: 100k Verified Test Samples</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
               Zero Model Regressions
             </span>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
             Platform Health
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Core services status &amp; 30-day uptime</p>
-          <ul className="space-y-2.5">
+          <p className="text-xs text-slate-500 mt-0.5 mb-3">Core services status &amp; 30-day uptime</p>
+          <ul className="space-y-2">
             {SERVICES.map((s) => (
-              <li key={s.name} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2 hover:bg-slate-50 transition">
-                <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
-                  <span className="relative flex w-2.5 h-2.5">
-                    <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: s.color }} />
-                    <span className="relative w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
-                  </span>
+              <li key={s.name} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-1.5 hover:bg-slate-50 transition">
+                <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
                   {s.name}
                 </span>
-                <span className="flex items-center gap-3 text-xs font-mono text-slate-500">
+                <span className="flex items-center gap-2.5 text-[11px] font-mono text-slate-500">
                   <span>{s.latency}</span>
                   <strong className="text-slate-900">{s.uptime}</strong>
                 </span>
@@ -1043,37 +1139,37 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ── GRAPH 2: Model Performance Trajectory & Continuous Retraining (12 cols) ── */}
-      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <TrendingUp className="w-5 h-5 text-[#3BB48C]" />
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[#0284C7]" />
+              <h3 className="text-sm font-semibold text-slate-900">
                 Model Performance Stability &amp; Continuous Retraining Trajectory
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                 Auto-Retrain Active
               </span>
             </div>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               30-day continuous rolling F1-score tracking concept drift and automated retraining recovery events
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md font-mono text-slate-700">
               <span className="text-slate-400">Fleet Mean F1:</span> <strong className="text-slate-900 font-bold">0.956</strong>
             </div>
-            <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-mono">
+            <div className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md font-mono">
               <span className="text-emerald-600">Recovery:</span> <strong>+3.7% F1</strong>
             </div>
-            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-700">
+            <div className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md font-mono text-slate-700">
               <span className="text-slate-400">Drift Protection:</span> <strong className="text-emerald-600 font-bold">Enforced</strong>
             </div>
           </div>
         </div>
 
-        <div className="h-72 w-full">
+        <div className="h-60 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={FLEET_DRIFT_TRAJECTORY}
@@ -1124,19 +1220,19 @@ export const DashboardOverview: React.FC = () => {
                 }}
               />
 
-              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={3} fill="url(#gFleetAvg)" dot={{ r: 4, fill: PALETTE.brand, strokeWidth: 2, stroke: "#fff" }} />
-              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.brandDark} strokeWidth={2} dot={false} strokeDasharray="5 5" />
-              <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={2} dot={false} strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={2.5} fill="url(#gFleetAvg)" dot={{ r: 3, fill: PALETTE.brand, strokeWidth: 1.5, stroke: "#fff" }} />
+              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.brandDark} strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={1.5} dot={false} strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={1.5} dot={false} />
 
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500 font-mono">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500 font-mono">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>Telemetry Frequency: Continuous (Every 1,000 Inferences)</span>
           </div>
           <span>Evidently AI PSI Engine + Prometheus Exporter Live</span>
@@ -1145,24 +1241,24 @@ export const DashboardOverview: React.FC = () => {
 
       {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Production Models */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
               Production Models &amp; Registry
             </h3>
             <Link
               to="/app/models"
-              className="text-xs text-[#3BB48C] hover:underline flex items-center gap-1 font-bold"
+              className="text-xs text-[#0284C7] hover:underline flex items-center gap-1 font-semibold"
             >
               View All <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {models.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-sm">
+            <div className="text-center py-6 text-slate-400 text-xs">
               No cataloged models found.
             </div>
           ) : (
@@ -1170,18 +1266,18 @@ export const DashboardOverview: React.FC = () => {
               {models.slice(0, 4).map((m, idx) => (
                 <div
                   key={idx}
-                  className="py-3.5 flex items-center justify-between hover:bg-slate-50/80 px-2 rounded-xl transition group cursor-pointer"
+                  className="py-2.5 flex items-center justify-between hover:bg-slate-50 px-2 rounded-md transition group cursor-pointer"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center text-[#1A7456] font-mono text-xs font-bold group-hover:scale-105 transition-transform">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center text-[#0284C7] font-mono text-[11px] font-bold">
                       M{m.version}
                     </div>
                     <div>
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-[#1A7456] transition-colors">
+                      <div className="font-semibold text-slate-800 text-xs group-hover:text-[#0284C7] transition">
                         {m.name}
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5 font-mono">
-                        Version v{m.version} • Verified Registry
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        v{m.version} • Verified Registry
                       </div>
                     </div>
                   </div>
@@ -1193,50 +1289,47 @@ export const DashboardOverview: React.FC = () => {
         </div>
 
         {/* Active Container Deployments with Test Ping */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <h3 className="text-sm font-semibold text-slate-900">
                 Active Inference Endpoints
               </h3>
             </div>
             <Link
               to="/app/deployments"
-              className="text-xs text-[#3BB48C] hover:underline flex items-center gap-1 font-bold"
+              className="text-xs text-[#0284C7] hover:underline flex items-center gap-1 font-semibold"
             >
               Manage <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {deployments.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-sm">
+            <div className="text-center py-6 text-slate-400 text-xs">
               No running containers found.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {deployments.slice(0, 3).map((d) => (
                 <div
                   key={d.id}
-                  className="p-4 rounded-2xl border border-slate-200 hover:border-[#3BB48C]/60 hover:shadow-md transition-all duration-300 bg-white group"
+                  className="p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition bg-white"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
-                        <Radio className="w-4 h-4 animate-pulse text-[#3BB48C]" />
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+                        <Radio className="w-3.5 h-3.5 text-emerald-600" />
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
                           {d.model_name}
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                             v{d.model_version}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500 font-mono font-semibold mt-0.5">
-                          Dedicated Port :{d.port} • Secure Inference
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          Port :{d.port} • Secure Inference
                         </div>
                       </div>
                     </div>
@@ -1244,20 +1337,20 @@ export const DashboardOverview: React.FC = () => {
                     <button
                       onClick={() => handleTestPing(d)}
                       disabled={pingingId === d.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-[#EBF8F4] text-slate-700 hover:text-[#1A7456] border border-slate-200 hover:border-[#BCE9DA] text-xs font-bold transition shadow-2xs group-hover:scale-105"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition"
                     >
-                      <Zap className={`w-3.5 h-3.5 text-amber-500 ${pingingId === d.id ? "animate-bounce" : ""}`} />
+                      <Zap className={`w-3 h-3 text-amber-500 ${pingingId === d.id ? "animate-bounce" : ""}`} />
                       {pingingId === d.id ? "Ping..." : "Test Ping"}
                     </button>
                   </div>
 
                   {pingResult && pingResult.id === d.id && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs animate-in fade-in">
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] animate-in fade-in">
+                      <div className="flex items-center gap-1 text-emerald-700 font-semibold">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Inference succeeded ({pingResult.latency} ms)</span>
                       </div>
-                      <span className="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">
+                      <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
                         Class: {pingResult.prediction?.predicted_class ?? 1} (Conf: 94%)
                       </span>
                     </div>

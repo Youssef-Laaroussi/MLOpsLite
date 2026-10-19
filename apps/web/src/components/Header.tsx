@@ -184,9 +184,8 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                       setEnv(e);
                       setOpenMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition ${
-                      env === e ? "bg-[#EBF8F4] text-[#1A7456]" : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition ${env === e ? "bg-[#EBF8F4] text-[#1A7456]" : "text-slate-600 hover:bg-slate-50"
+                      }`}
                   >
                     {e}
                     {env === e && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -282,11 +281,10 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                 className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition"
               >
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs ${
-                    user.role === "ADMIN"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs ${user.role === "ADMIN"
                       ? "bg-gradient-to-tr from-rose-500 to-pink-600"
                       : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
-                  }`}
+                    }`}
                 >
                   {user.username.charAt(0).toUpperCase()}
                 </div>
@@ -394,9 +392,8 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                   key={r.href}
                   onMouseEnter={() => setCursor(i)}
                   onClick={() => go(r.href)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition ${
-                    i === cursor ? "bg-[#EBF8F4]" : ""
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition ${i === cursor ? "bg-[#EBF8F4]" : ""
+                    }`}
                 >
                   <div className={`p-1.5 rounded-lg ${i === cursor ? "bg-[#3BB48C] text-white" : "bg-slate-100 text-slate-500"}`}>
                     <r.icon className="w-4 h-4" />

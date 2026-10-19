@@ -652,11 +652,11 @@ export const ModelsPage: React.FC = () => {
       {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Sliders className="w-4 h-4 text-[#3BB48C]" />
             Champion vs. Challenger
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
@@ -693,11 +693,11 @@ export const ModelsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-[#3BB48C]" />
             Promotion Audit Trail
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Latest stage transitions with approver</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest stage transitions with approver</p>
           <ol className="relative border-l border-slate-200 ml-2 space-y-4">
             {PROMOTION_EVENTS.map((e) => (
               <li key={e.id} className="ml-4">

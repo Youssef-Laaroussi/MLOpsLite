@@ -88,7 +88,7 @@ export const Sidebar: React.FC = () => {
           <div className="pt-3 border-t border-slate-100">
             <Link
               to="/"
-              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-[#3BB48C] hover:bg-[#F0FDF9] transition border border-transparent hover:border-[#BCE9DA]"
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50/60 transition border border-transparent hover:border-emerald-200"
             >
               <Home className="w-3.5 h-3.5 text-[#3BB48C]" />
               Return to Landing Page

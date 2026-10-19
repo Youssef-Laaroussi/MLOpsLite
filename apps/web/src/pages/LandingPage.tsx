@@ -231,7 +231,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <span className="font-black text-slate-900 text-2xl tracking-tight">MLite</span>
             </Link>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-md font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
               v1.0.0 GA
             </span>
           </div>
@@ -315,11 +315,11 @@ export const LandingPage: React.FC = () => {
             {/* ── Left Column: Natural, Frameless & Seamless Layout (No Box Border) ── */}
             <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left relative z-20">
               {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF8F4]/90 backdrop-blur-xs border border-[#BCE9DA] text-[#1A7456] text-xs font-semibold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#3BB48C]" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/90 backdrop-blur-xs border border-emerald-200/80 text-emerald-800 text-xs font-semibold shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                 <span>v1.0 Production-Ready</span>
                 <span className="text-slate-300">•</span>
-                <a href="#features" className="text-[#3BB48C] hover:text-[#1A7456] underline font-bold transition">
+                <a href="#features" className="text-emerald-700 hover:text-emerald-900 underline font-bold transition">
                   Learn more
                 </a>
               </div>
@@ -568,7 +568,7 @@ export const LandingPage: React.FC = () => {
                   key={idx}
                   className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center text-[#1A7456] mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mb-4">
                     <Icon className="w-5 h-5 stroke-[2.2]" />
                   </div>
                   <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
@@ -697,7 +697,7 @@ export const LandingPage: React.FC = () => {
       {/* ── Contact Us & Open-Source Community Section (Split Premium Layout) ── */}
       <section id="contact" className="py-24 bg-white relative overflow-hidden border-t border-slate-100">
         {/* Subtle background ambient gradients */}
-        <div className="absolute top-12 left-10 w-96 h-96 bg-[#EBF8F4]/70 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-12 left-10 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-50/80 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -928,7 +928,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-[#EBF8F4] via-[#F0FDF9] to-white border border-[#BCE9DA] shadow-xl text-center space-y-6 relative overflow-hidden">
+          <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-slate-50 via-emerald-50/30 to-white border border-slate-200 shadow-xl text-center space-y-6 relative overflow-hidden">
             {/* Ambient vector decorations inside the CTA banner */}
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-tensor-dots opacity-40 pointer-events-none -z-10" />
             <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-diagonal-hatch opacity-50 pointer-events-none -z-10" />

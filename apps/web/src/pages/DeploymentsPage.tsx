@@ -399,9 +399,9 @@ export const DeploymentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -952,7 +952,7 @@ export const DeploymentsPage: React.FC = () => {
                       <button
                         onClick={() => handleTestPing(d)}
                         disabled={pingingId === d.id || d.status !== "RUNNING"}
-                        className="px-2.5 py-1.5 rounded-lg bg-[#EBF8F4] hover:bg-[#3BB48C] text-[#1A7456] hover:text-white border border-[#BCE9DA] font-bold text-xs flex items-center gap-1 transition disabled:opacity-40"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center gap-1 transition disabled:opacity-40"
                       >
                         <Zap className={`w-3 h-3 ${pingingId === d.id ? "animate-spin text-amber-500" : ""}`} />
                         {pingingId === d.id ? "Pinging..." : "Test ⚡"}

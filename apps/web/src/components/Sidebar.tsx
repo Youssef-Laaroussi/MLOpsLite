@@ -59,7 +59,7 @@ export const Sidebar: React.FC = () => {
             <Link to="/app" className="font-extrabold text-slate-900 text-lg tracking-tight hover:text-[#3BB48C] transition">
               MLite
             </Link>
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
               v1.0.0
             </span>
           </div>
@@ -88,7 +88,7 @@ export const Sidebar: React.FC = () => {
           <div className="pt-3 border-t border-slate-100">
             <Link
               to="/"
-              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-[#3BB48C] hover:bg-[#F0FDF9] transition border border-transparent hover:border-[#BCE9DA]"
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50/60 transition border border-transparent hover:border-emerald-200"
             >
               <Home className="w-3.5 h-3.5 text-[#3BB48C]" />
               Return to Landing Page
@@ -104,8 +104,8 @@ export const Sidebar: React.FC = () => {
             <div className="flex items-center gap-2 min-w-0">
               <div
                 className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs ${user.role === "ADMIN"
-                    ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
-                    : "bg-[#3BB48C]"
+                  ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
+                  : "bg-[#3BB48C]"
                   }`}
               >
                 {user.username.charAt(0).toUpperCase()}

@@ -302,35 +302,31 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FolderGit2 className="w-7 h-7 text-[#3BB48C]" />
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
             Workspaces &amp; Projects
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] font-sans">
-              Git Ops Managed
-            </span>
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Organize machine learning repositories, training pipelines, model registries, and team workflows
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Exact Date Filter from User Screenshot: "Last 6 months" */}
+        <div className="flex items-center gap-2">
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -338,8 +334,8 @@ export const ProjectsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
@@ -352,17 +348,17 @@ export const ProjectsPage: React.FC = () => {
 
           <button
             onClick={loadProjects}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh projects"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-sm transition shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="w-3.5 h-3.5" />
             New Project
           </button>
         </div>
@@ -411,8 +407,8 @@ export const ProjectsPage: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <GitBranch className="w-4 h-4 text-emerald-600" />
                   Project Activity &amp; Training Velocity
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                     8-Week Velocity
@@ -493,8 +489,8 @@ export const ProjectsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <PieChart className="w-4 h-4 text-emerald-600" />
                   ML Framework &amp; Domains
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -614,7 +610,7 @@ export const ProjectsPage: React.FC = () => {
         {/* CARD 1: Project activity */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-2">
+            <h3 className="text-sm font-semibold text-slate-900 mb-2">
               Project activity
             </h3>
 
@@ -709,7 +705,7 @@ export const ProjectsPage: React.FC = () => {
         {/* CARD 2: Projects by status */}
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">
               Projects by status
             </h3>
 
@@ -887,7 +883,7 @@ export const ProjectsPage: React.FC = () => {
       {filteredProjects.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-xs">
           <FolderGit2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800">No Projects Found</h3>
+          <h3 className="text-sm font-semibold text-slate-800">No Projects Found</h3>
           <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
             No projects match your filter criteria. Create a new workspace or reset search.
           </p>
@@ -931,7 +927,7 @@ export const ProjectsPage: React.FC = () => {
                     {/* Project Name, Slug & Description */}
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
-                        <div className="p-2.5 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                           <FolderGit2 className="w-4 h-4 stroke-[2.2]" />
                         </div>
                         <div>
@@ -966,10 +962,10 @@ export const ProjectsPage: React.FC = () => {
                           {proj.models_count || 2}m
                         </span>
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EBF8F4] text-[#1A7456] font-bold border border-[#BCE9DA]"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold border border-purple-200"
                           title="Experiment Runs"
                         >
-                          <FlaskConical className="w-3 h-3 text-[#3BB48C]" />
+                          <FlaskConical className="w-3 h-3 text-purple-600" />
                           {proj.experiments_count || 12}r
                         </span>
                         <span
@@ -1033,7 +1029,7 @@ export const ProjectsPage: React.FC = () => {
                         )}
                         <Link
                           to="/app/experiments"
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition shadow-2xs hover:border-[#3BB48C]/40"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
                         >
                           Workspace
                           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1057,7 +1053,7 @@ export const ProjectsPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] font-bold">
+                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
                       {proj.slug}
                     </span>
                     {proj.framework && (
@@ -1069,7 +1065,7 @@ export const ProjectsPage: React.FC = () => {
                   <StatusBadge status={proj.status} />
                 </div>
 
-                <h3 className="text-base font-black text-slate-900 mb-1.5 group-hover:text-[#3BB48C] transition-colors line-clamp-1">
+                <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-1">
                   {proj.name}
                 </h3>
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
@@ -1147,7 +1143,7 @@ export const ProjectsPage: React.FC = () => {
                   )}
                   <Link
                     to="/app/experiments"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
                   >
                     Workspace
                     <ArrowUpRight className="w-3.5 h-3.5" />

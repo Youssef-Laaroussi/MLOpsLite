@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Lock,
@@ -6,12 +6,11 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export const SignInPage: React.FC = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
@@ -19,13 +18,6 @@ export const SignInPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Removed auto-redirect so the user can access this page even if a stale token exists
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +27,7 @@ export const SignInPage: React.FC = () => {
     try {
       await login(username.trim(), password);
       setSuccess(true);
-      setTimeout(() => navigate("/app", { replace: true }), 800);
+      setTimeout(() => navigate("/app", { replace: true }), 700);
     } catch (err: any) {
       setError(
         err.response?.data?.error ||
@@ -49,88 +41,187 @@ export const SignInPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#FAFCFB]">
-      {/* ── Left Panel: Sign In Form ── */}
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-20 xl:px-28 py-12 relative overflow-hidden">
-        {/* Subtle ambient blobs */}
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-gradient-to-br from-[#3BB48C]/8 via-emerald-100/15 to-transparent rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-tl from-teal-50/40 to-transparent rounded-full blur-[80px] pointer-events-none" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 bg-[#FAFCFB] select-none overflow-hidden">
+      {/* ── Background: Data Pipelines & Neural Stream Matrix ── */}
+      {/* Subtle Data Dot Matrix (Tensor grid) */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.4]"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(59, 180, 140, 0.18) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+          maskImage: "radial-gradient(ellipse at 50% 50%, transparent 20%, black 80%)",
+          WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, transparent 20%, black 80%)",
+        }}
+      />
 
-        {/* Logo & Back */}
-        <div className={`mb-12 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-          <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="w-11 h-11 flex items-center justify-center bg-white rounded-2xl border border-slate-200/80 shadow-sm p-2 transition-all group-hover:border-[#3BB48C]/50 group-hover:shadow-md group-hover:scale-105">
-              <img
-                src="/logo.png"
-                alt="MLite Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <span className="font-black text-slate-900 text-xl tracking-tight block leading-tight">MLite</span>
-              <span className="text-[10px] text-slate-400 font-medium">← Back to home</span>
-            </div>
-          </Link>
+      {/* Top-Right: Vector Data Nodes & Interconnected Flow Graph */}
+      <div className="absolute -top-10 -right-10 w-[520px] lg:w-[680px] pointer-events-none z-0 opacity-80 select-none">
+        <svg viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
+          {/* Data Line Streams */}
+          <path d="M120 180 C 260 120, 380 240, 560 140" stroke="#3BB48C" strokeWidth="2" strokeDasharray="6 6" opacity="0.45" />
+          <path d="M80 320 C 220 220, 360 380, 580 260" stroke="#1A7456" strokeWidth="2.5" opacity="0.4" />
+          <path d="M160 440 C 300 340, 420 480, 600 360" stroke="#2DD4BF" strokeWidth="2" strokeDasharray="4 4" opacity="0.35" />
+
+          {/* Node Clusters (Connected Data Graph) */}
+          <line x1="280" y1="160" x2="380" y2="240" stroke="#3BB48C" strokeWidth="1.5" opacity="0.5" />
+          <line x1="380" y1="240" x2="480" y2="180" stroke="#3BB48C" strokeWidth="1.5" opacity="0.5" />
+          <line x1="380" y1="240" x2="420" y2="340" stroke="#1A7456" strokeWidth="1.5" opacity="0.4" />
+          <line x1="240" y1="280" x2="340" y2="360" stroke="#2DD4BF" strokeWidth="1.5" opacity="0.4" />
+
+          {/* Glowing Data Nodes (Circles) */}
+          <circle cx="280" cy="160" r="7" fill="#3BB48C" fillOpacity="0.8" />
+          <circle cx="280" cy="160" r="14" stroke="#3BB48C" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5" />
+
+          <circle cx="380" cy="240" r="9" fill="#1A7456" />
+          <circle cx="380" cy="240" r="18" stroke="#1A7456" strokeWidth="1.5" opacity="0.3" />
+
+          <circle cx="480" cy="180" r="6" fill="#2DD4BF" />
+          <circle cx="420" cy="340" r="7.5" fill="#3BB48C" />
+          <circle cx="240" cy="280" r="6" fill="#14B8A6" />
+          <circle cx="340" cy="360" r="8" fill="#10B981" />
+          <circle cx="520" cy="280" r="6.5" fill="#047857" />
+
+          {/* Micro Data Packets */}
+          <circle cx="330" cy="200" r="3" fill="#3BB48C" />
+          <circle cx="430" cy="210" r="3" fill="#2DD4BF" />
+          <circle cx="400" cy="290" r="2.5" fill="#1A7456" />
+          <circle cx="290" cy="320" r="3" fill="#10B981" />
+        </svg>
+      </div>
+
+      {/* Bottom-Left: Waveform Distribution & Time-Series Data Stream */}
+      <div className="absolute -bottom-16 -left-16 w-[480px] lg:w-[620px] pointer-events-none z-0 opacity-70 select-none">
+        <svg viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
+          {/* Signal / Frequency Curves (Drift & Latency Curves) */}
+          <path
+            d="M0 380 Q 100 280, 200 360 T 400 320 T 600 390"
+            stroke="#1A7456"
+            strokeWidth="2.5"
+            opacity="0.35"
+          />
+          <path
+            d="M0 420 Q 120 340, 240 410 T 480 370 T 600 430"
+            stroke="#3BB48C"
+            strokeWidth="2"
+            strokeDasharray="6 4"
+            opacity="0.4"
+          />
+
+          {/* Distribution Histogram Bars (Statistical Data Indicator) */}
+          <g opacity="0.22" fill="#3BB48C">
+            <rect x="120" y="380" width="8" height="45" rx="4" />
+            <rect x="136" y="350" width="8" height="75" rx="4" />
+            <rect x="152" y="320" width="8" height="105" rx="4" />
+            <rect x="168" y="290" width="8" height="135" rx="4" />
+            <rect x="184" y="270" width="8" height="155" rx="4" />
+            <rect x="200" y="260" width="8" height="165" rx="4" fill="#1A7456" />
+            <rect x="216" y="275" width="8" height="150" rx="4" />
+            <rect x="232" y="300" width="8" height="125" rx="4" />
+            <rect x="248" y="335" width="8" height="90" rx="4" />
+            <rect x="264" y="365" width="8" height="60" rx="4" />
+            <rect x="280" y="390" width="8" height="35" rx="4" />
+          </g>
+
+          {/* Graph Vertices */}
+          <circle cx="100" cy="330" r="5" fill="#3BB48C" />
+          <circle cx="200" cy="360" r="6" fill="#1A7456" />
+          <circle cx="300" cy="335" r="4.5" fill="#2DD4BF" />
+          <circle cx="400" cy="320" r="5.5" fill="#10B981" />
+        </svg>
+      </div>
+
+      {/* ── Soft Ambient Glow Behind Central Form ── */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[480px] bg-gradient-to-tr from-[#3BB48C]/10 via-teal-100/20 to-transparent rounded-full blur-[110px] pointer-events-none -z-10" />
+
+      {/* ── Top Navigation Bar ── */}
+      <header className="absolute top-0 left-0 right-0 py-6 px-8 flex items-center justify-between max-w-7xl mx-auto z-20">
+        <Link to="/" className="inline-flex items-center gap-2.5 group">
+          <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-xs p-1.5 flex items-center justify-center transition-all group-hover:border-[#3BB48C]">
+            <img src="/logo.png" alt="MLite" className="w-full h-full object-contain" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-display font-black text-slate-900 text-lg tracking-tight">
+              MLite
+            </span>
+            <span className="text-xs text-slate-400 font-medium">
+              MLOps Platform
+            </span>
+          </div>
+        </Link>
+
+        <Link
+          to="/"
+          className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition flex items-center gap-1.5"
+        >
+          <span>Back to Home</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </header>
+
+      {/* ── Centered Card ── */}
+      <main className="relative z-10 w-full max-w-[420px] my-auto">
+        {/* Header Title */}
+        <div className="text-center mb-8 space-y-2">
+          <h1 className="font-display text-3xl font-black text-slate-900 tracking-tight">
+            Sign in to Workspace
+          </h1>
+          <p className="text-sm text-slate-500 font-normal">
+            Manage your model lineage, serving endpoints, and drift telemetry
+          </p>
         </div>
 
         {/* Form Card */}
-        <div className={`max-w-[420px] w-full transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-
-          <h1 className="text-3xl sm:text-[40px] font-black text-slate-900 tracking-tight leading-[1.1] mb-3">
-            Welcome back
-          </h1>
-          <p className="text-[15px] text-slate-500 mb-8 leading-relaxed">
-            Sign in to your MLOps workspace. Manage models, track experiments, and monitor deployments.
-          </p>
-
-          {/* Error Alert */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-200/50 p-7 sm:p-8">
+          {/* Error Banner */}
           {error && (
-            <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-sm text-rose-700 animate-fade-in-up">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Success Alert */}
+          {/* Success Banner */}
           {success && (
-            <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-sm text-emerald-800 font-semibold animate-fade-in-up">
+            <div className="mb-5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-800 font-semibold animate-fadeIn">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>Authentication successful! Redirecting...</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Username or Email
               </label>
               <div className="relative group">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400 group-focus-within:text-[#3BB48C] transition-colors" />
+                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#3BB48C] transition-colors" />
                 <input
                   type="text"
                   required
                   autoFocus
-                  placeholder="your-username"
+                  placeholder="admin"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3BB48C] focus:ring-4 focus:ring-[#3BB48C]/10 focus:shadow-lg focus:shadow-[#3BB48C]/5 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#F8FAFC] focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3BB48C] focus:ring-4 focus:ring-[#3BB48C]/10 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Password
+                </label>
+              </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400 group-focus-within:text-[#3BB48C] transition-colors" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#3BB48C] transition-colors" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3BB48C] focus:ring-4 focus:ring-[#3BB48C]/10 focus:shadow-lg focus:shadow-[#3BB48C]/5 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#F8FAFC] focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3BB48C] focus:ring-4 focus:ring-[#3BB48C]/10 transition-all"
                 />
               </div>
             </div>
@@ -138,283 +229,33 @@ export const SignInPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group w-full mt-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#3BB48C] to-[#2FA07B] hover:from-[#329F7B] hover:to-[#278A6A] text-white font-bold text-sm transition-all shadow-xl shadow-[#3BB48C]/20 flex items-center justify-center gap-2.5 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-[#3BB48C]/30 active:translate-y-0 disabled:opacity-50 cursor-pointer"
+              className="w-full mt-2 py-3 px-4 rounded-xl bg-[#3BB48C] hover:bg-[#2FA07B] active:bg-[#278A6A] text-white font-bold text-sm transition-all shadow-md shadow-[#3BB48C]/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Sign In to Dashboard
-                  <ArrowRight className="w-4 h-4 stroke-[2.5] group-hover:translate-x-1 transition-transform" />
+                  <span>Sign In to Workspace</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <p className="text-sm text-slate-500 text-center">
+          {/* Bottom Card Footer */}
+          <div className="mt-6 pt-5 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-500">
               Don't have an account?{" "}
               <Link
                 to="/signup"
-                className="font-bold text-[#3BB48C] hover:text-[#278A6A] transition inline-flex items-center gap-1 hover:gap-2"
+                className="font-bold text-[#3BB48C] hover:underline"
               >
-                Create Account <ArrowRight className="w-3 h-3" />
+                Create Account
               </Link>
             </p>
           </div>
-
-          {/* Back to landing */}
-          <div className="mt-4 text-center">
-            <Link
-              to="/"
-              className="text-xs text-slate-400 hover:text-slate-600 transition"
-            >
-              ← Back to Landing Page
-            </Link>
-          </div>
         </div>
-      </div>
-
-      {/* ── Right Panel: Natural Living Visual Decor (Pure Art & Motion - No Text, Pure Atmosphere) ── */}
-      <div
-        className="hidden lg:flex lg:w-[52%] relative overflow-hidden items-center justify-center select-none"
-        style={{
-          background: "linear-gradient(135deg, #050F16 0%, #081722 35%, #06151F 70%, #040A0F 100%)",
-        }}
-      >
-        {/* ── Ambient Organic Nebula Glows ── */}
-        <div
-          className="absolute top-[12%] right-[18%] w-[480px] h-[480px] rounded-full opacity-45 pointer-events-none blur-[130px]"
-          style={{
-            background: "radial-gradient(circle, rgba(59,180,140,0.38) 0%, rgba(16,185,129,0.18) 50%, transparent 70%)",
-            animation: "auroraPulse1 12s ease-in-out infinite alternate",
-          }}
-        />
-        <div
-          className="absolute bottom-[14%] left-[12%] w-[520px] h-[520px] rounded-full opacity-35 pointer-events-none blur-[150px]"
-          style={{
-            background: "radial-gradient(circle, rgba(20,184,166,0.32) 0%, rgba(59,180,140,0.12) 60%, transparent 80%)",
-            animation: "auroraPulse2 14s ease-in-out infinite alternate",
-          }}
-        />
-
-        {/* ── Subtle Geometric Starlight Grid ── */}
-        <div
-          className="absolute inset-0 opacity-[0.05] pointer-events-none"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at center, rgba(59,180,140,0.85) 1.2px, transparent 1.2px),
-              linear-gradient(rgba(59,180,140,0.25) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(59,180,140,0.25) 1px, transparent 1px)
-            `,
-            backgroundSize: "44px 44px, 88px 88px, 88px 88px",
-          }}
-        />
-
-        {/* ── Organic Flowing Aurora Ribbon Waves (SVG) ── */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox="0 0 800 1000"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="signInAurora1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3BB48C" stopOpacity="0.28" />
-              <stop offset="50%" stopColor="#10B981" stopOpacity="0.14" />
-              <stop offset="100%" stopColor="#0D9488" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="signInAurora2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.25" />
-              <stop offset="50%" stopColor="#3BB48C" stopOpacity="0.10" />
-              <stop offset="100%" stopColor="#065F46" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          <path
-            d="M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z"
-            fill="url(#signInAurora1)"
-            opacity="0.6"
-          >
-            <animate
-              attributeName="d"
-              dur="16s"
-              repeatCount="indefinite"
-              values="
-                M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z;
-                M-50 300 C 220 420, 350 220, 560 450 C 700 280, 780 200, 900 320 L 900 1000 L -50 1000 Z;
-                M-50 350 C 180 200, 320 500, 520 300 C 680 140, 750 380, 900 250 L 900 1000 L -50 1000 Z
-              "
-            />
-          </path>
-          <path
-            d="M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z"
-            fill="url(#signInAurora2)"
-            opacity="0.5"
-          >
-            <animate
-              attributeName="d"
-              dur="20s"
-              repeatCount="indefinite"
-              values="
-                M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z;
-                M-50 520 C 150 360, 420 580, 580 380 C 750 460, 820 600, 900 420 L 900 1000 L -50 1000 Z;
-                M-50 480 C 200 620, 380 340, 600 520 C 720 620, 800 400, 900 460 L 900 1000 L -50 1000 Z
-              "
-            />
-          </path>
-        </svg>
-
-        {/* ── Natural Floating Bioluminescent Motes / Fireflies ── */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute w-2 h-2 rounded-full bg-[#3BB48C] blur-[1px] shadow-[0_0_10px_#3BB48C]"
-            style={{ top: "25%", left: "30%", animation: "floatMote1 8s ease-in-out infinite" }}
-          />
-          <div
-            className="absolute w-1.5 h-1.5 rounded-full bg-teal-300 blur-[0.5px] shadow-[0_0_8px_#14B8A6]"
-            style={{ top: "65%", left: "22%", animation: "floatMote2 10s ease-in-out infinite 2s" }}
-          />
-          <div
-            className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 blur-[1px] shadow-[0_0_12px_#10B981]"
-            style={{ top: "35%", right: "25%", animation: "floatMote3 9s ease-in-out infinite 1s" }}
-          />
-          <div
-            className="absolute w-1 h-1 rounded-full bg-white shadow-[0_0_6px_#3BB48C]"
-            style={{ top: "75%", right: "32%", animation: "floatMote1 11s ease-in-out infinite 3s" }}
-          />
-          <div
-            className="absolute w-2 h-2 rounded-full bg-[#6EE7B7] blur-[1px] shadow-[0_0_10px_#6EE7B7]"
-            style={{ top: "18%", right: "40%", animation: "floatMote2 12s ease-in-out infinite 4s" }}
-          />
-        </div>
-
-        {/* ── Central Sacred Geometric Gyroscope (Pure Natural Decor - Zero Text) ── */}
-        <div
-          className={`relative z-10 flex flex-col items-center justify-center p-8 transition-all duration-1000 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          {/* Astrolabe Orbital Mandala */}
-          <div className="relative w-96 h-96 flex items-center justify-center">
-            {/* Outermost Celestial Ring with Orbiting Satellite */}
-            <div
-              className="absolute w-88 h-88 rounded-full border border-[#3BB48C]/20"
-              style={{
-                animation: "spinSlow 42s linear infinite",
-                boxShadow: "0 0 50px rgba(59, 180, 140, 0.08)",
-              }}
-            >
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#3BB48C] shadow-lg shadow-[#3BB48C]/80 flex items-center justify-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              </div>
-              <div className="absolute -bottom-1 left-1/4 w-2 h-2 rounded-full bg-teal-400/80 shadow-md shadow-teal-400/50" />
-            </div>
-
-            {/* 3D Inclined Gyroscopic Ring */}
-            <div
-              className="absolute w-76 h-76 rounded-full border border-dashed border-[#3BB48C]/35"
-              style={{
-                transform: "rotateX(62deg) rotateY(18deg)",
-                animation: "spinReverse 28s linear infinite",
-              }}
-            >
-              <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-teal-300 shadow-md shadow-teal-300/80" />
-              <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 rounded-full bg-emerald-400" />
-            </div>
-
-            {/* Counter-Rotating Mid Celestial Ring */}
-            <div
-              className="absolute w-60 h-60 rounded-full border border-teal-400/30"
-              style={{
-                animation: "spinSlow 20s linear infinite",
-              }}
-            >
-              <div className="absolute top-0 right-1/4 w-2 h-2 rounded-full bg-[#3BB48C] shadow-md shadow-[#3BB48C]/70" />
-            </div>
-
-            {/* Inner Sacred Geometric Constellation Ring */}
-            <div
-              className="absolute w-44 h-44 rounded-full border border-dashed border-emerald-300/35"
-              style={{
-                animation: "spinReverse 14s linear infinite",
-              }}
-            >
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400" />
-            </div>
-
-            {/* Radiant Breathing Halo Behind Logo */}
-            <div className="absolute w-36 h-36 rounded-full bg-gradient-to-tr from-[#3BB48C]/35 via-emerald-400/25 to-teal-300/20 blur-2xl animate-pulse" />
-
-            {/* Central Floating Glass Emblem (Natural Breathing Levitation) */}
-            <div
-              className="relative w-32 h-32 rounded-3xl bg-white/95 p-5 shadow-2xl shadow-[#3BB48C]/30 border border-white/40 flex items-center justify-center backdrop-blur-md transition-all duration-700 hover:scale-105 select-none"
-              style={{
-                animation: "levitateFloat 6s ease-in-out infinite",
-              }}
-            >
-              <img
-                src="/logo.png"
-                alt="MLite"
-                className="w-full h-full object-contain filter drop-shadow-sm select-none"
-              />
-            </div>
-          </div>
-
-          {/* Platform Name */}
-          <div className="mt-8 text-center select-none">
-            <h2 className="text-3xl font-black tracking-wider text-white drop-shadow-lg">
-              MLite
-            </h2>
-            <p className="text-xs uppercase tracking-[0.25em] text-[#3BB48C] font-semibold mt-1">
-              Lightweight MLOps Platform
-            </p>
-          </div>
-        </div>
-
-        {/* ── Corner Framing Accents ── */}
-        <div className="absolute top-8 left-8 w-8 h-8 border-l-2 border-t-2 border-[#3BB48C]/30 rounded-tl-xl pointer-events-none" />
-        <div className="absolute top-8 right-8 w-8 h-8 border-r-2 border-t-2 border-[#3BB48C]/30 rounded-tr-xl pointer-events-none" />
-        <div className="absolute bottom-8 left-8 w-8 h-8 border-l-2 border-b-2 border-[#3BB48C]/30 rounded-bl-xl pointer-events-none" />
-        <div className="absolute bottom-8 right-8 w-8 h-8 border-r-2 border-b-2 border-[#3BB48C]/30 rounded-br-xl pointer-events-none" />
-      </div>
-
-      {/* ── Keyframe Styles ── */}
-      <style>{`
-        @keyframes auroraPulse1 {
-          0% { transform: scale(1) translate(0, 0); }
-          100% { transform: scale(1.15) translate(25px, -18px); }
-        }
-        @keyframes auroraPulse2 {
-          0% { transform: scale(1) translate(0, 0); }
-          100% { transform: scale(1.12) translate(-20px, 20px); }
-        }
-        @keyframes spinSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes spinReverse {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        @keyframes levitateFloat {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(-9px) scale(1.02); }
-        }
-        @keyframes floatMote1 {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
-          50% { transform: translate(16px, -22px) scale(1.25); opacity: 0.9; }
-        }
-        @keyframes floatMote2 {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-          50% { transform: translate(-18px, -28px) scale(1.15); opacity: 0.85; }
-        }
-        @keyframes floatMote3 {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.45; }
-          50% { transform: translate(22px, -16px) scale(1.3); opacity: 0.95; }
-        }
-      `}</style>
+      </main>
     </div>
   );
 };

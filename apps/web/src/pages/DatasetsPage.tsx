@@ -285,35 +285,31 @@ export const DatasetsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Database className="w-7 h-7 text-[#3BB48C]" />
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
             Datasets
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              Data Lakehouse
-            </span>
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage and explore your datasets
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage data versions, lineage, and object storage schemas
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Exact Date Filter matching user design: "Last 6 months" */}
+        <div className="flex items-center gap-2">
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -321,9 +317,9 @@ export const DatasetsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -336,10 +332,10 @@ export const DatasetsPage: React.FC = () => {
 
           <button
             onClick={loadData}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh metadata"
           >
-            <RefreshCw className={`w-4 h-4 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
         </div>
       </div>
@@ -383,7 +379,7 @@ export const DatasetsPage: React.FC = () => {
         {/* CARD 1: Datasets by type (7 cols) - Exact Vertical Bar Chart from User Screenshot */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">
               Datasets by type
             </h3>
 
@@ -474,7 +470,7 @@ export const DatasetsPage: React.FC = () => {
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-extrabold text-slate-800 tracking-tight">
+              <h3 className="text-sm font-semibold text-slate-900">
                 Storage &amp; Data Hygiene
               </h3>
               <span className="text-xs font-mono font-bold text-slate-400">
@@ -703,7 +699,7 @@ export const DatasetsPage: React.FC = () => {
                     {/* Name & SHA-256 */}
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
-                        <div className="p-2.5 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                           <FileSpreadsheet className="w-4 h-4 stroke-[2.2]" />
                         </div>
                         <div>
@@ -742,7 +738,7 @@ export const DatasetsPage: React.FC = () => {
 
                     {/* Format */}
                     <td className="px-4 py-4">
-                      <span className="px-2.5 py-1 rounded-md bg-[#EBF8F4] text-xs font-mono text-[#1A7456] border border-[#BCE9DA] font-bold">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-mono text-slate-700 border border-slate-200 font-semibold">
                         {d.format}
                       </span>
                     </td>
@@ -813,7 +809,7 @@ export const DatasetsPage: React.FC = () => {
 
                         <button
                           onClick={() => setLineageDataset(d)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
                           title="View data lineage"
                         >
                           <GitBranch className="w-3.5 h-3.5" />
@@ -844,7 +840,7 @@ export const DatasetsPage: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
               <div className="flex items-start gap-3">
-                <div className="p-3 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456]">
+                <div className="p-3 rounded-2xl bg-blue-50 border border-blue-100 text-blue-600">
                   <Database className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div>
@@ -852,7 +848,7 @@ export const DatasetsPage: React.FC = () => {
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
                       {inspectingDataset.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-md bg-[#EBF8F4] text-xs font-mono font-bold text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-mono font-semibold text-slate-700 border border-slate-200">
                       {inspectingDataset.format}
                     </span>
                     {inspectingDataset.version_num && (
@@ -1194,7 +1190,7 @@ export const DatasetsPage: React.FC = () => {
 
                 {/* Node 2: Dataset Version */}
                 <div className="flex-1 bg-white border-2 border-[#3BB48C] p-4 rounded-2xl shadow-sm text-center relative">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] flex items-center justify-center mx-auto mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center mx-auto mb-2">
                     <Database className="w-5 h-5" />
                   </div>
                   <div className="text-[10px] font-bold text-[#1A7456] uppercase tracking-wider">Active Dataset</div>

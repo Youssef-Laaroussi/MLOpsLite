@@ -9,7 +9,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
   let colors = "bg-slate-100 text-slate-700 border-slate-200";
   if (["RUNNING", "ACTIVE", "PRODUCTION", "HEALTHY"].includes(upper)) {
-    colors = "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]";
+    colors = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
   } else if (["STAGING", "CANDIDATE", "PENDING"].includes(upper)) {
     colors = "bg-amber-50 text-amber-800 border-amber-200";
   } else if (["FAILED", "ERROR", "STOPPED", "ARCHIVED"].includes(upper)) {

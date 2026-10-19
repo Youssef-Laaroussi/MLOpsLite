@@ -16,6 +16,9 @@ import {
   Lock,
   ShieldCheck,
   Layers,
+  Mail,
+  Calendar,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { fetchApiKeys, createApiKey, revokeApiKey, fetchUsers } from "../api/client";
@@ -141,15 +144,16 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-          <Settings className="w-6 h-6 text-[#3BB48C]" />
-          Settings & Configuration
-        </h2>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Manage your profile, CLI authentication keys, and governance preferences
-        </p>
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+            Settings &amp; Configuration
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage your profile, CLI authentication keys, and governance preferences
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -196,111 +200,139 @@ export const SettingsPage: React.FC = () => {
       {/* ── TAB 1: PROFILE & ROLE ── */}
       {activeTab === "profile" && (
         <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md ${
-                  isAdmin
-                    ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
-                    : "bg-gradient-to-tr from-[#3BB48C] to-teal-400 shadow-[#3BB48C]/20"
-                }`}
-              >
-                {user?.username?.charAt(0).toUpperCase() || "U"}
+          {/* User Account Card */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-sm ${
+                    isAdmin
+                      ? "bg-slate-900 shadow-slate-900/10"
+                      : "bg-[#3BB48C] shadow-[#3BB48C]/15"
+                  }`}
+                >
+                  {user?.username?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                      {user?.full_name || user?.username}
+                    </h3>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border ${
+                        isAdmin
+                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      }`}
+                    >
+                      {user?.role || (isAdmin ? "ADMIN" : "USER")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      {user?.email || "user@organization.local"}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500">ID: {user?.id?.slice(0, 8) || "usr_active"}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{user?.full_name || user?.username}</h3>
-                <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
-                      isAdmin
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
-                    }`}
-                  >
-                    Role: {isAdmin ? "ADMINISTRATOR (ADMIN)" : "MLOPS MEMBER (USER)"}
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Simplified 2-role model: ADMIN & USER
-                  </span>
+
+              <div className="flex items-center gap-2">
+                <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Account Active</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Permissions Scope ({isAdmin ? "Comprehensive Governance & Supervision" : "MLOps Operational Lifecycle"})
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Full modeling & promotion lifecycle</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Container serving & rollback triggers</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Evidently AI drift monitoring & alerts</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>MinIO S3 dataset profiling & sync</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-800">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>MLflow experiment runs execution</span>
-                </div>
-                {isAdmin ? (
-                  <>
-                    <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
-                      <Shield className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>User account management & roles</span>
-                    </div>
-                    <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-2 text-rose-900 font-semibold">
-                      <Lock className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>Security audit logs & system keys</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-600">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Personal CLI key generation</span>
+            {/* Workspace & Developer Setup */}
+            <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Account Details */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-[#3BB48C]" />
+                  Account Information
+                </h4>
+                <div className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Username</span>
+                    <span className="font-mono font-bold text-slate-800">{user?.username}</span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Email</span>
+                    <span className="font-mono text-slate-700">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Role</span>
+                    <span className="font-semibold text-slate-800">{user?.role}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-slate-500 font-medium">Session Status</span>
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Active (Authenticated)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick CLI Authentication */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#3BB48C]" />
+                    CLI & SDK Authentication
+                  </h4>
+                  <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                    Authenticate your local machine to push experiments, sync datasets, and deploy models directly from your terminal or Jupyter notebooks.
+                  </p>
+                  <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
+                    <span>mlite login --token &lt;YOUR_API_KEY&gt;</span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Need a token for terminal?</span>
+                  <button
+                    onClick={() => setActiveTab("apikeys")}
+                    className="text-xs font-bold text-[#1A7456] hover:text-[#145a43] transition flex items-center gap-1"
+                  >
+                    Manage API Keys →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Team Members List (Real DB data, visible to Admin) */}
+          {/* Team Members List (Visible to Admin) */}
           {isAdmin && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <UserIcon className="w-5 h-5 text-[#3BB48C]" />
-                    Registered Members ({teamUsers.length})
+                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                    <UserIcon className="w-4 h-4 text-[#3BB48C]" />
+                    Team Members ({teamUsers.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Strict 2-role model: <span className="font-semibold text-rose-700">ADMIN</span> (Governance) and <span className="font-semibold text-emerald-700">USER</span> (MLOps Operations)
+                    Manage workspace accounts and access roles
                   </p>
                 </div>
               </div>
 
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
-                <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase">
+                <div className="p-3.5 px-4 flex items-center justify-between bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider">
                   <span>User</span>
-                  <span>Assigned Role</span>
+                  <span>Role</span>
                 </div>
                 {teamUsers.map((u) => (
-                  <div key={u.id} className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50 transition">
+                  <div key={u.id} className="p-3.5 px-4 flex items-center justify-between hover:bg-slate-50/60 transition">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center ${
+                        className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center ${
                           u.role === "ADMIN"
                             ? "bg-rose-100 text-rose-700"
-                            : "bg-[#EBF8F4] text-[#1A7456]"
+                            : "bg-emerald-50 text-emerald-700"
                         }`}
                       >
                         {u.username.charAt(0).toUpperCase()}
@@ -319,7 +351,7 @@ export const SettingsPage: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${
                         u.role === "ADMIN"
                           ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
                       }`}
                     >
                       {u.role}
@@ -336,8 +368,8 @@ export const SettingsPage: React.FC = () => {
       {activeTab === "apikeys" && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-            <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Key className="w-5 h-5 text-[#3BB48C]" />
+            <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-[#3BB48C]" />
               Generate a New API Key
             </h3>
             <p className="text-xs text-slate-500 mb-4">
@@ -363,18 +395,18 @@ export const SettingsPage: React.FC = () => {
             </form>
 
             {newlyCreatedKey && (
-              <div className="mt-4 p-4 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1A7456]">
+              <div className="mt-4 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
                   <span>New API key created (Copy it now, it will not be displayed again):</span>
                   <button
                     onClick={() => copyToClipboard(newlyCreatedKey)}
-                    className="flex items-center gap-1 text-xs font-mono font-bold bg-white px-2.5 py-1 rounded-lg border border-[#BCE9DA] shadow-2xs hover:bg-slate-50"
+                    className="flex items-center gap-1 text-xs font-mono font-semibold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs hover:bg-slate-50"
                   >
                     {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedKey ? "Copied!" : "Copy"}
                   </button>
                 </div>
-                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-[#BCE9DA] break-all select-all">
+                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-emerald-200 break-all select-all">
                   {newlyCreatedKey}
                 </div>
               </div>
@@ -425,8 +457,8 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
                   Internal Microservices Health
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -450,7 +482,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">FastAPI REST Engine</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Operational
                     </span>
                   </div>
@@ -467,7 +499,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">PostgreSQL Database</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Connected
                     </span>
                   </div>
@@ -484,7 +516,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">MinIO S3 Object Storage</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Synchronized
                     </span>
                   </div>
@@ -501,7 +533,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">MLflow Tracking Server</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Operational
                     </span>
                   </div>

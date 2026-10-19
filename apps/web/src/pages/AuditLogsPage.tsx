@@ -108,30 +108,26 @@ export const AuditLogsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#EBF8F4] via-white to-white border border-[#BCE9DA] rounded-3xl p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-              Immutable Security Journal
-            </span>
-          </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Audit Logs & Governance
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+            Audit Logs &amp; Governance
           </h2>
-          <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-            Append-only audit trail capturing all authentication, deployment promotions, container rollbacks, and dataset mutations.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Append-only security journal capturing authentication, deployment promotions, and dataset mutations
           </p>
         </div>
 
-        <button
-          onClick={loadLogs}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-xs"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
-          Refresh Journal
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadLogs}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+            Refresh Journal
+          </button>
+        </div>
       </div>
 
       {/* Controls Bar */}

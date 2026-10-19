@@ -26,6 +26,15 @@ import {
   Linkedin,
   Twitter,
   Github,
+  Mail,
+  MessageSquare,
+  Send,
+  Heart,
+  Star,
+  ChevronDown,
+  HelpCircle,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 export const LandingPage: React.FC = () => {
@@ -36,6 +45,50 @@ export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"deploy" | "drift" | "curl">("deploy");
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [mouseCoord, setMouseCoord] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Contact Us Form State
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactTopic, setContactTopic] = useState("feedback");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+
+  // FAQ Accordion State
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const faqItems = [
+    {
+      q: "What is MLite and how is it different from cloud MLOps platforms?",
+      a: "MLite is a 100% self-hosted, open-source MLOps platform. Unlike AWS SageMaker or GCP Vertex AI, MLite has zero vendor lock-in and zero per-model egress fees. You run PostgreSQL, MinIO S3 storage, MLflow tracking, and Docker-based container serving directly on your own hardware with complete data sovereignty.",
+    },
+    {
+      q: "Is MLite completely free and open source?",
+      a: "Yes! MLite is licensed under the Apache 2.0 open-source license. The core features—model registry, Docker container serving endpoints, and automated drift detection—are free forever for individual developers, research labs, and enterprise teams.",
+    },
+    {
+      q: "How does Docker model serving work in MLite?",
+      a: "When you deploy a model version, MLite packages your artifact into an isolated Docker container with an embedded FastAPI web server, live health probes, and automatic port binding. You achieve sub-50ms inference latency without proprietary vendor runtimes.",
+    },
+    {
+      q: "How does MLite monitor data drift and model degradation?",
+      a: "MLite runs statistical drift evaluations (Population Stability Index / PSI, Wasserstein distance, KS-tests) powered by Evidently AI. When feature distributions shift between baseline training and live inference, MLite alerts you and can trigger automatic rollback.",
+    },
+    {
+      q: "Can I integrate MLite into my existing CI/CD or Python pipelines?",
+      a: "Yes. MLite offers a unified Python client (import mlite), an intuitive terminal CLI (mlite deployments create ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
+    },
+  ];
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactEmail.trim() || !contactMessage.trim()) return;
+    setContactLoading(true);
+    setTimeout(() => {
+      setContactLoading(false);
+      setContactSubmitted(true);
+    }, 600);
+  };
 
   const handleCardMouseMove = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -178,7 +231,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <span className="font-black text-slate-900 text-2xl tracking-tight">MLite</span>
             </Link>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-md font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
               v1.0.0 GA
             </span>
           </div>
@@ -187,6 +240,8 @@ export const LandingPage: React.FC = () => {
             <a href="#features" className="hover:text-[#3BB48C] transition">Features</a>
             <a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a>
             <a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a>
+            <a href="#faq" className="hover:text-[#3BB48C] transition">FAQ</a>
+            <a href="#contact" className="hover:text-[#3BB48C] transition">Contact</a>
             <a
               href="http://localhost:8000/docs"
               target="_blank"
@@ -224,237 +279,118 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Hero Section (Split 2-Column: Text Left "A GAUCHE" / Terminal Graphic Right) ── */}
-      <section className="relative pt-28 sm:pt-36 lg:pt-40 pb-24 lg:pb-32 overflow-hidden bg-gradient-to-b from-[#F0FDF9]/80 via-white to-white border-b border-slate-100">
-        {/* Animated ambient glow spheres for vibrancy */}
-        <div className="absolute -top-20 left-1/4 w-96 h-96 bg-gradient-to-br from-[#3BB48C]/20 to-teal-200/30 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
-        <div className="absolute top-24 right-10 w-80 h-80 bg-gradient-to-br from-emerald-100/40 to-[#3BB48C]/15 rounded-full blur-3xl pointer-events-none -z-10" />
+      {/* ── Hero Section (Sans carrés de grille, vraies couleurs éclatantes et fond image 100% transparent) ── */}
+      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
+        {/* Vraies couleurs éclatantes : Neural Network Plexus supérieur droit sans ternissement */}
+        <div className="absolute -top-12 -right-16 w-[38rem] sm:w-[46rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 78% 30%, black 60%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse at 78% 30%, black 60%, transparent 95%)",
+            }}
+          />
+        </div>
 
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* ── Left Column ("A GAUCHE") ── */}
-            <div className="lg:col-span-6 space-y-5 text-left">
-              {/* High-Impact Headline */}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.08]">
-                Deploy &amp; Monitor ML. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-[#2FA07B]">
-                  Zero Cloud Lock-In.
+        {/* Vraies couleurs éclatantes : Neural Network Plexus inférieur gauche sans ternissement */}
+        <div className="absolute -bottom-16 -left-20 w-[34rem] sm:w-[42rem] lg:w-[48rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 70% 35%, black 55%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse at 70% 35%, black 55%, transparent 95%)",
+            }}
+          />
+        </div>
+
+        {/* Halo lumineux d'ambiance vif */}
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[40rem] h-[40rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/30 to-emerald-100/15 rounded-full blur-3xl pointer-events-none z-0" />
+
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+            {/* ── Left Column: Natural, Frameless & Seamless Layout (No Box Border) ── */}
+            <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left relative z-20">
+              {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/90 backdrop-blur-xs border border-emerald-200/80 text-emerald-800 text-xs font-semibold shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>v1.0 Production-Ready</span>
+                <span className="text-slate-300">•</span>
+                <a href="#features" className="text-emerald-700 hover:text-emerald-900 underline font-bold transition">
+                  Learn more
+                </a>
+              </div>
+
+              {/* Bold High-Contrast Heading */}
+              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.85rem] font-extrabold text-slate-900 leading-[1.18] tracking-tight">
+                Modern MLOps <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-teal-600">
+                  Infrastructure, Self-Hosted
                 </span>
               </h1>
 
-              {/* Punchy, Short Subtitle */}
-              <p className="text-base sm:text-lg text-slate-600 max-w-lg leading-relaxed font-normal">
-                The lightweight, self-hosted platform for Python. Track models, deploy in sub-50ms Docker containers, and detect drift on your own servers.
+              {/* Crystal Clear Subtitle */}
+              <p className="text-base text-slate-700 max-w-lg leading-relaxed font-normal">
+                Track experiments, deploy low-latency Docker containers in sub-50ms, and detect statistical data drift — on your own servers.
               </p>
 
-              {/* Quickstart Command Box */}
-              <div className="pt-1">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0D1F2D] text-white shadow-xl font-mono text-xs border border-slate-800">
-                  <div className="flex items-center gap-2 overflow-x-auto py-1">
-                    <Terminal className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                    <span className="text-[#3BB48C] font-bold">$</span>
-                    <span className="truncate text-slate-200">{installCmd}</span>
-                  </div>
-                  <button
-                    onClick={handleCopy}
-                    className="ml-3 shrink-0 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-[#3BB48C]" />
-                        <span className="text-[#3BB48C]">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Dual Action CTAs */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+              {/* Action Buttons (Qubly Rounded Pill Style) */}
+              <div className="flex flex-wrap items-center gap-4 pt-1">
                 <Link
                   to="/app"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-extrabold text-sm transition shadow-lg shadow-[#3BB48C]/30 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+                  className="px-7 py-3.5 rounded-full bg-[#3BB48C] hover:bg-[#2FA07B] text-white font-bold text-sm transition-all shadow-md shadow-[#3BB48C]/25 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
                 >
-                  Open Dashboard Console <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  Start free console <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
                   href="http://localhost:8000/docs"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold text-sm transition shadow-xs flex items-center justify-center gap-2 hover:border-slate-400"
+                  className="px-7 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
                 >
-                  <FileCode2 className="w-4 h-4 text-[#3BB48C]" />
-                  Interactive API Docs
+                  Learn More
                 </a>
               </div>
 
-              {/* Trust Specs */}
-              <div className="pt-2 grid grid-cols-2 gap-3 text-xs font-semibold text-slate-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>100% Air-Gapped / Self-Hosted</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Sub-50ms Docker Serving</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Automated Drift Guardrails</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0" />
-                  <span>Apache 2.0 Open Source</span>
+              {/* Minimalist, Clean Quickstart Command Bar */}
+              <div className="pt-2 w-full max-w-md">
+                <div className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 text-xs font-mono shadow-sm">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Terminal className="w-3.5 h-3.5 text-[#3BB48C] shrink-0" />
+                    <span className="text-[#3BB48C] font-bold select-none">$</span>
+                    <span className="text-slate-200 select-all truncate">{installCmd}</span>
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
+                    title="Copy command"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* ── Right Column: macOS Developer Terminal with Glowing Circuit Traces (Reference Image) ── */}
-            <div className="lg:col-span-6 relative">
-              {/* Decorative Circuit Lines and Nodes matching Image 2 */}
-              <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none hidden sm:block">
-                <svg className="w-full h-full text-[#3BB48C]/40" viewBox="0 0 100 100" fill="none">
-                  <path d="M10 80 H60 V30 H90" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                  <circle cx="90" cy="30" r="4" fill="#3BB48C" />
-                  <circle cx="60" cy="80" r="3" fill="#3BB48C" />
-                </svg>
-              </div>
-              <div className="absolute -bottom-8 -left-6 w-32 h-32 pointer-events-none hidden sm:block">
-                <svg className="w-full h-full text-[#3BB48C]/40" viewBox="0 0 100 100" fill="none">
-                  <path d="M90 20 H40 V70 H10" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                  <circle cx="10" cy="70" r="4" fill="#3BB48C" />
-                  <circle cx="40" cy="20" r="3" fill="#3BB48C" />
-                </svg>
-              </div>
+            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration (Abaissée légèrement) ── */}
+            <div className="lg:col-span-6 relative flex items-center justify-center pt-6 lg:pt-10 translate-y-3 sm:translate-y-5">
+              {/* Soft Ambient Glow */}
+              <div className="absolute w-[32rem] h-[32rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Terminal Window Frame */}
-              <div className="relative rounded-2xl bg-[#0D1F2D] border border-slate-800 shadow-2xl shadow-[#3BB48C]/15 overflow-hidden">
-                {/* macOS Window Title Bar */}
-                <div className="h-10 bg-[#081520] px-4 flex items-center justify-between border-b border-slate-800/80">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#EF4444] inline-block shadow-xs" />
-                    <span className="w-3 h-3 rounded-full bg-[#F59E0B] inline-block shadow-xs" />
-                    <span className="w-3 h-3 rounded-full bg-[#10B981] inline-block shadow-xs" />
-                  </div>
-                  <div className="text-[11px] font-mono font-medium text-slate-400 flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-[#3BB48C]" />
-                    mlite — zsh — 80x24
-                  </div>
-                  <div className="w-12 text-right">
-                    <span className="inline-block w-2 h-2 rounded-full bg-[#3BB48C] animate-pulse" />
-                  </div>
-                </div>
-
-                {/* Interactive Workflow Tab Selector */}
-                <div className="bg-[#0A1926] px-4 py-2 border-b border-slate-800/60 flex items-center gap-2 text-xs font-mono">
-                  <button
-                    onClick={() => setActiveTab("deploy")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "deploy"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    1. CLI Deploy
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("drift")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "drift"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    2. Drift Detection
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("curl")}
-                    className={`px-3 py-1 rounded-md transition cursor-pointer font-bold ${activeTab === "curl"
-                      ? "bg-[#3BB48C]/20 text-[#3BB48C] border border-[#3BB48C]/40"
-                      : "text-slate-400 hover:text-slate-200"
-                      }`}
-                  >
-                    3. Inference Curl
-                  </button>
-                </div>
-
-                {/* Terminal Screen Body */}
-                <div className="p-5 font-mono text-xs leading-relaxed min-h-[330px] flex flex-col justify-between text-slate-200">
-                  {activeTab === "deploy" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlops init fraud-detection</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Creating repository structure with DVC and MLflow tracking...
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlops deploy model --name fraud-detector</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Deploying to container runtime: mlite-serving-fraud-detector
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400 font-semibold">[2026-09-19 19:12:04] Logging deployment started</div>
-                        <div className="text-slate-300">[2026-09-19 19:12:05] Node allocation: active (port 8001)</div>
-                        <div className="text-emerald-400 font-semibold">[2026-09-19 19:12:05] Model weights: verified SHA-256 (4f8b9e...)</div>
-                        <div className="text-slate-300">[2026-09-19 19:12:06] Health check: 200 OK (latency: 18ms)</div>
-                        <div className="text-[#3BB48C] font-bold">[2026-09-19 19:12:06] Status: Successfully started &amp; serving</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "drift" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; mlite monitor drift --model fraud-detector</span>
-                        <div className="text-slate-400 text-[11px] mt-0.5">
-                          Running Evidently AI Kolmogorov-Smirnov statistical tests...
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400">[TEST] Feature &#39;amount&#39;: p-val = 0.842 (No Drift)</div>
-                        <div className="text-emerald-400">[TEST] Feature &#39;user_score&#39;: p-val = 0.618 (No Drift)</div>
-                        <div className="text-amber-400 font-semibold">[DRIFT] Feature &#39;device_trust&#39;: p-val = 0.018 (Drift detected)</div>
-                        <div className="text-sky-300 font-semibold mt-1">[ALERT] Webhook dispatched to Slack #ml-alerts</div>
-                        <div className="text-[#3BB48C] font-bold">[SAFETY] Automated zero-downtime rollback ready</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "curl" && (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[#3BB48C] font-bold">&gt; curl -X POST http://localhost:8001/predict \</span>
-                        <div className="text-slate-400 text-[11px] pl-3">
-                          -H &quot;Content-Type: application/json&quot; \<br />
-                          -d &#39;&#123;&quot;features&quot;: [0.42, 128.5, 0.9]&#125;&#39;
-                        </div>
-                      </div>
-
-                      <div className="bg-[#07131D] p-3 rounded-lg border border-slate-800/80 space-y-1 text-[11px]">
-                        <div className="text-emerald-400">&#123;</div>
-                        <div className="text-slate-300 pl-3">&quot;prediction&quot;: [0.082],</div>
-                        <div className="text-slate-300 pl-3">&quot;decision&quot;: &quot;APPROVE&quot;,</div>
-                        <div className="text-teal-300 pl-3">&quot;inference_ms&quot;: 14.8,</div>
-                        <div className="text-[#3BB48C] pl-3 font-bold">&quot;status&quot;: &quot;HEALTHY&quot;</div>
-                        <div className="text-emerald-400">&#125;</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Active prompt indicator */}
-                  <div className="flex items-center gap-2 pt-2 text-[#3BB48C] font-bold">
-                    <span>$</span>
-                    <span className="w-2 h-4 bg-[#3BB48C] animate-pulse inline-block" />
-                  </div>
-                </div>
+              {/* Illustration 3D Isométrique totalement fondue, fond blanc supprimé par mix-blend-multiply et masque doux */}
+              <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
+                <img
+                  src="/hero-isometric.jpg"
+                  alt="MLite Real-time MLOps Platform Isometric Illustration"
+                  className="w-full h-auto object-contain block select-none mix-blend-multiply"
+                  style={{
+                    WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 65%, transparent 92%)",
+                    maskImage: "radial-gradient(ellipse at 50% 50%, black 65%, transparent 92%)",
+                  }}
+                  loading="eager"
+                />
               </div>
             </div>
           </div>
@@ -496,11 +432,12 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Features Grid with Dynamic Hover & Category Filter ── */}
-      <section id="features" className="py-20 max-w-7xl mx-auto px-6">
+      <section id="features" className="py-20 max-w-7xl mx-auto px-6 relative">
+        {/* Subtle Decorative Geometry in Features background */}
+        <div className="absolute top-10 right-4 w-72 h-72 bg-tensor-dots opacity-30 pointer-events-none -z-10 [mask-image:radial-gradient(circle_at_center,black,transparent_70%)]" />
+        <div className="absolute bottom-10 left-4 w-80 h-40 bg-diagonal-hatch opacity-40 pointer-events-none -z-10" />
+
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-            Enterprise Capabilities
-          </span>
           <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Everything You Need to Run Models in Production
           </h2>
@@ -587,12 +524,9 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Architecture & Stack Blueprint ── */}
-      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="architecture" className="py-20 bg-[#F8FAFC] border-t border-slate-100 relative">
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-              Production Architecture
-            </span>
             <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Self-Hosted Stack. Zero Black Boxes.
             </h2>
@@ -634,7 +568,7 @@ export const LandingPage: React.FC = () => {
                   key={idx}
                   className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] flex items-center justify-center text-[#1A7456] mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mb-4">
                     <Icon className="w-5 h-5 stroke-[2.2]" />
                   </div>
                   <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
@@ -648,12 +582,11 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── 3-Step Workflow Section ── */}
-      <section id="workflow" className="py-20 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="workflow" className="py-20 bg-white border-t border-slate-100 relative">
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-tensor-dots opacity-25 pointer-events-none -z-10 [mask-image:radial-gradient(circle_at_center,black,transparent_75%)]" />
+
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold text-[#3BB48C] uppercase tracking-wider bg-[#EBF8F4] px-3.5 py-1 rounded-full border border-[#BCE9DA]">
-              Developer Workflow
-            </span>
             <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               From Raw Code to Live Serving in 3 Commands
             </h2>
@@ -683,10 +616,322 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Bottom CTA Banner (Frameless Logo) ── */}
-      <section className="py-20 bg-[#F8FAFC] border-t border-slate-100">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-[#EBF8F4] via-[#F0FDF9] to-white border border-[#BCE9DA] shadow-xl text-center space-y-6 relative overflow-hidden">
+      {/* ── FAQ Section (Interactive Accordion + Updated Male Engineer Illustration) ── */}
+      <section id="faq" className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section Heading */}
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Got Questions? <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">We Have Answers</span>
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base">
+              Everything you need to know about self-hosting, Docker serving, and our 100% open-source MLOps architecture.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left: Illustration with MLOps Tech Context */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="relative w-full max-w-md rounded-3xl overflow-hidden border border-emerald-100/80 shadow-xl bg-white p-3 group transition-transform duration-500 hover:scale-[1.01]">
+                {/* Glow backdrop */}
+                <div className="absolute -inset-1 bg-gradient-to-tr from-[#3BB48C]/20 to-teal-100/30 rounded-3xl blur-xl pointer-events-none -z-10" />
+                <img
+                  src="/faq-illustration.jpg"
+                  alt="MLite FAQ and Open Source Technical Support"
+                  className="w-full h-auto object-contain rounded-2xl select-none"
+                />
+              </div>
+              <div className="mt-6 text-center max-w-sm">
+                <p className="text-xs text-slate-500">
+                  Still have questions? Check our{" "}
+                  <a
+                    href="http://localhost:8000/docs"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#3BB48C] font-semibold hover:underline"
+                  >
+                    API Documentation
+                  </a>{" "}
+                  or send us a message in the contact form below.
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Expandable Accordion (Databricks Minimalist Divider Style) */}
+            <div className="lg:col-span-7 border-t border-slate-200 divide-y divide-slate-200">
+              {faqItems.map((item, idx) => {
+                const isOpen = openFaq === idx;
+                return (
+                  <div key={idx} className="transition-colors">
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : idx)}
+                      className="w-full py-5 flex items-center justify-between text-left gap-4 cursor-pointer select-none group"
+                    >
+                      <span className={`text-base sm:text-lg font-semibold transition-colors ${
+                        isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
+                      }`}>
+                        {item.q}
+                      </span>
+                      <div className="shrink-0 text-slate-500 group-hover:text-[#3BB48C] transition-colors ml-4">
+                        {isOpen ? (
+                          <Minus className="w-5 h-5 text-[#3BB48C] stroke-[2.5]" />
+                        ) : (
+                          <Plus className="w-5 h-5 stroke-[2]" />
+                        )}
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div className="pb-5 pr-8 text-sm sm:text-base text-slate-600 leading-relaxed animate-fadeIn">
+                        {item.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Contact Us & Open-Source Community Section (Split Premium Layout) ── */}
+      <section id="contact" className="py-24 bg-white relative overflow-hidden border-t border-slate-100">
+        {/* Subtle background ambient gradients */}
+        <div className="absolute top-12 left-10 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-50/80 rounded-full blur-3xl pointer-events-none -z-10" />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section Heading */}
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Get in Touch with the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3BB48C] to-[#1E6B52]">MLite Community</span>
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base">
+              Have questions about self-hosting, encountered an issue with Docker model serving, or want to contribute to the open-source platform? We're here to help.
+            </p>
+          </div>
+
+          {/* Premium Split Card (Inspired by reference design: Left Illustration + Right Dark Form) */}
+          <div className="relative rounded-3xl bg-white border border-slate-200/90 shadow-2xl shadow-slate-200/60 overflow-hidden">
+            {/* Corner organic decorative circular accents matching brand colors */}
+            <div className="absolute -top-12 -left-12 w-32 h-32 rounded-full bg-[#3BB48C]/15 pointer-events-none z-0" />
+            <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-teal-100/50 pointer-events-none z-0" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 relative z-10">
+              {/* ── Left Side: Light & Friendly with MLOps Character Illustration ── */}
+              <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 bg-gradient-to-br from-white via-[#F8FCFA] to-[#EFFBF6] flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100">
+                <div className="space-y-3">
+                  <h3 className="font-display text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    Contact Us
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    MLite is built for data scientists and engineers who demand sovereignty over their MLOps stack. Share your feedback, report a bug, or ask for architecture advice.
+                  </p>
+                </div>
+
+                {/* Character Illustration with MLOps Tablet, Exclamation & Question Marks, and Star Rating */}
+                <div className="my-8 relative group flex items-center justify-center">
+                  <div className="relative max-w-md w-full rounded-2xl overflow-hidden border border-emerald-100/60 shadow-md bg-white p-2">
+                    <img
+                      src="/contact-illustration.jpg"
+                      alt="MLite Open Source Support and Community"
+                      className="w-full h-auto object-contain rounded-xl select-none transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                  </div>
+                </div>
+
+                {/* Open Source Channels & Badges */}
+                <div className="pt-4 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <Github className="w-4 h-4 text-slate-700" />
+                    <span className="font-semibold text-slate-700">Youssef-Laaroussi/MLOpsLite</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="https://github.com/Youssef-Laaroussi/MLOpsLite/issues"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#3BB48C] hover:text-[#2E8B6D] font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      GitHub Issues <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <span className="text-slate-300">•</span>
+                    <a
+                      href="https://github.com/Youssef-Laaroussi/MLOpsLite"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#3BB48C] hover:text-[#2E8B6D] font-bold inline-flex items-center gap-1 hover:underline"
+                    >
+                      Star Repo <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Right Side: Dark Rich Panel with High-Contrast Form ── */}
+              <div className="lg:col-span-6 bg-[#0F172A] p-8 sm:p-12 lg:p-14 text-white flex flex-col justify-center relative overflow-hidden">
+                {/* Decorative dark elements matching the style */}
+                <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-[#3BB48C]/10 blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-emerald-500/10 pointer-events-none" />
+                <div className="absolute top-8 right-8 w-20 h-20 rounded-full bg-slate-800/60 pointer-events-none" />
+
+                <div className="relative z-10 max-w-lg mx-auto w-full">
+                  <div className="mb-8">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-[#3BB48C] text-xs font-mono font-medium mb-3">
+                      <Mail className="w-3.5 h-3.5" />
+                      Direct Maintainer Inbox
+                    </div>
+                    <h4 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      Send a Message
+                    </h4>
+                    <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                      Fill out the form below. For code patches, PRs or issue tracking, feel free to link your GitHub username.
+                    </p>
+                  </div>
+
+                  {contactSubmitted ? (
+                    <div className="p-8 rounded-2xl bg-slate-800/90 border border-[#3BB48C]/40 text-center space-y-4 animate-fadeIn">
+                      <div className="w-14 h-14 mx-auto rounded-full bg-[#3BB48C]/20 border border-[#3BB48C] flex items-center justify-center text-[#3BB48C]">
+                        <Check className="w-7 h-7 stroke-[3]" />
+                      </div>
+                      <h5 className="font-display text-xl font-bold text-white">Message Received!</h5>
+                      <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        Thank you for reaching out to the MLite open-source maintainers. We appreciate your feedback and will reply to <span className="text-[#3BB48C] font-mono font-semibold">{contactEmail}</span> shortly.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setContactSubmitted(false);
+                          setContactName("");
+                          setContactEmail("");
+                          setContactMessage("");
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition cursor-pointer"
+                      >
+                        Send Another Message
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleContactSubmit} className="space-y-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="Your Name (or GitHub Handle)"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          placeholder="name@organization.org"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Topic / Category
+                        </label>
+                        <select
+                          value={contactTopic}
+                          onChange={(e) => setContactTopic(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition cursor-pointer"
+                        >
+                          <option value="feedback">Open Source Feedback & Ideas</option>
+                          <option value="selfhosted">Self-Hosted Setup & Docker Serving</option>
+                          <option value="bug">Bug Report / Anomaly</option>
+                          <option value="contribute">Contributing Code / Feature PR</option>
+                          <option value="enterprise">Self-Hosted Enterprise Advisory</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                          Message
+                        </label>
+                        <textarea
+                          required
+                          rows={4}
+                          value={contactMessage}
+                          onChange={(e) => setContactMessage(e.target.value)}
+                          placeholder="Tell us what you are working on, any questions about MLite, or details about your deployment setup..."
+                          className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition resize-none"
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={contactLoading}
+                          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] active:bg-[#288365] text-white font-bold text-sm transition shadow-lg shadow-[#3BB48C]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                        >
+                          {contactLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Submit Message</span>
+                              <Send className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bottom CTA Banner (Frameless Logo + Plexus Mesh Art) ── */}
+      <section className="py-24 bg-[#F8FAFC] border-t border-slate-100 relative overflow-hidden">
+        {/* Full-vibrancy Neural Network Plexus on Right (True vibrant colors, unhidden) */}
+        <div className="absolute -top-12 -right-10 w-[42rem] sm:w-[48rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 mix-blend-multiply select-none">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+            }}
+          />
+        </div>
+
+        {/* Full-vibrancy Neural Network Plexus on Left (True vibrant colors, unhidden) */}
+        <div className="absolute -bottom-14 -left-12 w-[38rem] sm:w-[44rem] lg:w-[50rem] pointer-events-none z-0 opacity-100 mix-blend-multiply select-none transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-auto object-contain"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+              maskImage: "radial-gradient(ellipse at 50% 50%, black 70%, transparent 98%)",
+            }}
+          />
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
+          <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-tr from-slate-50 via-emerald-50/30 to-white border border-slate-200 shadow-xl text-center space-y-6 relative overflow-hidden">
+            {/* Ambient vector decorations inside the CTA banner */}
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-tensor-dots opacity-40 pointer-events-none -z-10" />
+            <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-diagonal-hatch opacity-50 pointer-events-none -z-10" />
             {/* White squircle framed logo */}
             <div className="w-16 h-16 mx-auto bg-slate-50/90 rounded-2xl p-3 shadow-sm border border-slate-200/90 flex items-center justify-center">
               <img
@@ -714,8 +959,32 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Enterprise Dark Footer with Official Brand Palette & Complete Logo ── */}
-      <footer className="bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
+      <footer className="relative bg-slate-900 text-slate-400 pt-16 pb-12 border-t border-slate-800 overflow-hidden">
+        {/* Glowing Neural Plexus Watermark in Dark Footer */}
+        <div className="absolute top-0 right-0 w-[42rem] h-full pointer-events-none z-0 opacity-15 mix-blend-screen select-none">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-full object-cover object-center invert brightness-125"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 80% 20%, black 40%, transparent 90%)",
+              maskImage: "radial-gradient(ellipse at 80% 20%, black 40%, transparent 90%)",
+            }}
+          />
+        </div>
+        <div className="absolute bottom-0 left-0 w-[36rem] h-full pointer-events-none z-0 opacity-10 mix-blend-screen select-none transform rotate-180">
+          <img
+            src="/neural-plexus.jpg"
+            alt=""
+            className="w-full h-full object-cover object-center invert brightness-125"
+            style={{
+              WebkitMaskImage: "radial-gradient(ellipse at 20% 80%, black 40%, transparent 85%)",
+              maskImage: "radial-gradient(ellipse at 20% 80%, black 40%, transparent 85%)",
+            }}
+          />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Main Footer: Simple & Clean (No multiple columns) */}
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-12 border-b border-slate-800/80">
             {/* Brand & Description */}
@@ -755,6 +1024,8 @@ export const LandingPage: React.FC = () => {
                   <li><a href="#features" className="hover:text-[#3BB48C] transition">Features</a></li>
                   <li><a href="#workflow" className="hover:text-[#3BB48C] transition">Workflow</a></li>
                   <li><a href="#architecture" className="hover:text-[#3BB48C] transition">Architecture</a></li>
+                  <li><a href="#faq" className="hover:text-[#3BB48C] transition">FAQ / Support</a></li>
+                  <li><a href="#contact" className="hover:text-[#3BB48C] transition">Contact & Community</a></li>
                   <li>
                     <a href="https://github.com/Youssef-Laaroussi/MLOpsLite" target="_blank" rel="noreferrer" className="hover:text-[#3BB48C] transition flex items-center gap-1">
                       GitHub Repo <ExternalLink className="w-3 h-3 text-slate-500" />

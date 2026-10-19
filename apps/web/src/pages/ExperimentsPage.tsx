@@ -380,35 +380,31 @@ export const ExperimentsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FlaskConical className="w-7 h-7 text-[#3BB48C]" />
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
             Experiment Tracking
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              MLflow Live
-            </span>
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Track runs, hyperparameters, validation metrics, and model artifacts with full lineage
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Exact Date Filter matching other sections: "Last 6 months" */}
+        <div className="flex items-center gap-2">
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -416,9 +412,9 @@ export const ExperimentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -431,17 +427,17 @@ export const ExperimentsPage: React.FC = () => {
 
           <button
             onClick={loadData}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh experiments"
           >
-            <RefreshCw className={`w-4 h-4 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329a77] text-white font-bold text-xs transition shadow-md shadow-[#3BB48C]/25"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             New Experiment
           </button>
         </div>
@@ -489,11 +485,11 @@ export const ExperimentsPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-start justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-[#3BB48C]" />
                 Run Leaderboard
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-0.5">
                 ROC-AUC (bars) vs. log loss (line) with promotion threshold
               </p>
             </div>
@@ -525,11 +521,11 @@ export const ExperimentsPage: React.FC = () => {
         {/* CHART 2: Multi-dimensional model profile (radar) */}
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="mb-3">
-            <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-[#3BB48C]" />
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+              <Sliders className="w-4 h-4 text-[#3BB48C]" />
               Model Profile Comparison
             </h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Normalized score (0–100) across quality, speed &amp; robustness
             </p>
           </div>
@@ -554,11 +550,11 @@ export const ExperimentsPage: React.FC = () => {
       {/* ── Row 2: Run Activity & Hyperparameter Importance ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#3BB48C]" />
             Run Activity &amp; Success Rate
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={RUN_ACTIVITY} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
@@ -577,11 +573,11 @@ export const ExperimentsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Zap className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Zap className="w-4 h-4 text-[#3BB48C]" />
             Hyperparameter Importance
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={HP_IMPORTANCE} layout="vertical" margin={{ top: 0, right: 16, left: 24, bottom: 0 }}>
@@ -627,7 +623,7 @@ export const ExperimentsPage: React.FC = () => {
             <div>
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="p-2.5 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600 group-hover:scale-105 transition-transform">
                   <FlaskConical className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
@@ -636,7 +632,7 @@ export const ExperimentsPage: React.FC = () => {
               </div>
 
               {/* Title & Path */}
-              <h3 className="font-extrabold text-slate-900 text-base tracking-tight line-clamp-1 group-hover:text-[#3BB48C] transition-colors">
+              <h3 className="text-sm font-semibold text-slate-900 tracking-tight line-clamp-1 group-hover:text-[#3BB48C] transition-colors">
                 {exp.name}
               </h3>
               <p className="text-xs font-mono text-slate-400 truncate mt-1">
@@ -669,7 +665,7 @@ export const ExperimentsPage: React.FC = () => {
 
               <button
                 onClick={() => handleOpenRuns(exp)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
               >
                 Inspect Runs
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -686,7 +682,7 @@ export const ExperimentsPage: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
               <div className="flex items-start gap-3">
-                <div className="p-3 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456]">
+                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600">
                   <FlaskConical className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div>
@@ -694,7 +690,7 @@ export const ExperimentsPage: React.FC = () => {
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
                       {selectedExperiment.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-md bg-[#EBF8F4] text-xs font-mono font-bold text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-mono font-semibold text-slate-700 border border-slate-200">
                       {selectedExperiment.lifecycle_stage || "active"}
                     </span>
                   </div>

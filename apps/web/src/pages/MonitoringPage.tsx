@@ -218,36 +218,37 @@ export const MonitoringPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <LineChartIcon className="w-7 h-7 text-[#3BB48C]" />
-            Model Monitoring &amp; Observability
-            <span className="relative flex h-2.5 w-2.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+              Model Monitoring &amp; Observability
+            </h2>
+            <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
             Continuous evaluation of production data drift (Evidently AI, PSI score) and inference telemetry
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Top-Right Calendar Filter matching all sections */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -255,9 +256,9 @@ export const MonitoringPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -272,15 +273,15 @@ export const MonitoringPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Layers className="w-4 h-4 text-[#3BB48C]" />
+              <Layers className="w-3.5 h-3.5 text-slate-400" />
               <span>{selectedModel}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {[
                   "fraud-detector (v3)",
                   "customer-churn-xgb (v2)",
@@ -293,9 +294,9 @@ export const MonitoringPage: React.FC = () => {
                       setSelectedModel(m);
                       setIsModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       selectedModel === m
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -309,10 +310,10 @@ export const MonitoringPage: React.FC = () => {
           <button
             onClick={handleRunEvaluation}
             disabled={evaluating}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs transition shadow-md shadow-[#3BB48C]/25 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${evaluating ? "animate-spin" : ""}`} />
-            {evaluating ? "Calculating Drift..." : "Run Drift Evaluation"}
+            {evaluating ? "Calculating..." : "Run Drift Evaluation"}
           </button>
         </div>
       </div>
@@ -360,11 +361,11 @@ export const MonitoringPage: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#3BB48C]" />
                   Population Stability Index (PSI) Trend
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Daily aggregate statistical drift against baseline reference distribution
                 </p>
               </div>
@@ -462,11 +463,11 @@ export const MonitoringPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-[#3BB48C]" />
                   Distribution Overlay
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Reference baseline vs live serving distribution
                 </p>
               </div>
@@ -574,11 +575,11 @@ export const MonitoringPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Zap className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-[#3BB48C]" />
                 Inference Latency Percentiles
               </h3>
-              <p className="text-sm text-slate-500 mt-1 mb-4">p50 / p95 / p99 over the last 24h against the 10 ms SLA</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-4">p50 / p95 / p99 over the last 24h against the 10 ms SLA</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">p99 8.9 ms</span>
           </div>
@@ -600,11 +601,11 @@ export const MonitoringPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Sliders className="w-4 h-4 text-[#3BB48C]" />
             Feature Drift Radar
           </h3>
-          <p className="text-sm text-slate-500 mt-1">PSI per feature — current vs. last week</p>
+          <p className="text-xs text-slate-500 mt-0.5">PSI per feature — current vs. last week</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={DRIFT_RADAR} outerRadius="70%">
@@ -624,11 +625,11 @@ export const MonitoringPage: React.FC = () => {
       {/* ── Row 3: Model Quality Decay & Data Quality Gauges ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Activity className="w-4 h-4 text-[#3BB48C]" />
             Model Quality Over Time
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Rolling F1 with 95% confidence band — retrain trigger at 0.90</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Rolling F1 with 95% confidence band — retrain trigger at 0.90</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={QUALITY_BAND} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
@@ -645,11 +646,11 @@ export const MonitoringPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
             Data Quality Gauges
           </h3>
-          <p className="text-sm text-slate-500 mt-1">Live serving data health (%)</p>
+          <p className="text-xs text-slate-500 mt-0.5">Live serving data health (%)</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart data={DATA_QUALITY} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
@@ -675,11 +676,11 @@ export const MonitoringPage: React.FC = () => {
 
       {/* ── Row 4: Live Incident Feed ── */}
       <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
-        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-          <Layers className="w-5 h-5 text-[#3BB48C]" />
+        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+          <Layers className="w-4 h-4 text-[#3BB48C]" />
           Live Observability Feed
         </h3>
-        <p className="text-sm text-slate-500 mt-1 mb-4">Latest drift checks, anomalies and automated actions</p>
+        <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest drift checks, anomalies and automated actions</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {INCIDENTS.map((i) => (
             <div key={i.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${i.color}` }}>
@@ -698,8 +699,8 @@ export const MonitoringPage: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
               Feature Distribution &amp; Drift Scores (Evidently AI)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -730,7 +731,7 @@ export const MonitoringPage: React.FC = () => {
                       {item.stat_test}
                     </span>
                     {selectedFeatureIndex === idx && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Active Overlay
                       </span>
                     )}
@@ -761,8 +762,8 @@ export const MonitoringPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] shrink-0 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#3BB48C]" />
+                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Stable
                   </span>
                 </div>

@@ -324,35 +324,31 @@ export const ModelsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Box className="w-7 h-7 text-[#3BB48C]" />
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
             Model Registry &amp; Governance
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              Single Active Prod
-            </span>
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Centralized version management, input/output signatures, and formal stage promotions
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Exact Date Filter matching all other sections */}
+        <div className="flex items-center gap-2">
+          {/* Time Range Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -360,9 +356,9 @@ export const ModelsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -375,10 +371,10 @@ export const ModelsPage: React.FC = () => {
 
           <button
             onClick={loadModels}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh models"
           >
-            <RefreshCw className={`w-4 h-4 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
         </div>
       </div>
@@ -426,11 +422,11 @@ export const ModelsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#3BB48C]" />
                   Model Promotion Pipeline &amp; Stages
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Active model count distribution across lifecycle promotion stages
                 </p>
               </div>
@@ -530,11 +526,11 @@ export const ModelsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#3BB48C]" />
                   Model Footprint vs. Speed
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Latency (ms) vs. Memory Size (MB) trade-off
                 </p>
               </div>
@@ -594,11 +590,11 @@ export const ModelsPage: React.FC = () => {
       {/* ── Row 2: Registry Growth & Governance Scorecard ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#3BB48C]" />
             Registry Growth &amp; Promotion Velocity
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={REGISTRY_GROWTH} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
@@ -625,11 +621,11 @@ export const ModelsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
             Governance Scorecard
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-2">Registry compliance coverage (% of versions)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-2">Registry compliance coverage (% of versions)</p>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart data={GOVERNANCE} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
@@ -656,11 +652,11 @@ export const ModelsPage: React.FC = () => {
       {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Sliders className="w-4 h-4 text-[#3BB48C]" />
             Champion vs. Challenger
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
@@ -697,11 +693,11 @@ export const ModelsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-[#3BB48C]" />
             Promotion Audit Trail
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Latest stage transitions with approver</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest stage transitions with approver</p>
           <ol className="relative border-l border-slate-200 ml-2 space-y-4">
             {PROMOTION_EVENTS.map((e) => (
               <li key={e.id} className="ml-4">
@@ -783,7 +779,7 @@ export const ModelsPage: React.FC = () => {
                   <tr key={idx} className="hover:bg-[#F0FDF9]/40 transition group">
                     <td className="px-6 py-4 font-semibold text-slate-900">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] group-hover:scale-105 transition-transform">
+                        <div className="p-2 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 group-hover:scale-105 transition-transform">
                           <Box className="w-4 h-4" />
                         </div>
                         <div>

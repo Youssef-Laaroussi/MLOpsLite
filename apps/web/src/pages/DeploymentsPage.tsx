@@ -362,36 +362,37 @@ export const DeploymentsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Server className="w-7 h-7 text-[#3BB48C]" />
-            Inference Deployments
-            <span className="relative flex h-2.5 w-2.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+              Inference Deployments
+            </h2>
+            <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
             Service mesh orchestration, live canary routing topology, and instant zero-downtime rollback
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Top-Right Calendar Filter matching all sections */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -399,9 +400,9 @@ export const DeploymentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -414,16 +415,16 @@ export const DeploymentsPage: React.FC = () => {
 
           <button
             onClick={loadDeployments}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh deployments"
           >
-            <RefreshCw className={`w-4 h-4 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
           {canRollback && (
             <button
               onClick={() => setShowRollbackModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs transition shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs transition shadow-2xs"
               title="Rollback deployment to stable model version"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
@@ -434,14 +435,14 @@ export const DeploymentsPage: React.FC = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={!canDeploy}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs sm:text-sm transition shadow-md shadow-[#3BB48C]/25 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition shadow-2xs ${
               canDeploy
-                ? "bg-[#3BB48C] hover:bg-[#329F7B]"
-                : "bg-slate-300 cursor-not-allowed opacity-60"
+                ? "bg-slate-900 hover:bg-slate-800 text-white"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
             title={canDeploy ? "Launch container" : "Requires Developer role"}
           >
-            {canDeploy ? <Plus className="w-4 h-4 stroke-[2.5]" /> : <Lock className="w-3.5 h-3.5" />}
+            {canDeploy ? <Plus className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
             Deploy Container
           </button>
         </div>
@@ -490,11 +491,11 @@ export const DeploymentsPage: React.FC = () => {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Workflow className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Workflow className="w-4 h-4 text-[#3BB48C]" />
                   Ingress Traffic &amp; Route Throughput
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Real-time request volume distribution through NGINX gateway (Port 443 / SSL)
                 </p>
               </div>
@@ -644,11 +645,11 @@ export const DeploymentsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                  <Gauge className="w-5 h-5 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <Gauge className="w-4 h-4 text-[#3BB48C]" />
                   Fleet SLA Benchmarking
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   P95 Inference Latency (ms) ranked by endpoint
                 </p>
               </div>
@@ -720,11 +721,11 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Row 2: Canary Traffic Split & Reliability (Error Rate vs p99) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <GitBranch className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <GitBranch className="w-4 h-4 text-[#3BB48C]" />
             Canary Traffic Split
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-2">fraud-detector · progressive rollout v2 → v3</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-2">fraud-detector · progressive rollout v2 → v3</p>
           <div className="h-48 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -754,11 +755,11 @@ export const DeploymentsPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#3BB48C]" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-[#3BB48C]" />
                 Reliability: Error Rate vs. p99 Latency
               </h3>
-              <p className="text-sm text-slate-500 mt-1 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">SLO 99.9%</span>
           </div>
@@ -782,11 +783,11 @@ export const DeploymentsPage: React.FC = () => {
       {/* ── Row 3: Resource Heatmap & Release Timeline ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Cpu className="w-4 h-4 text-[#3BB48C]" />
             CPU Utilization Heatmap
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Per container, last 12 hours — darker = hotter</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Per container, last 12 hours — darker = hotter</p>
           <div className="space-y-1.5">
             {HEATMAP.map((row) => (
               <div key={row.name} className="flex items-center gap-3">
@@ -812,11 +813,11 @@ export const DeploymentsPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Workflow className="w-5 h-5 text-[#3BB48C]" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Workflow className="w-4 h-4 text-[#3BB48C]" />
             Release Timeline
           </h3>
-          <p className="text-sm text-slate-500 mt-1 mb-4">Recent deploys, rollbacks and scaling events</p>
+          <p className="text-xs text-slate-500 mt-0.5 mb-4">Recent deploys, rollbacks and scaling events</p>
           <ol className="relative border-l border-slate-200 ml-2 space-y-4">
             {RELEASES.map((r) => (
               <li key={r.id} className="ml-4">
@@ -952,7 +953,7 @@ export const DeploymentsPage: React.FC = () => {
                       <button
                         onClick={() => handleTestPing(d)}
                         disabled={pingingId === d.id || d.status !== "RUNNING"}
-                        className="px-2.5 py-1.5 rounded-lg bg-[#EBF8F4] hover:bg-[#3BB48C] text-[#1A7456] hover:text-white border border-[#BCE9DA] font-bold text-xs flex items-center gap-1 transition disabled:opacity-40"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center gap-1 transition disabled:opacity-40"
                       >
                         <Zap className={`w-3 h-3 ${pingingId === d.id ? "animate-spin text-amber-500" : ""}`} />
                         {pingingId === d.id ? "Pinging..." : "Test ⚡"}

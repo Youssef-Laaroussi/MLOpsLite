@@ -69,20 +69,24 @@ export const AlertsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">Alerts</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+            Alerts &amp; Incidents
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
             Rules, incidents and notification channels for drift, latency and container health
           </p>
         </div>
-        <button
-          id="alerts-new-rule"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition"
-        >
-          <Plus className="w-4 h-4" /> New alert rule
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            id="alerts-new-rule"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
+          >
+            <Plus className="w-3.5 h-3.5" /> New alert rule
+          </button>
+        </div>
       </div>
 
       {/* Summary */}

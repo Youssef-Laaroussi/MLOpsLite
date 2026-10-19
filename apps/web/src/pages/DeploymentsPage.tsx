@@ -362,36 +362,37 @@ export const DeploymentsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header (with Last 6 Months Filter on Top Right) ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Server className="w-7 h-7 text-[#3BB48C]" />
-            Inference Deployments
-            <span className="relative flex h-2.5 w-2.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+              Inference Deployments
+            </h2>
+            <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
             Service mesh orchestration, live canary routing topology, and instant zero-downtime rollback
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Top-Right Calendar Filter matching all sections */}
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -399,9 +400,9 @@ export const DeploymentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-emerald-50 text-emerald-800"
+                        ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -414,16 +415,16 @@ export const DeploymentsPage: React.FC = () => {
 
           <button
             onClick={loadDeployments}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#3BB48C] transition shadow-xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh deployments"
           >
-            <RefreshCw className={`w-4 h-4 text-[#3BB48C] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
           {canRollback && (
             <button
               onClick={() => setShowRollbackModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs transition shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs transition shadow-2xs"
               title="Rollback deployment to stable model version"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
@@ -434,14 +435,14 @@ export const DeploymentsPage: React.FC = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={!canDeploy}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs sm:text-sm transition shadow-md shadow-[#3BB48C]/25 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition shadow-2xs ${
               canDeploy
-                ? "bg-[#3BB48C] hover:bg-[#329F7B]"
-                : "bg-slate-300 cursor-not-allowed opacity-60"
+                ? "bg-slate-900 hover:bg-slate-800 text-white"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
             title={canDeploy ? "Launch container" : "Requires Developer role"}
           >
-            {canDeploy ? <Plus className="w-4 h-4 stroke-[2.5]" /> : <Lock className="w-3.5 h-3.5" />}
+            {canDeploy ? <Plus className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
             Deploy Container
           </button>
         </div>

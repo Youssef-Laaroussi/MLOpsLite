@@ -144,15 +144,16 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-          <Settings className="w-6 h-6 text-[#3BB48C]" />
-          Settings & Configuration
-        </h2>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Manage your profile, CLI authentication keys, and governance preferences
-        </p>
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+            Settings &amp; Configuration
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage your profile, CLI authentication keys, and governance preferences
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}

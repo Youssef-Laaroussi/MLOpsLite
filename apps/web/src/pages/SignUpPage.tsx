@@ -8,7 +8,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Sparkles,
-  Shield,
   GitBranch,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -306,12 +305,6 @@ export const SignUpPage: React.FC = () => {
 
         {/* Form Card */}
         <div className={`max-w-[420px] w-full transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-          <div className="mb-1">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80 mb-4">
-              <Shield className="w-3 h-3 text-emerald-600" />
-              Create Account
-            </span>
-          </div>
           <h1 className="text-3xl sm:text-[36px] font-black text-slate-900 tracking-tight leading-[1.1] mb-3">
             Get started with MLite
           </h1>

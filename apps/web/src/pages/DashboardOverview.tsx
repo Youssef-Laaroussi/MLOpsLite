@@ -456,24 +456,29 @@ export const DashboardOverview: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {resourcesData.map((res) => {
           const Icon = res.icon;
+          const href = `/app/${res.name === "Models" ? "models" : res.name.toLowerCase()}`;
           return (
-            <div
+            <Link
               key={res.name}
-              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm group cursor-pointer"
+              to={href}
+              id={`kpi-${res.name.toLowerCase()}`}
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-[#3BB48C]/50 hover:-translate-y-0.5 transition-all hover:shadow-md group cursor-pointer block"
             >
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl border ${res.iconBg} ${res.iconColor} group-hover:scale-105 transition-transform`}>
                   <Icon className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <span className="text-xs font-bold text-slate-700">{res.name}</span>
+                <span className="text-xs font-bold text-slate-700 flex-1">{res.name}</span>
+                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-[#3BB48C] transition" />
               </div>
               <div className="text-2xl font-semibold font-display text-slate-900 mt-4 mb-2 tracking-tight">
                 {res.count}
               </div>
               <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
                 <span>{res.trend}</span>
+                <span className="text-slate-400 font-medium">vs prev. period</span>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

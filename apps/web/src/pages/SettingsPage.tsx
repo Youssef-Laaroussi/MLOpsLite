@@ -246,64 +246,60 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Scope / Capabilities */}
-            <div className="pt-6">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">
-                Assigned Workspace Entitlements
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900">Model Registry & Training</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">Track runs, register models & log metrics</div>
+            {/* Workspace & Developer Setup */}
+            <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Account Details */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-[#3BB48C]" />
+                  Account Information
+                </h4>
+                <div className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Username</span>
+                    <span className="font-mono font-bold text-slate-800">{user?.username}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Email</span>
+                    <span className="font-mono text-slate-700">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Role</span>
+                    <span className="font-semibold text-slate-800">{user?.role}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-slate-500 font-medium">Session Status</span>
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Active (Authenticated)
+                    </span>
                   </div>
                 </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900">Inference & Serving</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">Trigger deployments and test predictions</div>
+              </div>
+
+              {/* Quick CLI Authentication */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#3BB48C]" />
+                    CLI & SDK Authentication
+                  </h4>
+                  <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                    Authenticate your local machine to push experiments, sync datasets, and deploy models directly from your terminal or Jupyter notebooks.
+                  </p>
+                  <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
+                    <span>mlite login --token &lt;YOUR_API_KEY&gt;</span>
                   </div>
                 </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900">Drift & Quality Telemetry</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">Evidently AI monitoring & data profiling</div>
-                  </div>
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Need a token for terminal?</span>
+                  <button
+                    onClick={() => setActiveTab("apikeys")}
+                    className="text-xs font-bold text-[#1A7456] hover:text-[#145a43] transition flex items-center gap-1"
+                  >
+                    Manage API Keys →
+                  </button>
                 </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900">Object Storage & Datasets</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">S3/MinIO bucket access & versioning</div>
-                  </div>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900">CLI & Pipeline Access</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">Personal access tokens for mlite CLI</div>
-                  </div>
-                </div>
-                {isAdmin ? (
-                  <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-200 flex items-start gap-2.5">
-                    <Shield className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-semibold text-rose-950">Administrative Control</div>
-                      <div className="text-[11px] text-rose-700/80 mt-0.5">User provisioning & system settings</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#3BB48C] shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-semibold text-slate-900">Collaborative Workspace</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">Shared experimentation across team</div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

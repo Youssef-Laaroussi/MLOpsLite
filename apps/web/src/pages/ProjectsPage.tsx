@@ -306,11 +306,8 @@ export const ProjectsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FolderGit2 className="w-7 h-7 text-[#3BB48C]" />
+            <FolderGit2 className="w-7 h-7 text-emerald-600" />
             Workspaces &amp; Projects
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] font-sans">
-              Git Ops Managed
-            </span>
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             Organize machine learning repositories, training pipelines, model registries, and team workflows
@@ -338,8 +335,8 @@ export const ProjectsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${timeRange === range
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
@@ -931,7 +928,7 @@ export const ProjectsPage: React.FC = () => {
                     {/* Project Name, Slug & Description */}
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
-                        <div className="p-2.5 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                           <FolderGit2 className="w-4 h-4 stroke-[2.2]" />
                         </div>
                         <div>
@@ -966,10 +963,10 @@ export const ProjectsPage: React.FC = () => {
                           {proj.models_count || 2}m
                         </span>
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EBF8F4] text-[#1A7456] font-bold border border-[#BCE9DA]"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold border border-purple-200"
                           title="Experiment Runs"
                         >
-                          <FlaskConical className="w-3 h-3 text-[#3BB48C]" />
+                          <FlaskConical className="w-3 h-3 text-purple-600" />
                           {proj.experiments_count || 12}r
                         </span>
                         <span
@@ -1033,7 +1030,7 @@ export const ProjectsPage: React.FC = () => {
                         )}
                         <Link
                           to="/app/experiments"
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition shadow-2xs hover:border-[#3BB48C]/40"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
                         >
                           Workspace
                           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1057,7 +1054,7 @@ export const ProjectsPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] font-bold">
+                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
                       {proj.slug}
                     </span>
                     {proj.framework && (
@@ -1147,7 +1144,7 @@ export const ProjectsPage: React.FC = () => {
                   )}
                   <Link
                     to="/app/experiments"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
                   >
                     Workspace
                     <ArrowUpRight className="w-3.5 h-3.5" />

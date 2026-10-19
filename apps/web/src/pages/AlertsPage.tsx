@@ -155,7 +155,7 @@ export const AlertsPage: React.FC = () => {
             <div key={c.name} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800">{c.name}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                   Connected
                 </span>
               </div>

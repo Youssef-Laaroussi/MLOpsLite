@@ -255,9 +255,9 @@ export const MonitoringPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -293,9 +293,9 @@ export const MonitoringPage: React.FC = () => {
                       setSelectedModel(m);
                       setIsModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
                       selectedModel === m
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -730,7 +730,7 @@ export const MonitoringPage: React.FC = () => {
                       {item.stat_test}
                     </span>
                     {selectedFeatureIndex === idx && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Active Overlay
                       </span>
                     )}
@@ -761,8 +761,8 @@ export const MonitoringPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA] shrink-0 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#3BB48C]" />
+                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Stable
                   </span>
                 </div>

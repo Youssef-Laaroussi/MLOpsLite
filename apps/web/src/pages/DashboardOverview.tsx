@@ -485,22 +485,20 @@ export const DashboardOverview: React.FC = () => {
             <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
               <button
                 onClick={() => setAdminViewMode("governance")}
-                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${
-                  adminViewMode === "governance"
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${adminViewMode === "governance"
                     ? "bg-slate-900 text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Shield className="w-3 h-3" />
                 Admin
               </button>
               <button
                 onClick={() => setAdminViewMode("ml")}
-                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${
-                  adminViewMode === "ml"
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${adminViewMode === "ml"
                     ? "bg-[#0284C7] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Box className="w-3 h-3" />
                 ML View
@@ -528,11 +526,10 @@ export const DashboardOverview: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
                         ? "bg-[#E0F2FE] text-[#0284C7] font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>

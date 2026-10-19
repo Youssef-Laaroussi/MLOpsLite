@@ -328,11 +328,8 @@ export const ModelsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-semibold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Box className="w-7 h-7 text-[#3BB48C]" />
+            <Box className="w-7 h-7 text-emerald-600" />
             Model Registry &amp; Governance
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              Single Active Prod
-            </span>
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             Centralized version management, input/output signatures, and formal stage promotions
@@ -360,9 +357,9 @@ export const ModelsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -783,7 +780,7 @@ export const ModelsPage: React.FC = () => {
                   <tr key={idx} className="hover:bg-[#F0FDF9]/40 transition group">
                     <td className="px-6 py-4 font-semibold text-slate-900">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] group-hover:scale-105 transition-transform">
+                        <div className="p-2 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 group-hover:scale-105 transition-transform">
                           <Box className="w-4 h-4" />
                         </div>
                         <div>

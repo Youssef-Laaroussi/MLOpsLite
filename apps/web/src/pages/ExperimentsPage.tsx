@@ -384,11 +384,8 @@ export const ExperimentsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FlaskConical className="w-7 h-7 text-[#3BB48C]" />
+            <FlaskConical className="w-7 h-7 text-purple-600" />
             Experiment Tracking
-            <span className="text-xs px-3 py-1 rounded-full font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
-              MLflow Live
-            </span>
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             Track runs, hyperparameters, validation metrics, and model artifacts with full lineage
@@ -416,9 +413,9 @@ export const ExperimentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-bold transition ${
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition ${
                       timeRange === range
-                        ? "bg-[#EBF8F4] text-[#1A7456]"
+                        ? "bg-emerald-50 text-emerald-800"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -627,7 +624,7 @@ export const ExperimentsPage: React.FC = () => {
             <div>
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="p-2.5 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456] group-hover:scale-105 transition-transform">
+                <div className="p-2.5 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600 group-hover:scale-105 transition-transform">
                   <FlaskConical className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
@@ -669,7 +666,7 @@ export const ExperimentsPage: React.FC = () => {
 
               <button
                 onClick={() => handleOpenRuns(exp)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EBF8F4] hover:bg-[#D5F2E8] text-[#1A7456] border border-[#BCE9DA] text-xs font-bold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
               >
                 Inspect Runs
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -686,7 +683,7 @@ export const ExperimentsPage: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
               <div className="flex items-start gap-3">
-                <div className="p-3 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] text-[#1A7456]">
+                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600">
                   <FlaskConical className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div>
@@ -694,7 +691,7 @@ export const ExperimentsPage: React.FC = () => {
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
                       {selectedExperiment.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-md bg-[#EBF8F4] text-xs font-mono font-bold text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-mono font-semibold text-slate-700 border border-slate-200">
                       {selectedExperiment.lifecycle_stage || "active"}
                     </span>
                   </div>

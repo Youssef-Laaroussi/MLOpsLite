@@ -221,7 +221,7 @@ export const SettingsPage: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border ${
                         isAdmin
                           ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
                       }`}
                     >
                       {user?.role || (isAdmin ? "ADMIN" : "USER")}
@@ -331,7 +331,7 @@ export const SettingsPage: React.FC = () => {
                         className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center ${
                           u.role === "ADMIN"
                             ? "bg-rose-100 text-rose-700"
-                            : "bg-[#EBF8F4] text-[#1A7456]"
+                            : "bg-emerald-50 text-emerald-700"
                         }`}
                       >
                         {u.username.charAt(0).toUpperCase()}
@@ -350,7 +350,7 @@ export const SettingsPage: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${
                         u.role === "ADMIN"
                           ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-[#EBF8F4] text-[#1A7456] border-[#BCE9DA]"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
                       }`}
                     >
                       {u.role}
@@ -394,18 +394,18 @@ export const SettingsPage: React.FC = () => {
             </form>
 
             {newlyCreatedKey && (
-              <div className="mt-4 p-4 rounded-2xl bg-[#EBF8F4] border border-[#BCE9DA] space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1A7456]">
+              <div className="mt-4 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
                   <span>New API key created (Copy it now, it will not be displayed again):</span>
                   <button
                     onClick={() => copyToClipboard(newlyCreatedKey)}
-                    className="flex items-center gap-1 text-xs font-mono font-bold bg-white px-2.5 py-1 rounded-lg border border-[#BCE9DA] shadow-2xs hover:bg-slate-50"
+                    className="flex items-center gap-1 text-xs font-mono font-semibold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs hover:bg-slate-50"
                   >
                     {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedKey ? "Copied!" : "Copy"}
                   </button>
                 </div>
-                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-[#BCE9DA] break-all select-all">
+                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-emerald-200 break-all select-all">
                   {newlyCreatedKey}
                 </div>
               </div>
@@ -481,7 +481,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">FastAPI REST Engine</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Operational
                     </span>
                   </div>
@@ -498,7 +498,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">PostgreSQL Database</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Connected
                     </span>
                   </div>
@@ -515,7 +515,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">MinIO S3 Object Storage</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Synchronized
                     </span>
                   </div>
@@ -532,7 +532,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900">MLflow Tracking Server</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF8F4] text-[#1A7456] border border-[#BCE9DA]">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Operational
                     </span>
                   </div>

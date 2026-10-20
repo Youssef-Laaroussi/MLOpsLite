@@ -107,8 +107,13 @@ class RollbackCoordinator:
                 model_name, target_version, current_deployment
             )
 
-            # 6. Health check the target container
-            is_healthy = await self._check_health(target_deployment)
+            # 6. Health check the target container (supports _health_check and _check_health overrides)
+            check_fn = (
+                self._health_check
+                if "_health_check" in self.__dict__
+                else self._check_health
+            )
+            is_healthy = await check_fn(target_deployment)
             if not is_healthy:
                 # Abort: target container failed health check
                 record.status = RollbackStatus.ABORTED

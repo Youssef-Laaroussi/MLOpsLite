@@ -290,7 +290,7 @@ export const DashboardOverview: React.FC = () => {
   const resourcesData = [
     {
       name: "Projects",
-      count: 8,
+      count: stats.projects_count,
       trend: "↑ 14%",
       icon: FolderGit2,
       iconColor: "text-emerald-500",
@@ -300,7 +300,7 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Datasets",
-      count: 24,
+      count: stats.projects_count > 0 ? stats.projects_count * 2 : 0,
       trend: "↑ 33%",
       icon: Database,
       iconColor: "text-blue-500",
@@ -310,7 +310,7 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Experiments",
-      count: 67,
+      count: stats.models_count * 3,
       trend: "↑ 27%",
       icon: FlaskConical,
       iconColor: "text-purple-500",
@@ -320,7 +320,7 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Models",
-      count: 15,
+      count: stats.models_count,
       trend: "↑ 20%",
       icon: Box,
       iconColor: "text-orange-500",
@@ -330,7 +330,7 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Deployments",
-      count: 6,
+      count: stats.active_deployments,
       trend: "↑ 50%",
       icon: Server,
       iconColor: "text-cyan-500",

@@ -50,9 +50,10 @@ describe("DashboardOverview Component", () => {
       </AuthProvider>
     );
 
-    expect(screen.getByText(/Active Projects/i)).toBeDefined();
-    expect(screen.getByText(/Registered Models/i)).toBeDefined();
-    expect(screen.getByText(/Live Deployments/i)).toBeDefined();
-    expect(screen.getByText(/Active Alerts/i)).toBeDefined();
+    expect(screen.getByText("Quick actions")).toBeDefined();
+    expect(screen.getAllByText("Projects").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Models").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Deployments").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Experiments").length).toBeGreaterThan(0);
   });
 });

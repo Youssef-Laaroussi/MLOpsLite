@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Activity,
   Zap,
+  Trophy,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { Experiment, ExperimentRun } from "../api/types";
@@ -486,15 +487,17 @@ export const ExperimentsPage: React.FC = () => {
           <div className="flex items-start justify-between gap-3 mb-5">
             <div>
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#3BB48C]" />
+                <Activity className="w-4 h-4 text-[#0284C7]" />
                 Run Leaderboard
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 ROC-AUC (bars) vs. log loss (line) with promotion threshold
               </p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Champion: {LEADERBOARD[0].name}
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-[#0284C7]/10 text-[#0284C7] border border-[#0284C7]/30 shadow-2xs">
+              <Trophy className="w-3.5 h-3.5 text-[#0284C7]" />
+              <span className="text-slate-500 font-normal">Champion:</span>
+              <span className="font-semibold text-[#0284C7]">{LEADERBOARD[0].name}</span>
             </span>
           </div>
 

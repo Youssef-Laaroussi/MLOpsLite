@@ -293,50 +293,50 @@ export const DashboardOverview: React.FC = () => {
       count: stats.projects_count,
       trend: "↑ 14%",
       icon: FolderGit2,
-      iconColor: "text-emerald-500",
-      iconBg: "bg-emerald-50/80 border-emerald-100",
-      barColor: "bg-[#10B981]",
-      barHover: "hover:bg-[#059669]",
+      iconColor: "text-[#0284C7]",
+      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
+      barColor: "bg-[#0284C7]",
+      barHover: "hover:bg-[#0369A1]",
     },
     {
       name: "Datasets",
       count: stats.projects_count > 0 ? stats.projects_count * 2 : 0,
       trend: "↑ 33%",
       icon: Database,
-      iconColor: "text-blue-500",
-      iconBg: "bg-blue-50/80 border-blue-100",
-      barColor: "bg-[#3B82F6]",
-      barHover: "hover:bg-[#2563EB]",
+      iconColor: "text-[#0284C7]",
+      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
+      barColor: "bg-[#0284C7]",
+      barHover: "hover:bg-[#0369A1]",
     },
     {
       name: "Experiments",
       count: stats.models_count * 3,
       trend: "↑ 27%",
       icon: FlaskConical,
-      iconColor: "text-purple-500",
-      iconBg: "bg-purple-50/80 border-purple-100",
-      barColor: "bg-[#8B5CF6]",
-      barHover: "hover:bg-[#7C3AED]",
+      iconColor: "text-[#0284C7]",
+      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
+      barColor: "bg-[#0284C7]",
+      barHover: "hover:bg-[#0369A1]",
     },
     {
       name: "Models",
       count: stats.models_count,
       trend: "↑ 20%",
       icon: Box,
-      iconColor: "text-orange-500",
-      iconBg: "bg-orange-50/80 border-orange-100",
-      barColor: "bg-[#F97316]",
-      barHover: "hover:bg-[#EA580C]",
+      iconColor: "text-[#0284C7]",
+      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
+      barColor: "bg-[#0284C7]",
+      barHover: "hover:bg-[#0369A1]",
     },
     {
       name: "Deployments",
       count: stats.active_deployments,
       trend: "↑ 50%",
       icon: Server,
-      iconColor: "text-cyan-500",
-      iconBg: "bg-cyan-50/80 border-cyan-100",
-      barColor: "bg-[#06B6D4]",
-      barHover: "hover:bg-[#0891B2]",
+      iconColor: "text-[#0284C7]",
+      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
+      barColor: "bg-[#0284C7]",
+      barHover: "hover:bg-[#0369A1]",
     },
   ];
 
@@ -402,10 +402,10 @@ export const DashboardOverview: React.FC = () => {
             to="/app/deployments"
             className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2">
+            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
               <Server className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-emerald-600 transition">
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
               Deploy model container
             </div>
             <div className="text-xs text-slate-500 mt-0.5">
@@ -417,10 +417,10 @@ export const DashboardOverview: React.FC = () => {
             to="/app/experiments"
             className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-purple-500/10 text-purple-600 flex items-center justify-center mb-2">
+            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
               <FlaskConical className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-purple-600 transition">
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
               Create Experiment run
             </div>
             <div className="text-xs text-slate-500 mt-0.5">
@@ -432,10 +432,10 @@ export const DashboardOverview: React.FC = () => {
             to="/app/projects"
             className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center mb-2">
+            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
               <FolderGit2 className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-amber-600 transition">
+            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
               Manage Projects
             </div>
             <div className="text-xs text-slate-500 mt-0.5">

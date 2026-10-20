@@ -5,6 +5,13 @@ import { BrowserRouter } from "react-router-dom";
 import { DashboardOverview } from "../pages/DashboardOverview";
 import { AuthProvider } from "../context/AuthContext";
 
+class MockResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.ResizeObserver = global.ResizeObserver || MockResizeObserver;
+
 // Mock API client
 vi.mock("../api/client", () => ({
   fetchSystemStats: vi.fn().mockResolvedValue({

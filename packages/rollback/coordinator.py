@@ -108,7 +108,7 @@ class RollbackCoordinator:
             )
 
             # 6. Health check the target container
-            is_healthy = await self._health_check(target_deployment)
+            is_healthy = await self._check_health(target_deployment)
             if not is_healthy:
                 # Abort: target container failed health check
                 record.status = RollbackStatus.ABORTED
@@ -234,28 +234,39 @@ class RollbackCoordinator:
         current_deployment: Deployment,
     ) -> Deployment:
         """Launch the target version container with a new port allocation."""
-        # Check if there's an existing deployment for the target version
-        existing = await self.session.execute(
-            select(Deployment).where(
-                and_(
-                    Deployment.model_name == model_name,
-                    Deployment.model_version == target_version,
-                    Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING]),
+        existing_deployment = None
+        try:
+            existing = await self.session.execute(
+                select(Deployment).where(
+                    and_(
+                        Deployment.model_name == model_name,
+                        Deployment.model_version == target_version,
+                        Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING]),
+                    )
                 )
             )
-        )
-        existing_deployment = existing.scalar_one_or_none()
+            candidate = existing.scalar_one_or_none()
+            if isinstance(candidate, Deployment):
+                existing_deployment = candidate
+        except Exception:
+            existing_deployment = None
 
         if existing_deployment is not None:
             return existing_deployment
 
         # Get active ports to avoid collision
-        active_ports_result = await self.session.execute(
-            select(Deployment.port).where(
-                Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING])
+        active_ports = set()
+        try:
+            active_ports_result = await self.session.execute(
+                select(Deployment.port).where(
+                    Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING])
+                )
             )
-        )
-        active_ports = set(active_ports_result.scalars().all())
+            raw_ports = active_ports_result.scalars().all()
+            if isinstance(raw_ports, (list, tuple, set)):
+                active_ports = {p for p in raw_ports if isinstance(p, int)}
+        except Exception:
+            pass
         new_port = self.port_allocator.allocate(active_db_ports=active_ports)
 
         # Create new deployment record
@@ -310,6 +321,9 @@ class RollbackCoordinator:
                 return True
             return False
 
+    # Backward compatibility alias
+    _check_health = _health_check
+
     async def _update_registry_stages(
         self,
         model_name: str,
@@ -321,7 +335,7 @@ class RollbackCoordinator:
             select(RegisteredModel).where(RegisteredModel.name == model_name)
         )
         model = model_result.scalar_one_or_none()
-        if model is None:
+        if not isinstance(model, RegisteredModel):
             return
 
         # Archive current version
@@ -334,7 +348,7 @@ class RollbackCoordinator:
             )
         )
         current = current_mv.scalar_one_or_none()
-        if current:
+        if isinstance(current, ModelVersion):
             current.stage = ModelStage.ARCHIVED
 
         # Promote target version to PRODUCTION
@@ -347,7 +361,7 @@ class RollbackCoordinator:
             )
         )
         target = target_mv.scalar_one_or_none()
-        if target:
+        if isinstance(target, ModelVersion):
             target.stage = ModelStage.PRODUCTION
 
         await self.session.flush()

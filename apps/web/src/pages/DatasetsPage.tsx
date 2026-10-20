@@ -43,129 +43,6 @@ import {
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
 
-// Realistic baseline datasets tailored for Data Analyst exploration
-const SAMPLE_DATASETS: Dataset[] = [
-  {
-    id: "ds-001",
-    name: "fraud_detection_train.csv",
-    format: "CSV",
-    version_num: 2,
-    row_count: 152800,
-    column_count: 9,
-    size_bytes: 25690112, // 24.5 MB
-    hash_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    s3_key: "s3://mlopslite-datasets/tabular/fraud_detection_train.csv",
-    quality_score: 99.2,
-    description: "Training dataset containing credit card transactions with fraud flags and behavioral features.",
-    created_at: "2026-09-18T10:14:00Z",
-    downstream_models: ["fraud-detector:v1", "fraud-detector:v2"],
-    columns: [
-      { name: "transaction_id", dtype: "string", null_count: 0, null_pct: 0, unique_count: 152800, sample_values: ["TXN-89012", "TXN-89013", "TXN-89014"] },
-      { name: "amount", dtype: "float64", null_count: 0, null_pct: 0, unique_count: 12430, min_val: 1.5, max_val: 8490.0, sample_values: [120.5, 45.0, 890.1] },
-      { name: "distance_from_home", dtype: "float64", null_count: 42, null_pct: 0.03, unique_count: 8900, min_val: 0.1, max_val: 450.2, sample_values: [3.4, 12.8, 85.0] },
-      { name: "card_age_months", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 180, min_val: 1, max_val: 240, sample_values: [24, 60, 12] },
-      { name: "daily_txn_count", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 45, min_val: 1, max_val: 50, sample_values: [3, 1, 7] },
-      { name: "is_foreign_txn", dtype: "bool", null_count: 0, null_pct: 0, unique_count: 2, min_val: 0, max_val: 1, sample_values: [0, 1, 0] },
-      { name: "device_trust_score", dtype: "float64", null_count: 98, null_pct: 0.06, unique_count: 100, min_val: 0.05, max_val: 0.99, sample_values: [0.94, 0.88, 0.32] },
-      { name: "merchant_category", dtype: "category", null_count: 0, null_pct: 0, unique_count: 18, sample_values: ["retail", "grocery", "travel"] },
-      { name: "is_fraud", dtype: "int64 (target)", null_count: 0, null_pct: 0, unique_count: 2, min_val: 0, max_val: 1, sample_values: [0, 0, 1] },
-    ],
-    sample_records: [
-      { transaction_id: "TXN-89012", amount: 120.5, distance_from_home: 3.4, card_age_months: 24, daily_txn_count: 3, is_foreign_txn: 0, device_trust_score: 0.94, merchant_category: "retail", is_fraud: 0 },
-      { transaction_id: "TXN-89013", amount: 45.0, distance_from_home: 12.8, card_age_months: 60, daily_txn_count: 1, is_foreign_txn: 0, device_trust_score: 0.88, merchant_category: "grocery", is_fraud: 0 },
-      { transaction_id: "TXN-89014", amount: 890.1, distance_from_home: 85.0, card_age_months: 12, daily_txn_count: 7, is_foreign_txn: 1, device_trust_score: 0.32, merchant_category: "travel", is_fraud: 1 },
-      { transaction_id: "TXN-89015", amount: 14.99, distance_from_home: 1.2, card_age_months: 48, daily_txn_count: 2, is_foreign_txn: 0, device_trust_score: 0.99, merchant_category: "food_delivery", is_fraud: 0 },
-      { transaction_id: "TXN-89016", amount: 1250.0, distance_from_home: 210.5, card_age_months: 6, daily_txn_count: 9, is_foreign_txn: 1, device_trust_score: 0.15, merchant_category: "electronics", is_fraud: 1 },
-    ],
-  },
-  {
-    id: "ds-002",
-    name: "customer_churn_q3.parquet",
-    format: "PARQUET",
-    version_num: 1,
-    row_count: 85400,
-    column_count: 8,
-    size_bytes: 14889779, // 14.2 MB
-    hash_sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-    s3_key: "s3://mlopslite-datasets/tabular/customer_churn_q3.parquet",
-    quality_score: 97.8,
-    description: "Telco subscriber quarterly activity, contract tenure, monthly fees, and churn indicator.",
-    created_at: "2026-09-15T14:30:00Z",
-    downstream_models: ["customer-churn-xgb:v2"],
-    columns: [
-      { name: "customer_id", dtype: "string", null_count: 0, null_pct: 0, unique_count: 85400, sample_values: ["CUST-1049", "CUST-1050", "CUST-1051"] },
-      { name: "tenure_months", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 72, min_val: 1, max_val: 72, sample_values: [12, 34, 4] },
-      { name: "monthly_charges", dtype: "float64", null_count: 15, null_pct: 0.02, unique_count: 1580, min_val: 18.25, max_val: 118.75, sample_values: [65.4, 89.2, 29.85] },
-      { name: "contract_type", dtype: "category", null_count: 0, null_pct: 0, unique_count: 3, sample_values: ["month-to-month", "one-year", "two-year"] },
-      { name: "paperless_billing", dtype: "bool", null_count: 0, null_pct: 0, unique_count: 2, min_val: 0, max_val: 1, sample_values: [1, 0, 1] },
-      { name: "support_tickets", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 10, min_val: 0, max_val: 12, sample_values: [0, 3, 5] },
-      { name: "payment_method", dtype: "category", null_count: 0, null_pct: 0, unique_count: 4, sample_values: ["electronic_check", "bank_transfer", "credit_card"] },
-      { name: "churn", dtype: "int64 (target)", null_count: 0, null_pct: 0, unique_count: 2, min_val: 0, max_val: 1, sample_values: [0, 1, 0] },
-    ],
-    sample_records: [
-      { customer_id: "CUST-1049", tenure_months: 12, monthly_charges: 65.4, contract_type: "month-to-month", paperless_billing: 1, support_tickets: 0, payment_method: "electronic_check", churn: 0 },
-      { customer_id: "CUST-1050", tenure_months: 4, monthly_charges: 89.2, contract_type: "month-to-month", paperless_billing: 1, support_tickets: 3, payment_method: "electronic_check", churn: 1 },
-      { customer_id: "CUST-1051", tenure_months: 34, monthly_charges: 29.85, contract_type: "two-year", paperless_billing: 0, support_tickets: 0, payment_method: "bank_transfer", churn: 0 },
-      { customer_id: "CUST-1052", tenure_months: 1, monthly_charges: 75.0, contract_type: "month-to-month", paperless_billing: 1, support_tickets: 4, payment_method: "credit_card", churn: 1 },
-    ],
-  },
-  {
-    id: "ds-003",
-    name: "store_inventory_timeseries.parquet",
-    format: "PARQUET",
-    version_num: 3,
-    row_count: 420000,
-    column_count: 7,
-    size_bytes: 39950000, // 38.1 MB
-    hash_sha256: "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
-    s3_key: "s3://mlopslite-datasets/timeseries/store_inventory_timeseries.parquet",
-    quality_score: 99.8,
-    description: "Daily SKU replenishment, stockout events, and sales velocity across 85 retail locations.",
-    created_at: "2026-09-12T09:00:00Z",
-    downstream_models: ["demand-forecaster-lstm:v1"],
-    columns: [
-      { name: "date", dtype: "datetime", null_count: 0, null_pct: 0, unique_count: 365, sample_values: ["2026-01-01", "2026-01-02"] },
-      { name: "store_id", dtype: "string", null_count: 0, null_pct: 0, unique_count: 85, sample_values: ["STR-01", "STR-02"] },
-      { name: "sku_id", dtype: "string", null_count: 0, null_pct: 0, unique_count: 1200, sample_values: ["SKU-99", "SKU-100"] },
-      { name: "units_sold", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 320, min_val: 0, max_val: 450, sample_values: [15, 42, 8] },
-      { name: "on_hand_inventory", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 800, min_val: 0, max_val: 1200, sample_values: [140, 85, 0] },
-      { name: "is_promo", dtype: "bool", null_count: 0, null_pct: 0, unique_count: 2, min_val: 0, max_val: 1, sample_values: [0, 1, 0] },
-      { name: "unit_price", dtype: "float64", null_count: 0, null_pct: 0, unique_count: 150, min_val: 2.99, max_val: 49.99, sample_values: [12.99, 4.5, 24.99] },
-    ],
-    sample_records: [
-      { date: "2026-01-01", store_id: "STR-01", sku_id: "SKU-99", units_sold: 15, on_hand_inventory: 140, is_promo: 0, unit_price: 12.99 },
-      { date: "2026-01-01", store_id: "STR-01", sku_id: "SKU-100", units_sold: 42, on_hand_inventory: 85, is_promo: 1, unit_price: 4.5 },
-      { date: "2026-01-01", store_id: "STR-02", sku_id: "SKU-99", units_sold: 8, on_hand_inventory: 0, is_promo: 0, unit_price: 12.99 },
-    ],
-  },
-  {
-    id: "ds-004",
-    name: "customer_feedback_sentiment.json",
-    format: "JSON",
-    version_num: 1,
-    row_count: 35000,
-    column_count: 5,
-    size_bytes: 10276044, // 9.8 MB
-    hash_sha256: "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
-    s3_key: "s3://mlopslite-datasets/nlp/customer_feedback_sentiment.json",
-    quality_score: 96.5,
-    description: "Support tickets and public reviews tokenized for multi-class customer satisfaction and sentiment scoring.",
-    created_at: "2026-09-08T18:20:00Z",
-    downstream_models: ["sentiment-bert-mini:v1"],
-    columns: [
-      { name: "review_id", dtype: "string", null_count: 0, null_pct: 0, unique_count: 35000, sample_values: ["REV-001", "REV-002"] },
-      { name: "text_content", dtype: "string (text)", null_count: 0, null_pct: 0, unique_count: 34800, sample_values: ["Fast shipping, great quality!", "Packaging was damaged."] },
-      { name: "rating", dtype: "int64", null_count: 0, null_pct: 0, unique_count: 5, min_val: 1, max_val: 5, sample_values: [5, 2, 4] },
-      { name: "channel", dtype: "category", null_count: 0, null_pct: 0, unique_count: 4, sample_values: ["web", "mobile_app", "email"] },
-      { name: "sentiment_label", dtype: "string (target)", null_count: 0, null_pct: 0, unique_count: 3, sample_values: ["POSITIVE", "NEGATIVE", "NEUTRAL"] },
-    ],
-    sample_records: [
-      { review_id: "REV-001", text_content: "Fast shipping, great quality! Product exceeded expectations.", rating: 5, channel: "web", sentiment_label: "POSITIVE" },
-      { review_id: "REV-002", text_content: "Packaging was damaged and support took 4 days to reply.", rating: 2, channel: "mobile_app", sentiment_label: "NEGATIVE" },
-      { review_id: "REV-003", text_content: "Average experience, neither good nor bad.", rating: 3, channel: "email", sentiment_label: "NEUTRAL" },
-    ],
-  },
-];
 
 export const DatasetsPage: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -193,22 +70,16 @@ export const DatasetsPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState<string>("Last 6 months");
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await fetchDatasets();
-      if (data && data.length > 0) {
-        // Merge API data with rich mock baseline if API entries lack columns
-        const merged = data.map((d) => {
-          const sampleMatch = SAMPLE_DATASETS.find((s) => s.name === d.name || s.id === d.id);
-          return sampleMatch ? { ...sampleMatch, ...d } : d;
-        });
-        setDatasets(merged);
-      } else {
-        setDatasets(SAMPLE_DATASETS);
-      }
-    } catch {
-      setDatasets(SAMPLE_DATASETS);
+      setDatasets((await fetchDatasets()) ?? []);
+      setLoadError(null);
+    } catch (err: any) {
+      setDatasets([]);
+      setLoadError(err?.response?.data?.detail || err?.message || "Failed to load datasets.");
     } finally {
       setLoading(false);
     }
@@ -278,6 +149,11 @@ export const DatasetsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Toast Notification */}
+      {loadError && (
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-sm font-semibold text-rose-700">
+          {loadError}
+        </div>
+      )}
       {exportSuccess && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />

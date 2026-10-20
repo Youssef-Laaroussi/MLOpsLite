@@ -32,13 +32,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: handle 401 errors
+// Interceptor: on 401, clear the stale session and redirect to sign-in
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      // We don't automatically wipe if user is in mock/demo mode
+    const url: string = error.config?.url || "";
+    if (error.response?.status === 401 && !url.startsWith("/auth/")) {
+      ["mlite_token", "mlite_refresh_token", "mlite_user"].forEach((k) => localStorage.removeItem(k));
+      if (window.location.pathname.startsWith("/app")) window.location.assign("/signin");
     }
     return Promise.reject(error);
   }
@@ -155,30 +156,19 @@ export const rollbackDeployment = async (modelName: string, targetVersion: numbe
 
 export const testModelPrediction = async (
   endpointUrl: string,
-  inputs: number[][] = [[0.45, 120.5, 1.0, 0.0]]
+  inputs: number[][]
 ): Promise<{ prediction: any; latency_ms: number }> => {
   const start = performance.now();
-  try {
-    const res = await axios.post(
-      `${endpointUrl.replace(/\/$/, "")}/predict`,
-      { inputs },
-      { timeout: 3000 }
-    );
-    const latency_ms = Math.round(performance.now() - start);
-    return { prediction: res.data, latency_ms };
-  } catch {
-    // If local endpoint is mock or container offline, return realistic simulated response
-    const latency_ms = Math.round(15 + Math.random() * 25);
-    return {
-      prediction: {
-        predictions: [Math.random() > 0.5 ? 1 : 0],
-        probabilities: [parseFloat((0.75 + Math.random() * 0.23).toFixed(4))],
-        model_version: "v1.0-live",
-        status: "success",
-      },
-      latency_ms,
-    };
-  }
+  // Errors propagate to the caller: never fabricate predictions.
+  const res = await axios.post(`${endpointUrl.replace(/\/$/, "")}/predict`, { inputs }, { timeout: 10000 });
+  return { prediction: res.data, latency_ms: Math.round(performance.now() - start) };
+};
+
+/** Real liveness probe routed through the authenticated backend (no CORS / no container exposure). */
+export const pingDeployment = async (id: string): Promise<{ prediction: any; latency_ms: number }> => {
+  const start = performance.now();
+  const res = await api.get(`/deployments/${id}/health`);
+  return { prediction: res.data, latency_ms: Math.round(performance.now() - start) };
 };
 
 // ── Datasets ───────────────────────────────────────────────────────

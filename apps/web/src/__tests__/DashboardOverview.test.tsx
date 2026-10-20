@@ -27,8 +27,8 @@ vi.mock("../api/client", () => ({
       status: "RUNNING",
     },
   ]),
-  testModelPrediction: vi.fn().mockResolvedValue({
-    prediction: { predictions: [1] },
+  pingDeployment: vi.fn().mockResolvedValue({
+    prediction: { healthy: true },
     latency_ms: 12,
   }),
 }));

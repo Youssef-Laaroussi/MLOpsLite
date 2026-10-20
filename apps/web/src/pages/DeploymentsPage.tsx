@@ -35,7 +35,7 @@ import {
   deployModel,
   stopDeployment,
   rollbackDeployment,
-  testModelPrediction,
+  pingDeployment,
 } from "../api/client";
 import { Deployment } from "../api/types";
 import { useAuth } from "../context/AuthContext";
@@ -305,8 +305,8 @@ export const DeploymentsPage: React.FC = () => {
       await rollbackDeployment(rollbackModelName, targetVersion);
       setRollbackSuccess(`Successfully rolled back ${rollbackModelName} to v${targetVersion}`);
       loadDeployments();
-    } catch {
-      setRollbackSuccess(`Simulated rollback of ${rollbackModelName} cut over to v${targetVersion}`);
+    } catch (err: any) {
+      setRollbackSuccess(`Rollback failed: ${err?.response?.data?.detail || err?.message || "unknown error"}`);
     }
     setTimeout(() => {
       setRollbackSuccess(null);
@@ -317,13 +317,13 @@ export const DeploymentsPage: React.FC = () => {
   const handleTestPing = async (d: Deployment) => {
     setPingingId(d.id);
     try {
-      const res = await testModelPrediction(d.endpoint_url);
+      const res = await pingDeployment(d.id);
       setPingResult({ id: d.id, latency: res.latency_ms, prediction: res.prediction });
-    } catch {
+    } catch (err: any) {
       setPingResult({
         id: d.id,
-        latency: 16,
-        prediction: { predictions: [1], confidence: 0.96 },
+        latency: 0,
+        prediction: { healthy: false, error: err?.response?.data?.detail || err?.message || "unreachable" },
       });
     } finally {
       setPingingId(null);

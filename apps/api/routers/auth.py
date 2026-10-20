@@ -101,7 +101,7 @@ async def login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "expires_in": settings.jwt_access_token_expire_minutes * 60,
     }
 
 

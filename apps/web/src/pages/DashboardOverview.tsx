@@ -31,7 +31,7 @@ import {
   fetchSystemStats,
   fetchModels,
   fetchDeployments,
-  testModelPrediction,
+  pingDeployment,
   fetchAuditLogs,
   fetchUsers,
   fetchDatasets,
@@ -269,17 +269,17 @@ export const DashboardOverview: React.FC = () => {
     setPingingId(dep.id);
     setPingResult(null);
     try {
-      const res = await testModelPrediction(dep.endpoint_url);
+      const res = await pingDeployment(dep.id);
       setPingResult({
         id: dep.id,
         latency: res.latency_ms,
         prediction: res.prediction,
       });
-    } catch {
+    } catch (err: any) {
       setPingResult({
         id: dep.id,
-        latency: 18,
-        prediction: { predicted_class: 1, probability: 0.94 },
+        latency: 0,
+        prediction: { healthy: false, error: err?.response?.data?.detail || err?.message || "unreachable" },
       });
     } finally {
       setPingingId(null);

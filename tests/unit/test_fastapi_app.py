@@ -119,42 +119,42 @@ class TestHealthEndpoints:
 class TestScaffoldRouters:
     """Verify that all placeholder routers respond correctly."""
 
-    def test_list_projects(self, app):
-        resp = _run(_get(app, "/api/v1/projects/"))
+    def test_list_projects(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/projects/"))
         assert resp.status_code == 200
         data = resp.json()
         assert data.get("projects") == []
         assert data.get("total") == 0
 
-    def test_list_datasets(self, app):
-        resp = _run(_get(app, "/api/v1/datasets/"))
+    def test_list_datasets(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/datasets/"))
         assert resp.status_code == 200
         assert resp.json() == {"datasets": [], "total": 0}
 
-    def test_list_experiments(self, app):
-        resp = _run(_get(app, "/api/v1/experiments/"))
+    def test_list_experiments(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/experiments/"))
         assert resp.status_code == 200
         data = resp.json()
         assert "experiments" in data
         assert isinstance(data.get("experiments"), list)
 
-    def test_list_models(self, app):
-        resp = _run(_get(app, "/api/v1/models/"))
+    def test_list_models(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/models/"))
         assert resp.status_code == 200
         assert resp.json() == {"models": [], "total": 0}
 
-    def test_list_deployments(self, app):
-        resp = _run(_get(app, "/api/v1/deployments/"))
+    def test_list_deployments(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/deployments/"))
         assert resp.status_code == 200
         assert resp.json() == {"deployments": [], "total": 0}
 
-    def test_list_monitoring(self, app):
-        resp = _run(_get(app, "/api/v1/monitoring/"))
+    def test_list_monitoring(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/monitoring/"))
         assert resp.status_code == 200
         assert resp.json() == {"reports": [], "total": 0}
 
-    def test_list_alerts(self, app):
-        resp = _run(_get(app, "/api/v1/alerts/"))
+    def test_list_alerts(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/alerts/"))
         assert resp.status_code == 200
         assert resp.json() == {"alerts": [], "total": 0}
 

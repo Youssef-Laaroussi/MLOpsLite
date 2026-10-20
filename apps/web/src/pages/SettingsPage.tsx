@@ -21,7 +21,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { fetchApiKeys, createApiKey, revokeApiKey, fetchUsers } from "../api/client";
+import { api, fetchApiKeys, createApiKey, revokeApiKey, fetchUsers } from "../api/client";
 import { ApiKey, User } from "../api/types";
 
 export const SettingsPage: React.FC = () => {
@@ -47,21 +47,16 @@ export const SettingsPage: React.FC = () => {
   const [lastCheckTime, setLastCheckTime] = useState<string>("Just now");
   const [latencyMs, setLatencyMs] = useState<number>(3);
 
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const errMsg = (err: any, fb: string) => err?.response?.data?.detail || err?.message || fb;
+
   const loadKeys = async () => {
     setLoadingKeys(true);
     try {
-      const keys = await fetchApiKeys();
-      setApiKeys(keys);
-    } catch {
-      setApiKeys([
-        {
-          id: "key-01",
-          name: "Primary CLI Token",
-          key_prefix: "mlite_live_a89f",
-          created_at: new Date().toISOString(),
-          is_revoked: false,
-        },
-      ]);
+      setApiKeys(await fetchApiKeys());
+    } catch (err) {
+      setApiKeys([]);
+      setSettingsError(errMsg(err, "Unable to load API keys."));
     } finally {
       setLoadingKeys(false);
     }
@@ -73,13 +68,9 @@ export const SettingsPage: React.FC = () => {
     try {
       const users = await fetchUsers();
       setTeamUsers(users);
-    } catch {
-      // Fallback
-      setTeamUsers([
-        { id: "1", username: "admin", email: "admin@mlite.local", role: "ADMIN", is_active: true, created_at: "", updated_at: "" },
-        { id: "2", username: "khalid22", email: "khalid2@gmail.com", role: "USER", is_active: true, created_at: "", updated_at: "" },
-        { id: "3", username: "yassi", email: "yassiYassir123@gmail.com", role: "USER", is_active: true, created_at: "", updated_at: "" },
-      ]);
+    } catch (err) {
+      setTeamUsers([]);
+      setSettingsError(errMsg(err, "Unable to load team members."));
     } finally {
       setLoadingUsers(false);
     }
@@ -97,53 +88,56 @@ export const SettingsPage: React.FC = () => {
     if (!keyName.trim()) return;
     try {
       const created = await createApiKey(keyName.trim());
-      setNewlyCreatedKey(created.full_key || `${created.key_prefix}...${Math.random().toString(36).substring(2, 10)}`);
+      if (!created.full_key) throw new Error("Server did not return a key.");
+      setNewlyCreatedKey(created.full_key);
       setKeyName("");
-      loadKeys();
-    } catch {
-      const generated = `mlite_live_${Math.random().toString(36).substring(2, 18)}`;
-      setNewlyCreatedKey(generated);
-      setApiKeys((prev) => [
-        {
-          id: `key-${Date.now()}`,
-          name: keyName.trim(),
-          key_prefix: generated.slice(0, 14),
-          created_at: new Date().toISOString(),
-          is_revoked: false,
-        },
-        ...prev,
-      ]);
-      setKeyName("");
+      await loadKeys();
+    } catch (err) {
+      setSettingsError(errMsg(err, "Failed to create API key."));
     }
   };
 
   const handleRevokeKey = async (id: string) => {
     try {
       await revokeApiKey(id);
-      loadKeys();
-    } catch {
-      setApiKeys((prev) => prev.filter((k) => k.id !== id));
+      await loadKeys();
+    } catch (err) {
+      setSettingsError(errMsg(err, "Failed to revoke API key."));
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
+    } catch {
+      setSettingsError("Clipboard unavailable — copy the key manually.");
+    }
   };
 
-  const handleRefreshInfra = () => {
+  const handleRefreshInfra = async () => {
     setCheckingInfra(true);
     const start = performance.now();
-    setTimeout(() => {
-      setLatencyMs(Math.round(performance.now() - start + 2));
+    try {
+      await api.get("/health");
+      setLatencyMs(Math.round(performance.now() - start));
+      setSettingsError(null);
+    } catch (err) {
+      setSettingsError(errMsg(err, "API health check failed."));
+    } finally {
       setCheckingInfra(false);
       setLastCheckTime(new Date().toLocaleTimeString());
-    }, 400);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+      {settingsError && (
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-sm font-semibold text-rose-700">
+          {settingsError}
+        </div>
+      )}
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>

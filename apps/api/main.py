@@ -149,12 +149,13 @@ def create_app() -> FastAPI:
     # ── Exception handlers ──────────────────────────────────
     register_exception_handlers(app)
 
-    # ── Routers ─────────────────────────────────────────────
-    # Public: health probes + auth (login/register). Everything else requires auth.
+    # Public: health probes + auth (login/register). Audit and rollback have granular RBAC dependencies.
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(audit.router)
+    app.include_router(rollback.router)
     protected = [Depends(get_current_user)]
-    for r in (projects, datasets, experiments, models, deployments, monitoring, alerts, rollback, audit):
+    for r in (projects, datasets, experiments, models, deployments, monitoring, alerts):
         app.include_router(r.router, dependencies=protected)
 
     # ── Legacy root health (backward-compat) ────────────────

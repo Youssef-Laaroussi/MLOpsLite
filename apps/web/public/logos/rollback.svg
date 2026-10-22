@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="rb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <filter id="rb-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#059669" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Rounded Squircle Badge -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#rb-bg)" filter="url(#rb-shadow)"/>
+  <!-- Circular Continuous Dynamic Loop Arrow (Atomic Rollback & Zero Downtime) -->
+  <!-- Top Loop -->
+  <path d="M64 26 C83.88 26 100 42.12 100 62 C100 68.2 98.4 74 95.6 79" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <!-- Top Arrowhead -->
+  <polygon points="98,88 88,72 104,74" fill="#FFFFFF"/>
+  <!-- Bottom Loop -->
+  <path d="M64 102 C44.12 102 28 85.88 28 66 C28 59.8 29.6 54 32.4 49" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <!-- Bottom Arrowhead -->
+  <polygon points="30,40 40,56 24,54" fill="#FFFFFF"/>
+  <!-- Central Pulse Shield / Zero Downtime Check -->
+  <circle cx="64" cy="64" r="14" fill="#FFFFFF"/>
+  <path d="M57 64 L62 69 L72 58" fill="none" stroke="#059669" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

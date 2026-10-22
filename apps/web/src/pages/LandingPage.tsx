@@ -388,35 +388,54 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Lifecycle Strip ── */}
-      <section className="py-10 border-b border-slate-100 bg-[#F8FAFC]">
+      <section className="py-16 sm:py-20 border-b border-slate-200/80 bg-gradient-to-b from-[#F8FAFC] to-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <p className="text-center text-xs font-black text-slate-400 uppercase tracking-widest mb-6">
-            Autonomous Machine Learning Lifecycle Pipeline
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+          <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[11px] font-bold text-emerald-800 tracking-wide uppercase">
+              Integrated MLOps Stack
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Autonomous Machine Learning Lifecycle Pipeline
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500">
+              End-to-end automated pipeline powered by production-proven open-source foundations.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center">
             {[
-              { title: "Data Lineage", desc: "DVC + MinIO S3", icon: Database },
-              { title: "Experimentation", desc: "Native MLflow", icon: Boxes },
-              { title: "Model Registry", desc: "Stages & Signatures", icon: ShieldCheck },
-              { title: "Docker Serving", desc: "Sub-50ms Runtime", icon: Server },
-              { title: "Drift Guard", desc: "Evidently AI", icon: LineChart },
-              { title: "Smart Alerts", desc: "Webhooks & Slack", icon: Radio },
-              { title: "Auto-Rollback", desc: "Zero Downtime", icon: RotateCcw },
-            ].map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  ref={addRevealRef}
-                  className={`p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/50 hover:shadow-md transition-all group opacity-0 delay-${(idx + 1) * 100}`}
-                  style={{ animationDelay: `${idx * 80}ms` }}
-                >
-                  <Icon className="w-4 h-4 mx-auto text-[#3BB48C] mb-1.5 group-hover:scale-110 transition-transform" />
-                  <div className="text-xs font-bold text-slate-800">{item.title}</div>
-                  <div className="text-[11px] text-[#1A7456] font-semibold mt-0.5">{item.desc}</div>
+              { title: "Data Lineage", desc: "DVC + MinIO S3", favicon: "/logos/minio.png", alt: "MinIO S3" },
+              { title: "Experimentation", desc: "Native MLflow", favicon: "/logos/mlflow.png", alt: "MLflow" },
+              { title: "Model Registry", desc: "Stages & Signatures", favicon: "/logos/pytorch.png", alt: "PyTorch" },
+              { title: "Docker Serving", desc: "Sub-50ms Runtime", favicon: "/logos/docker.png", alt: "Docker" },
+              { title: "Drift Guard", desc: "Evidently AI", favicon: "/logos/evidently.png", alt: "Evidently AI" },
+              { title: "Smart Alerts", desc: "Webhooks & Slack", favicon: "/logos/slack.png", alt: "Slack" },
+              { title: "Auto-Rollback", desc: "Zero Downtime", favicon: "/logos/rollback.svg", alt: "Zero-Downtime Rollback" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                ref={addRevealRef}
+                className="p-5 sm:p-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm hover:border-[#3BB48C] hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group opacity-0 cursor-default flex flex-col items-center justify-between"
+                style={{ animationDelay: `${idx * 80}ms` }}
+              >
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100/90 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:border-emerald-100 group-hover:shadow-md transition-all duration-300 p-2.5 mb-3.5 shadow-2xs">
+                  <img
+                    src={item.favicon}
+                    alt={item.alt}
+                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none"
+                    loading="lazy"
+                  />
                 </div>
-              );
-            })}
+                <div className="space-y-1 w-full">
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">
+                    {item.title}
+                  </div>
+                  <div className="text-[11px] sm:text-xs text-[#1A7456] font-semibold bg-emerald-50/70 px-2 py-0.5 rounded-md border border-emerald-100/60 inline-block">
+                    {item.desc}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -655,9 +674,8 @@ export const LandingPage: React.FC = () => {
                       onClick={() => setOpenFaq(isOpen ? null : idx)}
                       className="w-full py-5 flex items-center justify-between text-left gap-4 cursor-pointer select-none group"
                     >
-                      <span className={`text-base sm:text-lg font-semibold transition-colors ${
-                        isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
-                      }`}>
+                      <span className={`text-base sm:text-lg font-semibold transition-colors ${isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
+                        }`}>
                         {item.q}
                       </span>
                       <div className="shrink-0 text-slate-500 group-hover:text-[#3BB48C] transition-colors ml-4">

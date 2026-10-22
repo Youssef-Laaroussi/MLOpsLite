@@ -7,9 +7,45 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Inter"', '"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Outfit"', '"Inter"', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        sans: [
+          '"Anthropic Sans"',
+          '"Styrene B"',
+          '"Plus Jakarta Sans"',
+          '"Inter"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif',
+        ],
+        serif: [
+          '"Anthropic Serif"',
+          '"Copernicus"',
+          '"Galaxie Copernicus"',
+          '"Tiempos Headline"',
+          '"Tiempos Text"',
+          '"Newsreader"',
+          '"Lora"',
+          'Georgia',
+          'serif',
+        ],
+        display: [
+          '"Anthropic Serif"',
+          '"Copernicus"',
+          '"Galaxie Copernicus"',
+          '"Tiempos Headline"',
+          '"Newsreader"',
+          '"Lora"',
+          'Georgia',
+          'serif',
+        ],
+        mono: [
+          '"Anthropic Mono"',
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'monospace',
+        ],
       },
       colors: {
         background: "#FFFFFF",

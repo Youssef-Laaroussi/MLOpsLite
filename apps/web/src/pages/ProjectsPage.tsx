@@ -335,8 +335,8 @@ export const ProjectsPage: React.FC = () => {
                       setIsTimeRangeOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
+                      ? "bg-emerald-50 text-emerald-800 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
                     {range}
@@ -831,8 +831,8 @@ export const ProjectsPage: React.FC = () => {
               key={st}
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${statusFilter === st
-                  ? "bg-[#3BB48C] text-white shadow-xs"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                ? "bg-[#3BB48C] text-white shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-600"
                 }`}
             >
               {st}
@@ -859,8 +859,8 @@ export const ProjectsPage: React.FC = () => {
           <button
             onClick={() => setViewMode("table")}
             className={`p-1.5 rounded-lg transition ${viewMode === "table"
-                ? "bg-white text-slate-900 shadow-2xs"
-                : "text-slate-500 hover:text-slate-800"
+              ? "bg-white text-slate-900 shadow-2xs"
+              : "text-slate-500 hover:text-slate-800"
               }`}
             title="Table View (Recommended)"
           >
@@ -869,8 +869,8 @@ export const ProjectsPage: React.FC = () => {
           <button
             onClick={() => setViewMode("grid")}
             className={`p-1.5 rounded-lg transition ${viewMode === "grid"
-                ? "bg-white text-slate-900 shadow-2xs"
-                : "text-slate-500 hover:text-slate-800"
+              ? "bg-white text-slate-900 shadow-2xs"
+              : "text-slate-500 hover:text-slate-800"
               }`}
             title="Grid Cards View"
           >

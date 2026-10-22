@@ -7,20 +7,20 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const upper = status.toUpperCase();
 
-  let colors = "bg-slate-100 text-slate-700 border-slate-200";
+  let colors = "bg-[#64748b] text-white border-transparent";
   if (["RUNNING", "ACTIVE", "PRODUCTION", "HEALTHY"].includes(upper)) {
-    colors = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
+    colors = "bg-[#10b981] text-white border-transparent";
   } else if (["STAGING", "CANDIDATE", "PENDING"].includes(upper)) {
-    colors = "bg-amber-50 text-amber-800 border-amber-200";
+    colors = "bg-[#f59e0b] text-white border-transparent";
   } else if (["FAILED", "ERROR", "STOPPED", "ARCHIVED"].includes(upper)) {
-    colors = "bg-rose-50 text-rose-700 border-rose-200";
+    colors = "bg-[#ef4444] text-white border-transparent";
   }
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold shadow-xs ${colors}`}
     >
-      <span className="w-1.5 h-1.5 mr-1.5 rounded-full bg-current opacity-80" />
+      <span className="w-1.5 h-1.5 mr-1.5 rounded-full bg-white" />
       {upper}
     </span>
   );

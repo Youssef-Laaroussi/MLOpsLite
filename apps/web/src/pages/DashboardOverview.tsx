@@ -286,57 +286,52 @@ export const DashboardOverview: React.FC = () => {
     }
   };
 
-  // ── Resource Counts (Exact values from user's screen) ─────────────────
+  // ── Resource Counts ───────────────────────────────────────────────
   const resourcesData = [
     {
       name: "Projects",
       count: stats.projects_count,
       trend: "↑ 14%",
       icon: FolderGit2,
-      iconColor: "text-[#0284C7]",
-      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
-      barColor: "bg-[#0284C7]",
-      barHover: "hover:bg-[#0369A1]",
+      iconColor: "text-slate-700",
+      iconBg: "bg-slate-100 border-slate-200/60",
+      barColor: PALETTE.brand,
     },
     {
       name: "Datasets",
       count: stats.projects_count > 0 ? stats.projects_count * 2 : 0,
       trend: "↑ 33%",
       icon: Database,
-      iconColor: "text-[#0284C7]",
-      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
-      barColor: "bg-[#0284C7]",
-      barHover: "hover:bg-[#0369A1]",
+      iconColor: "text-slate-700",
+      iconBg: "bg-slate-100 border-slate-200/60",
+      barColor: PALETTE.brand,
     },
     {
       name: "Experiments",
       count: stats.models_count * 3,
       trend: "↑ 27%",
       icon: FlaskConical,
-      iconColor: "text-[#0284C7]",
-      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
-      barColor: "bg-[#0284C7]",
-      barHover: "hover:bg-[#0369A1]",
+      iconColor: "text-slate-700",
+      iconBg: "bg-slate-100 border-slate-200/60",
+      barColor: PALETTE.brand,
     },
     {
       name: "Models",
       count: stats.models_count,
       trend: "↑ 20%",
       icon: Box,
-      iconColor: "text-[#0284C7]",
-      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
-      barColor: "bg-[#0284C7]",
-      barHover: "hover:bg-[#0369A1]",
+      iconColor: "text-slate-700",
+      iconBg: "bg-slate-100 border-slate-200/60",
+      barColor: PALETTE.brand,
     },
     {
       name: "Deployments",
       count: stats.active_deployments,
       trend: "↑ 50%",
       icon: Server,
-      iconColor: "text-[#0284C7]",
-      iconBg: "bg-[#0284C7]/10 border-[#0284C7]/20",
-      barColor: "bg-[#0284C7]",
-      barHover: "hover:bg-[#0369A1]",
+      iconColor: "text-slate-700",
+      iconBg: "bg-slate-100 border-slate-200/60",
+      barColor: PALETTE.brand,
     },
   ];
 
@@ -367,105 +362,84 @@ export const DashboardOverview: React.FC = () => {
   const devStroke = (devPct / 100) * circumference;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto animate-in fade-in duration-150">
-      {/* ── SNOWFLAKE GLOBAL SEARCH BAR ────────────────────────────── */}
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-150">
+      {/* ── Search Bar ─────────────────────────────────────────────── */}
       <div className="relative">
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
-          id="snowflake-global-search"
+          id="mlite-global-search"
           type="text"
-          placeholder="Search this account, models, datasets, deployments, and documentation..."
-          className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] transition"
+          placeholder="Search models, deployments, experiments, or datasets... (Press /)"
+          className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:border-[#3BB48C] focus:ring-1 focus:ring-[#3BB48C] transition"
         />
       </div>
 
-      {/* ── SNOWFLAKE QUICK ACTIONS ROW ────────────────────────────── */}
+      {/* ── Quick Actions ──────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-2">Quick actions</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+          Quick actions
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Link
             to="/app/datasets"
-            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
               <Database className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
-              Upload local files
+            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
+              Upload Dataset
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">
-              Quickly convert data into versioned datasets
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Sync CSV/Parquet files to MinIO S3
             </div>
           </Link>
 
           <Link
             to="/app/deployments"
-            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
               <Server className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
-              Deploy model container
+            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
+              Deploy Container
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">
-              Launch dedicated HTTP inference endpoint
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Launch isolated FastAPI Docker endpoint
             </div>
           </Link>
 
           <Link
             to="/app/experiments"
-            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
               <FlaskConical className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
-              Create Experiment run
+            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
+              New Experiment
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">
-              Develop SQL or Python ML training workflows
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Track runs, params &amp; metrics with MLflow
             </div>
           </Link>
 
           <Link
             to="/app/projects"
-            className="p-3.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition block group"
+            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
           >
-            <div className="w-6 h-6 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center mb-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
               <FolderGit2 className="w-3.5 h-3.5" />
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 group-hover:text-[#0284C7] transition">
-              Manage Projects
+            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
+              Manage Workspaces
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">
-              Collaborate with others on your team
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Configure Git remotes and team access
             </div>
           </Link>
         </div>
-      </div>
-
-      {/* ── SNOWFLAKE ACTIONABLE POLICY / CALLOUT BANNER ───────────── */}
-      <div className="p-4 rounded-lg bg-white border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] flex items-center justify-center shrink-0 mt-0.5">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[13px] font-semibold text-slate-900">
-              Reduce exfiltration risk with Data Movement Policies
-            </div>
-            <div className="text-xs text-slate-500 mt-0.5 max-w-2xl">
-              Start with alert rules to see how much sensitive data is leaving, then add enforce rules that block oversized exports. Coverage applies account-wide or follows your tags.
-            </div>
-          </div>
-        </div>
-        <Link
-          to="/app/monitoring"
-          className="px-3.5 py-1.5 rounded-md bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold shrink-0 transition"
-        >
-          Get Started
-        </Link>
       </div>
 
       {/* ── SECTION 1: HEADER & DATE PICKER ────────────────────────── */}
@@ -475,7 +449,7 @@ export const DashboardOverview: React.FC = () => {
             Overview
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            A global view of your ML platform
+            Operational telemetry &amp; machine learning registry status
           </p>
         </div>
 
@@ -496,7 +470,7 @@ export const DashboardOverview: React.FC = () => {
               <button
                 onClick={() => setAdminViewMode("ml")}
                 className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 ${adminViewMode === "ml"
-                    ? "bg-[#0284C7] text-white shadow-2xs"
+                    ? "bg-[#3BB48C] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
                   }`}
               >
@@ -527,7 +501,7 @@ export const DashboardOverview: React.FC = () => {
                       setIsTimeRangeOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                        ? "bg-[#E0F2FE] text-[#0284C7] font-semibold"
+                        ? "bg-slate-100 text-slate-900 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
@@ -540,10 +514,10 @@ export const DashboardOverview: React.FC = () => {
 
           <button
             onClick={loadData}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-[#0284C7] hover:border-[#0284C7]/40 transition shadow-2xs"
+            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-[#3BB48C] hover:border-[#3BB48C]/40 transition shadow-2xs cursor-pointer"
             title="Refresh metrics"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#0284C7]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
         </div>
       </div>
@@ -558,19 +532,19 @@ export const DashboardOverview: React.FC = () => {
               key={res.name}
               to={href}
               id={`kpi-${res.name.toLowerCase()}`}
-              className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs hover:border-slate-300 transition-all group cursor-pointer block"
+              className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group cursor-pointer block"
             >
               <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-md border ${res.iconBg} ${res.iconColor}`}>
+                <div className={`p-1.5 rounded-lg border ${res.iconBg} ${res.iconColor}`}>
                   <Icon className="w-4 h-4 stroke-[2]" />
                 </div>
                 <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{res.name}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0284C7] transition" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
               </div>
               <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
                 {res.count}
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
                 <span>{res.trend}</span>
                 <span className="text-slate-400 font-normal">vs prev. period</span>
               </div>
@@ -626,29 +600,31 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Latency Percentiles Curve (7 cols / 58%) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-[#0284C7]" />
-                  Inference &amp; Telemetry Latency Curve
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                    <Activity className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Inference &amp; Telemetry Latency</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                     P95: 5.4ms
                   </span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   End-to-end container response latency across percentiles (P50, P95, P99 SLA)
                 </p>
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md">
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/60">
                 {(["all", "p50", "p95", "p99"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition uppercase ${latencyMetricFilter === mode
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition uppercase cursor-pointer ${latencyMetricFilter === mode
                       ? "bg-white text-slate-900 shadow-2xs"
                       : "text-slate-500 hover:text-slate-900"
                       }`}
@@ -660,18 +636,18 @@ export const DashboardOverview: React.FC = () => {
             </div>
 
             {/* Quick KPI Ribbon */}
-            <div className="grid grid-cols-3 gap-2 mb-3 p-2.5 bg-slate-50 border border-slate-100 rounded-md text-center">
+            <div className="grid grid-cols-3 gap-2 mb-3 p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-center">
               <div>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Median (P50)</span>
                 <span className="text-xs font-semibold text-slate-900 font-mono">2.8 ms</span>
               </div>
               <div className="border-x border-slate-200">
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
-                <span className="text-xs font-semibold text-[#0284C7] font-mono">5.4 ms</span>
+                <span className="text-xs font-semibold text-slate-900 font-mono">5.4 ms</span>
               </div>
               <div>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
-                <span className="text-xs font-semibold text-emerald-600 font-mono">99.98%</span>
+                <span className="text-xs font-semibold text-emerald-700 font-mono">99.98%</span>
               </div>
             </div>
 
@@ -716,15 +692,15 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 font-semibold text-slate-700">
-                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> P50 Median
+              <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> P50 Median
               </span>
-              <span className="flex items-center gap-1 font-semibold text-slate-700">
+              <span className="flex items-center gap-1.5 font-medium text-slate-700">
                 <span className="w-2 h-2 rounded-full bg-amber-500" /> P95 Tail
               </span>
-              <span className="flex items-center gap-1 font-semibold text-slate-700">
+              <span className="flex items-center gap-1.5 font-medium text-slate-700">
                 <span className="w-2 h-2 rounded-full bg-rose-500" /> P99 Spike
               </span>
             </div>
@@ -733,23 +709,26 @@ export const DashboardOverview: React.FC = () => {
         </div>
 
         {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <PieChartIcon className="w-4 h-4 text-[#0284C7]" />
-                  Model Registry Distribution
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                    <PieChartIcon className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Model Distribution</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   Breakdown across lifecycle promotion stages
                 </p>
               </div>
               <Link
                 to="/app/models"
-                className="text-xs font-semibold text-[#0284C7] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
               >
-                Catalog <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>Catalog</span>
+                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </Link>
             </div>
 
@@ -810,7 +789,7 @@ export const DashboardOverview: React.FC = () => {
             {/* Legend Pills */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#0284C7]" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span className="text-slate-600 font-medium">Production ({stageCounts.PRODUCTION || 6})</span>
               </div>
               <div className="flex items-center gap-2">
@@ -829,9 +808,9 @@ export const DashboardOverview: React.FC = () => {
           </div>
 
           <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Registry Status: Verified</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
-              Zero Unsigned Models
+            <span>Registry Status: Active</span>
+            <span className="text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+              15 Models Governed
             </span>
           </div>
         </div>
@@ -842,19 +821,21 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Microservices Resource Allocation Grouped BarChart */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Cpu className="w-4 h-4 text-[#0284C7]" />
-                  Infrastructure &amp; Resource Telemetry
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                    <Cpu className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Infrastructure &amp; Resource Telemetry</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   Live CPU load (%) vs Memory allocation (%) across container pods
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-semibold bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD] px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md">
                 Docker Engine
               </span>
             </div>
@@ -900,34 +881,37 @@ export const DashboardOverview: React.FC = () => {
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> CPU Load (%)
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> CPU Load (%)
               </span>
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
                 <span className="w-2 h-2 rounded-full bg-[#6366F1]" /> Memory (%)
               </span>
             </div>
-            <span className="text-[#0284C7] font-semibold text-[11px]">4/4 Operational</span>
+            <span className="text-emerald-700 font-semibold text-[11px]">4/4 Containers Healthy</span>
           </div>
         </div>
 
         {/* Feature Drift & SHAP Importance Composed Chart */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
-                  Feature Drift vs. SHAP Importance
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                    <Activity className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Feature Drift vs. SHAP Importance</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   SHAP feature impact (Bar) vs Evidently AI PSI drift score (Line)
                 </p>
               </div>
               <Link
                 to="/app/monitoring"
-                className="text-xs font-semibold text-[#0284C7] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
               >
-                Monitoring <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>Monitoring</span>
+                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </Link>
             </div>
 
@@ -984,10 +968,10 @@ export const DashboardOverview: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> SHAP Importance
               </span>
               <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-[#0284C7]" /> PSI Drift
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> PSI Drift
               </span>
             </div>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+            <span className="text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
               Zero Drift Alerts
             </span>
           </div>
@@ -997,14 +981,16 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {/* ── SECTION 5B: PLATFORM SPEND, LIFECYCLE FUNNEL, STORAGE & HEALTH ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-[#0284C7]" />
-                Platform Spend &amp; Compute
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                  <Cpu className="w-3.5 h-3.5" />
+                </div>
+                <span>Platform Spend &amp; Compute</span>
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Monthly cost by workload (USD) — training, serving, storage</p>
+              <p className="text-xs text-slate-500 mt-1">Monthly cost by workload (USD) — training, serving, storage</p>
             </div>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
           </div>
@@ -1024,12 +1010,14 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#0284C7]" />
-            MLOps Lifecycle Funnel
+        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
+            <span>MLOps Lifecycle Funnel</span>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-2">From raw dataset to production model</p>
+          <p className="text-xs text-slate-500 mt-1 mb-2">From raw dataset to production model</p>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <FunnelChart>
@@ -1048,20 +1036,22 @@ export const DashboardOverview: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* GRAPH 1: Production Model Benchmark & Quality Matrix (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <BarChart3 className="w-4 h-4 text-[#0284C7]" />
-                  Production Model Benchmark Matrix
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                    <BarChart3 className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Production Model Benchmark Matrix</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   Validation ROC-AUC vs. F1-Score across active production candidate models
                 </p>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                100% SLA Compliant
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                Holdout Validated
               </span>
             </div>
 
@@ -1106,21 +1096,23 @@ export const DashboardOverview: React.FC = () => {
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
             <span>Holdout Validation: 100k Verified Test Samples</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
-              Zero Model Regressions
+            <span className="text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+              Evaluated
             </span>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
-            Platform Health
+        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+              <Activity className="w-3.5 h-3.5" />
+            </div>
+            <span>Platform Health</span>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-3">Core services status &amp; 30-day uptime</p>
+          <p className="text-xs text-slate-500 mt-1 mb-3">Core services status &amp; 30-day uptime</p>
           <ul className="space-y-2">
             {SERVICES.map((s) => (
-              <li key={s.name} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-1.5 hover:bg-slate-50 transition">
+              <li key={s.name} className="flex items-center justify-between rounded-xl border border-slate-200/70 px-3 py-2 hover:bg-slate-50 transition">
                 <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                   <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
                   {s.name}
@@ -1136,19 +1128,21 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ── GRAPH 2: Model Performance Trajectory & Continuous Retraining (12 cols) ── */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-[#0284C7]" />
-              <h3 className="text-sm font-semibold text-slate-900">
-                Model Performance Stability &amp; Continuous Retraining Trajectory
+              <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Model Performance &amp; Retraining Trajectory
               </h3>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                 Auto-Retrain Active
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-1">
               30-day continuous rolling F1-score tracking concept drift and automated retraining recovery events
             </p>
           </div>
@@ -1237,125 +1231,169 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
+      {/* ── SECTION 6: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Production Models */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
-              Production Models &amp; Registry
-            </h3>
-            <Link
-              to="/app/models"
-              className="text-xs text-[#0284C7] hover:underline flex items-center gap-1 font-semibold"
-            >
-              View All <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {models.length === 0 ? (
-            <div className="text-center py-6 text-slate-400 text-xs">
-              No cataloged models found.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {models.slice(0, 4).map((m, idx) => (
-                <div
-                  key={idx}
-                  className="py-2.5 flex items-center justify-between hover:bg-slate-50 px-2 rounded-md transition group cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center text-[#0284C7] font-mono text-[11px] font-bold">
-                      M{m.version}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-800 text-xs group-hover:text-[#0284C7] transition">
-                        {m.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        v{m.version} • Verified Registry
-                      </div>
-                    </div>
-                  </div>
-                  <StatusBadge status={m.stage || "DEVELOPMENT"} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Model Registry Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200/70 flex items-center justify-center text-slate-700">
+                  <Box className="w-4 h-4 text-slate-700" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                    Model Registry
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Governed artifacts &amp; validation stages
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/app/models"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
+              >
+                <span>View All</span>
+                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
             </div>
-          )}
-        </div>
 
-        {/* Active Container Deployments with Test Ping */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <h3 className="text-sm font-semibold text-slate-900">
-                Active Inference Endpoints
-              </h3>
-            </div>
-            <Link
-              to="/app/deployments"
-              className="text-xs text-[#0284C7] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Manage <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {deployments.length === 0 ? (
-            <div className="text-center py-6 text-slate-400 text-xs">
-              No running containers found.
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {deployments.slice(0, 3).map((d) => (
-                <div
-                  key={d.id}
-                  className="p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition bg-white"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
-                        <Radio className="w-3.5 h-3.5 text-emerald-600" />
+            {models.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 text-xs">
+                No cataloged models found.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {models.slice(0, 3).map((m, idx) => (
+                  <Link
+                    key={idx}
+                    to="/app/models"
+                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:border-[#3BB48C]/60 group-hover:text-[#3BB48C] transition shrink-0 shadow-2xs">
+                        <Cpu className="w-4 h-4" />
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
-                          {d.model_name}
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                            v{d.model_version}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900 text-xs truncate group-hover:text-[#3BB48C] transition">
+                            {m.name}
+                          </span>
+                          <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                            v{m.version}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Port :{d.port} • Secure Inference
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate flex items-center gap-1.5">
+                          <span>{m.metrics?.f1_score ? `F1: ${(m.metrics.f1_score * 100).toFixed(1)}%` : m.metrics?.accuracy ? `Acc: ${(m.metrics.accuracy * 100).toFixed(1)}%` : "PyTorch / ONNX"}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-400">Run #{m.mlflow_run_id ? m.mlflow_run_id.slice(0, 7) : `m${m.version}a`}</span>
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => handleTestPing(d)}
-                      disabled={pingingId === d.id}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition"
-                    >
-                      <Zap className={`w-3 h-3 text-amber-500 ${pingingId === d.id ? "animate-bounce" : ""}`} />
-                      {pingingId === d.id ? "Ping..." : "Test Ping"}
-                    </button>
-                  </div>
-
-                  {pingResult && pingResult.id === d.id && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] animate-in fade-in">
-                      <div className="flex items-center gap-1 text-emerald-700 font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Inference succeeded ({pingResult.latency} ms)</span>
-                      </div>
-                      <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                        Class: {pingResult.prediction?.predicted_class ?? 1} (Conf: 94%)
-                      </span>
+                    <div className="shrink-0 ml-2">
+                      <StatusBadge status={m.stage || "DEVELOPMENT"} />
                     </div>
-                  )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Active Inference Endpoints Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-700">
+                  <Server className="w-4 h-4 text-emerald-600" />
                 </div>
-              ))}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                      Active Inference Endpoints
+                    </h3>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    FastAPI Docker microservices with live health probes
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/app/deployments"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
+              >
+                <span>Manage</span>
+                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
             </div>
-          )}
+
+            {deployments.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 text-xs">
+                No running containers found.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {deployments.slice(0, 3).map((d) => (
+                  <div
+                    key={d.id}
+                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
+                          <Server className="w-4 h-4 text-slate-600" />
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 text-xs truncate">
+                              {d.model_name}
+                            </span>
+                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                              v{d.model_version}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate flex items-center gap-1.5">
+                            <span className="text-emerald-700 font-medium font-mono">Port :{d.port}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-slate-400">FastAPI Container</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleTestPing(d)}
+                        disabled={pingingId === d.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-900 hover:text-white text-slate-700 border border-slate-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer group shrink-0 active:scale-95"
+                      >
+                        <Zap className={`w-3.5 h-3.5 text-emerald-600 group-hover:text-emerald-400 transition ${pingingId === d.id ? "animate-bounce" : ""}`} />
+                        <span>{pingingId === d.id ? "Pinging..." : "Test Ping"}</span>
+                      </button>
+                    </div>
+
+                    {pingResult && pingResult.id === d.id && (
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px] animate-in fade-in">
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>200 OK • Response {pingResult.latency}ms</span>
+                        </div>
+                        <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
+                          Class {pingResult.prediction?.predicted_class ?? 1} (Conf: 98.2%)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

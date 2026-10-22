@@ -8,6 +8,10 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+
   /* Custom scrollbars for clean light UI */
   ::-webkit-scrollbar {
     width: 6px;
@@ -264,4 +268,50 @@
 
 .bg-data-stream {
   background: linear-gradient(135deg, rgba(240, 253, 249, 0.8) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(248, 250, 252, 0.9) 100%);
+}
+
+/* ── Senior Micro-Animations & Dynamic Motion ── */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 4.5s ease-in-out infinite 2s;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
 }

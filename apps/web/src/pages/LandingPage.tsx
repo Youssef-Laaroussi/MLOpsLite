@@ -57,6 +57,9 @@ export const LandingPage: React.FC = () => {
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  // Terminal preview state
+  const [showTerminalPreview, setShowTerminalPreview] = useState(false);
+
   const faqItems = [
     {
       q: "What is MLite and how is it different from cloud MLOps platforms?",
@@ -272,7 +275,7 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ── Hero Section (Sans carrés de grille, vraies couleurs éclatantes et fond image 100% transparent) ── */}
-      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
+      <section className="relative pt-12 sm:pt-16 lg:pt-20 pb-14 lg:pb-16 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
         {/* Vraies couleurs éclatantes : Neural Network Plexus supérieur droit sans ternissement */}
         <div className="absolute -top-12 -right-16 w-[38rem] sm:w-[46rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply">
           <img
@@ -316,8 +319,8 @@ export const LandingPage: React.FC = () => {
                 </a>
               </div>
 
-              {/* Bold High-Contrast Heading */}
-              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.85rem] font-extrabold text-slate-900 leading-[1.18] tracking-tight">
+              {/* Bold High-Contrast Heading (Claude Editorial Typography) */}
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.95rem] font-bold text-slate-900 leading-[1.18] tracking-tight">
                 Modern MLOps <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-teal-600">
                   Infrastructure, Self-Hosted
@@ -345,32 +348,61 @@ export const LandingPage: React.FC = () => {
                 </a>
               </div>
 
-              {/* Minimalist, Clean Quickstart Command Bar */}
-              <div className="pt-2 w-full max-w-md">
+              {/* Minimalist, Clean Quickstart Command Bar with interactive execution preview */}
+              <div className="pt-2 w-full max-w-md space-y-2">
                 <div className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 text-xs font-mono shadow-sm">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <Terminal className="w-3.5 h-3.5 text-[#3BB48C] shrink-0" />
                     <span className="text-[#3BB48C] font-bold select-none">$</span>
                     <span className="text-slate-200 select-all truncate">{installCmd}</span>
                   </div>
-                  <button
-                    onClick={handleCopy}
-                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
-                    title="Copy command"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
+                  <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-700">
+                    <button
+                      onClick={() => setShowTerminalPreview(!showTerminalPreview)}
+                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-emerald-400 font-bold transition cursor-pointer"
+                      title="Simulate startup output"
+                    >
+                      {showTerminalPreview ? "Hide logs" : "Simulate"}
+                    </button>
+                    <button
+                      onClick={handleCopy}
+                      className="text-slate-400 hover:text-white transition cursor-pointer p-1"
+                      title="Copy command"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Interactive Simulated Container Stack Logs */}
+                {showTerminalPreview && (
+                  <div className="p-3 bg-slate-950/95 border border-slate-800 rounded-xl font-mono text-[11px] text-slate-300 space-y-1.5 shadow-xl animate-fadeIn">
+                    <div className="text-emerald-400 font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Docker Compose Stack Initialized
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded font-bold uppercase">
+                        Running
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-[10px] space-y-0.5 pt-1 border-t border-slate-800">
+                      <div>✔ <span className="text-slate-200">postgres:16</span> (metadata store) · port 5432</div>
+                      <div>✔ <span className="text-slate-200">minio-s3</span> (artifact storage) · port 9000</div>
+                      <div>✔ <span className="text-slate-200">mlflow-server</span> (run registry) · port 5000</div>
+                      <div>✔ <span className="text-slate-200">fastapi-engine</span> (REST API core) · port 8000</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration (Abaissée légèrement) ── */}
-            <div className="lg:col-span-6 relative flex items-center justify-center pt-6 lg:pt-10 translate-y-3 sm:translate-y-5">
+            {/* ── Right Column: 3D Isometric MLOps Illustration ── */}
+            <div className="lg:col-span-6 relative flex items-center justify-center pt-4 lg:pt-6">
               {/* Soft Ambient Glow */}
-              <div className="absolute w-[32rem] h-[32rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10" />
+              <div className="absolute w-[30rem] h-[30rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-soft" />
 
-              {/* Illustration 3D Isométrique totalement fondue, fond blanc supprimé par mix-blend-multiply et masque doux */}
-              <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
+              {/* Clean 3D Isometric Illustration with subtle organic levitation */}
+              <div className="relative w-full max-w-xl group transition-transform duration-700 hover:scale-[1.02] animate-float-slow">
                 <img
                   src="/hero-isometric.jpg"
                   alt="MLite Real-time MLOps Platform Isometric Illustration"
@@ -394,7 +426,7 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Integrated MLOps Stack
             </p>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               Autonomous Machine Learning Lifecycle Pipeline
             </h2>
             <p className="text-xs sm:text-sm text-slate-500">
@@ -436,6 +468,38 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── High-Contrast Platform Metrics Strip (Positioned lower to leave first page uncropped) ── */}
+      <section className="bg-slate-900 text-white py-8 border-y border-slate-800 relative z-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-slate-800">
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-[#3BB48C] font-mono tracking-tight flex items-center justify-center gap-1">
+                <span>&lt; 5ms</span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Docker Container Latency</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                99.99%
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Zero-Downtime Reliability</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                100%
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Self-Hosted &amp; Air-Gapped</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                0$
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Per-Prediction Egress Tax</p>
+            </div>
           </div>
         </div>
       </section>

@@ -14,6 +14,9 @@ import {
   BarChart3,
   Sliders,
   Check,
+  AlertTriangle,
+  Info,
+  Clock,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import {
@@ -674,24 +677,98 @@ export const MonitoringPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Row 4: Live Incident Feed ── */}
-      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-[#3BB48C]" />
-          Live Observability Feed
-        </h3>
-        <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest drift checks, anomalies and automated actions</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {INCIDENTS.map((i) => (
-            <div key={i.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${i.color}` }}>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.color }}>{i.level}</span>
-                <span className="text-[11px] text-slate-400">{i.when}</span>
+      {/* ── Row 4: Live Incident Feed (Vertical Modern Timeline) ── */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-6">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#3BB48C]" />
+              Live Observability Feed
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Chronological audit of drift checks, pipeline alerts, and serving adjustments
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Live Stream (Prometheus + Evidently)</span>
+          </div>
+        </div>
+
+        {/* Vertical Timeline */}
+        <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+          {INCIDENTS.map((i) => {
+            const getIconAndBadge = () => {
+              if (i.level.toLowerCase() === "info") {
+                return {
+                  icon: <CheckCircle2 className="w-4 h-4 text-white" />,
+                  bg: "bg-[#10b981]",
+                  ring: "ring-[#10b981]/20",
+                  tagBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
+                };
+              }
+              if (i.level.toLowerCase() === "warning") {
+                return {
+                  icon: <AlertTriangle className="w-4 h-4 text-white" />,
+                  bg: "bg-[#f59e0b]",
+                  ring: "ring-[#f59e0b]/20",
+                  tagBg: "bg-amber-50 text-amber-800 border-amber-200",
+                };
+              }
+              if (i.level.toLowerCase() === "action") {
+                return {
+                  icon: <Zap className="w-4 h-4 text-white" />,
+                  bg: "bg-[#3b82f6]",
+                  ring: "ring-[#3b82f6]/20",
+                  tagBg: "bg-blue-50 text-blue-800 border-blue-200",
+                };
+              }
+              return {
+                icon: <Check className="w-4 h-4 text-white" />,
+                bg: "bg-[#8b5cf6]",
+                ring: "ring-[#8b5cf6]/20",
+                tagBg: "bg-purple-50 text-purple-800 border-purple-200",
+              };
+            };
+
+            const style = getIconAndBadge();
+
+            return (
+              <div key={i.id} className="relative group">
+                {/* Timeline node icon */}
+                <div
+                  className={`absolute -left-6 sm:-left-8 top-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full ${style.bg} ring-4 ${style.ring} flex items-center justify-center shadow-xs transition-transform group-hover:scale-110`}
+                >
+                  {style.icon}
+                </div>
+
+                {/* Event content */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 pl-3 sm:pl-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${style.tagBg}`}>
+                        {i.level}
+                      </span>
+                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-[#3BB48C] transition-colors">
+                        {i.title}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {i.detail}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-slate-400 pl-0 sm:pl-2">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{i.when}</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm font-semibold text-slate-900 mt-2">{i.title}</div>
-              <div className="text-xs text-slate-500 mt-1">{i.detail}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -710,66 +787,103 @@ export const MonitoringPage: React.FC = () => {
           <span className="text-xs text-slate-400 font-mono">Last eval: {lastCheck}</span>
         </div>
 
-        <div className="space-y-3">
-          {features.map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedFeatureIndex(idx)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer group ${
-                selectedFeatureIndex === idx
-                  ? "bg-slate-50/80 border-[#3BB48C] shadow-xs"
-                  : "bg-white border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-sm group-hover:text-[#1A7456] transition-colors">
-                      {item.feature}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-bold">
-                      {item.stat_test}
-                    </span>
-                    {selectedFeatureIndex === idx && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Active Overlay
+        <div className="overflow-x-auto -mx-6 sm:-mx-7 -mb-6 sm:-mb-7">
+          <table className="w-full text-left text-sm text-slate-700">
+            <thead className="bg-slate-50 border-y border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-3.5">Feature Name</th>
+                <th className="px-6 py-3.5">Stat Test</th>
+                <th className="px-6 py-3.5">p-value</th>
+                <th className="px-6 py-3.5">Reference Mean</th>
+                <th className="px-6 py-3.5">Current Mean</th>
+                <th className="px-6 py-3.5 min-w-[140px]">Stability</th>
+                <th className="px-6 py-3.5 text-right">Drift Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {features.map((item, idx) => {
+                const isSelected = selectedFeatureIndex === idx;
+                return (
+                  <tr
+                    key={idx}
+                    onClick={() => setSelectedFeatureIndex(idx)}
+                    className={`transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-[#ecfdf5]/60 hover:bg-[#ecfdf5]"
+                        : "hover:bg-slate-50"
+                    }`}
+                  >
+                    {/* Feature Name */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold text-sm ${isSelected ? "text-[#065f46]" : "text-slate-900"}`}>
+                          {item.feature}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#10b981] text-white">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Stat Test */}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                        {item.stat_test}
                       </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-400 font-mono mt-1 flex items-center gap-3">
-                    <span>
-                      p-value: <strong className="text-slate-800">{item.p_val}</strong> (threshold &gt; 0.05)
-                    </span>
-                    <span>•</span>
-                    <span>Ref: {item.ref_mean}</span>
-                    <span>•</span>
-                    <span>Curr: {item.curr_mean}</span>
-                  </div>
-                </div>
+                    </td>
 
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                  {/* Visual Confidence Bar */}
-                  <div className="w-32 hidden md:block">
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                      <span>Stability</span>
-                      <span className="font-mono font-bold text-emerald-700">{item.score}%</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#3BB48C] rounded-full transition-all duration-500"
-                        style={{ width: `${item.score}%` }}
-                      />
-                    </div>
-                  </div>
+                    {/* p-value */}
+                    <td className="px-6 py-4 font-mono text-xs">
+                      <span className="font-bold text-slate-900">{item.p_val}</span>
+                      <span className="text-slate-400 text-[11px] ml-1">(&gt; 0.05)</span>
+                    </td>
 
-                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Stable
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+                    {/* Reference Mean */}
+                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
+                      {item.ref_mean}
+                    </td>
+
+                    {/* Current Mean */}
+                    <td className="px-6 py-4 font-mono text-xs text-slate-900 font-semibold">
+                      {item.curr_mean}
+                    </td>
+
+                    {/* Stability Bar */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[70px]">
+                          <div
+                            className="h-full bg-[#10b981] rounded-full transition-all duration-500"
+                            style={{ width: `${item.score}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs font-bold text-slate-700 shrink-0">
+                          {item.score}%
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Drift Status */}
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      {item.drift ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#ef4444] text-white shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          Drift Detected
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#10b981] text-white shadow-xs">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                          Stable
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

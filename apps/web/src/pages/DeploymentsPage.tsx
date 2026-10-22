@@ -949,19 +949,19 @@ export const DeploymentsPage: React.FC = () => {
                   </td>
 
                   <td className="px-6 py-4">
-                    {/* Live Ping Button */}
+                    {/* Live Ping Button - Real tactile button */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleTestPing(d)}
                         disabled={pingingId === d.id || d.status !== "RUNNING"}
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center gap-1 transition disabled:opacity-40"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs shadow-xs hover:shadow-sm active:translate-y-0.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                       >
-                        <Zap className={`w-3 h-3 ${pingingId === d.id ? "animate-spin text-amber-500" : ""}`} />
-                        {pingingId === d.id ? "Pinging..." : "Test ⚡"}
+                        <Zap className={`w-3.5 h-3.5 text-amber-500 fill-amber-500 ${pingingId === d.id ? "animate-spin" : ""}`} />
+                        <span>{pingingId === d.id ? "Pinging..." : "Test"}</span>
                       </button>
 
                       {pingResult && pingResult.id === d.id && (
-                        <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 animate-fadeIn">
+                        <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300 animate-fadeIn">
                           {pingResult.latency}ms
                         </span>
                       )}
@@ -985,11 +985,11 @@ export const DeploymentsPage: React.FC = () => {
                       {d.status === "RUNNING" && canRollback && (
                         <button
                           onClick={() => handleStop(d.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white border border-[#dc2626] text-xs font-bold shadow-xs hover:shadow-md hover:shadow-rose-500/20 active:translate-y-0.5 transition cursor-pointer"
                           title="Stop container"
                         >
                           <StopCircle className="w-3.5 h-3.5" />
-                          Stop
+                          <span>Stop</span>
                         </button>
                       )}
                     </div>

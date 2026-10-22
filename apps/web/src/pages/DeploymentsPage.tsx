@@ -191,7 +191,8 @@ const DEFAULT_DEPLOYMENTS: (Deployment & {
 ];
 
 export const DeploymentsPage: React.FC = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN" || hasRole("ADMIN");
   const [deployments, setDeployments] = useState<typeof DEFAULT_DEPLOYMENTS>(DEFAULT_DEPLOYMENTS);
   const [loading, setLoading] = useState(true);
 
@@ -969,15 +970,17 @@ export const DeploymentsPage: React.FC = () => {
 
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <a
-                        href={`${d.endpoint_url}/health`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-[#3BB48C] hover:bg-slate-50 transition"
-                        title="Health Probe"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
+                      {isAdmin && (
+                        <a
+                          href={`${d.endpoint_url}/health`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-[#3BB48C] hover:bg-slate-50 transition"
+                          title="Raw Container Probe (Admin Only)"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
 
                       {d.status === "RUNNING" && canRollback && (
                         <button

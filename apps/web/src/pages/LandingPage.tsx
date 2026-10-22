@@ -243,14 +243,6 @@ export const LandingPage: React.FC = () => {
             <a href="#faq" className="hover:text-[#3BB48C] transition">FAQ</a>
             <a href="#contact" className="hover:text-[#3BB48C] transition">Contact</a>
             <a
-              href="http://localhost:8000/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#3BB48C] transition flex items-center gap-1"
-            >
-              API Docs <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            </a>
-            <a
               href="https://github.com/Youssef-Laaroussi/MLOpsLite"
               target="_blank"
               rel="noreferrer"
@@ -346,9 +338,7 @@ export const LandingPage: React.FC = () => {
                   Start free console <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
-                  href="http://localhost:8000/docs"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="#architecture"
                   className="px-7 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
                 >
                   Learn More
@@ -645,12 +635,10 @@ export const LandingPage: React.FC = () => {
                 <p className="text-xs text-slate-500">
                   Still have questions? Check our{" "}
                   <a
-                    href="http://localhost:8000/docs"
-                    target="_blank"
-                    rel="noreferrer"
+                    href="#architecture"
                     className="text-[#3BB48C] font-semibold hover:underline"
                   >
-                    API Documentation
+                    architecture documentation
                   </a>{" "}
                   or send us a message in the contact form below.
                 </p>

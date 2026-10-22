@@ -564,14 +564,14 @@ export const LandingPage: React.FC = () => {
                 title: "Docker Compose",
                 role: "Container Orchestrator",
                 desc: "Zero-dependency single-command orchestration across VPS, bare-metal, or on-prem servers.",
-                favicon: "/logos/docker.svg",
+                favicon: "/logos/docker.png",
                 alt: "Docker",
               },
               {
                 title: "FastAPI Async",
                 role: "High-Speed REST Core",
                 desc: "Sub-millisecond routing, OpenAPI/Swagger generation, and built-in security headers.",
-                favicon: "/logos/fastapi.svg",
+                favicon: "/logos/fastapi.png",
                 alt: "FastAPI",
               },
             ].map((arch, idx) => (
@@ -579,11 +579,11 @@ export const LandingPage: React.FC = () => {
                 key={idx}
                 className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 mb-4 group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200">
+                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 mb-4 group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200">
                   <img
                     src={arch.favicon}
                     alt={arch.alt}
-                    className="w-7 h-7 object-contain select-none"
+                    className="w-9 h-9 object-contain select-none"
                     loading="lazy"
                   />
                 </div>

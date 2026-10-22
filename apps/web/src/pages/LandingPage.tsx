@@ -418,11 +418,11 @@ export const LandingPage: React.FC = () => {
                 className="p-5 sm:p-6 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group opacity-0 cursor-default flex flex-col items-center justify-between"
                 style={{ animationDelay: `${idx * 80}ms` }}
               >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200 p-2.5 mb-3">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200 p-2 mb-3">
                   <img
                     src={item.favicon}
                     alt={item.alt}
-                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none"
+                    className="w-10 h-10 sm:w-11 sm:h-11 object-contain select-none"
                     loading="lazy"
                   />
                 </div>

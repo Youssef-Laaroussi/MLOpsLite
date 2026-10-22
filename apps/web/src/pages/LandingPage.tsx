@@ -391,9 +391,9 @@ export const LandingPage: React.FC = () => {
       <section className="py-16 sm:py-20 border-b border-slate-200/80 bg-gradient-to-b from-[#F8FAFC] to-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[11px] font-bold text-emerald-800 tracking-wide uppercase">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Integrated MLOps Stack
-            </span>
+            </p>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Autonomous Machine Learning Lifecycle Pipeline
             </h2>
@@ -415,10 +415,10 @@ export const LandingPage: React.FC = () => {
               <div
                 key={idx}
                 ref={addRevealRef}
-                className="p-5 sm:p-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm hover:border-[#3BB48C] hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group opacity-0 cursor-default flex flex-col items-center justify-between"
+                className="p-5 sm:p-6 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group opacity-0 cursor-default flex flex-col items-center justify-between"
                 style={{ animationDelay: `${idx * 80}ms` }}
               >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100/90 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:border-emerald-100 group-hover:shadow-md transition-all duration-300 p-2.5 mb-3.5 shadow-2xs">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200 p-2.5 mb-3">
                   <img
                     src={item.favicon}
                     alt={item.alt}
@@ -426,11 +426,11 @@ export const LandingPage: React.FC = () => {
                     loading="lazy"
                   />
                 </div>
-                <div className="space-y-1 w-full">
-                  <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">
+                <div className="w-full">
+                  <div className="text-sm font-bold text-slate-900">
                     {item.title}
                   </div>
-                  <div className="text-[11px] sm:text-xs text-[#1A7456] font-semibold bg-emerald-50/70 px-2 py-0.5 rounded-md border border-emerald-100/60 inline-block">
+                  <div className="text-xs text-slate-500 font-medium mt-1">
                     {item.desc}
                   </div>
                 </div>
@@ -550,42 +550,48 @@ export const LandingPage: React.FC = () => {
                 title: "PostgreSQL 16",
                 role: "Metadata Engine",
                 desc: "ACID transactions for model registry, deployment statuses, audit logs, and metrics tracking.",
-                icon: Database,
+                favicon: "/logos/postgresql.svg",
+                alt: "PostgreSQL",
               },
               {
                 title: "MinIO S3",
                 role: "Object Storage",
                 desc: "S3-compatible bucket storage for raw datasets, model weights, and drift baseline distributions.",
-                icon: HardDrive,
+                favicon: "/logos/minio.png",
+                alt: "MinIO S3",
               },
               {
                 title: "Docker Compose",
                 role: "Container Orchestrator",
                 desc: "Zero-dependency single-command orchestration across VPS, bare-metal, or on-prem servers.",
-                icon: Server,
+                favicon: "/logos/docker.svg",
+                alt: "Docker",
               },
               {
                 title: "FastAPI Async",
                 role: "High-Speed REST Core",
                 desc: "Sub-millisecond routing, OpenAPI/Swagger generation, and built-in security headers.",
-                icon: Zap,
+                favicon: "/logos/fastapi.svg",
+                alt: "FastAPI",
               },
-            ].map((arch, idx) => {
-              const Icon = arch.icon;
-              return (
-                <div
-                  key={idx}
-                  className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mb-4">
-                    <Icon className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
-                  <h3 className="text-base font-bold text-slate-900 mt-0.5 mb-2">{arch.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{arch.desc}</p>
+            ].map((arch, idx) => (
+              <div
+                key={idx}
+                className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 mb-4 group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200">
+                  <img
+                    src={arch.favicon}
+                    alt={arch.alt}
+                    className="w-7 h-7 object-contain select-none"
+                    loading="lazy"
+                  />
                 </div>
-              );
-            })}
+                <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
+                <h3 className="text-base font-bold text-slate-900 mt-0.5 mb-2">{arch.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{arch.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

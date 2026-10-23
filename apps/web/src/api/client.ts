@@ -178,6 +178,16 @@ export const fetchDatasets = async (): Promise<Dataset[]> => {
   return res.data.datasets || [];
 };
 
+export const createDataset = async (data: {
+  name: string;
+  format?: string;
+  description?: string;
+  project_id?: string;
+}): Promise<Dataset> => {
+  const res = await api.post("/datasets/", data);
+  return res.data;
+};
+
 // ── System Stats ───────────────────────────────────────────────────
 
 export const fetchSystemStats = async (): Promise<SystemStats> => {

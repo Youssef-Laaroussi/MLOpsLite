@@ -119,9 +119,8 @@ export const AlertsPage: React.FC = () => {
                   key={f}
                   id={`alerts-filter-${f}`}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition cursor-pointer ${
-                    filter === f ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
-                  }`}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition cursor-pointer ${filter === f ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
                 >
                   {f === "all" ? "All" : f}
                 </button>
@@ -276,14 +275,12 @@ export const AlertsPage: React.FC = () => {
                 aria-checked={r.enabled}
                 id={`rule-toggle-${r.id}`}
                 onClick={() => setRules((rs) => rs.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)))}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                  r.enabled ? "bg-[#10b981]" : "bg-slate-200"
-                }`}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${r.enabled ? "bg-[#10b981]" : "bg-slate-200"
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                    r.enabled ? "translate-x-4 mt-0.5" : "translate-x-0.5 mt-0.5"
-                  }`}
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${r.enabled ? "translate-x-4 mt-0.5" : "translate-x-0.5 mt-0.5"
+                    }`}
                 />
               </button>
             </div>

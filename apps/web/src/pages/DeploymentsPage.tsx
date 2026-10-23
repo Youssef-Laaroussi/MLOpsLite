@@ -436,8 +436,8 @@ export const DeploymentsPage: React.FC = () => {
                       setIsTimeRangeOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
+                      ? "bg-emerald-50 text-emerald-800 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
                       }`}
                   >
                     {range}
@@ -469,11 +469,10 @@ export const DeploymentsPage: React.FC = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={!canDeploy}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs transition shadow-2xs ${
-              canDeploy
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs transition shadow-2xs ${canDeploy
                 ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white"
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            }`}
+              }`}
             title={canDeploy ? "Launch container" : "Requires Developer role"}
           >
             {canDeploy ? <Plus className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
@@ -676,120 +675,6 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Row 2: Canary Traffic Split & Reliability (Error Rate vs p99) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <GitBranch className="w-4 h-4 text-[#3BB48C]" />
-            Canary Traffic Split
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-2">fraud-detector · progressive rollout v2 → v3</p>
-          <div className="h-48 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <RechartsTooltip />
-                <Pie data={CANARY_SPLIT} dataKey="value" nameKey="name" innerRadius="64%" outerRadius="94%" startAngle={90} endAngle={-270} paddingAngle={3} cornerRadius={6} stroke="none">
-                  {CANARY_SPLIT.map((c) => (
-                    <Cell key={c.name} fill={c.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-extrabold text-slate-900">{CANARY_SPLIT[1].value}%</span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">on v3 canary</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-5 mt-3 text-xs font-medium text-slate-600">
-            {CANARY_SPLIT.map((c) => (
-              <span key={c.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.fill }} />
-                {c.name} · <strong className="text-slate-900">{c.value}%</strong>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#3BB48C]" />
-                Reliability: Error Rate vs. p99 Latency
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5 mb-4">Last 24h · 5xx error rate (%) and tail latency (ms)</p>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">SLO 99.9%</span>
-          </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={RELIABILITY} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid {...GRID_PROPS} />
-                <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="p99" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                <YAxis yAxisId="err" orientation="right" domain={[0, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <RechartsTooltip content={<BiTooltip />} />
-                <ReferenceLine yAxisId="err" y={0.5} stroke="#F43F5E" strokeDasharray="4 4" label={{ value: "Error budget", fill: "#F43F5E", fontSize: 10, position: "insideTopRight" }} />
-                <Line yAxisId="p99" type="monotone" dataKey="p99" name="p99 (ms)" stroke={PALETTE.violet} strokeWidth={2.5} dot={false} />
-                <Line yAxisId="err" type="stepAfter" dataKey="err" name="Error rate (%)" stroke="#F43F5E" strokeWidth={2} dot={{ r: 2.5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 3: Resource Heatmap & Release Timeline ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-[#3BB48C]" />
-            CPU Utilization Heatmap
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Per container, last 12 hours — darker = hotter</p>
-          <div className="space-y-1.5">
-            {HEATMAP.map((row) => (
-              <div key={row.name} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 text-xs font-mono text-slate-600 truncate">{row.name}</span>
-                <div className="flex-1 grid grid-cols-12 gap-1">
-                  {row.cpu.map((v, i) => (
-                    <div
-                      key={i}
-                      title={`${row.name} · ${v}% CPU`}
-                      className="h-6 rounded-md transition hover:scale-110 hover:ring-2 hover:ring-slate-300"
-                      style={{ background: v > 80 ? "#F43F5E" : PALETTE.brand, opacity: 0.15 + (v / 100) * 0.85 }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-between mt-4 text-[11px] text-slate-400 font-mono">
-            <span>-12h</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#F43F5E]" /> &gt;80% saturation</span>
-            <span>now</span>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Workflow className="w-4 h-4 text-[#3BB48C]" />
-            Release Timeline
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Recent deploys, rollbacks and scaling events</p>
-          <ol className="relative border-l border-slate-200 ml-2 space-y-4">
-            {RELEASES.map((r) => (
-              <li key={r.id} className="ml-4">
-                <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white" style={{ background: r.color }} />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-slate-900">{r.title}</span>
-                  <span className="text-[11px] text-slate-400">{r.when}</span>
-                </div>
-                <div className="text-xs text-slate-500">{r.detail}</div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
 
 
       {/* ── Explorer Toolbar: Search & Role Filters (Snowflake Clean Style) ── */}
@@ -812,11 +697,10 @@ export const DeploymentsPage: React.FC = () => {
             <button
               key={rl}
               onClick={() => setRoleFilter(rl)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap ${
-                roleFilter === rl
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap ${roleFilter === rl
                   ? "bg-[#3BB48C] text-white shadow-2xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-              }`}
+                }`}
             >
               {rl === "ALL" ? "All Containers" : rl}
             </button>
@@ -921,9 +805,8 @@ export const DeploymentsPage: React.FC = () => {
                   <tr
                     key={d.id}
                     onClick={() => setSelectedNodeId(d.id)}
-                    className={`h-11 hover:bg-slate-50 transition-colors cursor-pointer ${
-                      selectedNodeId === d.id ? "bg-slate-50" : ""
-                    }`}
+                    className={`h-11 hover:bg-slate-50 transition-colors cursor-pointer ${selectedNodeId === d.id ? "bg-slate-50" : ""
+                      }`}
                   >
                     {/* Deployment */}
                     <td className="px-4 py-2 font-medium text-slate-900">
@@ -947,9 +830,8 @@ export const DeploymentsPage: React.FC = () => {
 
                     {/* Role / Traffic */}
                     <td className="px-4 py-2 font-sans text-xs">
-                      <span className={`text-[11px] font-medium ${
-                        d.role === "CANARY" ? "text-amber-700" : d.role === "STAGING" ? "text-slate-600" : "text-slate-800"
-                      }`}>
+                      <span className={`text-[11px] font-medium ${d.role === "CANARY" ? "text-amber-700" : d.role === "STAGING" ? "text-slate-600" : "text-slate-800"
+                        }`}>
                         {d.role || "PRODUCTION"}
                         {d.role === "CANARY" && ` (${d.traffic_pct}%)`}
                       </span>
@@ -971,20 +853,19 @@ export const DeploymentsPage: React.FC = () => {
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            d.status === "RUNNING"
+                          className={`w-1.5 h-1.5 rounded-full ${d.status === "RUNNING"
                               ? "bg-[#3BB48C]"
                               : d.status === "STARTING"
-                              ? "bg-amber-500"
-                              : "bg-rose-500"
-                          }`}
+                                ? "bg-amber-500"
+                                : "bg-rose-500"
+                            }`}
                         />
                         <span className={
                           d.status === "RUNNING"
                             ? "text-slate-800 font-medium"
                             : d.status === "STARTING"
-                            ? "text-amber-700"
-                            : "text-rose-700"
+                              ? "text-amber-700"
+                              : "text-rose-700"
                         }>
                           {d.status}
                         </span>

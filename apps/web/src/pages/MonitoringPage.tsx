@@ -142,6 +142,7 @@ export const MonitoringPage: React.FC = () => {
 
   // Selected feature for distribution visualization
   const [selectedFeatureIndex, setSelectedFeatureIndex] = useState<number>(0);
+  const [isFeatureDropdownOpen, setIsFeatureDropdownOpen] = useState<boolean>(false);
 
   const [features, setFeatures] = useState<FeatureDrift[]>([
     {
@@ -264,7 +265,7 @@ export const MonitoringPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
@@ -272,7 +273,7 @@ export const MonitoringPage: React.FC = () => {
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-md shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -282,7 +283,7 @@ export const MonitoringPage: React.FC = () => {
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
+                        ? "bg-slate-100 text-slate-900 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -297,7 +298,7 @@ export const MonitoringPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
               <Layers className="w-3.5 h-3.5 text-slate-400" />
               <span>{selectedModel}</span>
@@ -305,7 +306,7 @@ export const MonitoringPage: React.FC = () => {
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
+              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-md shadow-lg z-30 py-1 text-xs">
                 {[
                   "fraud-detector (v3)",
                   "customer-churn-xgb (v2)",
@@ -320,7 +321,7 @@ export const MonitoringPage: React.FC = () => {
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       selectedModel === m
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
+                        ? "bg-slate-100 text-slate-900 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -334,7 +335,7 @@ export const MonitoringPage: React.FC = () => {
           <button
             onClick={handleRunEvaluation}
             disabled={evaluating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#3BB48C] hover:bg-[#329F7B] text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${evaluating ? "animate-spin" : ""}`} />
             {evaluating ? "Calculating..." : "Run Drift Evaluation"}
@@ -378,46 +379,37 @@ export const MonitoringPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Enterprise Standard Observability Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* GRAPH 1: Population Stability Index (PSI) Drift Timeline (7 cols) - Enterprise Standard AreaChart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      {/* ── Visual Analytics Row: Clean Snowflake Enterprise Observability Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* GRAPH 1: Population Stability Index (PSI) Drift Timeline (7 cols) - Clean Line Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-[#3BB48C]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Population Stability Index (PSI) Trend
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Daily aggregate statistical drift against baseline reference distribution
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Daily statistical drift against baseline reference distribution
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Current PSI: {currentPsi} (Stable)
-                </span>
-              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Current PSI: {currentPsi.toFixed(3)}
+              </span>
             </div>
 
-            {/* Standard Recharts PSI Line / Area Chart */}
-            <div className="h-[210px] w-full mt-2">
+            {/* Clean Line Chart without gradients */}
+            <div className="h-52 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
+                <LineChart
                   data={psiChartData}
-                  margin={{ top: 15, right: 20, left: -15, bottom: 0 }}
+                  margin={{ top: 15, right: 15, left: -15, bottom: 0 }}
                 >
-                  <defs>
-                    <linearGradient id="psiAreaGrad" x1="0%" y1="0%" x2="0%" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.25} />
-                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                   <YAxis
-                    domain={[0, 0.30]}
-                    ticks={[0.0, 0.10, 0.20, 0.30]}
+                    domain={[0, 0.25]}
+                    ticks={[0.0, 0.05, 0.10, 0.15, 0.20]}
                     tick={AXIS_TICK}
                     axisLine={false}
                     tickLine={false}
@@ -425,15 +417,9 @@ export const MonitoringPage: React.FC = () => {
                   />
                   <ReferenceLine
                     y={0.10}
-                    stroke={PALETTE.amber}
-                    strokeDasharray="4 4"
-                    label={{ value: "Slight Shift (0.10)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
-                  />
-                  <ReferenceLine
-                    y={0.25}
-                    stroke={PALETTE.rose}
-                    strokeDasharray="4 4"
-                    label={{ value: "Drift Warning (0.25)", position: "top", fill: PALETTE.rose, fontSize: 10, fontWeight: 600 }}
+                    stroke="#D97706"
+                    strokeDasharray="3 3"
+                    label={{ value: "Warning limit (0.10)", position: "insideTopRight", fill: "#D97706", fontSize: 10 }}
                   />
                   <RechartsTooltip
                     content={({ active, payload, label }) => {
@@ -444,92 +430,104 @@ export const MonitoringPage: React.FC = () => {
                           active
                           label={`Evaluation: ${label}`}
                           payload={[
-                            { name: "PSI Score", value: val.toFixed(3), color: PALETTE.brand },
-                            { name: "Safe Threshold", value: "< 0.10", color: PALETTE.amber },
-                            { name: "Stability Status", value: val < 0.10 ? "Stable (In Bounds)" : "Investigate Drift", color: val < 0.10 ? PALETTE.brand : PALETTE.rose },
+                            { name: "PSI Score", value: val.toFixed(3), color: "#3BB48C" },
+                            { name: "Safe Threshold", value: "< 0.10", color: "#64748B" },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="psi"
-                    stroke={PALETTE.brand}
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#psiAreaGrad)"
-                    dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
+                    stroke="#3BB48C"
+                    strokeWidth={2}
+                    dot={{ r: 3.5, fill: "#3BB48C" }}
                   />
-                </AreaChart>
+                </LineChart>
               </ResponsiveContainer>
-            </div>
-
-            {/* Bottom Status strip */}
-            <div className="mt-3.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center justify-between text-xs text-[#1A7456]">
-              <span className="font-semibold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
-                All 7 evaluation checkpoints securely within the safe green band (&lt; 0.10 PSI).
-              </span>
-              <span className="font-mono font-bold">Stable Distribution</span>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Evaluation Engine: Evidently AI v0.4</span>
-            <span className="text-slate-700 font-bold">Sampling: 100% Production Traffic</span>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Engine: Evidently AI (KS &amp; Wasserstein)</span>
+            <span className="text-[#329F7B] font-semibold">Distribution Stable (&lt;0.10 PSI)</span>
           </div>
         </div>
 
-        {/* GRAPH 2: Feature Distribution Comparison (5 cols) - Enterprise Standard Histogram Overlay */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        {/* GRAPH 2: Feature Distribution Comparison (5 cols) - Clean Density Chart */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <BarChart3 className="w-4 h-4 text-[#3BB48C]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Distribution Overlay
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   Reference baseline vs live serving distribution
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="font-mono text-xs text-slate-600 font-semibold">
                 {activeFeature.score}% Overlap
               </span>
             </div>
 
-            {/* Feature selector tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2">
-              {features.map((f, fIdx) => (
-                <button
-                  key={f.feature}
-                  onClick={() => setSelectedFeatureIndex(fIdx)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap cursor-pointer ${
-                    selectedFeatureIndex === fIdx
-                      ? "bg-[#3BB48C] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {f.feature.length > 14 ? f.feature.slice(0, 12) + ".." : f.feature}
-                </button>
-              ))}
+            {/* Feature selector: Clean Snowflake Dropdown */}
+            <div className="relative mb-2">
+              <button
+                type="button"
+                onClick={() => setIsFeatureDropdownOpen(!isFeatureDropdownOpen)}
+                className="w-full flex items-center justify-between px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-xs font-mono text-slate-700 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <span className="text-[11px] font-sans uppercase tracking-wider text-slate-400 font-semibold">
+                    Feature:
+                  </span>
+                  <span className="font-semibold text-slate-900 truncate">
+                    {activeFeature.feature}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <span className="text-[10px] text-slate-500 font-sans">
+                    ({selectedFeatureIndex + 1}/{features.length})
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isFeatureDropdownOpen ? "rotate-180" : ""}`} />
+                </div>
+              </button>
+
+              {isFeatureDropdownOpen && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-30 py-1 text-xs max-h-56 overflow-y-auto">
+                  {features.map((f, fIdx) => (
+                    <button
+                      key={f.feature}
+                      type="button"
+                      onClick={() => {
+                        setSelectedFeatureIndex(fIdx);
+                        setIsFeatureDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 text-left font-mono transition cursor-pointer ${
+                        selectedFeatureIndex === fIdx
+                          ? "bg-slate-100 text-[#329F7B] font-semibold"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="truncate">{f.feature}</span>
+                      <span className="text-[10px] font-sans text-slate-400 ml-2 shrink-0">
+                        {f.stat_test}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Standard Recharts Binned Density Area Chart */}
-            <div className="h-[210px] w-full mt-2">
+            {/* Clean Line Chart for distributions (No gradients) */}
+            <div className="h-52 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
+                <LineChart
                   data={FEATURE_DISTRIBUTIONS[activeFeature.feature] || FEATURE_DISTRIBUTIONS["transaction_amount"]}
                   margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
                 >
-                  <defs>
-                    <linearGradient id="distServingGrad" x1="0%" y1="0%" x2="0%" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="bin" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis
@@ -546,279 +544,324 @@ export const MonitoringPage: React.FC = () => {
                           active
                           label={`Bucket: ${label}`}
                           payload={[
-                            { name: "Live Serving", value: `${payload.find(p => p.dataKey === "serving")?.value}%`, color: PALETTE.brand },
-                            { name: "Reference Baseline", value: `${payload.find(p => p.dataKey === "reference")?.value}%`, color: PALETTE.slate },
+                            { name: "Live Serving", value: `${payload.find(p => p.dataKey === "serving")?.value}%`, color: "#3BB48C" },
+                            { name: "Reference Baseline", value: `${payload.find(p => p.dataKey === "reference")?.value}%`, color: "#64748B" },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="reference"
-                    stroke={PALETTE.slate}
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    fill={PALETTE.slate}
-                    fillOpacity={0.1}
+                    name="Reference"
+                    stroke="#64748B"
+                    strokeWidth={1.5}
+                    strokeDasharray="3 3"
+                    dot={{ r: 2.5, fill: "#64748B" }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="serving"
-                    stroke={PALETTE.brand}
-                    strokeWidth={2.5}
-                    fill="url(#distServingGrad)"
-                    fillOpacity={1}
+                    name="Live Serving"
+                    stroke="#3BB48C"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "#3BB48C" }}
                   />
-                </AreaChart>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Test: {activeFeature.stat_test}</span>
+            <span className="text-[#329F7B] font-semibold">p-value: {activeFeature.p_val} (Passed)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Latency Percentiles & Per-Feature Drift ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Latency Percentiles */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Inference Latency Percentiles
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  p50 / p95 / p99 over the last 24h against 10 ms SLA
+                </p>
+              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                p99: 8.9 ms
+              </span>
+            </div>
+            <div className="h-52 w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={LATENCY_PCT} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                  <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `${v} ms`} />} />
+                  <ReferenceLine
+                    y={10}
+                    stroke="#E11D48"
+                    strokeDasharray="3 3"
+                    label={{ value: "SLA 10ms", fill: "#E11D48", fontSize: 10, position: "insideTopRight" }}
+                  />
+                  <Line type="monotone" dataKey="p50" name="p50" stroke="#3BB48C" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="p95" name="p95" stroke="#64748B" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="p99" name="p99" stroke="#334155" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Fleet Target: &lt; 10 ms</span>
+            <span className="text-[#329F7B] font-semibold">100% SLA Compliant</span>
+          </div>
+        </div>
+
+        {/* Feature Drift Radar */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Feature Drift Radar
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  PSI per feature — current vs. last week
+                </p>
+              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Max PSI: 0.14
+              </span>
+            </div>
+            <div className="h-52 w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={DRIFT_RADAR} outerRadius="70%">
+                  <PolarGrid stroke="#E2E8F0" />
+                  <PolarAngleAxis dataKey="feature" tick={{ fontSize: 10, fill: "#64748B", fontWeight: 500 }} />
+                  <PolarRadiusAxis domain={[0, 0.3]} tick={false} axisLine={false} />
+                  <Radar name="Last week" dataKey="prev" stroke="#64748B" fill="#64748B" fillOpacity={0.08} strokeWidth={1.5} />
+                  <Radar name="Current" dataKey="curr" stroke="#3BB48C" fill="#3BB48C" fillOpacity={0.2} strokeWidth={2} />
+                  <RechartsTooltip />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Reference: 7-day rolling window</span>
+            <span className="text-slate-600 font-medium">5 active features</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Model Quality Over Time & Data Quality Gauges ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Model Quality Over Time
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Rolling F1 with 95% confidence band — retrain trigger at 0.90
+                </p>
+              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Current F1: 0.926
+              </span>
+            </div>
+            <div className="h-52 w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={QUALITY_BAND} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis dataKey="d" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0.88, 0.98]} ticks={[0.88, 0.90, 0.92, 0.94, 0.96, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
+                  <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : String(v))} />} />
+                  <ReferenceLine y={0.90} stroke="#D97706" strokeDasharray="3 3" label={{ value: "Retrain trigger (0.90)", fill: "#D97706", fontSize: 10, position: "insideBottomRight" }} />
+                  <Line type="monotone" dataKey="f1" name="F1 score" stroke="#3BB48C" strokeWidth={2} dot={{ r: 3, fill: "#3BB48C" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Metric: F1 Weighted</span>
+            <span className="text-[#329F7B] font-semibold">Stable Performance</span>
+          </div>
+        </div>
+
+        {/* Data Quality Gauges (Original RadialBarChart) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
+                  Data Quality Gauges
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Live serving data health (%)
+                </p>
+              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Avg: 95.2%
+              </span>
+            </div>
+
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart data={DATA_QUALITY} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
+                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                  <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
+                  <RechartsTooltip />
+                </RadialBarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Test statistics strip */}
-            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-mono block">Statistical Test</span>
-                <span className="font-semibold text-slate-800">{activeFeature.stat_test}</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-mono block">p-value (Threshold &gt; 0.05)</span>
-                <span className="font-semibold text-emerald-700 font-mono">{activeFeature.p_val} (Passed)</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Reference: {activeFeature.ref_mean}</span>
-            <span className="text-slate-800 font-bold">Serving: {activeFeature.curr_mean}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 2: Latency Percentiles & Per-Feature Drift Radar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-[#3BB48C]" />
-                Inference Latency Percentiles
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5 mb-4">p50 / p95 / p99 over the last 24h against the 10 ms SLA</p>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">p99 8.9 ms</span>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={LATENCY_PCT} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid {...GRID_PROPS} />
-                <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                <RechartsTooltip content={<BiTooltip />} />
-                <ReferenceLine y={10} stroke={PALETTE.rose} strokeDasharray="4 4" label={{ value: "SLA 10ms", fill: PALETTE.rose, fontSize: 10, position: "insideTopRight" }} />
-                <Line type="monotone" dataKey="p50" name="p50" stroke={PALETTE.brand} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="p95" name="p95" stroke={PALETTE.blue} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="p99" name="p99" stroke={PALETTE.violet} strokeWidth={2.5} strokeDasharray="5 4" dot={false} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-[#3BB48C]" />
-            Feature Drift Radar
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">PSI per feature — current vs. last week</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={DRIFT_RADAR} outerRadius="70%">
-                <PolarGrid stroke="#E2E8F0" />
-                <PolarAngleAxis dataKey="feature" tick={{ fontSize: 10, fill: "#64748B", fontWeight: 600 }} />
-                <PolarRadiusAxis domain={[0, 0.3]} tick={false} axisLine={false} />
-                <Radar name="Last week" dataKey="prev" stroke={PALETTE.slate} fill={PALETTE.slate} fillOpacity={0.1} strokeWidth={2} />
-                <Radar name="Current" dataKey="curr" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.3} strokeWidth={2.5} />
-                <RechartsTooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 3: Model Quality Decay & Data Quality Gauges ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-[#3BB48C]" />
-            Model Quality Over Time
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Rolling F1 with 95% confidence band — retrain trigger at 0.90</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={QUALITY_BAND} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid {...GRID_PROPS} />
-                <XAxis dataKey="d" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : String(v))} />} />
-                <ReferenceLine y={0.9} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Retrain trigger", fill: PALETTE.amber, fontSize: 10, position: "insideBottomRight" }} />
-                <Area type="monotone" dataKey="band" name="95% CI" stroke="none" fill={PALETTE.brand} fillOpacity={0.15} />
-                <Area type="monotone" dataKey="f1" name="F1 score" stroke={PALETTE.brand} strokeWidth={2.5} fill="none" dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-            Data Quality Gauges
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">Live serving data health (%)</p>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart data={DATA_QUALITY} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
-                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
-                <RechartsTooltip />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
-            {DATA_QUALITY.map((g) => (
-              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
-                  {g.name}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+              {DATA_QUALITY.map((g) => (
+                <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
+                    {g.name}
+                  </span>
+                  <strong className="text-slate-900 font-mono">{g.value}%</strong>
                 </span>
-                <strong className="text-slate-900">{g.value}%</strong>
-              </span>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Validator: Great Expectations</span>
+            <span className="text-[#329F7B] font-semibold">4/4 Rules Passed</span>
           </div>
         </div>
       </div>
 
-      {/* ── Row 4: Live Incident Feed (Vertical Modern Timeline) ── */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-6">
+      {/* ── Row 4: Observability Audit Feed (Databricks / Snowflake Audit Log style) ── */}
+      <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#3BB48C]" />
-              Live Observability Feed
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Observability Audit Feed
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Chronological audit of drift checks, pipeline alerts, and serving adjustments
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Chronological log of automated checks, drift alerts, and deployment adjustments
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#3BB48C] animate-pulse" />
+              Live Stream
             </span>
-            <span>Live Stream (Prometheus + Evidently)</span>
+            <span className="text-slate-300">|</span>
+            <span>Prometheus + Evidently</span>
           </div>
         </div>
 
-        {/* Vertical Timeline */}
-        <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-          {INCIDENTS.map((i) => {
-            const getIconAndBadge = () => {
-              if (i.level.toLowerCase() === "info") {
-                return {
-                  icon: <CheckCircle2 className="w-4 h-4 text-white" />,
-                  bg: "bg-[#10b981]",
-                  ring: "ring-[#10b981]/20",
-                  tagBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
-                };
-              }
-              if (i.level.toLowerCase() === "warning") {
-                return {
-                  icon: <AlertTriangle className="w-4 h-4 text-white" />,
-                  bg: "bg-[#f59e0b]",
-                  ring: "ring-[#f59e0b]/20",
-                  tagBg: "bg-amber-50 text-amber-800 border-amber-200",
-                };
-              }
-              if (i.level.toLowerCase() === "action") {
-                return {
-                  icon: <Zap className="w-4 h-4 text-white" />,
-                  bg: "bg-[#3b82f6]",
-                  ring: "ring-[#3b82f6]/20",
-                  tagBg: "bg-blue-50 text-blue-800 border-blue-200",
-                };
-              }
-              return {
-                icon: <Check className="w-4 h-4 text-white" />,
-                bg: "bg-[#8b5cf6]",
-                ring: "ring-[#8b5cf6]/20",
-                tagBg: "bg-purple-50 text-purple-800 border-purple-200",
-              };
-            };
-
-            const style = getIconAndBadge();
-
-            return (
-              <div key={i.id} className="relative group">
-                {/* Timeline node icon */}
-                <div
-                  className={`absolute -left-6 sm:-left-8 top-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full ${style.bg} ring-4 ${style.ring} flex items-center justify-center shadow-xs transition-transform group-hover:scale-110`}
-                >
-                  {style.icon}
-                </div>
-
-                {/* Event content */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 pl-3 sm:pl-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${style.tagBg}`}>
-                        {i.level}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-2.5 w-24">Severity</th>
+                <th className="px-4 py-2.5 w-56">Event / Summary</th>
+                <th className="px-4 py-2.5">Audit Details &amp; Telemetry</th>
+                <th className="px-4 py-2.5 text-right w-28">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-mono">
+              {INCIDENTS.map((i) => {
+                const getLevelBadge = () => {
+                  if (i.level === "Warning") {
+                    return (
+                      <span className="inline-flex items-center gap-1.5 text-amber-700 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        WARN
                       </span>
-                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-[#3BB48C] transition-colors">
-                        {i.title}
-                      </h4>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {i.detail}
-                    </p>
-                  </div>
+                    );
+                  }
+                  if (i.level === "Action") {
+                    return (
+                      <span className="inline-flex items-center gap-1.5 text-blue-700 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        ACTION
+                      </span>
+                    );
+                  }
+                  if (i.level === "Resolved") {
+                    return (
+                      <span className="inline-flex items-center gap-1.5 text-slate-600 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                        RESOLVED
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="inline-flex items-center gap-1.5 text-[#329F7B] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C] shrink-0" />
+                      INFO
+                    </span>
+                  );
+                };
 
-                  <div className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-slate-400 pl-0 sm:pl-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{i.when}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                return (
+                  <tr key={i.id} className="h-10 hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-2 text-[11px]">
+                      {getLevelBadge()}
+                    </td>
+                    <td className="px-4 py-2 text-xs font-sans font-medium text-slate-900">
+                      {i.title}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-slate-600 font-sans">
+                      <span className="font-mono text-slate-500 text-[11px] bg-slate-100 px-1.5 py-0.5 rounded mr-2">
+                        audit
+                      </span>
+                      {i.detail}
+                    </td>
+                    <td className="px-4 py-2 text-right text-[11px] text-slate-400">
+                      {i.when}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* ── Feature Distribution & Drift Scores (Evidently AI) Table ── */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+      <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
               Feature Distribution &amp; Drift Scores (Evidently AI)
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               Automated 2-sample hypothesis testing for each model input column
             </p>
           </div>
-          <span className="text-xs text-slate-400 font-mono">Last eval: {lastCheck}</span>
+          <span className="text-xs text-slate-500 font-mono">Last eval: {lastCheck}</span>
         </div>
 
-        <div className="overflow-x-auto -mx-6 sm:-mx-7 -mb-6 sm:-mb-7">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 border-y border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3.5">Feature Name</th>
-                <th className="px-6 py-3.5">Stat Test</th>
-                <th className="px-6 py-3.5">p-value</th>
-                <th className="px-6 py-3.5">Reference Mean</th>
-                <th className="px-6 py-3.5">Current Mean</th>
-                <th className="px-6 py-3.5 min-w-[140px]">Stability</th>
-                <th className="px-6 py-3.5 text-right">Drift Status</th>
+                <th className="px-4 py-2.5">Feature</th>
+                <th className="px-4 py-2.5">Statistical Test</th>
+                <th className="px-4 py-2.5">p-value</th>
+                <th className="px-4 py-2.5">Baseline Ref Mean</th>
+                <th className="px-4 py-2.5">Current Serving Mean</th>
+                <th className="px-4 py-2.5 min-w-[120px]">Stability Overlap</th>
+                <th className="px-4 py-2.5 text-right">Drift Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -828,74 +871,72 @@ export const MonitoringPage: React.FC = () => {
                   <tr
                     key={idx}
                     onClick={() => setSelectedFeatureIndex(idx)}
-                    className={`transition-colors cursor-pointer ${
+                    className={`h-11 transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-[#ecfdf5]/60 hover:bg-[#ecfdf5]"
-                        : "hover:bg-slate-50"
+                        ? "bg-slate-50 font-medium"
+                        : "hover:bg-slate-50/70"
                     }`}
                   >
                     {/* Feature Name */}
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold text-sm ${isSelected ? "text-[#065f46]" : "text-slate-900"}`}>
+                        <span className="font-mono text-xs text-slate-900 font-medium">
                           {item.feature}
                         </span>
                         {isSelected && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#10b981] text-white">
-                            Active
+                          <span className="text-[10px] font-mono text-[#329F7B] bg-slate-100 px-1.5 py-0.5 rounded">
+                            active
                           </span>
                         )}
                       </div>
                     </td>
 
                     {/* Stat Test */}
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                        {item.stat_test}
-                      </span>
+                    <td className="px-4 py-2 font-mono text-[11px] text-slate-600">
+                      {item.stat_test}
                     </td>
 
                     {/* p-value */}
-                    <td className="px-6 py-4 font-mono text-xs">
-                      <span className="font-bold text-slate-900">{item.p_val}</span>
+                    <td className="px-4 py-2 font-mono text-xs">
+                      <span className="text-slate-900 font-semibold">{item.p_val}</span>
                       <span className="text-slate-400 text-[11px] ml-1">(&gt; 0.05)</span>
                     </td>
 
                     {/* Reference Mean */}
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
+                    <td className="px-4 py-2 font-mono text-xs text-slate-600">
                       {item.ref_mean}
                     </td>
 
                     {/* Current Mean */}
-                    <td className="px-6 py-4 font-mono text-xs text-slate-900 font-semibold">
+                    <td className="px-4 py-2 font-mono text-xs text-slate-900">
                       {item.curr_mean}
                     </td>
 
                     {/* Stability Bar */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[70px]">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
                           <div
-                            className="h-full bg-[#10b981] rounded-full transition-all duration-500"
+                            className="h-full bg-[#3BB48C] rounded-full"
                             style={{ width: `${item.score}%` }}
                           />
                         </div>
-                        <span className="font-mono text-xs font-bold text-slate-700 shrink-0">
+                        <span className="font-mono text-[11px] text-slate-600 shrink-0">
                           {item.score}%
                         </span>
                       </div>
                     </td>
 
                     {/* Drift Status */}
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <td className="px-4 py-2 text-right whitespace-nowrap">
                       {item.drift ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#ef4444] text-white shadow-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-rose-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                           Drift Detected
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#10b981] text-white shadow-xs">
-                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-[#329F7B]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C]" />
                           Stable
                         </span>
                       )}
@@ -910,3 +951,4 @@ export const MonitoringPage: React.FC = () => {
     </div>
   );
 };
+

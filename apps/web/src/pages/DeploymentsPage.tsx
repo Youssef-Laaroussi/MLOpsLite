@@ -518,54 +518,39 @@ export const DeploymentsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Network Service Mesh Topology & Stephen Few Bullet Charts (NO BARS, NO DONUTS!) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* VISUAL 1: Ingress Routing & Traffic Throughput (7 cols) - Enterprise Standard AreaChart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      {/* ── Visual Analytics Row: Clean Snowflake Enterprise Analytics ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* VISUAL 1: Ingress Throughput (7 cols) - Clean Line Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Workflow className="w-4 h-4 text-[#3BB48C]" />
-                  Ingress Traffic &amp; Route Throughput
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Ingress Traffic Throughput
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Real-time request volume distribution through NGINX gateway (Port 443 / SSL)
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Production requests vs Canary (req/s) over last 6 hours
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                  Peak: {totalRps} req/s
-                </span>
-              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Peak: {totalRps} req/s
+              </span>
             </div>
 
-            {/* Standard Recharts Multi-Area Traffic Timeline */}
-            <div className="h-[200px] w-full mt-2">
+            <div className="h-52 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
+                <LineChart
                   data={[
-                    { time: "10:00", prod: 2150, canary: 180, total: 2330 },
-                    { time: "11:00", prod: 2380, canary: 210, total: 2590 },
-                    { time: "12:00", prod: 2620, canary: 220, total: 2840 },
-                    { time: "13:00", prod: 2510, canary: 205, total: 2715 },
-                    { time: "14:00", prod: 2430, canary: 195, total: 2625 },
-                    { time: "15:00", prod: 2580, canary: 215, total: 2795 },
-                    { time: "16:00", prod: 2640, canary: 200, total: 2840 },
+                    { time: "10:00", prod: 2150, canary: 180 },
+                    { time: "11:00", prod: 2380, canary: 210 },
+                    { time: "12:00", prod: 2620, canary: 220 },
+                    { time: "13:00", prod: 2510, canary: 205 },
+                    { time: "14:00", prod: 2430, canary: 195 },
+                    { time: "15:00", prod: 2580, canary: 215 },
+                    { time: "16:00", prod: 2640, canary: 200 },
                   ]}
                   margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
                 >
-                  <defs>
-                    <linearGradient id="ingressProdGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
-                    </linearGradient>
-                    <linearGradient id="ingressCanaryGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.blue} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={PALETTE.blue} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                   <YAxis
@@ -582,134 +567,87 @@ export const DeploymentsPage: React.FC = () => {
                           active
                           label={`Ingress @ ${label}`}
                           payload={[
-                            { name: "Production Endpoints", value: `${payload.find(p => p.dataKey === "prod")?.value} req/s`, color: PALETTE.brand },
-                            { name: "Canary / Staging", value: `${payload.find(p => p.dataKey === "canary")?.value} req/s`, color: PALETTE.blue },
-                            { name: "Total Ingress Throughput", value: `${payload.find(p => p.dataKey === "total")?.value} req/s`, color: PALETTE.slate },
+                            { name: "Production Endpoints", value: `${payload.find(p => p.dataKey === "prod")?.value} req/s`, color: "#3BB48C" },
+                            { name: "Canary Endpoints", value: `${payload.find(p => p.dataKey === "canary")?.value} req/s`, color: "#64748B" },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="prod"
-                    stroke={PALETTE.brand}
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#ingressProdGrad)"
+                    name="Production"
+                    stroke="#3BB48C"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "#3BB48C" }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="canary"
-                    stroke={PALETTE.blue}
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#ingressCanaryGrad)"
+                    name="Canary"
+                    stroke="#64748B"
+                    strokeWidth={1.5}
+                    strokeDasharray="3 3"
+                    dot={{ r: 2.5, fill: "#64748B" }}
                   />
-                </AreaChart>
+                </LineChart>
               </ResponsiveContainer>
             </div>
-
-            {/* Ingress Route Selector Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-3 pb-1 border-t border-slate-100">
-              {[
-                { name: "fraud-detector:v3", id: "dep-prod-01", rps: "1,240 rps", role: "PROD" },
-                { name: "customer-churn:v2", id: "dep-prod-02", rps: "650 rps", role: "PROD" },
-                { name: "customer-churn:v3", id: "dep-canary-02", rps: "75 rps", role: "CANARY" },
-                { name: "demand-forecaster:v2", id: "dep-prod-03", rps: "420 rps", role: "PROD" },
-                { name: "credit-risk:v1", id: "dep-prod-04", rps: "310 rps", role: "PROD" },
-                { name: "sentiment-bert:v1", id: "dep-stg-05", rps: "145 rps", role: "STG" },
-              ].map((pod) => {
-                const isSelected = selectedNodeId === pod.id;
-                return (
-                  <button
-                    key={pod.id}
-                    onClick={() => setSelectedNodeId(pod.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${isSelected
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${pod.role === "CANARY" ? "bg-blue-400" : pod.role === "STG" ? "bg-amber-400" : "bg-emerald-400"}`} />
-                    <span>{pod.name}</span>
-                    <span className="opacity-70 text-[10px]">{pod.rps}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selected Node Telemetry Strip */}
-            {activeNode && (
-              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-800">{activeNode.model_name}</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
-                    v{activeNode.model_version} • Port {activeNode.port}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeNode.role === "CANARY"
-                      ? "bg-blue-100 text-blue-800"
-                      : activeNode.role === "STAGING"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}>
-                    {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 font-mono text-[11px]">
-                  <span className="text-emerald-700 font-bold">RPS: {activeNode.rps} req/s</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-blue-700 font-bold">P95: {activeNode.latency_p95}ms</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-slate-600 font-medium">RAM: {activeNode.memory_mb} MB</span>
-                </div>
-              </div>
-            )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Cluster Mesh: 6 Pods Connected</span>
-            <span className="text-emerald-700 font-bold">Zero Dropped Packets</span>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-[2px] bg-[#3BB48C]" />
+                Production
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-[2px] bg-[#64748B] border-t border-dashed" />
+                Canary
+              </span>
+            </div>
+            <span>Zero Dropped Packets</span>
           </div>
         </div>
 
-        {/* VISUAL 2: Fleet SLA Benchmarking (Ranked Horizontal Bar Chart) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        {/* VISUAL 2: Fleet SLA Benchmarking (5 cols) - Clean Horizontal Bar Chart */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Gauge className="w-4 h-4 text-[#3BB48C]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Fleet SLA Benchmarking
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  P95 Inference Latency (ms) ranked by endpoint
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  P95 Inference Latency (ms) by container
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                SLA: &lt; 15ms
+              <span className="font-mono text-xs text-slate-500">
+                SLA: &lt;15ms
               </span>
             </div>
 
-            <div className="h-[250px] w-full">
+            <div className="h-52 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={[
-                    { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
-                    { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
-                    { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
-                    { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
-                    { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
-                    { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
-                  ].sort((a, b) => b.lat - a.lat)}
+                    { name: "fraud-v3", lat: 2.4 },
+                    { name: "credit-v1", lat: 3.1 },
+                    { name: "churn-v3", lat: 3.2 },
+                    { name: "churn-v2", lat: 3.8 },
+                    { name: "demand-v2", lat: 5.2 },
+                    { name: "sentiment-v1", lat: 12.6 },
+                  ].sort((a, b) => a.lat - b.lat)}
                   layout="vertical"
                   margin={{ top: 0, right: 15, left: 10, bottom: 0 }}
-                  barSize={14}
+                  barSize={12}
                 >
-                  <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
                   <XAxis type="number" domain={[0, 16]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                  <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                  <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} width={85} />
                   <RechartsTooltip
-                    cursor={{ fill: "#F1F5F9" }}
+                    cursor={{ fill: "#F8FAFC" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const p = payload[0].payload;
@@ -718,34 +656,22 @@ export const DeploymentsPage: React.FC = () => {
                           active
                           label={p.name}
                           payload={[
-                            { name: "P95 Latency", value: `${p.lat} ms`, color: p.color },
-                            { name: "SLA Threshold", value: "15.0 ms", color: PALETTE.rose },
+                            { name: "P95 Latency", value: `${p.lat} ms`, color: "#3BB48C" },
                           ]}
                         />
                       );
                     }}
                   />
-                  <ReferenceLine x={15} stroke={PALETTE.rose} strokeDasharray="4 4" opacity={0.6} label={{ value: "SLA limit", position: "insideTopLeft", fill: PALETTE.rose, fontSize: 10 }} />
-                  <Bar dataKey="lat" radius={[0, 4, 4, 0]}>
-                    {[
-                      { name: "fraud-v3", lat: 2.4, color: PALETTE.brand },
-                      { name: "credit-v1", lat: 3.1, color: PALETTE.brand },
-                      { name: "churn-v3", lat: 3.2, color: PALETTE.blue },
-                      { name: "churn-v2", lat: 3.8, color: PALETTE.brand },
-                      { name: "demand-v2", lat: 5.2, color: PALETTE.brand },
-                      { name: "sentiment-v1", lat: 12.6, color: PALETTE.amber },
-                    ].sort((a, b) => b.lat - a.lat).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
+                  <ReferenceLine x={15} stroke="#E11D48" strokeDasharray="3 3" label={{ value: "SLA (15ms)", position: "insideTopRight", fill: "#E11D48", fontSize: 10 }} />
+                  <Bar dataKey="lat" fill="#3BB48C" radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>SLA Standard: Tier-1 Production Contract</span>
-            <span className="text-slate-800 font-bold">100% Endpoints Compliant</span>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Tier-1 Production Contract</span>
+            <span className="text-[#329F7B] font-semibold">100% Compliant</span>
           </div>
         </div>
       </div>
@@ -1071,10 +997,10 @@ export const DeploymentsPage: React.FC = () => {
                         <button
                           onClick={() => handleTestPing(d)}
                           disabled={pingingId === d.id || d.status !== "RUNNING"}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-[11px] font-medium transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs bg-slate-800 hover:bg-slate-900 text-white border border-slate-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Send synthetic inference ping"
                         >
-                          <Zap className={`w-3 h-3 text-amber-500 fill-amber-500 ${pingingId === d.id ? "animate-spin" : ""}`} />
+                          <Activity className={`w-3 h-3 text-white ${pingingId === d.id ? "animate-spin text-emerald-400" : ""}`} />
                           <span>{pingingId === d.id ? "..." : "Ping"}</span>
                         </button>
 

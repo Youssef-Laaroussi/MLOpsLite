@@ -309,16 +309,6 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
             {/* ── Left Column: Natural, Frameless & Seamless Layout (No Box Border) ── */}
             <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left relative z-20">
-              {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/90 backdrop-blur-xs border border-emerald-200/80 text-emerald-800 text-xs font-semibold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>v1.0 Production-Ready</span>
-                <span className="text-slate-300">•</span>
-                <a href="#features" className="text-emerald-700 hover:text-emerald-900 underline font-bold transition">
-                  Learn more
-                </a>
-              </div>
-
               {/* Bold High-Contrast Heading (Claude Editorial Typography) */}
               <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.95rem] font-bold text-slate-900 leading-[1.18] tracking-tight">
                 Modern MLOps <br />

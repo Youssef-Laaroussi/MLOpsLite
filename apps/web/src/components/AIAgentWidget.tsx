@@ -278,6 +278,16 @@ export const AIAgentWidget: React.FC = () => {
     }, 600);
   };
 
+  // Hide AI Copilot on authentication pages (Sign in & Sign up)
+  if (
+    location.pathname === "/signin" ||
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/register"
+  ) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {/* ── Chat Window ── */}

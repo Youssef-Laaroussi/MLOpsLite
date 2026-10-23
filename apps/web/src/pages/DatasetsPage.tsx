@@ -26,6 +26,7 @@ import {
   Box,
   Hash,
   Plus,
+  Upload,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { fetchDatasets, createDataset } from "../api/client";
@@ -75,11 +76,37 @@ export const DatasetsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newDatasetName, setNewDatasetName] = useState("");
-  const [newDatasetFormat, setNewDatasetFormat] = useState("PARQUET");
+  const [newDatasetFormat, setNewDatasetFormat] = useState("CSV");
   const [newDatasetDescription, setNewDatasetDescription] = useState("");
-  const [newDatasetRows, setNewDatasetRows] = useState("50000");
+  const [newDatasetRows, setNewDatasetRows] = useState("10000");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // File selection helper (Parcourir...)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+
+    // Auto-fill dataset name from filename if empty
+    if (!newDatasetName.trim()) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/\s+/g, "_").toLowerCase();
+      setNewDatasetName(cleanName);
+    }
+
+    // Auto-detect format
+    const ext = file.name.split(".").pop()?.toUpperCase();
+    if (ext === "CSV") setNewDatasetFormat("CSV");
+    else if (ext === "PARQUET") setNewDatasetFormat("PARQUET");
+    else if (ext === "JSON") setNewDatasetFormat("JSON");
+
+    // Estimate row count roughly if CSV
+    if (file.size > 0) {
+      const approxRows = Math.max(1, Math.round(file.size / 120));
+      setNewDatasetRows(approxRows.toString());
+    }
+  };
 
   const handleCreateDataset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,32 +118,38 @@ export const DatasetsPage: React.FC = () => {
         format: newDatasetFormat.toUpperCase(),
         description: newDatasetDescription.trim() || undefined,
       });
-      // Ensure local state is updated immediately with enriched fallback metrics
+      // Ensure local state is updated immediately with enriched metrics from real file if provided
+      const actualSize = selectedFile ? selectedFile.size : 4200000;
+      const actualRows = parseInt(newDatasetRows, 10) || 10000;
       const enriched: Dataset = {
         ...created,
         format: newDatasetFormat.toUpperCase(),
-        row_count: parseInt(newDatasetRows, 10) || 50000,
-        size_bytes: 4200000,
+        row_count: actualRows,
+        size_bytes: actualSize,
         quality_score: 99.4,
         created_at: new Date().toISOString(),
         hash_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        s3_key: `s3://mlopslite-datasets/${newDatasetName.toLowerCase().replace(/\s+/g, "_")}.${newDatasetFormat.toLowerCase()}`,
       };
       setDatasets((prev) => [enriched, ...prev]);
       setShowCreateModal(false);
       setNewDatasetName("");
       setNewDatasetDescription("");
-      setExportSuccess(`Dataset "${enriched.name}" created successfully!`);
+      setSelectedFile(null);
+      setExportSuccess(`Dataset "${enriched.name}" (${formatBytes(actualSize)}) created successfully!`);
       setTimeout(() => setExportSuccess(null), 3000);
     } catch (err: any) {
       // Local fallback for standalone demo / offline mode
+      const actualSize = selectedFile ? selectedFile.size : 4200000;
+      const actualRows = parseInt(newDatasetRows, 10) || 10000;
       const dummyId = `ds-${Date.now()}`;
       const fallback: Dataset = {
         id: dummyId,
         name: newDatasetName.trim(),
         format: newDatasetFormat.toUpperCase(),
         description: newDatasetDescription.trim() || "Managed ML tabular dataset.",
-        row_count: parseInt(newDatasetRows, 10) || 50000,
-        size_bytes: 4200000,
+        row_count: actualRows,
+        size_bytes: actualSize,
         quality_score: 99.4,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -127,7 +160,8 @@ export const DatasetsPage: React.FC = () => {
       setShowCreateModal(false);
       setNewDatasetName("");
       setNewDatasetDescription("");
-      setExportSuccess(`Dataset "${fallback.name}" registered successfully!`);
+      setSelectedFile(null);
+      setExportSuccess(`Dataset "${fallback.name}" (${formatBytes(actualSize)}) registered successfully!`);
       setTimeout(() => setExportSuccess(null), 3000);
     } finally {
       setCreating(false);
@@ -292,11 +326,10 @@ export const DatasetsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
                         ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -542,11 +575,10 @@ export const DatasetsPage: React.FC = () => {
             <button
               key={fmt}
               onClick={() => setFormatFilter(fmt)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap border ${
-                formatFilter === fmt
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap border ${formatFilter === fmt
                   ? "bg-[#3BB48C] text-white border-[#329F7B]"
                   : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
-              }`}
+                }`}
             >
               {fmt === "ALL" ? "All formats" : fmt}
             </button>
@@ -801,11 +833,10 @@ export const DatasetsPage: React.FC = () => {
               <div className="flex items-center gap-5">
                 <button
                   onClick={() => setActiveInspectorTab("preview")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
-                    activeInspectorTab === "preview"
+                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "preview"
                       ? "border-[#3BB48C] text-[#3BB48C]"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
                   <TableIcon className="w-3.5 h-3.5" />
                   Data Preview
@@ -813,11 +844,10 @@ export const DatasetsPage: React.FC = () => {
 
                 <button
                   onClick={() => setActiveInspectorTab("profiling")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
-                    activeInspectorTab === "profiling"
+                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "profiling"
                       ? "border-[#3BB48C] text-[#3BB48C]"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
                   <BarChart2 className="w-3.5 h-3.5" />
                   Column Profiling
@@ -825,11 +855,10 @@ export const DatasetsPage: React.FC = () => {
 
                 <button
                   onClick={() => setActiveInspectorTab("quality")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
-                    activeInspectorTab === "quality"
+                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "quality"
                       ? "border-[#3BB48C] text-[#3BB48C]"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Health &amp; Quality
@@ -879,15 +908,11 @@ export const DatasetsPage: React.FC = () => {
                               {Object.values(row).map((val: any, cIdx) => (
                                 <td key={cIdx} className="px-3 py-1.5 whitespace-nowrap">
                                   {typeof val === "boolean" ? (
-                                    <span
-                                      className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
-                                        val ? "bg-[#3BB48C] text-white" : "bg-slate-100 text-slate-600"
-                                      }`}
-                                    >
-                                      {val ? "TRUE" : "FALSE"}
+                                    <span className="font-mono text-[11px] text-slate-700">
+                                      {val ? "true" : "false"}
                                     </span>
                                   ) : val === null || val === undefined ? (
-                                    <span className="text-amber-600 italic">null</span>
+                                    <span className="text-slate-400 italic">null</span>
                                   ) : (
                                     String(val)
                                   )}
@@ -1132,6 +1157,43 @@ export const DatasetsPage: React.FC = () => {
 
             {/* Modal Form */}
             <form onSubmit={handleCreateDataset} className="space-y-3.5 mt-4">
+              {/* File Upload / Parcourir section */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Source File (CSV, Parquet, JSON)
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded text-xs font-medium text-slate-700 cursor-pointer transition shadow-2xs hover:border-[#3BB48C]">
+                    <Upload className="w-3.5 h-3.5 text-[#3BB48C]" />
+                    <span>Parcourir...</span>
+                    <input
+                      type="file"
+                      accept=".csv,.parquet,.json,.arrow"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-[11px] font-mono text-slate-500 truncate flex-1">
+                    {selectedFile ? (
+                      <span className="text-slate-800 font-medium">
+                        {selectedFile.name} ({formatBytes(selectedFile.size)})
+                      </span>
+                    ) : (
+                      "Aucun fichier sélectionné (optionnel)"
+                    )}
+                  </span>
+                  {selectedFile && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFile(null)}
+                      className="text-[11px] text-slate-400 hover:text-rose-600 transition"
+                    >
+                      Effacer
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Dataset Name <span className="text-rose-500">*</span>

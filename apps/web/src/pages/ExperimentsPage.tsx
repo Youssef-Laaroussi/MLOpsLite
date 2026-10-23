@@ -397,7 +397,7 @@ export const ExperimentsPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
@@ -405,7 +405,7 @@ export const ExperimentsPage: React.FC = () => {
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -413,11 +413,10 @@ export const ExperimentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
+                        ? "bg-slate-100 text-slate-900 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -428,15 +427,15 @@ export const ExperimentsPage: React.FC = () => {
 
           <button
             onClick={loadData}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
+            className="p-1.5 bg-white border border-slate-200 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh experiments"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
 
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold shadow-2xs transition border border-[#329F7B]"
           >
             <Plus className="w-3.5 h-3.5" />
             New Experiment
@@ -480,117 +479,114 @@ export const ExperimentsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Run Leaderboard & Multi-Dimensional Model Profile ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* ── Visual Analytics Row: Run Leaderboard & Model Profile Comparison (Snowflake Clean Style) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* CHART 1: Run Leaderboard — ROC-AUC (bars) vs Log Loss (line) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3 mb-5">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#0284C7]" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                 Run Leaderboard
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                ROC-AUC (bars) vs. log loss (line) with promotion threshold
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                ROC-AUC (bars) vs. log loss (line) with candidate threshold
               </p>
             </div>
-            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-[#0284C7]/10 text-[#0284C7] border border-[#0284C7]/30 shadow-2xs">
-              <Trophy className="w-3.5 h-3.5 text-[#0284C7]" />
-              <span className="text-slate-500 font-normal">Champion:</span>
-              <span className="font-semibold text-[#0284C7]">{LEADERBOARD[0].name}</span>
-            </span>
+            <div className="text-[11px] font-mono text-slate-600">
+              Leader: <span className="font-semibold text-slate-900">{LEADERBOARD[0].name}</span>
+            </div>
           </div>
 
-          <div className="h-72 w-full">
+          <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={LEADERBOARD} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+              <ComposedChart data={LEADERBOARD} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} />
                 <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="auc" domain={[0.88, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
                 <YAxis yAxisId="loss" orientation="right" domain={[0, 0.3]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : v)} />} cursor={{ fill: "#F1F5F9" }} />
-                <ReferenceLine yAxisId="auc" y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Promotion ≥ 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopRight" }} />
-                <Bar yAxisId="auc" dataKey="auc" name="ROC-AUC" radius={[8, 8, 0, 0]} barSize={46}>
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : v)} />} cursor={{ fill: "#F8FAFC" }} />
+                <ReferenceLine yAxisId="auc" y={0.95} stroke="#3BB48C" strokeDasharray="3 3" label={{ value: "Threshold ≥ 0.95", fill: "#3BB48C", fontSize: 10, position: "insideTopRight" }} />
+                <Bar yAxisId="auc" dataKey="auc" name="ROC-AUC" radius={[3, 3, 0, 0]} barSize={42}>
                   {LEADERBOARD.map((r, i) => (
-                    <Cell key={r.name} fill={r.color} fillOpacity={i === 0 ? 1 : 0.55} />
+                    <Cell key={r.name} fill={i === 0 ? "#3BB48C" : "#94A3B8"} />
                   ))}
                 </Bar>
-                <Line yAxisId="loss" type="monotone" dataKey="loss" name="Log Loss" stroke={PALETTE.slate} strokeWidth={2} dot={{ r: 4, fill: "#fff", strokeWidth: 2 }} />
+                <Line yAxisId="loss" type="monotone" dataKey="loss" name="Log Loss" stroke="#334155" strokeWidth={1.8} dot={{ r: 3, fill: "#fff", strokeWidth: 1.5 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* CHART 2: Multi-dimensional model profile (radar) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
           <div className="mb-3">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <Sliders className="w-4 h-4 text-[#3BB48C]" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
               Model Profile Comparison
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Normalized score (0–100) across quality, speed &amp; robustness
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Normalized score (0–100) across quality, latency &amp; speed
             </p>
           </div>
 
-          <div className="h-72 w-full">
+          <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={RADAR_DATA} outerRadius="72%">
+              <RadarChart data={RADAR_DATA} outerRadius="70%">
                 <PolarGrid stroke="#E2E8F0" />
-                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: "#64748B", fontWeight: 600 }} />
+                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 10, fill: "#64748B", fontWeight: 500 }} />
                 <PolarRadiusAxis domain={[50, 100]} tick={false} axisLine={false} />
-                {LEADERBOARD.map((r) => (
-                  <Radar key={r.name} name={r.name} dataKey={r.name} stroke={r.color} fill={r.color} fillOpacity={r === LEADERBOARD[0] ? 0.28 : 0.08} strokeWidth={2} />
-                ))}
+                <Radar name="optuna-tune-d6" dataKey="optuna-tune-d6" stroke="#3BB48C" fill="#3BB48C" fillOpacity={0.25} strokeWidth={1.5} />
+                <Radar name="baseline-xgb" dataKey="baseline-xgb" stroke="#64748B" fill="#64748B" fillOpacity={0.1} strokeWidth={1.2} />
                 <RechartsTooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 6 }} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* ── Row 2: Run Activity & Hyperparameter Importance ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#3BB48C]" />
-            Run Activity &amp; Success Rate
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-5">Weekly runs by outcome, with best ROC-AUC trend</p>
-          <div className="h-64 w-full">
+      {/* ── Row 2: Run Activity & Hyperparameter Importance (Snowflake Clean Style) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Run Activity &amp; Success Rate
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Weekly runs by outcome, with top ROC-AUC trend</p>
+          </div>
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={RUN_ACTIVITY} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+              <ComposedChart data={RUN_ACTIVITY} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} />
                 <XAxis dataKey="week" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="n" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="auc" orientation="right" domain={[0.9, 1]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                <RechartsTooltip content={<BiTooltip />} cursor={{ fill: "#F1F5F9" }} />
-                <Bar yAxisId="n" stackId="s" dataKey="finished" name="Finished" fill={PALETTE.brand} barSize={30} />
-                <Bar yAxisId="n" stackId="s" dataKey="failed" name="Failed" fill="#F43F5E" radius={[6, 6, 0, 0]} />
-                <Line yAxisId="auc" type="monotone" dataKey="best_auc" name="Best ROC-AUC" stroke={PALETTE.violet} strokeWidth={2.5} dot={{ r: 3 }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                <RechartsTooltip content={<BiTooltip />} cursor={{ fill: "#F8FAFC" }} />
+                <Bar yAxisId="n" stackId="s" dataKey="finished" name="Success" fill="#3BB48C" barSize={26} />
+                <Bar yAxisId="n" stackId="s" dataKey="failed" name="Failed" fill="#E11D48" radius={[2, 2, 0, 0]} />
+                <Line yAxisId="auc" type="monotone" dataKey="best_auc" name="Best ROC-AUC" stroke="#475569" strokeWidth={1.8} dot={{ r: 2.5 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-[#3BB48C]" />
-            Hyperparameter Importance
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-5">Impact on ROC-AUC across all runs (Optuna fANOVA)</p>
-          <div className="h-64 w-full">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Hyperparameter Importance
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Impact on metric variance (Optuna fANOVA)</p>
+          </div>
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={HP_IMPORTANCE} layout="vertical" margin={{ top: 0, right: 16, left: 24, bottom: 0 }}>
+              <ComposedChart data={HP_IMPORTANCE} layout="vertical" margin={{ top: 0, right: 16, left: 16, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} horizontal={false} />
                 <XAxis type="number" domain={[0, 0.5]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
-                <YAxis type="category" dataKey="param" tick={AXIS_TICK} axisLine={false} tickLine={false} width={96} />
-                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? `${(v * 100).toFixed(1)}%` : v)} />} cursor={{ fill: "#F1F5F9" }} />
-                <Bar dataKey="importance" name="Importance" radius={[0, 8, 8, 0]} barSize={18}>
+                <YAxis type="category" dataKey="param" tick={{ ...AXIS_TICK, fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} width={100} />
+                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? `${(v * 100).toFixed(1)}%` : v)} />} cursor={{ fill: "#F8FAFC" }} />
+                <Bar dataKey="importance" name="Importance" radius={[0, 3, 3, 0]} barSize={14}>
                   {HP_IMPORTANCE.map((h, i) => (
-                    <Cell key={h.param} fill={PALETTE.brand} fillOpacity={1 - i * 0.14} />
+                    <Cell key={h.param} fill={i === 0 ? "#3BB48C" : "#94A3B8"} />
                   ))}
                 </Bar>
               </ComposedChart>
@@ -599,111 +595,155 @@ export const ExperimentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      {/* ── Search & Filter Toolbar (Snowflake Clean Style) ── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search experiments by name, ID, or framework tag..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
           />
         </div>
-        <div className="text-xs font-bold text-slate-500 shrink-0">
-          Showing {filteredExperiments.length} of {experiments.length} experiments
+        <div className="text-xs font-mono text-slate-500 shrink-0">
+          {filteredExperiments.length} experiments
         </div>
       </div>
 
-      {/* ── Experiments Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredExperiments.map((exp) => (
-          <div
-            key={exp.experiment_id}
-            className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:border-[#3BB48C]/50 hover:shadow-md transition-all flex flex-col justify-between group"
-          >
-            <div>
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="p-2.5 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600 group-hover:scale-105 transition-transform">
-                  <FlaskConical className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                  ID: {exp.experiment_id}
-                </span>
-              </div>
-
-              {/* Title & Path */}
-              <h3 className="text-sm font-semibold text-slate-900 tracking-tight line-clamp-1 group-hover:text-[#3BB48C] transition-colors">
-                {exp.name}
-              </h3>
-              <p className="text-xs font-mono text-slate-400 truncate mt-1">
-                {exp.artifact_location || "default-mlflow-artifacts"}
-              </p>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5 mt-4">
-                {exp.tags &&
-                  Object.entries(exp.tags).map(([k, v]) => (
-                    <span
-                      key={k}
-                      className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200"
-                    >
-                      <Tag className="w-2.5 h-2.5 text-slate-400" />
-                      {k}: {v}
-                    </span>
-                  ))}
-              </div>
-            </div>
-
-            {/* Bottom info & Action */}
-            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="text-xs text-slate-500 font-mono">
-                <span className="font-bold text-slate-900">
-                  {exp.runs_count !== undefined ? exp.runs_count : (exp.runs?.length || 1)}
-                </span>{" "}
-                runs logged
-              </div>
-
-              <button
-                onClick={() => handleOpenRuns(exp)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
-              >
-                Inspect Runs
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      {/* ── Experiments Dense Table (Snowflake Look) ── */}
+      <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+        <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Experiment Workspaces
+            </span>
+            <span className="text-xs text-slate-500 font-mono">
+              ({filteredExperiments.length})
+            </span>
           </div>
-        ))}
+          <span className="text-xs text-slate-500 font-mono">
+            {totalRuns} total runs logged
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700 border-collapse">
+            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-2">Experiment Name</th>
+                <th className="px-3 py-2">Experiment ID</th>
+                <th className="px-3 py-2">Runs Logged</th>
+                <th className="px-3 py-2">Tags / Framework</th>
+                <th className="px-3 py-2">Artifact Location</th>
+                <th className="px-4 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredExperiments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                    No experiment matches your search criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredExperiments.map((exp) => (
+                  <tr key={exp.experiment_id} className="hover:bg-slate-50/80 transition-colors">
+                    {/* Experiment Name */}
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-slate-100 text-slate-600 shrink-0">
+                          <FlaskConical className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-semibold text-slate-900">
+                          {exp.name}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* ID */}
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className="font-mono text-[11px] text-slate-500">
+                        {exp.experiment_id}
+                      </span>
+                    </td>
+
+                    {/* Runs */}
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className="font-mono text-[11px] font-medium text-slate-800">
+                        {exp.runs_count !== undefined ? exp.runs_count : (exp.runs?.length || 1)} runs
+                      </span>
+                    </td>
+
+                    {/* Tags / Framework */}
+                    <td className="px-3 py-2.5">
+                      {exp.tags && Object.keys(exp.tags).length > 0 ? (
+                        <div className="flex flex-wrap gap-1 font-mono text-[11px] text-slate-600">
+                          {Object.entries(exp.tags).map(([k, v], idx) => (
+                            <span key={k}>
+                              <span className="text-slate-400">{k}:</span>
+                              <span>{v}</span>
+                              {idx < Object.keys(exp.tags || {}).length - 1 && <span className="text-slate-300 mr-1">,</span>}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-mono">—</span>
+                      )}
+                    </td>
+
+                    {/* Artifact Location */}
+                    <td className="px-3 py-2.5">
+                      <span className="font-mono text-[11px] text-slate-500 truncate block max-w-xs">
+                        {exp.artifact_location || "s3://mlopslite-artifacts/default"}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => handleOpenRuns(exp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition shadow-2xs hover:border-[#3BB48C]"
+                      >
+                        <span>Inspect Runs</span>
+                        <ChevronRight className="w-3 h-3 text-slate-400" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ── MODAL: RUNS & METRICS INSPECTOR ── */}
+      {/* ── MODAL: RUNS & METRICS INSPECTOR (Snowflake Clean Style) ── */}
       {selectedExperiment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-5xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
+            <div className="px-5 py-3.5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
               <div className="flex items-start gap-3">
-                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600">
-                  <FlaskConical className="w-6 h-6 stroke-[2.2]" />
+                <div className="p-2 rounded bg-slate-100 text-slate-700 shrink-0">
+                  <FlaskConical className="w-5 h-5 stroke-[1.8]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                    <h3 className="text-sm font-semibold text-slate-900">
                       {selectedExperiment.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-xs font-mono font-semibold text-slate-700 border border-slate-200">
-                      {selectedExperiment.lifecycle_stage || "active"}
+                    <span className="font-mono text-slate-500 text-[11px]">
+                      ({selectedExperiment.lifecycle_stage || "active"})
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 font-mono">
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-mono">
                     <span>
-                      Artifact Store: <strong>{selectedExperiment.artifact_location}</strong>
+                      Artifact Store: {selectedExperiment.artifact_location}
                     </span>
                     <span>•</span>
                     <span>
-                      ID: <strong>{selectedExperiment.experiment_id}</strong>
+                      ID: {selectedExperiment.experiment_id}
                     </span>
                   </div>
                 </div>
@@ -711,58 +751,55 @@ export const ExperimentsPage: React.FC = () => {
 
               <button
                 onClick={() => setSelectedExperiment(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
+                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body: Left Runs List & Right Details */}
             <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
               {/* Left Column: Runs List */}
-              <div className="p-4 space-y-2.5 max-h-[60vh] overflow-y-auto bg-slate-50/50">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1 mb-2">
-                  Experiment Runs ({experimentRuns.length})
+              <div className="p-3 space-y-1.5 max-h-[60vh] overflow-y-auto bg-slate-50/40">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-1 mb-2">
+                  Recorded Runs ({experimentRuns.length})
                 </div>
 
                 {loadingRuns ? (
-                  <div className="p-8 text-center text-slate-400">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#3BB48C]" />
+                  <div className="p-8 text-center text-slate-400 text-xs">
+                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-[#3BB48C]" />
                     Fetching MLflow runs...
-                  </div>
-                ) : experimentRuns.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-2xl">
-                    No runs recorded for this experiment yet.
                   </div>
                 ) : (
                   experimentRuns.map((run) => (
                     <div
                       key={run.run_id}
                       onClick={() => setSelectedRun(run)}
-                      className={`p-3.5 rounded-2xl border cursor-pointer transition text-left ${
+                      className={`p-2.5 rounded border cursor-pointer transition text-left ${
                         selectedRun?.run_id === run.run_id
-                          ? "bg-white border-[#3BB48C] shadow-sm ring-2 ring-[#3BB48C]/20"
-                          : "bg-white border-slate-200 hover:border-slate-300"
+                          ? "bg-white border-[#3BB48C] shadow-2xs"
+                          : "bg-white border-slate-200/80 hover:border-slate-300"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-bold text-xs text-slate-900 truncate">
+                        <span className="font-medium text-xs text-slate-900 truncate">
                           {run.run_name || run.run_id.slice(0, 12)}
                         </span>
-                        <span
-                          className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md border ${
-                            run.status === "FINISHED"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : run.status === "RUNNING"
-                              ? "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
-                              : "bg-rose-50 text-rose-700 border-rose-200"
-                          }`}
-                        >
-                          {run.status}
+                        <span className="inline-flex items-center gap-1 font-mono text-[10px] text-slate-600">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              run.status === "FINISHED"
+                                ? "bg-[#3BB48C]"
+                                : run.status === "RUNNING"
+                                ? "bg-amber-500 animate-pulse"
+                                : "bg-rose-500"
+                            }`}
+                          />
+                          <span className="capitalize">{run.status.toLowerCase()}</span>
                         </span>
                       </div>
                       <div className="text-[10px] font-mono text-slate-400 truncate">
-                        ID: {run.run_id}
+                        {run.run_id}
                       </div>
                     </div>
                   ))
@@ -770,24 +807,24 @@ export const ExperimentsPage: React.FC = () => {
               </div>
 
               {/* Right Column: Run Details & Metrics */}
-              <div className="p-6 md:col-span-2 space-y-6 max-h-[60vh] overflow-y-auto">
+              <div className="p-5 md:col-span-2 space-y-4 max-h-[60vh] overflow-y-auto bg-white">
                 {selectedRun ? (
                   <>
                     {/* Run Header */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                       <div>
-                        <h4 className="font-extrabold text-base text-slate-900">
+                        <h4 className="font-semibold text-sm text-slate-900">
                           {selectedRun.run_name || "Run Inspection"}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs font-mono text-slate-500">ID: {selectedRun.run_id}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] font-mono text-slate-500">ID: {selectedRun.run_id}</span>
                           <button
                             onClick={() => handleCopy(selectedRun.run_id)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition"
+                            className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition"
                             title="Copy Run ID"
                           >
                             {copiedId === selectedRun.run_id ? (
-                              <Check className="w-3 h-3 text-emerald-600" />
+                              <Check className="w-3 h-3 text-[#3BB48C]" />
                             ) : (
                               <Copy className="w-3 h-3" />
                             )}
@@ -795,31 +832,31 @@ export const ExperimentsPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <span
-                        className={`text-xs font-mono font-bold px-3 py-1 rounded-full border ${
-                          selectedRun.status === "FINISHED"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : selectedRun.status === "RUNNING"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-rose-50 text-rose-700 border-rose-200"
-                        }`}
-                      >
-                        {selectedRun.status}
-                      </span>
+                      <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            selectedRun.status === "FINISHED"
+                              ? "bg-[#3BB48C]"
+                              : selectedRun.status === "RUNNING"
+                              ? "bg-amber-500 animate-pulse"
+                              : "bg-rose-500"
+                          }`}
+                        />
+                        <span className="font-medium capitalize">{selectedRun.status.toLowerCase()}</span>
+                      </div>
                     </div>
 
                     {/* Metrics Grid */}
                     <div>
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-3">
-                        <BarChart3 className="w-3.5 h-3.5 text-[#3BB48C]" />
+                      <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
                         Evaluation Metrics
                       </h5>
                       {selectedRun.metrics && Object.keys(selectedRun.metrics).length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {Object.entries(selectedRun.metrics).map(([k, v]) => (
-                            <div key={k} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
-                              <span className="text-[11px] font-mono text-slate-500 block truncate">{k}</span>
-                              <span className="text-lg font-black text-slate-900 mt-1 block">
+                            <div key={k} className="p-2.5 bg-slate-50/70 border border-slate-200 rounded">
+                              <span className="text-[10px] font-mono text-slate-500 block truncate">{k}</span>
+                              <span className="text-sm font-mono font-semibold text-slate-900 mt-0.5 block">
                                 {typeof v === "number" ? (v < 1 && v > 0 ? v.toFixed(4) : v.toLocaleString()) : v}
                               </span>
                             </div>
@@ -832,19 +869,18 @@ export const ExperimentsPage: React.FC = () => {
 
                     {/* Hyperparameters Grid */}
                     <div>
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-3">
-                        <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-                        Hyperparameters & Configuration
+                      <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                        Hyperparameters &amp; Params
                       </h5>
                       {selectedRun.params && Object.keys(selectedRun.params).length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {Object.entries(selectedRun.params).map(([k, v]) => (
                             <div
                               key={k}
-                              className="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-2"
+                              className="p-2 bg-white border border-slate-200 rounded flex items-center justify-between gap-2"
                             >
-                              <span className="text-xs font-mono text-slate-500 truncate">{k}</span>
-                              <span className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                              <span className="text-[11px] font-mono text-slate-500 truncate">{k}</span>
+                              <span className="text-[11px] font-mono font-medium text-slate-900">
                                 {String(v)}
                               </span>
                             </div>
@@ -858,17 +894,13 @@ export const ExperimentsPage: React.FC = () => {
                     {/* Tags */}
                     {selectedRun.tags && Object.keys(selectedRun.tags).length > 0 && (
                       <div>
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-2">
-                          <Tag className="w-3.5 h-3.5 text-amber-500" />
-                          Run Tags & Metadata
+                        <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                          Tags
                         </h5>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2 text-[11px] font-mono text-slate-600">
                           {Object.entries(selectedRun.tags).map(([k, v]) => (
-                            <span
-                              key={k}
-                              className="text-[10px] font-mono px-2 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200"
-                            >
-                              {k}: <strong>{v}</strong>
+                            <span key={k}>
+                              <span className="text-slate-400">{k}:</span> {v}
                             </span>
                           ))}
                         </div>
@@ -876,7 +908,7 @@ export const ExperimentsPage: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <div className="p-12 text-center text-slate-400">Select a run on the left to inspect its metrics.</div>
+                  <div className="p-10 text-center text-xs text-slate-400">Select a run on the left to inspect its metrics.</div>
                 )}
               </div>
             </div>
@@ -884,27 +916,31 @@ export const ExperimentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── MODAL: CREATE EXPERIMENT ── */}
+      {/* ── MODAL: CREATE EXPERIMENT (Snowflake Clean Style) ── */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <FlaskConical className="w-5 h-5 text-[#3BB48C]" />
-                Create New Experiment
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-5 shadow-xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded bg-[#3BB48C]/10 text-[#3BB48C]">
+                  <FlaskConical className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  New Experiment Workspace
+                </h3>
+              </div>
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleCreate} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Experiment Name
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Experiment Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -912,13 +948,13 @@ export const ExperimentsPage: React.FC = () => {
                   value={newExpName}
                   onChange={(e) => setNewExpName(e.target.value)}
                   placeholder="e.g. credit-scoring-lightgbm"
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
+                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Tag (Optional)
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Tag / Metadata (Optional)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -926,32 +962,33 @@ export const ExperimentsPage: React.FC = () => {
                     value={newExpTagKey}
                     onChange={(e) => setNewExpTagKey(e.target.value)}
                     placeholder="Key (e.g. framework)"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
                   />
                   <input
                     type="text"
                     value={newExpTagVal}
                     onChange={(e) => setNewExpTagVal(e.target.value)}
                     placeholder="Value (e.g. lightgbm)"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                  className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded hover:bg-slate-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !newExpName.trim()}
-                  className="px-4 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329a77] text-white text-xs font-bold transition shadow-xs disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-[#3BB48C] hover:bg-[#329F7B] disabled:opacity-50 rounded border border-[#329F7B] transition cursor-pointer shadow-2xs"
                 >
-                  {creating ? "Creating..." : "Create Experiment"}
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>{creating ? "Creating..." : "Create Experiment"}</span>
                 </button>
               </div>
             </form>

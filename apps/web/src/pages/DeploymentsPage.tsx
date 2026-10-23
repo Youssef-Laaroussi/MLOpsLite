@@ -12,6 +12,7 @@ import {
   Lock,
   Calendar,
   ChevronDown,
+  ChevronUp,
   RefreshCw,
   Search,
   Activity,
@@ -98,97 +99,97 @@ const DEFAULT_DEPLOYMENTS: (Deployment & {
   memory_mb?: number;
   role?: "PRODUCTION" | "CANARY" | "STAGING";
 })[] = [
-  {
-    id: "dep-prod-01",
-    model_name: "fraud-detector",
-    model_version: 3,
-    port: 8100,
-    endpoint_url: "http://localhost:8100",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-    traffic_pct: 100,
-    rps: 1240,
-    latency_p95: 2.4,
-    cpu_pct: 38,
-    memory_mb: 280,
-    role: "PRODUCTION",
-  },
-  {
-    id: "dep-prod-02",
-    model_name: "customer-churn-xgb",
-    model_version: 2,
-    port: 8101,
-    endpoint_url: "http://localhost:8101",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-    traffic_pct: 90,
-    rps: 650,
-    latency_p95: 3.8,
-    cpu_pct: 26,
-    memory_mb: 340,
-    role: "PRODUCTION",
-  },
-  {
-    id: "dep-canary-02",
-    model_name: "customer-churn-xgb",
-    model_version: 3,
-    port: 8102,
-    endpoint_url: "http://localhost:8102",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-    traffic_pct: 10,
-    rps: 75,
-    latency_p95: 3.2,
-    cpu_pct: 14,
-    memory_mb: 320,
-    role: "CANARY",
-  },
-  {
-    id: "dep-prod-03",
-    model_name: "demand-forecaster-lstm",
-    model_version: 2,
-    port: 8103,
-    endpoint_url: "http://localhost:8103",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 72).toISOString(),
-    traffic_pct: 100,
-    rps: 420,
-    latency_p95: 5.2,
-    cpu_pct: 54,
-    memory_mb: 512,
-    role: "PRODUCTION",
-  },
-  {
-    id: "dep-prod-04",
-    model_name: "credit-default-risk",
-    model_version: 1,
-    port: 8104,
-    endpoint_url: "http://localhost:8104",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 96).toISOString(),
-    traffic_pct: 100,
-    rps: 310,
-    latency_p95: 3.1,
-    cpu_pct: 22,
-    memory_mb: 210,
-    role: "PRODUCTION",
-  },
-  {
-    id: "dep-stg-05",
-    model_name: "sentiment-bert-mini",
-    model_version: 1,
-    port: 8105,
-    endpoint_url: "http://localhost:8105",
-    status: "RUNNING",
-    created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-    traffic_pct: 100,
-    rps: 145,
-    latency_p95: 12.6,
-    cpu_pct: 68,
-    memory_mb: 850,
-    role: "STAGING",
-  },
-];
+    {
+      id: "dep-prod-01",
+      model_name: "fraud-detector",
+      model_version: 3,
+      port: 8100,
+      endpoint_url: "http://localhost:8100",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
+      traffic_pct: 100,
+      rps: 1240,
+      latency_p95: 2.4,
+      cpu_pct: 38,
+      memory_mb: 280,
+      role: "PRODUCTION",
+    },
+    {
+      id: "dep-prod-02",
+      model_name: "customer-churn-xgb",
+      model_version: 2,
+      port: 8101,
+      endpoint_url: "http://localhost:8101",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+      traffic_pct: 90,
+      rps: 650,
+      latency_p95: 3.8,
+      cpu_pct: 26,
+      memory_mb: 340,
+      role: "PRODUCTION",
+    },
+    {
+      id: "dep-canary-02",
+      model_name: "customer-churn-xgb",
+      model_version: 3,
+      port: 8102,
+      endpoint_url: "http://localhost:8102",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
+      traffic_pct: 10,
+      rps: 75,
+      latency_p95: 3.2,
+      cpu_pct: 14,
+      memory_mb: 320,
+      role: "CANARY",
+    },
+    {
+      id: "dep-prod-03",
+      model_name: "demand-forecaster-lstm",
+      model_version: 2,
+      port: 8103,
+      endpoint_url: "http://localhost:8103",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 72).toISOString(),
+      traffic_pct: 100,
+      rps: 420,
+      latency_p95: 5.2,
+      cpu_pct: 54,
+      memory_mb: 512,
+      role: "PRODUCTION",
+    },
+    {
+      id: "dep-prod-04",
+      model_name: "credit-default-risk",
+      model_version: 1,
+      port: 8104,
+      endpoint_url: "http://localhost:8104",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 96).toISOString(),
+      traffic_pct: 100,
+      rps: 310,
+      latency_p95: 3.1,
+      cpu_pct: 22,
+      memory_mb: 210,
+      role: "PRODUCTION",
+    },
+    {
+      id: "dep-stg-05",
+      model_name: "sentiment-bert-mini",
+      model_version: 1,
+      port: 8105,
+      endpoint_url: "http://localhost:8105",
+      status: "RUNNING",
+      created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+      traffic_pct: 100,
+      rps: 145,
+      latency_p95: 12.6,
+      cpu_pct: 68,
+      memory_mb: 850,
+      role: "STAGING",
+    },
+  ];
 
 export const DeploymentsPage: React.FC = () => {
   const { hasRole, user } = useAuth();
@@ -349,9 +350,22 @@ export const DeploymentsPage: React.FC = () => {
     return deployments.find((d) => d.id === selectedNodeId) || deployments[0];
   }, [deployments, selectedNodeId]);
 
+  // Sorting state for deployments table
+  const [sortField, setSortField] = useState<"model" | "version" | "port" | "rps" | "latency" | "status" | "role">("model");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: "model" | "version" | "port" | "rps" | "latency" | "status" | "role") => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   // Filtered Deployments
   const filteredDeployments = useMemo(() => {
-    return deployments.filter((d) => {
+    const list = deployments.filter((d) => {
       const matchesSearch =
         d.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -359,7 +373,27 @@ export const DeploymentsPage: React.FC = () => {
       const matchesRole = roleFilter === "ALL" || (d.role || "PRODUCTION") === roleFilter;
       return matchesSearch && matchesRole;
     });
-  }, [deployments, searchQuery, roleFilter]);
+
+    return [...list].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === "model") {
+        comparison = a.model_name.localeCompare(b.model_name);
+      } else if (sortField === "version") {
+        comparison = a.model_version - b.model_version;
+      } else if (sortField === "port") {
+        comparison = a.port - b.port;
+      } else if (sortField === "rps") {
+        comparison = (a.rps || 0) - (b.rps || 0);
+      } else if (sortField === "latency") {
+        comparison = (a.latency_p95 || 0) - (b.latency_p95 || 0);
+      } else if (sortField === "status") {
+        comparison = a.status.localeCompare(b.status);
+      } else if (sortField === "role") {
+        comparison = (a.role || "").localeCompare(b.role || "");
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [deployments, searchQuery, roleFilter, sortField, sortDirection]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
@@ -401,11 +435,10 @@ export const DeploymentsPage: React.FC = () => {
                       setTimeRange(range);
                       setIsTimeRangeOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
+                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
                         ? "bg-emerald-50 text-emerald-800 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {range}
                   </button>
@@ -436,9 +469,9 @@ export const DeploymentsPage: React.FC = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={!canDeploy}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition shadow-2xs ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs transition shadow-2xs ${
               canDeploy
-                ? "bg-slate-900 hover:bg-slate-800 text-white"
+                ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white"
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
             title={canDeploy ? "Launch container" : "Requires Developer role"}
@@ -592,11 +625,10 @@ export const DeploymentsPage: React.FC = () => {
                   <button
                     key={pod.id}
                     onClick={() => setSelectedNodeId(pod.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                      isSelected
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${isSelected
                         ? "bg-slate-900 text-white shadow-xs"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
+                      }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${pod.role === "CANARY" ? "bg-blue-400" : pod.role === "STG" ? "bg-amber-400" : "bg-emerald-400"}`} />
                     <span>{pod.name}</span>
@@ -614,13 +646,12 @@ export const DeploymentsPage: React.FC = () => {
                   <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
                     v{activeNode.model_version} • Port {activeNode.port}
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    activeNode.role === "CANARY"
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeNode.role === "CANARY"
                       ? "bg-blue-100 text-blue-800"
                       : activeNode.role === "STAGING"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-emerald-100 text-emerald-800"
-                  }`}>
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}>
                     {activeNode.role || "PRODUCTION"} ({activeNode.traffic_pct || 100}%)
                   </span>
                 </div>
@@ -677,7 +708,7 @@ export const DeploymentsPage: React.FC = () => {
                   <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="#E2E8F0" />
                   <XAxis type="number" domain={[0, 16]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
                   <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
-                  <RechartsTooltip 
+                  <RechartsTooltip
                     cursor={{ fill: "#F1F5F9" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
@@ -834,29 +865,30 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Explorer Toolbar: Search & Role Filters ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+
+      {/* ── Explorer Toolbar: Search & Role Filters (Snowflake Clean Style) ── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
         {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search deployments by model name, container ID, or port..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
           />
         </div>
 
-        {/* Role Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        {/* Role Filter Buttons */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 shrink-0">
           {["ALL", "PRODUCTION", "CANARY", "STAGING"].map((rl) => (
             <button
               key={rl}
               onClick={() => setRoleFilter(rl)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap ${
                 roleFilter === rl
-                  ? "bg-[#3BB48C] text-white shadow-xs"
+                  ? "bg-[#3BB48C] text-white shadow-2xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
               }`}
             >
@@ -866,152 +898,248 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main Deployments Table ── */}
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+      {/* ── Main Deployments Table (Snowflake Enterprise Look) ── */}
+      <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
             Active Serving Endpoints ({filteredDeployments.length})
           </span>
-          <span className="text-xs text-slate-400 font-mono">
+          <span className="text-xs text-slate-500 font-mono">
             {runningCount} online • Sub-15ms SLA
           </span>
         </div>
 
-        <table className="w-full text-left text-sm text-slate-700">
-          <thead className="bg-[#F8FAFC] border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            <tr>
-              <th className="px-6 py-4">Deployment</th>
-              <th className="px-6 py-4">Model Version</th>
-              <th className="px-6 py-4">Host Port</th>
-              <th className="px-6 py-4">Throughput &amp; P95</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Live Test</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredDeployments.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700 border-collapse">
+            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider select-none">
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                  No active deployments match the filter. Launch a model container using the button above.
-                </td>
+                <th
+                  onClick={() => handleSort("model")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Deployment</span>
+                    {sortField === "model" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("version")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Version</span>
+                    {sortField === "version" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("role")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Role / Traffic</span>
+                    {sortField === "role" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("port")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Port</span>
+                    {sortField === "port" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("rps")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Throughput &amp; P95</span>
+                    {sortField === "rps" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("status")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Status</span>
+                    {sortField === "status" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th className="px-4 py-2.5">Live Ping</th>
+                <th className="px-4 py-2.5 text-right">Actions</th>
               </tr>
-            ) : (
-              filteredDeployments.map((d) => (
-                <tr key={d.id} className="hover:bg-[#F0FDF9]/40 transition group">
-                  <td className="px-6 py-4 font-semibold text-slate-900">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[#3BB48C] group-hover:scale-105 transition-transform">
-                        <Server className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-900 flex items-center gap-2">
-                          {d.model_name}
-                          {d.role === "CANARY" && (
-                            <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
-                              Canary {d.traffic_pct}%
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 font-mono">ID: {d.id.slice(0, 12)}</div>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 font-mono text-xs">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 font-mono text-xs font-bold text-slate-700 border border-slate-200">
-                      v{d.model_version}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4 font-mono text-xs text-slate-600 font-semibold">
-                    :{d.port}
-                  </td>
-
-                  <td className="px-6 py-4 font-mono text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{d.rps || 120} rps</span>
-                      <span className="text-slate-400">•</span>
-                      <span className="text-emerald-700 font-bold">{d.latency_p95 || 3.5}ms</span>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {d.status === "RUNNING" && (
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                      )}
-                      <StatusBadge status={d.status} />
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4">
-                    {/* Live Ping Button - Real tactile button */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleTestPing(d)}
-                        disabled={pingingId === d.id || d.status !== "RUNNING"}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs shadow-xs hover:shadow-sm active:translate-y-0.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-                      >
-                        <Zap className={`w-3.5 h-3.5 text-amber-500 fill-amber-500 ${pingingId === d.id ? "animate-spin" : ""}`} />
-                        <span>{pingingId === d.id ? "Pinging..." : "Test"}</span>
-                      </button>
-
-                      {pingResult && pingResult.id === d.id && (
-                        <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300 animate-fadeIn">
-                          {pingResult.latency}ms
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {isAdmin && (
-                        <a
-                          href={`${d.endpoint_url}/health`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-[#3BB48C] hover:bg-slate-50 transition"
-                          title="Raw Container Probe (Admin Only)"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
-
-                      {d.status === "RUNNING" && canRollback && (
-                        <button
-                          onClick={() => handleStop(d.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white border border-[#dc2626] text-xs font-bold shadow-xs hover:shadow-md hover:shadow-rose-500/20 active:translate-y-0.5 transition cursor-pointer"
-                          title="Stop container"
-                        >
-                          <StopCircle className="w-3.5 h-3.5" />
-                          <span>Stop</span>
-                        </button>
-                      )}
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {filteredDeployments.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400 font-sans">
+                    No active deployments match the filter. Launch a model container using the button above.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredDeployments.map((d) => (
+                  <tr
+                    key={d.id}
+                    onClick={() => setSelectedNodeId(d.id)}
+                    className={`h-11 hover:bg-slate-50 transition-colors cursor-pointer ${
+                      selectedNodeId === d.id ? "bg-slate-50" : ""
+                    }`}
+                  >
+                    {/* Deployment */}
+                    <td className="px-4 py-2 font-medium text-slate-900">
+                      <div className="flex items-center gap-2">
+                        <Server className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-slate-900 leading-tight">
+                            {d.model_name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono" title={`Full ID: ${d.id}`}>
+                            {d.id.slice(0, 12)}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Version */}
+                    <td className="px-4 py-2 font-mono text-xs text-slate-700">
+                      v{d.model_version}
+                    </td>
+
+                    {/* Role / Traffic */}
+                    <td className="px-4 py-2 font-sans text-xs">
+                      <span className={`text-[11px] font-medium ${
+                        d.role === "CANARY" ? "text-amber-700" : d.role === "STAGING" ? "text-slate-600" : "text-slate-800"
+                      }`}>
+                        {d.role || "PRODUCTION"}
+                        {d.role === "CANARY" && ` (${d.traffic_pct}%)`}
+                      </span>
+                    </td>
+
+                    {/* Port */}
+                    <td className="px-4 py-2 font-mono text-xs text-slate-600">
+                      :{d.port}
+                    </td>
+
+                    {/* Throughput & Latency */}
+                    <td className="px-4 py-2 font-mono text-xs text-slate-700">
+                      <span className="font-semibold text-slate-900">{d.rps || 120} rps</span>
+                      <span className="text-slate-300 mx-1.5">•</span>
+                      <span className="text-[#329F7B] font-semibold">{d.latency_p95 || 3.5}ms</span>
+                    </td>
+
+                    {/* Status (Snowflake sober inline dot) */}
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            d.status === "RUNNING"
+                              ? "bg-[#3BB48C]"
+                              : d.status === "STARTING"
+                              ? "bg-amber-500"
+                              : "bg-rose-500"
+                          }`}
+                        />
+                        <span className={
+                          d.status === "RUNNING"
+                            ? "text-slate-800 font-medium"
+                            : d.status === "STARTING"
+                            ? "text-amber-700"
+                            : "text-rose-700"
+                        }>
+                          {d.status}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Live Ping Button */}
+                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleTestPing(d)}
+                          disabled={pingingId === d.id || d.status !== "RUNNING"}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-[11px] font-medium transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                          title="Send synthetic inference ping"
+                        >
+                          <Zap className={`w-3 h-3 text-amber-500 fill-amber-500 ${pingingId === d.id ? "animate-spin" : ""}`} />
+                          <span>{pingingId === d.id ? "..." : "Ping"}</span>
+                        </button>
+
+                        {pingResult && pingResult.id === d.id && (
+                          <span className="font-mono text-[11px] text-[#3BB48C] font-semibold">
+                            {pingResult.latency}ms
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isAdmin && (
+                          <a
+                            href={`${d.endpoint_url}/health`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1 rounded text-slate-400 hover:text-[#3BB48C] hover:bg-slate-100 transition"
+                            title="Raw Container Probe (Admin Only)"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+
+                        {d.status === "RUNNING" && canRollback && (
+                          <button
+                            onClick={() => handleStop(d.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs bg-[#3BB48C] hover:bg-[#329F7B] text-white border border-[#329F7B] cursor-pointer"
+                            title="Stop container"
+                          >
+                            <StopCircle className="w-3 h-3 text-white" />
+                            <span>Stop</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Deploy Modal */}
+      {/* Deploy Modal (Snowflake Enterprise Clean Style) */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-7 space-y-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]"></span>
-              Deploy Model to Container
-            </h3>
-            <form onSubmit={handleDeploy} className="space-y-4">
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#3BB48C]"></span>
+                Deploy Model to Container
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleDeploy} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Model Name
                 </label>
                 <input
@@ -1020,11 +1148,11 @@ export const DeploymentsPage: React.FC = () => {
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
                   placeholder="e.g. fraud-detector"
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Model Version
                 </label>
                 <input
@@ -1033,11 +1161,11 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={modelVersion}
                   onChange={(e) => setModelVersion(parseInt(e.target.value) || 1)}
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Host Port (optional)
                 </label>
                 <input
@@ -1047,20 +1175,20 @@ export const DeploymentsPage: React.FC = () => {
                   value={port || ""}
                   onChange={(e) => setPort(e.target.value ? parseInt(e.target.value) : undefined)}
                   placeholder="e.g. 8100"
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition"
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-sm font-bold shadow-md shadow-[#3BB48C]/25 transition"
+                  className="px-3.5 py-1.5 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold shadow-2xs transition"
                 >
                   Launch Container
                 </button>
@@ -1070,30 +1198,36 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Rollback Modal */}
+      {/* Rollback Modal (Snowflake Enterprise Clean Style) */}
       {showRollbackModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-7 space-y-5 shadow-2xl">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
-                <RotateCcw className="w-5 h-5" />
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-amber-600" />
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">1-Click Instant Rollback</h3>
+                  <p className="text-[11px] text-slate-500">Fast zero-downtime cutover to stable version</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">1-Click Instant Rollback</h3>
-                <p className="text-xs text-slate-500">Fast zero-downtime cutover to stable version</p>
-              </div>
+              <button
+                onClick={() => setShowRollbackModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm"
+              >
+                ✕
+              </button>
             </div>
 
             {rollbackSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-800 font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#3BB48C]" />
                 {rollbackSuccess}
               </div>
             )}
 
-            <form onSubmit={handleRollbackSubmit} className="space-y-4">
+            <form onSubmit={handleRollbackSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Target Model Name
                 </label>
                 <input
@@ -1102,12 +1236,12 @@ export const DeploymentsPage: React.FC = () => {
                   value={rollbackModelName}
                   onChange={(e) => setRollbackModelName(e.target.value)}
                   placeholder="e.g. fraud-detector"
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Rollback to Version
                 </label>
                 <input
@@ -1116,21 +1250,21 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={targetVersion}
                   onChange={(e) => setTargetVersion(parseInt(e.target.value) || 1)}
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowRollbackModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition"
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-md shadow-amber-600/25 transition"
+                  className="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-2xs transition"
                 >
                   Confirm Rollback
                 </button>

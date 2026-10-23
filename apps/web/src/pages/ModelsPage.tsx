@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Calendar,
   ChevronDown,
+  ChevronUp,
   RefreshCw,
   Search,
   CheckCircle2,
@@ -61,25 +62,36 @@ const REGISTRY_GROWTH = [
 ];
 
 const GOVERNANCE = [
-  { name: "Signature", value: 100, fill: PALETTE.brand },
-  { name: "Lineage", value: 93, fill: PALETTE.blue },
-  { name: "Approvals", value: 87, fill: PALETTE.violet },
-  { name: "Model Cards", value: 73, fill: PALETTE.amber },
+  { name: "Signature", value: 100, fill: "#3BB48C" },
+  { name: "Lineage", value: 93, fill: "#64748B" },
+  { name: "Approvals", value: 87, fill: "#475569" },
+  { name: "Model Cards", value: 73, fill: "#94A3B8" },
 ];
 
 const CHALLENGERS = [
-  { name: "fraud-detector v3 (champion)", acc: 0.971, lat: 2.4, mb: 14, fill: PALETTE.brand },
-  { name: "customer-churn v2", acc: 0.942, lat: 3.8, mb: 22, fill: PALETTE.blue },
-  { name: "demand-forecast v4", acc: 0.918, lat: 5.2, mb: 48, fill: PALETTE.violet },
-  { name: "sentiment-bert v1", acc: 0.954, lat: 12.6, mb: 130, fill: PALETTE.amber },
-  { name: "fraud-detector v2", acc: 0.935, lat: 3.1, mb: 12, fill: PALETTE.slate },
+  { name: "fraud-detector v3 (champion)", acc: 0.971, lat: 2.4, mb: 14, fill: "#3BB48C" },
+  { name: "customer-churn v2", acc: 0.942, lat: 3.8, mb: 22, fill: "#64748B" },
+  { name: "demand-forecast v4", acc: 0.918, lat: 5.2, mb: 48, fill: "#475569" },
+  { name: "sentiment-bert v1", acc: 0.954, lat: 12.6, mb: 130, fill: "#94A3B8" },
+  { name: "fraud-detector v2", acc: 0.935, lat: 3.1, mb: 12, fill: "#CBD5E1" },
 ];
 
-const PROMOTION_EVENTS = [
-  { id: 1, model: "fraud-detector", version: 3, from: "Staging", to: "Production", by: "a.benali", when: "2h ago", color: PALETTE.brand },
-  { id: 2, model: "customer-churn-xgb", version: 2, from: "Candidate", to: "Staging", by: "s.karim", when: "1d ago", color: PALETTE.blue },
-  { id: 3, model: "sentiment-bert", version: 1, from: "Development", to: "Candidate", by: "m.idrissi", when: "3d ago", color: PALETTE.amber },
-  { id: 4, model: "fraud-detector", version: 2, from: "Production", to: "Archived", by: "a.benali", when: "5d ago", color: PALETTE.slate },
+interface PromotionAuditItem {
+  id: string | number;
+  model: string;
+  version: number;
+  from: string;
+  to: string;
+  by: string;
+  when: string;
+  color: string;
+}
+
+const INITIAL_PROMOTION_EVENTS: PromotionAuditItem[] = [
+  { id: "audit-1", model: "fraud-detector", version: 3, from: "Staging", to: "Production", by: "a.benali", when: "2h ago", color: "#3BB48C" },
+  { id: "audit-2", model: "customer-churn-xgb", version: 2, from: "Candidate", to: "Staging", by: "s.karim", when: "1d ago", color: "#64748B" },
+  { id: "audit-3", model: "sentiment-bert-mini", version: 1, from: "Development", to: "Candidate", by: "m.idrissi", when: "3d ago", color: "#475569" },
+  { id: "audit-4", model: "demand-forecaster-lstm", version: 2, from: "Staging", to: "Production", by: "a.benali", when: "5d ago", color: "#3BB48C" },
 ];
 
 // Realistic production baseline models for Data Analyst & MLOps evaluation
@@ -251,6 +263,9 @@ export const ModelsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [stageFilter, setStageFilter] = useState<string>("ALL");
 
+  // Dynamic real promotion audit trail
+  const [promotionEvents, setPromotionEvents] = useState<PromotionAuditItem[]>(INITIAL_PROMOTION_EVENTS);
+
   const loadModels = async () => {
     setLoading(true);
     try {
@@ -280,24 +295,43 @@ export const ModelsPage: React.FC = () => {
 
   const handlePromote = async () => {
     if (!selectedModel) return;
+    const oldStage = selectedModel.stage || "DEVELOPMENT";
+    const newStage = targetStage;
+    const currentModelName = selectedModel.name;
+    const currentVersion = selectedModel.version;
+
+    // Record real audit item
+    const newAuditEvent: PromotionAuditItem = {
+      id: `audit-${Date.now()}`,
+      model: currentModelName,
+      version: currentVersion,
+      from: oldStage.charAt(0) + oldStage.slice(1).toLowerCase(),
+      to: newStage.charAt(0) + newStage.slice(1).toLowerCase(),
+      by: "current_user",
+      when: "Just now",
+      color: newStage === "PRODUCTION" ? "#3BB48C" : newStage === "STAGING" ? "#64748B" : "#94A3B8",
+    };
+
     try {
-      await promoteModelVersion(selectedModel.name, selectedModel.version, targetStage);
+      await promoteModelVersion(currentModelName, currentVersion, newStage);
+      setPromotionEvents((prev) => [newAuditEvent, ...prev.slice(0, 9)]);
       setSelectedModel(null);
       loadModels();
     } catch {
       // Local demo fallback: Single Active Production Rule enforcement
       setModels((prev) =>
         prev.map((m) => {
-          if (m.name === selectedModel.name && m.version === selectedModel.version) {
-            return { ...m, stage: targetStage };
+          if (m.name === currentModelName && m.version === currentVersion) {
+            return { ...m, stage: newStage };
           }
           // If promoting to production, demote previous prod version of same model to staging
-          if (targetStage === "PRODUCTION" && m.name === selectedModel.name && m.stage === "PRODUCTION") {
+          if (newStage === "PRODUCTION" && m.name === currentModelName && m.stage === "PRODUCTION") {
             return { ...m, stage: "STAGING" };
           }
           return m;
         })
       );
+      setPromotionEvents((prev) => [newAuditEvent, ...prev.slice(0, 9)]);
       setSelectedModel(null);
     }
   };
@@ -310,9 +344,22 @@ export const ModelsPage: React.FC = () => {
   const candidateCount = useMemo(() => models.filter((m) => m.stage === "CANDIDATE").length, [models]);
   const devCount = useMemo(() => models.filter((m) => m.stage === "DEVELOPMENT" || !m.stage).length, [models]);
 
-  // Filtered models for table
+  // Sorting state for models table
+  const [sortField, setSortField] = useState<"name" | "version" | "stage" | "framework" | "latency">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: "name" | "version" | "stage" | "framework" | "latency") => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Filtered & sorted models for table
   const filteredModels = useMemo(() => {
-    return models.filter((m) => {
+    const list = models.filter((m) => {
       const matchesSearch =
         m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (m.mlflow_run_id && m.mlflow_run_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -320,7 +367,23 @@ export const ModelsPage: React.FC = () => {
       const matchesStage = stageFilter === "ALL" || (m.stage || "DEVELOPMENT") === stageFilter;
       return matchesSearch && matchesStage;
     });
-  }, [models, searchQuery, stageFilter]);
+
+    return [...list].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === "name") {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === "version") {
+        comparison = a.version - b.version;
+      } else if (sortField === "stage") {
+        comparison = (a.stage || "").localeCompare(b.stage || "");
+      } else if (sortField === "framework") {
+        comparison = (a.framework || "").localeCompare(b.framework || "");
+      } else if (sortField === "latency") {
+        comparison = (a.latency_ms || 0) - (b.latency_ms || 0);
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [models, searchQuery, stageFilter, sortField, sortDirection]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
@@ -340,7 +403,7 @@ export const ModelsPage: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{timeRange}</span>
@@ -348,7 +411,7 @@ export const ModelsPage: React.FC = () => {
             </button>
 
             {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
+              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded shadow-lg z-30 py-1 text-xs">
                 {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
                   <button
                     key={range}
@@ -358,7 +421,7 @@ export const ModelsPage: React.FC = () => {
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs transition ${
                       timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
+                        ? "bg-slate-100 text-slate-900 font-semibold"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -371,22 +434,22 @@ export const ModelsPage: React.FC = () => {
 
           <button
             onClick={loadModels}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
+            className="p-1.5 bg-white border border-slate-200 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh models"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards (Clean, 100% curve-free & sparkline-free) ── */}
+      {/* ── Top 4 KPI StatCards (Clean Snowflake Style) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Active In Production"
           value={`${productionCount} Models`}
           subtitle="Single active prod rule enforced"
           icon={ShieldCheck}
-          color="emerald"
+          color="brand"
           trend="100% SLA Active"
         />
         <StatCard
@@ -415,38 +478,36 @@ export const ModelsPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Visual Analytics Row: Promotion Pipeline Bar Chart & Benchmark Footprint Matrix ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CARD 1: Model Promotion Pipeline & Stages (7 cols) - Enterprise Standard Bar Chart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      {/* ── Visual Analytics Row: Model Promotion Pipeline & Latency Footprint (Snowflake Clean Look) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* CHART 1: Model Promotion Pipeline (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-[#3BB48C]" />
-                  Model Promotion Pipeline &amp; Stages
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Model Promotion Pipeline
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Active model count distribution across lifecycle promotion stages
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Distribution across lifecycle stages
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Single-Active Enforced
+              <span className="text-[11px] font-mono text-slate-500">
+                Single-Active Rule
               </span>
             </div>
 
-            {/* Donut: stage distribution (click a slice to filter) */}
             {(() => {
               const stageData = [
-                { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: PALETTE.slate },
-                { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: PALETTE.amber },
-                { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: PALETTE.blue },
-                { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: PALETTE.brand },
+                { stage: "Development", count: devCount, stageKey: "DEVELOPMENT", fill: "#94A3B8" },
+                { stage: "Candidate", count: candidateCount, stageKey: "CANDIDATE", fill: "#64748B" },
+                { stage: "Staging", count: stagingCount, stageKey: "STAGING", fill: "#475569" },
+                { stage: "Production", count: productionCount, stageKey: "PRODUCTION", fill: "#3BB48C" },
               ];
               const total = models.length || 1;
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 mt-2">
-                  <div className="h-[230px] relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 mt-1">
+                  <div className="h-52 relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <RechartsTooltip
@@ -459,7 +520,7 @@ export const ModelsPage: React.FC = () => {
                                 label={d.stage}
                                 payload={[
                                   { name: "Active Models", value: d.count, color: d.fill },
-                                  { name: "Share of Registry", value: `${Math.round((d.count / total) * 100)}%`, color: PALETTE.slate },
+                                  { name: "Share", value: `${Math.round((d.count / total) * 100)}%`, color: "#64748B" },
                                 ]}
                               />
                             );
@@ -469,39 +530,38 @@ export const ModelsPage: React.FC = () => {
                           data={stageData}
                           dataKey="count"
                           nameKey="stage"
-                          innerRadius="62%"
-                          outerRadius="92%"
-                          paddingAngle={3}
-                          cornerRadius={6}
+                          innerRadius="65%"
+                          outerRadius="90%"
+                          paddingAngle={2}
                           stroke="none"
                           onClick={(entry) => setStageFilter(stageFilter === entry.stageKey ? "ALL" : entry.stageKey)}
                           className="cursor-pointer"
                         >
                           {stageData.map((s) => (
-                            <Cell key={s.stageKey} fill={s.fill} fillOpacity={stageFilter === "ALL" || stageFilter === s.stageKey ? 1 : 0.3} />
+                            <Cell key={s.stageKey} fill={s.fill} fillOpacity={stageFilter === "ALL" || stageFilter === s.stageKey ? 1 : 0.35} />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-3xl font-extrabold text-slate-900">{models.length}</span>
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Versions</span>
+                      <span className="text-2xl font-bold font-mono text-slate-900">{models.length}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Versions</span>
                     </div>
                   </div>
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-1.5">
                     {stageData.map((s) => (
                       <li key={s.stageKey}>
                         <button
                           onClick={() => setStageFilter(stageFilter === s.stageKey ? "ALL" : s.stageKey)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition ${
-                            stageFilter === s.stageKey ? "border-slate-300 bg-slate-50" : "border-slate-100 hover:bg-slate-50"
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded border text-xs transition ${
+                            stageFilter === s.stageKey ? "border-[#3BB48C] bg-slate-50" : "border-slate-200 hover:bg-slate-50"
                           }`}
                         >
-                          <span className="flex items-center gap-2 font-semibold text-slate-700">
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} />
+                          <span className="flex items-center gap-2 font-medium text-slate-700">
+                            <span className="w-2 h-2 rounded-full" style={{ background: s.fill }} />
                             {s.stage}
                           </span>
-                          <span className="font-mono text-xs text-slate-500">
+                          <span className="font-mono text-[11px] text-slate-500">
                             <strong className="text-slate-900">{s.count}</strong> · {Math.round((s.count / total) * 100)}%
                           </span>
                         </button>
@@ -513,30 +573,27 @@ export const ModelsPage: React.FC = () => {
             })()}
           </div>
 
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 font-mono">
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
             <span>Promotion Gate: Cryptographic Hash Locked</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              Audit Trail Enabled
-            </span>
+            <span>Audit Trail Enabled</span>
           </div>
         </div>
 
-        {/* CARD 2: Model Latency & Memory Footprint (5 cols) - Multi-Metric Composed Chart */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        {/* CHART 2: Model Latency & Memory Footprint (5 cols) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-[#3BB48C]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Model Footprint vs. Speed
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Latency (ms) vs. Memory Size (MB) trade-off
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Latency (ms, bars) vs. Memory Size (MB, line)
                 </p>
               </div>
             </div>
 
-            <div className="h-[250px] w-full mt-2">
+            <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={[
@@ -548,98 +605,75 @@ export const ModelsPage: React.FC = () => {
                   margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="name" tick={{...AXIS_TICK, fontSize: 10}} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="left" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
                   <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}MB`} />
-                  <RechartsTooltip 
-                    cursor={{ fill: "#F1F5F9" }}
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      return (
-                        <BiTooltip
-                          active
-                          label={label}
-                          payload={payload.map(p => ({
-                            name: p.name === "lat" ? "Inference Latency" : "Memory Footprint",
-                            value: p.name === "lat" ? `${p.value} ms` : `${p.value} MB`,
-                            color: p.color
-                          }))}
-                        />
-                      );
-                    }}
-                  />
-                  <Bar yAxisId="left" dataKey="lat" fill={PALETTE.brand} radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Line yAxisId="right" type="monotone" dataKey="size" stroke={PALETTE.violet} strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                  <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(1) : v)} />} cursor={{ fill: "#F8FAFC" }} />
+                  <Bar yAxisId="left" dataKey="lat" name="Latency (ms)" fill="#3BB48C" radius={[3, 3, 0, 0]} barSize={28} />
+                  <Line yAxisId="right" type="monotone" dataKey="size" name="Size (MB)" stroke="#334155" strokeWidth={1.8} dot={{ r: 3, fill: "#fff", strokeWidth: 1.5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-100 text-sm font-medium">
-            <span className="flex items-center gap-2 text-slate-700">
-              <span className="w-3 h-3 rounded-[3px] bg-[#3BB48C]"></span>
+
+          <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#3BB48C]" />
               Latency (ms)
             </span>
-            <span className="flex items-center gap-2 text-slate-700">
-              <span className="w-3 h-[3px] bg-[#8B5CF6]"></span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-[2px] bg-[#334155]" />
               Footprint (MB)
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── Row 2: Registry Growth & Governance Scorecard ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#3BB48C]" />
-            Registry Growth &amp; Promotion Velocity
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Cumulative registered versions vs. versions promoted to Production</p>
-          <div className="h-64">
+      {/* ── Row 2: Registry Growth & Governance Scorecard (Snowflake Clean Look) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Registry Growth &amp; Promotion Velocity
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Cumulative registered versions vs. promoted to Production</p>
+          </div>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={REGISTRY_GROWTH} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gReg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gProd" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={PALETTE.violet} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={PALETTE.violet} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid {...GRID_PROPS} />
                 <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <RechartsTooltip content={<BiTooltip />} />
-                <Area type="monotone" dataKey="registered" name="Registered" stroke={PALETTE.brand} strokeWidth={2.5} fill="url(#gReg)" />
-                <Area type="monotone" dataKey="promoted" name="Promoted to Prod" stroke={PALETTE.violet} strokeWidth={2.5} fill="url(#gProd)" />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                <RechartsTooltip content={<BiTooltip />} cursor={{ stroke: "#E2E8F0" }} />
+                <Area type="monotone" dataKey="registered" name="Registered" stroke="#64748B" strokeWidth={1.8} fill="#F1F5F9" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="promoted" name="Promoted to Prod" stroke="#3BB48C" strokeWidth={2} fill="#3BB48C" fillOpacity={0.12} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-            Governance Scorecard
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-2">Registry compliance coverage (% of versions)</p>
-          <div className="h-52">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Governance Scorecard
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Registry compliance coverage (% of versions)</p>
+          </div>
+          <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart data={GOVERNANCE} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
+              <RadialBarChart data={GOVERNANCE} innerRadius="30%" outerRadius="100%" startAngle={90} endAngle={-270}>
                 <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
+                <RadialBar dataKey="value" background={{ fill: "#F8FAFC" }} cornerRadius={4} />
                 <RechartsTooltip />
               </RadialBarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2">
             {GOVERNANCE.map((g) => (
-              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
+              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600 font-mono">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: g.fill }} />
                   {g.name}
                 </span>
                 <strong className="text-slate-900">{g.value}%</strong>
@@ -649,22 +683,23 @@ export const ModelsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-[#3BB48C]" />
-            Champion vs. Challenger
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
-          <div className="h-64">
+      {/* ── Row 3: Champion vs Challenger & Promotion Audit Feed (Snowflake Clean Look) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Champion vs. Challenger
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Accuracy vs. p95 latency — bubble size = model footprint (MB)</p>
+          </div>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} />
                 <XAxis type="number" dataKey="lat" name="Latency" domain={[0, 14]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
                 <YAxis type="number" dataKey="acc" name="Accuracy" domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
                 <ZAxis type="number" dataKey="mb" range={[90, 420]} />
-                <ReferenceLine y={0.94} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "SLA accuracy", fill: PALETTE.brand, fontSize: 10, position: "insideTopRight" }} />
+                <ReferenceLine y={0.94} stroke="#3BB48C" strokeDasharray="3 3" label={{ value: "SLA accuracy", fill: "#3BB48C", fontSize: 10, position: "insideTopRight" }} />
                 <RechartsTooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
@@ -675,8 +710,8 @@ export const ModelsPage: React.FC = () => {
                         label={p.name}
                         payload={[
                           { name: "Accuracy", value: `${(p.acc * 100).toFixed(1)}%`, color: p.fill },
-                          { name: "p95 Latency", value: `${p.lat} ms`, color: PALETTE.slate },
-                          { name: "Footprint", value: `${p.mb} MB`, color: PALETTE.slate },
+                          { name: "p95 Latency", value: `${p.lat} ms`, color: "#475569" },
+                          { name: "Footprint", value: `${p.mb} MB`, color: "#475569" },
                         ]}
                       />
                     );
@@ -684,7 +719,7 @@ export const ModelsPage: React.FC = () => {
                 />
                 <Scatter data={CHALLENGERS}>
                   {CHALLENGERS.map((c) => (
-                    <Cell key={c.name} fill={c.fill} fillOpacity={0.85} stroke="#fff" strokeWidth={2} />
+                    <Cell key={c.name} fill={c.fill} fillOpacity={0.85} stroke="#fff" strokeWidth={1.5} />
                   ))}
                 </Scatter>
               </ScatterChart>
@@ -692,50 +727,53 @@ export const ModelsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-[#3BB48C]" />
-            Promotion Audit Trail
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest stage transitions with approver</p>
-          <ol className="relative border-l border-slate-200 ml-2 space-y-4">
-            {PROMOTION_EVENTS.map((e) => (
-              <li key={e.id} className="ml-4">
-                <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white" style={{ background: e.color }} />
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs">
+          <div className="mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Promotion Audit Trail
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Latest stage transitions with approver</p>
+          </div>
+          <ol className="relative border-l border-slate-200 ml-2 space-y-3.5 my-1">
+            {promotionEvents.map((e) => (
+              <li key={e.id} className="ml-3.5">
+                <span className="absolute -left-[4.5px] mt-1.5 w-2 h-2 rounded-full ring-2 ring-white" style={{ background: e.color }} />
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-slate-900">{e.model} <span className="font-mono text-xs text-slate-400">v{e.version}</span></span>
-                  <span className="text-[11px] text-slate-400">{e.when}</span>
+                  <span className="text-xs font-semibold text-slate-900">{e.model} <span className="font-mono text-[11px] text-slate-500">v{e.version}</span></span>
+                  <span className="text-[11px] font-mono text-slate-400">{e.when}</span>
                 </div>
-                <div className="text-xs text-slate-500">{e.from} → <strong style={{ color: e.color }}>{e.to}</strong> · by {e.by}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {e.from} → <strong className="text-slate-800">{e.to}</strong> · <span className="font-mono text-slate-400">by {e.by}</span>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </div>
 
-      {/* ── Explorer Toolbar: Search & Stage Filter Pills ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      {/* ── Explorer Toolbar: Search & Stage Filter (Snowflake Clean Style) ── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
         {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search models by name, framework, or MLflow run ID..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
           />
         </div>
 
         {/* Stage Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 shrink-0">
           {["ALL", "PRODUCTION", "STAGING", "CANDIDATE", "DEVELOPMENT"].map((st) => (
             <button
               key={st}
               onClick={() => setStageFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap ${
                 stageFilter === st
-                  ? "bg-[#3BB48C] text-white shadow-xs"
+                  ? "bg-[#3BB48C] text-white shadow-2xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
               }`}
             >
@@ -745,140 +783,187 @@ export const ModelsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main Models Registry Table ── */}
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+      {/* ── Main Models Registry Dense Table (Snowflake Enterprise Look) ── */}
+      <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
             Registered Models ({filteredModels.length})
           </span>
-          <span className="text-xs text-slate-400 font-mono">
+          <span className="text-xs text-slate-500 font-mono">
             {productionCount} active production • {stagingCount} staging
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700 min-w-[750px]">
-            <thead className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+          <table className="w-full text-left text-xs text-slate-700 border-collapse">
+            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider select-none">
               <tr>
-                <th className="px-6 py-3.5 min-w-[260px]">Model &amp; Signature</th>
-                <th className="px-6 py-3.5">Version</th>
-                <th className="px-6 py-3.5">Lifecycle Stage</th>
-                <th className="px-6 py-3.5">MLflow Run</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
+                <th
+                  onClick={() => handleSort("name")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100/80 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Model Name</span>
+                    {sortField === "name" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("version")}
+                  className="px-3 py-2.5 cursor-pointer hover:bg-slate-100/80 transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Version</span>
+                    {sortField === "version" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("stage")}
+                  className="px-3 py-2.5 cursor-pointer hover:bg-slate-100/80 transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Lifecycle Stage</span>
+                    {sortField === "stage" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("framework")}
+                  className="px-3 py-2.5 cursor-pointer hover:bg-slate-100/80 transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Framework</span>
+                    {sortField === "framework" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("latency")}
+                  className="px-3 py-2.5 cursor-pointer hover:bg-slate-100/80 transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>p95 Latency</span>
+                    {sortField === "latency" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th className="px-3 py-2.5 whitespace-nowrap">
+                  <span>MLflow Run</span>
+                </th>
+                <th className="px-4 py-2.5 text-right whitespace-nowrap">
+                  <span>Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredModels.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                     No models match the filter criteria.
                   </td>
                 </tr>
               ) : (
-                filteredModels.map((m, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/75 transition-colors">
-                    {/* Model & Signature - Clean, structured typography */}
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-sm text-slate-900 group-hover:text-[#3BB48C] transition-colors tracking-tight">
-                        {m.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
-                        <span className="text-slate-500 font-medium">{m.framework || "Scikit-Learn"}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-slate-400">MLflow v2.x</span>
-                      </div>
-                    </td>
-
-                    {/* Version - Elegant subtle badge */}
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-slate-100/90 text-slate-700 border border-slate-200/80">
-                        v{m.version}
-                      </span>
-                    </td>
-
-                    {/* Lifecycle Stage - Real vivid badge with strong authentic colors */}
-                    <td className="px-6 py-4">
-                      {(() => {
-                        const stage = (m.stage || "DEVELOPMENT").toUpperCase();
-                        if (stage === "PRODUCTION") {
-                          return (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#10b981] text-white shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                              Production
-                            </span>
-                          );
-                        }
-                        if (stage === "STAGING") {
-                          return (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#f59e0b] text-white shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                              Staging
-                            </span>
-                          );
-                        }
-                        if (stage === "CANDIDATE") {
-                          return (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#8b5cf6] text-white shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                              Candidate
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#64748b] text-white shadow-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                            Development
-                          </span>
-                        );
-                      })()}
-                    </td>
-
-                    {/* MLflow Run - Clean monospace with copy/view pill */}
-                    <td className="px-6 py-4">
-                      {m.mlflow_run_id ? (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-xs text-slate-600 bg-slate-50 border border-slate-200/80 hover:bg-white hover:text-slate-900 hover:border-slate-300 transition cursor-pointer"
-                          title={`Full MLflow Run ID: ${m.mlflow_run_id}`}
-                        >
-                          <span className="text-slate-400">#</span>
-                          {m.mlflow_run_id.slice(0, 12)}
+                filteredModels.map((m, idx) => {
+                  const stage = (m.stage || "DEVELOPMENT").toUpperCase();
+                  return (
+                    <tr key={idx} className="h-11 hover:bg-slate-50 transition-colors group">
+                      {/* Model Name */}
+                      <td className="px-4 py-2">
+                        <span className="font-semibold text-slate-900 group-hover:text-[#3BB48C] transition-colors">
+                          {m.name}
                         </span>
-                      ) : (
-                        <span className="text-slate-300 font-mono text-xs">—</span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Actions - Real tactile button */}
-                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedModel(m)}
-                        disabled={!canPromote}
-                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all duration-150 shadow-sm ${
-                          canPromote
-                            ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white border-[#329F7B] hover:shadow-md hover:shadow-[#3BB48C]/20 active:translate-y-0.5 active:shadow-none cursor-pointer"
-                            : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none"
-                        }`}
-                        title={canPromote ? "Promote model stage" : "Requires Developer role"}
-                      >
-                        <ArrowUpCircle className="w-3.5 h-3.5" />
-                        <span>Promote Stage</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      {/* Version */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-mono text-[11px] text-slate-600">
+                          v{m.version}
+                        </span>
+                      </td>
+
+                      {/* Stage - Inline Status indicator without bulky badge */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-700">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              stage === "PRODUCTION"
+                                ? "bg-[#3BB48C]"
+                                : stage === "STAGING"
+                                ? "bg-amber-500"
+                                : stage === "CANDIDATE"
+                                ? "bg-slate-600"
+                                : "bg-slate-400"
+                            }`}
+                          />
+                          <span className="capitalize">{stage.toLowerCase()}</span>
+                        </span>
+                      </td>
+
+                      {/* Framework */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-mono text-[11px] text-slate-600">
+                          {m.framework || "Scikit-Learn"}
+                        </span>
+                      </td>
+
+                      {/* Latency */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-mono text-[11px] text-slate-700">
+                          {m.latency_ms ? `${m.latency_ms} ms` : "—"}
+                        </span>
+                      </td>
+
+                      {/* MLflow Run ID */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {m.mlflow_run_id ? (
+                          <span
+                            className="font-mono text-[11px] text-slate-500 hover:text-slate-900 cursor-pointer"
+                            title={`Full MLflow Run ID: ${m.mlflow_run_id}`}
+                          >
+                            #{m.mlflow_run_id.slice(0, 10)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 font-mono text-[11px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setSelectedModel(m)}
+                          disabled={!canPromote}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs ${
+                            canPromote
+                              ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white border border-[#329F7B] cursor-pointer"
+                              : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                          }`}
+                          title={canPromote ? "Promote model stage" : "Requires Developer role"}
+                        >
+                          <ArrowUpCircle className="w-3 h-3" />
+                          <span>Promote</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ── Stage Promotion Modal ── */}
+      {/* ── Stage Promotion Modal (Snowflake Clean Look) ── */}
       {selectedModel && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-7 space-y-5 shadow-2xl">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]"></span>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div className="pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900">
                 Promote Model Stage
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -886,15 +971,15 @@ export const ModelsPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Select Target Stage
                 </label>
                 <select
                   value={targetStage}
                   onChange={(e) => setTargetStage(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] transition font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-sans"
                 >
                   <option value="DEVELOPMENT">DEVELOPMENT (Training Sandbox)</option>
                   <option value="CANDIDATE">CANDIDATE (Validation Pending)</option>
@@ -905,22 +990,22 @@ export const ModelsPage: React.FC = () => {
               </div>
 
               {targetStage === "PRODUCTION" && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-[#1A7456]">
-                  <strong>Single-Active Rule</strong>: Promoting to Production automatically demotes any current production model of this group to Staging.
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 font-mono">
+                  <strong className="text-slate-900">Single-Active Rule</strong>: Promoting to Production automatically demotes any current production model of this group to Staging.
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setSelectedModel(null)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition"
+                  className="px-2.5 py-1 rounded bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handlePromote}
-                  className="px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-sm font-bold shadow-md shadow-[#3BB48C]/25 transition"
+                  className="px-3 py-1 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold border border-[#329F7B] shadow-2xs transition"
                 >
                   Confirm Stage Transition
                 </button>

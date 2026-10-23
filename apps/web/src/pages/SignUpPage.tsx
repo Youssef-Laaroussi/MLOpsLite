@@ -61,9 +61,9 @@ export const SignUpPage: React.FC = () => {
   return (
     <div className="relative h-screen max-h-screen bg-white flex flex-col justify-between font-sans antialiased text-slate-900 select-none overflow-hidden">
       {/* ── Décoration abstraite sur les bords (visible immédiatement à l'écran sans scroll) ── */}
-      {/* Bord supérieur gauche - Les pilules émergent de l'extérieur sans extrémité visible à l'origine */}
-      <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 sm:w-96 sm:h-96 select-none z-0">
-        <svg viewBox="0 0 420 420" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Bord supérieur gauche - Taille moyenne bien équilibrée */}
+      <div className="pointer-events-none absolute -top-14 -left-14 w-[340px] h-[340px] sm:w-[400px] sm:h-[400px] select-none z-0">
+        <svg viewBox="0 0 460 460" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="diag-stripes-tl-signup" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
               <line x1="0" y1="0" x2="0" y2="10" stroke="#3BB48C" strokeWidth="3" />
@@ -82,31 +82,31 @@ export const SignUpPage: React.FC = () => {
             </linearGradient>
           </defs>
 
-          {/* Pilules diagonales longues : l'origine commence hors champ */}
-          <g transform="rotate(-35 150 150)">
-            <rect x="-10" y="-120" width="68" height="420" rx="34" fill="url(#pillGradDark-su)" />
-            <rect x="70" y="-140" width="54" height="400" rx="27" fill="url(#pillGradEmerald-su)" />
-            <rect x="136" y="-100" width="46" height="360" rx="23" fill="#E6F7F2" />
-            <rect x="136" y="-100" width="46" height="360" rx="23" fill="url(#diag-stripes-tl-signup)" />
-            <rect x="194" y="-120" width="42" height="330" rx="21" fill="url(#pillGradMint-su)" />
-            <rect x="248" y="-90" width="38" height="280" rx="19" fill="#3BB48C" />
+          {/* Pilules diagonales moyennes */}
+          <g transform="rotate(-35 180 180)">
+            <rect x="10" y="-120" width="72" height="460" rx="36" fill="url(#pillGradDark-su)" />
+            <rect x="98" y="-130" width="58" height="440" rx="29" fill="url(#pillGradEmerald-su)" />
+            <rect x="170" y="-100" width="50" height="400" rx="25" fill="#E6F7F2" />
+            <rect x="170" y="-100" width="50" height="400" rx="25" fill="url(#diag-stripes-tl-signup)" />
+            <rect x="234" y="-110" width="44" height="360" rx="22" fill="url(#pillGradMint-su)" />
+            <rect x="292" y="-80" width="38" height="310" rx="19" fill="#3BB48C" />
 
             {/* Cercles et anneaux */}
-            <circle cx="24" cy="180" r="16" fill="#3BB48C" />
-            <circle cx="24" cy="180" r="26" stroke="#6EE7B7" strokeWidth="3" fill="none" />
-            <circle cx="98" cy="220" r="15" fill="#0B2A20" />
-            <circle cx="158" cy="190" r="13" fill="#3BB48C" />
-            <circle cx="158" cy="190" r="22" stroke="#0B2A20" strokeWidth="2.5" fill="none" />
-            <circle cx="214" cy="180" r="11" fill="#061B14" />
-            <circle cx="122" cy="280" r="19" stroke="#3BB48C" strokeWidth="3" fill="none" />
-            <circle cx="266" cy="140" r="10" fill="#6EE7B7" />
+            <circle cx="36" cy="200" r="18" fill="#3BB48C" />
+            <circle cx="36" cy="200" r="28" stroke="#6EE7B7" strokeWidth="3" fill="none" />
+            <circle cx="120" cy="230" r="17" fill="#0B2A20" />
+            <circle cx="120" cy="230" r="28" stroke="#3BB48C" strokeWidth="2.5" fill="none" />
+            <circle cx="190" cy="200" r="14" fill="#3BB48C" />
+            <circle cx="254" cy="180" r="12" fill="#061B14" />
+            <circle cx="150" cy="290" r="20" stroke="#3BB48C" strokeWidth="3" fill="none" />
+            <circle cx="308" cy="150" r="11" fill="#6EE7B7" />
           </g>
         </svg>
       </div>
 
-      {/* Bord inférieur droit - Les pilules émergent de l'extérieur sans extrémité visible à l'origine */}
-      <div className="pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 sm:w-96 sm:h-96 select-none z-0">
-        <svg viewBox="0 0 420 420" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Bord inférieur droit - Taille moyenne bien équilibrée */}
+      <div className="pointer-events-none absolute -bottom-14 -right-14 w-[340px] h-[340px] sm:w-[400px] sm:h-[400px] select-none z-0">
+        <svg viewBox="0 0 460 460" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="diag-stripes-br-signup" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
               <line x1="0" y1="0" x2="0" y2="10" stroke="#3BB48C" strokeWidth="3" />
@@ -125,22 +125,23 @@ export const SignUpPage: React.FC = () => {
             </linearGradient>
           </defs>
 
-          {/* Pilules diagonales longues : l'origine commence hors champ */}
-          <g transform="rotate(-35 220 220)">
-            <rect x="74" y="100" width="68" height="420" rx="34" fill="url(#pillGradDarkBR-su)" />
-            <rect x="154" y="60" width="54" height="400" rx="27" fill="url(#pillGradEmeraldBR-su)" />
-            <rect x="220" y="110" width="46" height="360" rx="23" fill="#E6F7F2" />
-            <rect x="220" y="110" width="46" height="360" rx="23" fill="url(#diag-stripes-br-signup)" />
-            <rect x="278" y="80" width="42" height="330" rx="21" fill="url(#pillGradMintBR-su)" />
-            <rect x="332" y="130" width="38" height="280" rx="19" fill="#3BB48C" />
+          {/* Pilules diagonales moyennes symétriques */}
+          <g transform="rotate(-35 250 250)">
+            <rect x="68" y="90" width="72" height="460" rx="36" fill="url(#pillGradDarkBR-su)" />
+            <rect x="154" y="60" width="58" height="440" rx="29" fill="url(#pillGradEmeraldBR-su)" />
+            <rect x="224" y="100" width="50" height="400" rx="25" fill="#E6F7F2" />
+            <rect x="224" y="100" width="50" height="400" rx="25" fill="url(#diag-stripes-br-signup)" />
+            <rect x="286" y="80" width="44" height="360" rx="22" fill="url(#pillGradMintBR-su)" />
+            <rect x="342" y="110" width="38" height="310" rx="19" fill="#3BB48C" />
 
             {/* Cercles et anneaux */}
-            <circle cx="108" cy="180" r="16" fill="#3BB48C" />
-            <circle cx="108" cy="180" r="26" stroke="#6EE7B7" strokeWidth="3" fill="none" />
-            <circle cx="182" cy="140" r="14" fill="#0B2A20" />
-            <circle cx="242" cy="200" r="18" stroke="#3BB48C" strokeWidth="3" fill="none" />
-            <circle cx="298" cy="140" r="11" fill="#061B14" />
-            <circle cx="350" cy="190" r="13" fill="#6EE7B7" />
+            <circle cx="94" cy="190" r="18" fill="#3BB48C" />
+            <circle cx="94" cy="190" r="28" stroke="#6EE7B7" strokeWidth="3" fill="none" />
+            <circle cx="174" cy="160" r="15" fill="#0B2A20" />
+            <circle cx="174" cy="160" r="26" stroke="#3BB48C" strokeWidth="2.5" fill="none" />
+            <circle cx="240" cy="210" r="18" stroke="#3BB48C" strokeWidth="3" fill="none" />
+            <circle cx="304" cy="160" r="13" fill="#061B14" />
+            <circle cx="358" cy="190" r="14" fill="#6EE7B7" />
           </g>
         </svg>
       </div>

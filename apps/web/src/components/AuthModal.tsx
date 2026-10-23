@@ -90,7 +90,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-8">
           {/* Logo & Header */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-xs">
+            <div className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl p-1.5 shadow-2xs">
               <img src="/logo.png" alt="MLite Logo" className="w-full h-full object-contain" />
             </div>
             <div>

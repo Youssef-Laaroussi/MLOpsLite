@@ -633,7 +633,7 @@ export const LandingPage: React.FC = () => {
                 key={idx}
                 className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 mb-4 group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200">
+                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1.5 mb-4 group-hover:scale-105 group-hover:shadow-xs transition-all duration-200">
                   <img
                     src={arch.favicon}
                     alt={arch.alt}

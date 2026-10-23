@@ -74,11 +74,11 @@ const SPEND_DATA = [
 ];
 
 const FUNNEL_DATA = [
-  { name: "Datasets ingested", value: 100, fill: PALETTE.blue },
-  { name: "Experiments run", value: 78, fill: PALETTE.violet },
-  { name: "Models registered", value: 46, fill: PALETTE.amber },
-  { name: "Staged & validated", value: 28, fill: PALETTE.brand },
-  { name: "In production", value: 18, fill: "#1A7456" },
+  { name: "Datasets ingested", value: 100, fill: PALETTE.grayLight },
+  { name: "Experiments run", value: 78, fill: PALETTE.grayMid },
+  { name: "Models registered", value: 46, fill: PALETTE.brandPale },
+  { name: "Staged & validated", value: 28, fill: PALETTE.brandLight },
+  { name: "In production", value: 18, fill: PALETTE.brandDark },
 ];
 
 const MODEL_BENCHMARK_FLEET = [
@@ -554,26 +554,29 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* ── SECTION 3: "RESOURCES OVERVIEW" BAR CHART ──────────────── */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-2xs">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-900">
-            Resources overview
-          </h3>
-          <span className="text-xs text-slate-400">Inventory counts</span>
+      <div className="bg-white border border-slate-200/80 rounded-md p-4">
+        <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+          <div>
+            <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+              Resources Overview
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Inventory distribution across platform entities</p>
+          </div>
+          <span className="text-[11px] font-mono text-slate-500">Live Sync</span>
         </div>
 
         {/* Chart Canvas */}
-        <div className="h-52 w-full mt-2">
+        <div className="h-48 w-full mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={resourcesData}
-              margin={{ top: 15, right: 0, left: -20, bottom: 0 }}
+              margin={{ top: 12, right: 10, left: -20, bottom: 0 }}
             >
               <CartesianGrid {...GRID_PROPS} />
               <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <RechartsTooltip
-                cursor={{ fill: "#F1F5F9" }}
+                cursor={{ fill: "#F8FAFC" }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   return (
@@ -585,11 +588,7 @@ export const DashboardOverview: React.FC = () => {
                   );
                 }}
               />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
-                {[PALETTE.brand, PALETTE.cyan, PALETTE.violet, PALETTE.amber, PALETTE.blue].map((col, index) => (
-                  <Cell key={`cell-${index}`} fill={col} />
-                ))}
-              </Bar>
+              <Bar dataKey="count" fill={PALETTE.brand} radius={[2, 2, 0, 0]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -600,34 +599,34 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Latency Percentiles Curve (7 cols / 58%) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                    <Activity className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Inference &amp; Telemetry Latency</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                    Inference &amp; Telemetry Latency
+                  </h3>
+                  <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50/70 border border-emerald-200/70 px-1.5 py-0.2 rounded">
                     P95: 5.4ms
                   </span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  End-to-end container response latency across percentiles (P50, P95, P99 SLA)
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  End-to-end response latency (P50, P95, P99 SLA threshold)
                 </p>
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/60">
+              <div className="flex items-center bg-slate-100/80 p-0.5 rounded border border-slate-200/60">
                 {(["all", "p50", "p95", "p99"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition uppercase cursor-pointer ${latencyMetricFilter === mode
-                      ? "bg-white text-slate-900 shadow-2xs"
-                      : "text-slate-500 hover:text-slate-900"
-                      }`}
+                    className={`px-2 py-0.5 text-[10px] font-medium rounded transition uppercase cursor-pointer ${
+                      latencyMetricFilter === mode
+                        ? "bg-white text-slate-900 border border-slate-200/60 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
                   >
                     {mode}
                   </button>
@@ -635,34 +634,34 @@ export const DashboardOverview: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick KPI Ribbon */}
-            <div className="grid grid-cols-3 gap-2 mb-3 p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            {/* Quick Metric Strip */}
+            <div className="grid grid-cols-3 gap-2 mb-3 p-2 bg-slate-50/70 border border-slate-200/60 rounded text-center">
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Median (P50)</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">Median (P50)</span>
                 <span className="text-xs font-semibold text-slate-900 font-mono">2.8 ms</span>
               </div>
-              <div className="border-x border-slate-200">
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Tail Latency (P95)</span>
+              <div className="border-x border-slate-200/70">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">Tail (P95)</span>
                 <span className="text-xs font-semibold text-slate-900 font-mono">5.4 ms</span>
               </div>
               <div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">SLA Compliance</span>
                 <span className="text-xs font-semibold text-emerald-700 font-mono">99.98%</span>
               </div>
             </div>
 
-            {/* SVG Multi-Line Latency Graph -> Recharts LineChart */}
+            {/* Recharts LineChart */}
             <div className="h-44 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={latencyData}
-                  margin={{ top: 5, right: 0, left: -25, bottom: 0 }}
+                  margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
                 >
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="time" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
                   <RechartsTooltip
-                    cursor={{ stroke: "#E2E8F0", strokeDasharray: "4 4" }}
+                    cursor={{ stroke: "#E2E8F0", strokeDasharray: "3 3" }}
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
                       return (
@@ -671,7 +670,7 @@ export const DashboardOverview: React.FC = () => {
                           label={label}
                           payload={[
                             { name: "P99 Spike", value: `${payload.find(p => p.dataKey === "p99")?.value} ms`, color: PALETTE.rose },
-                            { name: "P95 Tail", value: `${payload.find(p => p.dataKey === "p95")?.value} ms`, color: PALETTE.amber },
+                            { name: "P95 Tail", value: `${payload.find(p => p.dataKey === "p95")?.value} ms`, color: PALETTE.grayDark },
                             { name: "P50 Median", value: `${payload.find(p => p.dataKey === "p50")?.value} ms`, color: PALETTE.brand }
                           ]}
                         />
@@ -679,29 +678,29 @@ export const DashboardOverview: React.FC = () => {
                     }}
                   />
                   {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
-                    <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={2} strokeDasharray="4 4" dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={1.5} strokeDasharray="3 3" dot={false} activeDot={{ r: 3 }} />
                   )}
                   {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
-                    <Line type="monotone" dataKey="p95" stroke={PALETTE.amber} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="p95" stroke={PALETTE.grayDark} strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
                   )}
                   {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 font-medium text-slate-700">
+              <span className="flex items-center gap-1.5 font-medium text-slate-600">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" /> P50 Median
               </span>
-              <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                <span className="w-2 h-2 rounded-full bg-amber-500" /> P95 Tail
+              <span className="flex items-center gap-1.5 font-medium text-slate-600">
+                <span className="w-2 h-2 rounded-full bg-slate-600" /> P95 Tail
               </span>
-              <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                <span className="w-2 h-2 rounded-full bg-rose-500" /> P99 Spike
+              <span className="flex items-center gap-1.5 font-medium text-slate-600">
+                <span className="w-2 h-2 rounded-full bg-red-500" /> P99 Spike
               </span>
             </div>
             <span className="font-mono text-slate-400">Target SLA: &lt;15ms</span>
@@ -709,26 +708,23 @@ export const DashboardOverview: React.FC = () => {
         </div>
 
         {/* Model Registry Lifecycle Donut Chart (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                    <PieChartIcon className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Model Distribution</span>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Model Distribution
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Breakdown across lifecycle promotion stages
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Breakdown by lifecycle promotion stage
                 </p>
               </div>
               <Link
                 to="/app/models"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
+                className="text-xs font-medium text-slate-500 hover:text-slate-900 flex items-center gap-0.5 transition"
               >
                 <span>Catalog</span>
-                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
 
@@ -739,22 +735,22 @@ export const DashboardOverview: React.FC = () => {
                   <Pie
                     data={[
                       { name: "Production", value: stageCounts.PRODUCTION || 6, color: PALETTE.brand },
-                      { name: "Development", value: stageCounts.DEVELOPMENT || 4, color: PALETTE.blue },
-                      { name: "Candidate", value: 3, color: PALETTE.violet },
-                      { name: "Staging", value: stageCounts.STAGING || 2, color: PALETTE.amber },
+                      { name: "Staging", value: stageCounts.STAGING || 2, color: PALETTE.brandLight },
+                      { name: "Candidate", value: 3, color: PALETTE.grayMid },
+                      { name: "Development", value: stageCounts.DEVELOPMENT || 4, color: PALETTE.grayLight },
                     ]}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
-                    outerRadius={72}
-                    paddingAngle={4}
+                    outerRadius={70}
+                    paddingAngle={2}
                     dataKey="value"
                   >
                     {[
                       { name: "Production", color: PALETTE.brand },
-                      { name: "Development", color: PALETTE.blue },
-                      { name: "Candidate", color: PALETTE.violet },
-                      { name: "Staging", color: PALETTE.amber },
+                      { name: "Staging", color: PALETTE.brandLight },
+                      { name: "Candidate", color: PALETTE.grayMid },
+                      { name: "Development", color: PALETTE.grayLight },
                     ].map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -777,40 +773,40 @@ export const DashboardOverview: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-bold font-sans text-slate-900">
+                <span className="text-xl font-semibold font-mono text-slate-900">
                   {stats.models_count || 15}
                 </span>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider">
                   Models
                 </span>
               </div>
             </div>
 
-            {/* Legend Pills */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-slate-600 font-medium">Production ({stageCounts.PRODUCTION || 6})</span>
+            {/* Legend Grid */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-emerald-500" />
+                <span className="text-slate-600">Production ({stageCounts.PRODUCTION || 6})</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
-                <span className="text-slate-600 font-medium">Development ({stageCounts.DEVELOPMENT || 4})</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-emerald-300" />
+                <span className="text-slate-600">Staging ({stageCounts.STAGING || 2})</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#8B5CF6]" />
-                <span className="text-slate-600 font-medium">Candidate (3)</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-slate-400" />
+                <span className="text-slate-600">Candidate (3)</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-                <span className="text-slate-600 font-medium">Staging ({stageCounts.STAGING || 2})</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-slate-300" />
+                <span className="text-slate-600">Development ({stageCounts.DEVELOPMENT || 4})</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Registry Status: Active</span>
-            <span className="text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
-              15 Models Governed
+          <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Governance: Active</span>
+            <span className="font-mono text-slate-600 text-[10px]">
+              15 Models
             </span>
           </div>
         </div>
@@ -821,21 +817,18 @@ export const DashboardOverview: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Microservices Resource Allocation Grouped BarChart */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                    <Cpu className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Infrastructure &amp; Resource Telemetry</span>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Infrastructure &amp; Pod Telemetry
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Live CPU load (%) vs Memory allocation (%) across container pods
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  CPU load (%) vs Memory allocation (%) across containers
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-mono text-slate-500">
                 Docker Engine
               </span>
             </div>
@@ -850,7 +843,7 @@ export const DashboardOverview: React.FC = () => {
                     { service: "MLflow", cpu: 15, mem: 38, full: "MLflow Experiment Server" },
                   ]}
                   margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
-                  barSize={14}
+                  barSize={12}
                 >
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="service" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -865,53 +858,50 @@ export const DashboardOverview: React.FC = () => {
                           label={d.full}
                           payload={[
                             { name: "CPU Utilization", value: `${payload.find(p => p.dataKey === "cpu")?.value}%`, color: PALETTE.brand },
-                            { name: "Memory Utilization", value: `${payload.find(p => p.dataKey === "mem")?.value}%`, color: PALETTE.indigo },
+                            { name: "Memory Utilization", value: `${payload.find(p => p.dataKey === "mem")?.value}%`, color: PALETTE.grayDark },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.indigo} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="cpu" name="CPU Load" fill={PALETTE.brand} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="mem" name="Memory Load" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" /> CPU Load (%)
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-xs bg-emerald-500" /> CPU Load (%)
               </span>
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-[#6366F1]" /> Memory (%)
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-xs bg-slate-600" /> Memory (%)
               </span>
             </div>
-            <span className="text-emerald-700 font-semibold text-[11px]">4/4 Containers Healthy</span>
+            <span className="text-emerald-700 font-medium font-mono text-[11px]">4/4 Pods Healthy</span>
           </div>
         </div>
 
         {/* Feature Drift & SHAP Importance Composed Chart */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                    <Activity className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Feature Drift vs. SHAP Importance</span>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Feature Drift vs. SHAP Importance
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   SHAP feature impact (Bar) vs Evidently AI PSI drift score (Line)
                 </p>
               </div>
               <Link
                 to="/app/monitoring"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
+                className="text-xs font-medium text-slate-500 hover:text-slate-900 flex items-center gap-0.5 transition"
               >
                 <span>Monitoring</span>
-                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
 
@@ -934,9 +924,9 @@ export const DashboardOverview: React.FC = () => {
                   <ReferenceLine
                     yAxisId="right"
                     y={0.05}
-                    stroke={PALETTE.amber}
-                    strokeDasharray="4 4"
-                    label={{ value: "Drift (0.05)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
+                    stroke={PALETTE.rose}
+                    strokeDasharray="3 3"
+                    label={{ value: "Drift Alert (0.05)", position: "top", fill: PALETTE.rose, fontSize: 10, fontWeight: 500 }}
                   />
                   <RechartsTooltip
                     content={({ active, payload }) => {
@@ -947,7 +937,7 @@ export const DashboardOverview: React.FC = () => {
                           active
                           label={d.full}
                           payload={[
-                            { name: "SHAP Importance", value: d.shap.toFixed(2), color: PALETTE.blue },
+                            { name: "SHAP Importance", value: d.shap.toFixed(2), color: PALETTE.grayDark },
                             { name: "PSI Drift Score", value: d.psi.toFixed(3), color: PALETTE.brand },
                             { name: "Status", value: "Stable (< 0.05)", color: PALETTE.brand },
                           ]}
@@ -955,118 +945,117 @@ export const DashboardOverview: React.FC = () => {
                       );
                     }}
                   />
-                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.blue} radius={[3, 3, 0, 0]} maxBarSize={24} />
-                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2} dot={{ r: 3, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                  <Bar yAxisId="left" dataKey="shap" name="SHAP Impact" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} maxBarSize={20} />
+                  <Line yAxisId="right" type="monotone" dataKey="psi" name="PSI Drift" stroke={PALETTE.brand} strokeWidth={2} dot={{ r: 2.5, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 1.5 }} activeDot={{ r: 4 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> SHAP Importance
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-xs bg-slate-600" /> SHAP Importance
               </span>
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" /> PSI Drift
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-xs bg-emerald-500" /> PSI Drift
               </span>
             </div>
-            <span className="text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
-              Zero Drift Alerts
+            <span className="text-slate-600 font-mono text-[10px]">
+              0 Alerts
             </span>
           </div>
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ── SECTION 5B: PLATFORM SPEND, LIFECYCLE FUNNEL, STORAGE & HEALTH ── */}
+      {/* ── SECTION 5B: PLATFORM SPEND & LIFECYCLE FUNNEL ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4">
+          <div className="flex items-start justify-between gap-3 mb-2 pb-2 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                  <Cpu className="w-3.5 h-3.5" />
-                </div>
-                <span>Platform Spend &amp; Compute</span>
+              <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                Platform Spend &amp; Compute
               </h3>
-              <p className="text-xs text-slate-500 mt-1">Monthly cost by workload (USD) — training, serving, storage</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Monthly workload cost (USD) — training, serving, storage</p>
             </div>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">-12% vs. last month</span>
+            <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50/70 border border-emerald-200/70 px-1.5 py-0.2 rounded">-12% MoM</span>
           </div>
-          <div className="h-52">
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={SPEND_DATA} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
                 <CartesianGrid {...GRID_PROPS} />
                 <XAxis dataKey="m" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
                 <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `$${v}`} />} />
-                <Area type="monotone" stackId="1" dataKey="training" name="Training" stroke={PALETTE.violet} fill={PALETTE.violet} fillOpacity={0.35} />
-                <Area type="monotone" stackId="1" dataKey="serving" name="Serving" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.35} />
-                <Area type="monotone" stackId="1" dataKey="storage" name="Storage" stroke={PALETTE.blue} fill={PALETTE.blue} fillOpacity={0.35} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                <Area type="monotone" stackId="1" dataKey="storage" name="Storage" stroke={PALETTE.grayMid} fill={PALETTE.grayLight} fillOpacity={0.3} />
+                <Area type="monotone" stackId="1" dataKey="training" name="Training" stroke={PALETTE.grayDark} fill={PALETTE.grayMid} fillOpacity={0.35} />
+                <Area type="monotone" stackId="1" dataKey="serving" name="Serving" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.25} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-              <Layers className="w-3.5 h-3.5" />
+        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
+          <div>
+            <div className="mb-2 pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                Lifecycle Funnel
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Ingestion to production progression</p>
             </div>
-            <span>MLOps Lifecycle Funnel</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-2">From raw dataset to production model</p>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <FunnelChart>
-                <RechartsTooltip />
-                <Funnel dataKey="value" data={FUNNEL_DATA} isAnimationActive>
-                  {FUNNEL_DATA.map((f) => (
-                    <Cell key={f.name} fill={f.fill} />
-                  ))}
-                  <LabelList position="right" fill="#334155" stroke="none" dataKey="name" fontSize={11} />
-                </Funnel>
-              </FunnelChart>
-            </ResponsiveContainer>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <FunnelChart>
+                  <RechartsTooltip />
+                  <Funnel dataKey="value" data={FUNNEL_DATA} isAnimationActive>
+                    {FUNNEL_DATA.map((f) => (
+                      <Cell key={f.name} fill={f.fill} />
+                    ))}
+                    <LabelList position="right" fill="#475569" stroke="none" dataKey="name" fontSize={11} />
+                  </Funnel>
+                </FunnelChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <span>Overall Conversion</span>
+            <span className="font-semibold text-slate-700">18.0%</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* GRAPH 1: Production Model Benchmark & Quality Matrix (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                    <BarChart3 className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Production Model Benchmark Matrix</span>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Model Benchmark Matrix
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   Validation ROC-AUC vs. F1-Score across active production candidate models
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+              <span className="text-[11px] font-mono text-slate-500">
                 Holdout Validated
               </span>
             </div>
 
-            <div className="h-52 w-full my-1">
+            <div className="h-50 w-full my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={MODEL_BENCHMARK_FLEET}
                   margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
-                  barSize={12}
+                  barSize={10}
                 >
                   <CartesianGrid {...GRID_PROPS} />
                   <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0.80, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                  <ReferenceLine y={0.90} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Gate: 0.90", fill: PALETTE.amber, fontSize: 10, position: "insideBottomLeft" }} />
-                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="4 4" label={{ value: "Target: 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
+                  <ReferenceLine y={0.90} stroke={PALETTE.grayMid} strokeDasharray="3 3" label={{ value: "Gate: 0.90", fill: PALETTE.grayDark, fontSize: 10, position: "insideBottomLeft" }} />
+                  <ReferenceLine y={0.95} stroke={PALETTE.brand} strokeDasharray="3 3" label={{ value: "Target: 0.95", fill: PALETTE.brand, fontSize: 10, position: "insideTopLeft" }} />
                   <RechartsTooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
@@ -1076,99 +1065,100 @@ export const DashboardOverview: React.FC = () => {
                           active
                           label={d.full_name || label}
                           payload={[
-                            { name: "Framework", value: d.framework, color: PALETTE.slate },
+                            { name: "Framework", value: d.framework, color: PALETTE.grayDark },
                             { name: "ROC-AUC", value: typeof d.auc === "number" ? d.auc.toFixed(3) : d.auc, color: PALETTE.brand },
-                            { name: "F1-Score", value: typeof d.f1 === "number" ? d.f1.toFixed(3) : d.f1, color: PALETTE.blue },
-                            { name: "p95 Latency", value: d.latency, color: PALETTE.slate },
-                            { name: "Holdout Samples", value: d.samples, color: PALETTE.slate },
+                            { name: "F1-Score", value: typeof d.f1 === "number" ? d.f1.toFixed(3) : d.f1, color: PALETTE.grayDark },
+                            { name: "p95 Latency", value: d.latency, color: PALETTE.grayDark },
+                            { name: "Holdout Samples", value: d.samples, color: PALETTE.grayDark },
                           ]}
                         />
                       );
                     }}
                   />
-                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.blue} radius={[3, 3, 0, 0]} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                  <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="f1" name="F1-Score" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Holdout Validation: 100k Verified Test Samples</span>
-            <span className="text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px]">
-              Evaluated
-            </span>
+            <span className="text-slate-600">Evaluated</span>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-              <Activity className="w-3.5 h-3.5" />
+        {/* Platform Health List */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
+          <div>
+            <div className="mb-2 pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                Platform Services
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Core service availability &amp; 30-day uptime</p>
             </div>
-            <span>Platform Health</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">Core services status &amp; 30-day uptime</p>
-          <ul className="space-y-2">
-            {SERVICES.map((s) => (
-              <li key={s.name} className="flex items-center justify-between rounded-xl border border-slate-200/70 px-3 py-2 hover:bg-slate-50 transition">
-                <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                  {s.name}
-                </span>
-                <span className="flex items-center gap-2.5 text-[11px] font-mono text-slate-500">
-                  <span>{s.latency}</span>
-                  <strong className="text-slate-900">{s.uptime}</strong>
-                </span>
-              </li>
-            ))}
-          </ul>
+            <ul className="divide-y divide-slate-100">
+              {SERVICES.map((s) => (
+                <li key={s.name} className="flex items-center justify-between py-2 text-xs">
+                  <span className="flex items-center gap-2 font-medium text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {s.name}
+                  </span>
+                  <span className="flex items-center gap-3 font-mono text-[11px] text-slate-500">
+                    <span>{s.latency}</span>
+                    <span className="text-slate-900 font-semibold">{s.uptime}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <span>Overall Availability</span>
+            <span className="text-emerald-700 font-semibold">99.96%</span>
+          </div>
         </div>
       </div>
 
       {/* ── GRAPH 2: Model Performance Trajectory & Continuous Retraining (12 cols) ── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-4">
+      <div className="bg-white border border-slate-200/80 rounded-md p-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-700">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 Model Performance &amp; Retraining Trajectory
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+              <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50/70 border border-emerald-200/70 px-1.5 py-0.2 rounded">
                 Auto-Retrain Active
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              30-day continuous rolling F1-score tracking concept drift and automated retraining recovery events
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              30-day rolling F1-score tracking concept drift and automated recovery events
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md font-mono text-slate-700">
-              <span className="text-slate-400">Fleet Mean F1:</span> <strong className="text-slate-900 font-bold">0.956</strong>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+            <div className="px-2 py-0.5 bg-slate-50 border border-slate-200/70 rounded text-slate-600">
+              Mean F1: <strong className="text-slate-900">0.956</strong>
             </div>
-            <div className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md font-mono">
-              <span className="text-emerald-600">Recovery:</span> <strong>+3.7% F1</strong>
+            <div className="px-2 py-0.5 bg-emerald-50/70 border border-emerald-200/70 text-emerald-800 rounded">
+              Recovery: <strong>+3.7%</strong>
             </div>
-            <div className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md font-mono text-slate-700">
-              <span className="text-slate-400">Drift Protection:</span> <strong className="text-emerald-600 font-bold">Enforced</strong>
+            <div className="px-2 py-0.5 bg-slate-50 border border-slate-200/70 rounded text-slate-600">
+              Drift Gate: <strong className="text-emerald-700">Enforced</strong>
             </div>
           </div>
         </div>
 
-        <div className="h-60 w-full">
+        <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={FLEET_DRIFT_TRAJECTORY}
-              margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+              margin={{ top: 12, right: 15, left: -20, bottom: 0 }}
             >
               <defs>
                 <linearGradient id="gFleetAvg" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.25} />
+                  <stop offset="0%" stopColor={PALETTE.brand} stopOpacity={0.15} />
                   <stop offset="100%" stopColor={PALETTE.brand} stopOpacity={0.0} />
                 </linearGradient>
               </defs>
@@ -1176,21 +1166,21 @@ export const DashboardOverview: React.FC = () => {
               <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <YAxis domain={[0.88, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
 
-              {/* Drift Retrain Threshold */}
+              {/* Drift Retrain Threshold - ONLY RED RESERVED FOR ALERT/DRIFT */}
               <ReferenceLine
                 y={0.92}
                 stroke={PALETTE.rose}
-                strokeDasharray="4 4"
-                label={{ value: "Drift Retrain Gate (0.92)", fill: PALETTE.rose, fontSize: 10, position: "insideBottomLeft" }}
+                strokeDasharray="3 3"
+                label={{ value: "Drift Threshold (0.92)", fill: PALETTE.rose, fontSize: 10, position: "insideBottomLeft" }}
               />
 
               {/* Retraining Event Marker */}
               <ReferenceLine
                 x="Oct 18"
                 stroke={PALETTE.brand}
-                strokeWidth={2}
-                strokeDasharray="3 3"
-                label={{ value: "⚡ Automated Retrain & Promotion (v3)", fill: PALETTE.brand, fontSize: 11, fontWeight: 700, position: "top" }}
+                strokeWidth={1.5}
+                strokeDasharray="2 2"
+                label={{ value: "Automated Retrain & Promotion (v3)", fill: PALETTE.brandDark, fontSize: 10, fontWeight: 600, position: "top" }}
               />
 
               <RechartsTooltip
@@ -1203,30 +1193,30 @@ export const DashboardOverview: React.FC = () => {
                       payload={[
                         { name: "Fleet Average F1", value: Number(payload.find(p => p.dataKey === "avg_f1")?.value || 0).toFixed(3), color: PALETTE.brand },
                         { name: "fraud-detector (v3)", value: Number(payload.find(p => p.dataKey === "fraud_f1")?.value || 0).toFixed(3), color: PALETTE.brandDark },
-                        { name: "sentiment-bert (v1)", value: Number(payload.find(p => p.dataKey === "bert_f1")?.value || 0).toFixed(3), color: PALETTE.violet },
-                        { name: "churn-xgboost (v2)", value: Number(payload.find(p => p.dataKey === "churn_f1")?.value || 0).toFixed(3), color: PALETTE.blue },
+                        { name: "sentiment-bert (v1)", value: Number(payload.find(p => p.dataKey === "bert_f1")?.value || 0).toFixed(3), color: PALETTE.grayDark },
+                        { name: "churn-xgboost (v2)", value: Number(payload.find(p => p.dataKey === "churn_f1")?.value || 0).toFixed(3), color: PALETTE.grayMid },
                       ]}
                     />
                   );
                 }}
               />
 
-              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={2.5} fill="url(#gFleetAvg)" dot={{ r: 3, fill: PALETTE.brand, strokeWidth: 1.5, stroke: "#fff" }} />
-              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.brandDark} strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
-              <Line type="monotone" dataKey="bert_f1" name="sentiment-bert" stroke={PALETTE.violet} strokeWidth={1.5} dot={false} strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.blue} strokeWidth={1.5} dot={false} />
+              <Area type="monotone" dataKey="avg_f1" name="Fleet Mean F1" stroke={PALETTE.brand} strokeWidth={2} fill="url(#gFleetAvg)" dot={{ r: 2.5, fill: PALETTE.brand, strokeWidth: 1.5, stroke: "#fff" }} />
+              <Line type="monotone" dataKey="fraud_f1" name="fraud-detector" stroke={PALETTE.brandDark} strokeWidth={1.5} dot={false} strokeDasharray="4 4" />
+              <Line type="monotone" dataKey="sentiment-bert" stroke={PALETTE.grayDark} strokeWidth={1.5} dot={false} strokeDasharray="2 2" />
+              <Line type="monotone" dataKey="churn_f1" name="churn-xgboost" stroke={PALETTE.grayMid} strokeWidth={1.5} dot={false} />
 
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500 font-mono">
+        <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500 font-mono">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>Telemetry Frequency: Continuous (Every 1,000 Inferences)</span>
+            <span>Telemetry: Continuous (Every 1,000 inferences)</span>
           </div>
-          <span>Evidently AI PSI Engine + Prometheus Exporter Live</span>
+          <span>Evidently AI PSI Engine Active</span>
         </div>
       </div>
 

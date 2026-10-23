@@ -5,44 +5,50 @@ import React from "react";
  * (Power BI / Tableau / Looker inspired). Built on top of Recharts.
  * ────────────────────────────────────────────────────────────────────────── */
 
-// Curated categorical palette (colour-blind friendly ordering, brand-first)
+// Curated categorical palette inspired by Snowflake (Snowsight) & Databricks:
+// Primary emerald/sage green brand, clean slate grays, and red reserved for drift / alerts.
 export const PALETTE = {
-  brand: "#3BB48C",
-  brandDark: "#1A7456",
-  blue: "#3B82F6",
-  indigo: "#6366F1",
-  violet: "#8B5CF6",
-  cyan: "#06B6D4",
-  amber: "#F59E0B",
-  orange: "#F97316",
-  rose: "#F43F5E",
-  slate: "#64748B",
-  grid: "#EEF2F6",
-  axis: "#94A3B8",
+  brand: "#10B981",       // MLite Primary Emerald Green (kept brand identity)
+  brandDark: "#047857",   // Deep Forest Green
+  brandLight: "#34D399",  // Muted Soft Green
+  brandPale: "#A7F3D0",   // Very light Sage
+  grayDark: "#475569",    // Slate-600
+  grayMid: "#94A3B8",     // Slate-400
+  grayLight: "#CBD5E1",   // Slate-300
+  slate: "#64748B",       // Slate-500
+  border: "#E2E8F0",      // Slate-200 fine border
+  subtleBg: "#F8FAFC",    // Slate-50 very light background
+  rose: "#EF4444",        // Reserved for errors / critical drift
+  amber: "#F59E0B",       // Warnings / gating
+  blue: "#64748B",        // Shifted from loud electric blue to elegant slate
+  indigo: "#475569",      // Secondary neutral
+  violet: "#64748B",      // Secondary neutral
+  cyan: "#0D9488",        // Subtle teal accent
+  orange: "#EA580C",
+  grid: "#F1F5F9",
+  axis: "#64748B",
 };
 
 export const SERIES = [
   PALETTE.brand,
-  PALETTE.blue,
-  PALETTE.violet,
-  PALETTE.amber,
+  PALETTE.brandDark,
+  PALETTE.grayDark,
+  PALETTE.brandLight,
+  PALETTE.grayMid,
   PALETTE.cyan,
-  PALETTE.rose,
-  PALETTE.indigo,
-  PALETTE.orange,
 ];
 
-// Common axis / grid props for consistent typography
+// Common axis / grid props for consistent Snowsight enterprise typography
 export const AXIS_TICK = {
-  fontSize: 12,
-  fill: "#64748B", // slate-500
-  fontFamily: '"Inter", sans-serif',
-  fontWeight: 500,
+  fontSize: 11,
+  fill: "#64748B",
+  fontFamily: '"Inter", -apple-system, sans-serif',
+  fontWeight: 400,
 };
 
 export const GRID_PROPS = {
-  stroke: "#E2E8F0", // slate-200
-  strokeDasharray: "4 4",
+  stroke: "#F1F5F9",
+  strokeDasharray: "2 2",
   vertical: false,
 };
 
@@ -255,31 +261,30 @@ export const BiTooltip: React.FC<BiTooltipProps> = ({
     typeof v === "number" ? (valueFormatter ? valueFormatter(v, name) : `${v.toLocaleString()}${unit}`) : String(v);
 
   return (
-    <div className="min-w-[200px] rounded-lg bg-white border border-slate-200 shadow-xl text-slate-900 overflow-hidden">
+    <div className="min-w-[190px] rounded-md bg-white border border-slate-200 shadow-md text-slate-800 overflow-hidden text-xs">
       {label !== undefined && label !== "" && (
-        <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-200">
-          {labelPrefix}
-          {label}
+        <div className="px-3 py-2 font-medium text-slate-500 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+          <span>{labelPrefix}{label}</span>
         </div>
       )}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-3 py-2.5 space-y-1.5">
         {rows.map((p, i) => (
-          <div key={i} className="flex items-center justify-between gap-6 text-sm">
-            <span className="flex items-center gap-2.5 text-slate-700 truncate">
+          <div key={i} className="flex items-center justify-between gap-4 text-xs">
+            <span className="flex items-center gap-2 text-slate-600 truncate">
               <span
-                className="w-2.5 h-2.5 rounded-[3px] shrink-0"
+                className="w-2 h-2 rounded-xs shrink-0"
                 style={{ background: p.color || p.payload?.fill || p.stroke || PALETTE.brand }}
               />
-              <span className="truncate font-medium">{p.name}</span>
+              <span className="truncate">{p.name}</span>
             </span>
-            <span className="font-semibold tabular-nums text-slate-900">{fmt(p.value, p.name)}</span>
+            <span className="font-semibold font-mono tabular-nums text-slate-900">{fmt(p.value, p.name)}</span>
           </div>
         ))}
       </div>
       {showTotal && rows.length > 1 && (
-        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-sm">
-          <span className="text-slate-600 font-semibold">Total</span>
-          <span className="font-bold tabular-nums text-slate-900">{fmt(total, "Total")}</span>
+        <div className="px-3 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-xs">
+          <span className="text-slate-500 font-medium">Total</span>
+          <span className="font-bold font-mono tabular-nums text-slate-900">{fmt(total, "Total")}</span>
         </div>
       )}
     </div>

@@ -282,8 +282,8 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
               >
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs ${user.role === "ADMIN"
-                      ? "bg-gradient-to-tr from-rose-500 to-pink-600"
-                      : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
+                    ? "bg-gradient-to-tr from-rose-500 to-pink-600"
+                    : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
                     }`}
                 >
                   {user.username.charAt(0).toUpperCase()}

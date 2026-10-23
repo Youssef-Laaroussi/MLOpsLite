@@ -47,44 +47,36 @@ export const StatCard: React.FC<StatCardProps> = ({
   };
 
   return (
-    <div className="group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-100 hover:border-emerald-400/40 transition-all duration-200 shadow-xs cursor-pointer flex flex-col justify-between">
+    <div className="bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between mb-3 relative z-10">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {title}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            {title}
+          </span>
+          {isLive && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
             </span>
-            {isLive && (
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-            )}
-          </div>
-
-          <div
-            className={`p-2.5 rounded-2xl border transition-all duration-200 group-hover:scale-105 shadow-2xs ${colorMap[color]}`}
-          >
-            <Icon className="w-5 h-5 stroke-[2.2]" />
-          </div>
+          )}
         </div>
 
-        <div className="relative z-10">
-          <div className="text-xl font-bold font-sans text-slate-900 tracking-tight">
+        <div>
+          <div className="text-xl font-semibold font-mono text-slate-900 tracking-tight">
             {value}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 relative z-10">
+      <div className="mt-3 pt-2 border-t border-slate-100">
         {(subtitle || trend) && (
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center justify-between gap-2 text-[11px]">
+            {subtitle && <span className="text-slate-400 truncate">{subtitle}</span>}
             {trend && (
-              <span className={`font-semibold shrink-0 ${getTrendStyle(trend)}`}>
+              <span className={`font-medium shrink-0 font-mono ${getTrendStyle(trend)}`}>
                 {trend}
               </span>
             )}
-            {subtitle && <span className="text-slate-400 truncate">{subtitle}</span>}
           </div>
         )}
       </div>

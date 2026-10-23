@@ -119,14 +119,26 @@ export const AlertsPage: React.FC = () => {
       {/* ── Metrics Summary Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summary.map((s) => (
-          <div key={s.label} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500">{s.label}</span>
-              <div className={`p-2 rounded-xl border ${s.badgeBg}`}>
-                <s.icon className="w-4 h-4" />
+          <div
+            key={s.label}
+            className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className={`p-1.5 rounded-lg border bg-slate-100 border-slate-200/60 text-slate-700 shrink-0`}>
+                  <s.icon className="w-4 h-4 stroke-[2]" />
+                </div>
+                <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{s.label}</span>
+                <span className="text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition shrink-0">↗</span>
+              </div>
+              <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
+                {s.value}
               </div>
             </div>
-            <div className={`mt-4 text-3xl font-extrabold tracking-tight ${s.tone}`}>{s.value}</div>
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+              <span>{s.label.includes("Critical") ? "Live Monitor" : "Active SLA"}</span>
+              <span className="text-slate-400 font-normal">vs prev. period</span>
+            </div>
           </div>
         ))}
       </div>

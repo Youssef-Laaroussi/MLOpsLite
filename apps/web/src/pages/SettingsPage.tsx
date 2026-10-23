@@ -34,6 +34,8 @@ import {
   Terminal,
   Save,
   CheckCheck,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -58,6 +60,7 @@ export const SettingsPage: React.FC = () => {
 
   // Profile editing state
   const [fullName, setFullName] = useState(user?.full_name || "");
+  const [avatarUrl, setAvatarUrl] = useState<string>(() => user?.avatar_url || localStorage.getItem("mlite_avatar") || "");
   const [emailNotification, setEmailNotification] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
@@ -67,7 +70,42 @@ export const SettingsPage: React.FC = () => {
     if (user?.full_name) {
       setFullName(user.full_name);
     }
+    if (user?.avatar_url) {
+      setAvatarUrl(user.avatar_url);
+    }
   }, [user]);
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setSettingsError("Please upload a valid image file (PNG, JPG, SVG, WebP).");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setSettingsError("Image size must be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setAvatarUrl(base64);
+      localStorage.setItem("mlite_avatar", base64);
+      updateProfile({ avatar_url: base64 });
+      showSuccessBanner("Profile photo updated successfully!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl("");
+    localStorage.removeItem("mlite_avatar");
+    updateProfile({ avatar_url: "" });
+    showSuccessBanner("Profile photo removed.");
+  };
 
   // Preferences state (stored in localStorage)
   const [defaultEnv, setDefaultEnv] = useState<string>(
@@ -448,14 +486,43 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
               <div className="flex items-center gap-4">
-                <div
-                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-sm ${
-                    isAdmin
-                      ? "bg-slate-900 shadow-slate-900/10"
-                      : "bg-[#3BB48C] shadow-[#3BB48C]/15"
-                  }`}
-                >
-                  {user?.username?.charAt(0).toUpperCase() || "U"}
+                <div className="relative group">
+                  <div
+                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm overflow-hidden border border-slate-200/80 ${
+                      isAdmin
+                        ? "bg-slate-900 shadow-slate-900/10"
+                        : "bg-[#3BB48C] shadow-[#3BB48C]/15"
+                    }`}
+                  >
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Profile avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.username?.charAt(0).toUpperCase() || "U"
+                    )}
+                  </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    id="avatar-file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarFileChange}
+                    className="hidden"
+                  />
+
+                  {/* Camera overlay button to change avatar */}
+                  <label
+                    htmlFor="avatar-file-input"
+                    className="absolute inset-0 rounded-2xl bg-slate-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]"
+                    title="Change profile picture"
+                  >
+                    <Camera className="w-5 h-5 mb-0.5" />
+                    <span className="text-[10px] font-bold">Change</span>
+                  </label>
                 </div>
                 <div>
                   <div className="flex items-center gap-2.5">
@@ -466,7 +533,7 @@ export const SettingsPage: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border ${
                         isAdmin
                           ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                          : "bg-[#475569] text-white border-[#334155] shadow-2xs"
                       }`}
                     >
                       {user?.role || (isAdmin ? "ADMIN" : "USER")}
@@ -479,6 +546,24 @@ export const SettingsPage: React.FC = () => {
                     </span>
                     <span className="text-slate-300">•</span>
                     <span className="text-slate-500">ID: {user?.id?.slice(0, 8) || "usr_active"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <label
+                      htmlFor="avatar-file-input"
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3 h-3 text-slate-500" />
+                      Upload photo
+                    </label>
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

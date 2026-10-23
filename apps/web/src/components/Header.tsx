@@ -125,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
   const roleBadge = (role?: UserRole) =>
     role === "ADMIN"
       ? "bg-rose-50 text-rose-700 border-rose-200"
-      : "bg-emerald-50 text-emerald-700 border-emerald-200";
+      : "bg-[#475569] text-white border-[#334155] shadow-2xs";
 
   const envDot =
     env === "Production" ? "bg-emerald-500" : env === "Staging" ? "bg-amber-500" : "bg-sky-500";
@@ -281,12 +281,16 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                 className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition"
               >
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs ${user.role === "ADMIN"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs overflow-hidden ${user.role === "ADMIN"
                     ? "bg-gradient-to-tr from-rose-500 to-pink-600"
                     : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
                     }`}
                 >
-                  {user.username.charAt(0).toUpperCase()}
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user.username.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>

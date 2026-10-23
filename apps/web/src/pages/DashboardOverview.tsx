@@ -532,7 +532,7 @@ export const DashboardOverview: React.FC = () => {
               key={res.name}
               to={href}
               id={`kpi-${res.name.toLowerCase()}`}
-              className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group cursor-pointer block"
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group cursor-pointer block"
             >
               <div className="flex items-center gap-2.5">
                 <div className={`p-1.5 rounded-lg border ${res.iconBg} ${res.iconColor}`}>

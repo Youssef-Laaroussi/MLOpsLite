@@ -40,7 +40,7 @@ export const Sidebar: React.FC = () => {
     if (role === "ADMIN") {
       return "text-rose-700 bg-rose-50 border-rose-200";
     }
-    return "text-emerald-700 bg-emerald-50 border-emerald-200";
+    return "text-white bg-[#475569] border-[#334155] shadow-2xs";
   };
 
   return (
@@ -100,15 +100,19 @@ export const Sidebar: React.FC = () => {
       {/* User Status & Settings Footer */}
       <div className="p-4 border-t border-slate-100">
         {isAuthenticated && user ? (
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
+          <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-xs hover:border-slate-300 transition">
             <div className="flex items-center gap-2 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs ${user.role === "ADMIN"
+                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs overflow-hidden ${user.role === "ADMIN"
                   ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
                   : "bg-[#3BB48C]"
                   }`}
               >
-                {user.username.charAt(0).toUpperCase()}
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  user.username.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="truncate text-left">
                 <div className="text-xs font-bold text-slate-800 truncate leading-none">
@@ -123,7 +127,7 @@ export const Sidebar: React.FC = () => {
             <Link
               to="/app/settings"
               title="Application Settings"
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
             >
               <Settings className="w-4 h-4" />
             </Link>

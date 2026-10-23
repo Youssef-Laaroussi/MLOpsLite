@@ -90,6 +90,29 @@ export const fetchUsers = async (): Promise<User[]> => {
   return res.data.users || [];
 };
 
+export const createUser = async (data: {
+  email: string;
+  username: string;
+  password: string;
+  full_name?: string;
+  role: UserRole;
+}): Promise<User> => {
+  const res = await api.post("/users", data);
+  return res.data;
+};
+
+export const updateUser = async (
+  userId: string,
+  data: {
+    full_name?: string;
+    role?: UserRole;
+    is_active?: boolean;
+  }
+): Promise<User> => {
+  const res = await api.patch(`/users/${userId}`, data);
+  return res.data;
+};
+
 // ── Audit Logs ─────────────────────────────────────────────────────
 
 export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> => {

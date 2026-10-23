@@ -7,7 +7,7 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const upper = status.toUpperCase();
 
-  // Snowflake / Databricks subtle clean badge:
+  // Subtle clean enterprise badge:
   // neutral background, fine border, discrete colored dot and crisp dark slate typography
   let style = "bg-white text-slate-700 border-slate-200";
   let dotColor = "bg-slate-400";

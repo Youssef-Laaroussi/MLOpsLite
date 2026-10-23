@@ -5,7 +5,7 @@ import React from "react";
  * (Power BI / Tableau / Looker inspired). Built on top of Recharts.
  * ────────────────────────────────────────────────────────────────────────── */
 
-// Curated categorical palette inspired by Snowflake (Snowsight) & Databricks:
+// Curated categorical palette for high-readability enterprise analytics:
 // Primary emerald/sage green brand, clean slate grays, and red reserved for drift / alerts.
 export const PALETTE = {
   brand: "#10B981",       // MLite Primary Emerald Green (kept brand identity)

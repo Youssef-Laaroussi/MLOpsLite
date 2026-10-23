@@ -293,31 +293,43 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
 
               {openMenu === "user" && (
                 <div className="absolute right-0 mt-2 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
-                  <div className="px-4 py-2.5 border-b border-slate-100">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                     <p className="text-xs font-bold text-slate-900">{user.full_name || user.username}</p>
                     <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
-                    <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
-                      {user.role === "ADMIN" ? "ADMIN" : "USER"}
-                    </span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
+                        {user.role}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Online
+                      </span>
+                    </div>
                   </div>
                   <div className="py-1">
                     <Link
                       to="/app/settings"
                       onClick={() => setOpenMenu(null)}
-                      className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between group"
                     >
-                      <Settings className="w-3.5 h-3.5 text-slate-400" />
-                      Settings
+                      <span className="flex items-center gap-2.5">
+                        <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#3BB48C] transition" />
+                        Settings & Profile
+                      </span>
+                      <span className="text-[10px] text-slate-400">Manage</span>
                     </Link>
                     <button
                       onClick={() => {
                         setOpenMenu(null);
                         setApiKeysModalOpen(true);
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between group"
                     >
-                      <Key className="w-3.5 h-3.5 text-slate-400" />
-                      API Keys & Tokens
+                      <span className="flex items-center gap-2.5">
+                        <Key className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#3BB48C] transition" />
+                        API & CLI Keys
+                      </span>
+                      <span className="text-[10px] text-slate-400">Tokens</span>
                     </button>
                   </div>
                   <div className="pt-1 border-t border-slate-100">
@@ -326,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                         logout();
                         setOpenMenu(null);
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       Sign Out

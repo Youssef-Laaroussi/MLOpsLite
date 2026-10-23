@@ -48,8 +48,34 @@ export const AlertsPage: React.FC = () => {
   const [testing, setTesting] = useState<string | null>(null);
   const [tested, setTested] = useState<string | null>(null);
 
+  // Modal New Alert Rule
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newRuleName, setNewRuleName] = useState("");
+  const [newRuleCondition, setNewRuleCondition] = useState("PSI > 0.15 on any feature");
+  const [newRuleScope, setNewRuleScope] = useState("All production models");
+  const [newRuleCategory, setNewRuleCategory] = useState("Data Integrity");
+
   const list = filter === "all" ? INCIDENTS : INCIDENTS.filter((i) => i.sev === filter);
   const count = (s: Severity) => INCIDENTS.filter((i) => i.sev === s).length;
+
+  const handleAddRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleName.trim()) return;
+
+    const created = {
+      id: `r-${Date.now()}`,
+      icon: Activity,
+      name: newRuleName.trim(),
+      condition: newRuleCondition.trim(),
+      scope: newRuleScope.trim(),
+      category: newRuleCategory,
+      enabled: true,
+    };
+
+    setRules([created, ...rules]);
+    setNewRuleName("");
+    setIsModalOpen(false);
+  };
 
   const testWebhook = (name: string) => {
     setTesting(name);
@@ -82,6 +108,7 @@ export const AlertsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             id="alerts-new-rule"
+            onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:translate-y-0.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> New Alert Rule
@@ -119,8 +146,9 @@ export const AlertsPage: React.FC = () => {
                   key={f}
                   id={`alerts-filter-${f}`}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition cursor-pointer ${filter === f ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
-                    }`}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition cursor-pointer ${
+                    filter === f ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                  }`}
                 >
                   {f === "all" ? "All" : f}
                 </button>
@@ -275,18 +303,120 @@ export const AlertsPage: React.FC = () => {
                 aria-checked={r.enabled}
                 id={`rule-toggle-${r.id}`}
                 onClick={() => setRules((rs) => rs.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)))}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${r.enabled ? "bg-[#10b981]" : "bg-slate-200"
-                  }`}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                  r.enabled ? "bg-[#10b981]" : "bg-slate-200"
+                }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${r.enabled ? "translate-x-4 mt-0.5" : "translate-x-0.5 mt-0.5"
-                    }`}
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                    r.enabled ? "translate-x-4 mt-0.5" : "translate-x-0.5 mt-0.5"
+                  }`}
                 />
               </button>
             </div>
           ))}
         </div>
       </section>
+
+      {/* ── Modal: New Alert Rule ── */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  New Alert Rule
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configure automated trigger thresholds for models &amp; deployments
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-lg p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddRule} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Rule Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Memory Spike or PSI Drift Warning"
+                  value={newRuleName}
+                  onChange={(e) => setNewRuleName(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#3BB48C]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newRuleCategory}
+                  onChange={(e) => setNewRuleCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#3BB48C] bg-white cursor-pointer"
+                >
+                  <option value="Data Integrity">Data Integrity (PSI, KS drift)</option>
+                  <option value="Performance">Performance (Latency SLA)</option>
+                  <option value="Infrastructure">Infrastructure (Crash loop, OOM)</option>
+                  <option value="Model Quality">Model Quality (F1 score decay)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Threshold Condition
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. PSI > 0.20 or P95 > 12ms"
+                  value={newRuleCondition}
+                  onChange={(e) => setNewRuleCondition(e.target.value)}
+                  className="w-full px-3.5 py-2 font-mono border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#3BB48C]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Scope
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newRuleScope}
+                  onChange={(e) => setNewRuleScope(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#3BB48C]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold shadow-xs hover:shadow-md transition cursor-pointer"
+                >
+                  Create Rule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

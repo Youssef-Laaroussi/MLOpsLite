@@ -15,6 +15,7 @@ interface AuthContextType {
     full_name?: string;
   }) => Promise<void>;
   logout: () => void;
+  updateProfile: (updated: Partial<User>) => void;
   hasRole: (minRole: UserRole) => boolean;
   hasPermission: (permission: string) => boolean;
 }
@@ -140,6 +141,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("mlite_user");
   };
 
+  const updateProfile = (updated: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updated };
+      localStorage.setItem("mlite_user", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const hasRole = (minRole: UserRole): boolean => {
     if (!user) return false;
     return ROLE_LEVEL[user.role] >= ROLE_LEVEL[minRole];
@@ -168,6 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        updateProfile,
         hasRole,
         hasPermission,
       }}

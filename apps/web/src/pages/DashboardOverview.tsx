@@ -29,6 +29,7 @@ import {
 import { StatusBadge } from "../components/StatusBadge";
 import {
   fetchSystemStats,
+  fetchSystemServices,
   fetchModels,
   fetchDeployments,
   pingDeployment,
@@ -37,7 +38,7 @@ import {
   fetchDatasets,
   fetchExperiments,
 } from "../api/client";
-import { RegisteredModel, Deployment, AuditLog, User } from "../api/types";
+import { RegisteredModel, Deployment, AuditLog, User, SubsystemService } from "../api/types";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -118,16 +119,19 @@ export const DashboardOverview: React.FC = () => {
   const [adminViewMode, setAdminViewMode] = useState<"governance" | "ml">("ml");
 
   const [stats, setStats] = useState({
-    projects_count: 8,
-    models_count: 15,
-    active_deployments: 6,
+    projects_count: 0,
+    models_count: 0,
+    datasets_count: 0,
+    active_deployments: 0,
     alerts_count: 0,
     system_healthy: true,
+    stages: { production: 0, staging: 0, development: 0, archived: 0 },
   });
   const [models, setModels] = useState<RegisteredModel[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
+  const [services, setServices] = useState<SubsystemService[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Time range selector state (defaults to Last 6 months as requested)
@@ -152,56 +156,28 @@ export const DashboardOverview: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [statsData, modelsData, deploymentsData] = await Promise.all([
+      const [statsData, modelsData, deploymentsData, servicesData] = await Promise.all([
         fetchSystemStats(),
         fetchModels(),
         fetchDeployments(),
+        fetchSystemServices(),
       ]);
 
       if (statsData) {
         setStats({
-          projects_count: statsData.projects_count || 8,
-          models_count: statsData.models_count || 15,
-          active_deployments: statsData.active_deployments || 6,
-          alerts_count: statsData.alerts_count || 0,
+          projects_count: statsData.projects_count ?? 0,
+          models_count: statsData.models_count ?? 0,
+          datasets_count: statsData.datasets_count ?? 0,
+          active_deployments: statsData.active_deployments ?? 0,
+          alerts_count: statsData.alerts_count ?? 0,
           system_healthy: statsData.system_healthy ?? true,
+          stages: statsData.stages || { production: 0, staging: 0, development: 0, archived: 0 },
         });
       }
 
-      if (modelsData && modelsData.length > 0) {
-        setModels(modelsData);
-      } else {
-        setModels([
-          { name: "fraud-detector", version: 1, stage: "PRODUCTION", created_at: new Date().toISOString() },
-          { name: "customer-churn-xgb", version: 2, stage: "STAGING", created_at: new Date().toISOString() },
-          { name: "demand-forecaster-lstm", version: 1, stage: "DEVELOPMENT", created_at: new Date().toISOString() },
-        ]);
-      }
-
-      if (deploymentsData && deploymentsData.length > 0) {
-        setDeployments(deploymentsData);
-      } else {
-        setDeployments([
-          {
-            id: "dep-live-01",
-            model_name: "fraud-detector",
-            model_version: 1,
-            port: 8100,
-            endpoint_url: "http://localhost:8100",
-            status: "RUNNING",
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: "dep-live-02",
-            model_name: "customer-churn-xgb",
-            model_version: 2,
-            port: 8101,
-            endpoint_url: "http://localhost:8101",
-            status: "RUNNING",
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      }
+      setModels(modelsData || []);
+      setDeployments(deploymentsData || []);
+      setServices(servicesData || []);
 
       if (isAdmin) {
         try {
@@ -209,49 +185,8 @@ export const DashboardOverview: React.FC = () => {
             fetchAuditLogs(6),
             fetchUsers(),
           ]);
-          if (logs && logs.length > 0) {
-            setAuditLogs(logs);
-          } else {
-            setAuditLogs([
-              {
-                id: "log-1",
-                timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-                action: "MODEL_PROMOTE",
-                resource_type: "MODEL",
-                resource_name: "fraud-detector:v1",
-                user_email: "admin@mlite.local",
-                status: "SUCCESS",
-              },
-              {
-                id: "log-2",
-                timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-                action: "DEPLOYMENT_CREATE",
-                resource_type: "CONTAINER",
-                resource_name: "dep-live-01",
-                user_email: "youssef@mlite.local",
-                status: "SUCCESS",
-              },
-              {
-                id: "log-3",
-                timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-                action: "DATASET_SYNC",
-                resource_type: "MINIO_S3",
-                resource_name: "fraud_detection_train.csv",
-                user_email: "khalid22@mlite.local",
-                status: "SUCCESS",
-              },
-            ]);
-          }
-
-          if (users && users.length > 0) {
-            setTeamUsers(users);
-          } else {
-            setTeamUsers([
-              { id: "1", username: "admin", email: "admin@mlite.local", role: "ADMIN", is_active: true, created_at: "", updated_at: "" },
-              { id: "2", username: "khalid22", email: "khalid2@gmail.com", role: "USER", is_active: true, created_at: "", updated_at: "" },
-              { id: "3", username: "yassi", email: "yassiYassir123@gmail.com", role: "USER", is_active: true, created_at: "", updated_at: "" },
-            ]);
-          }
+          setAuditLogs(logs || []);
+          setTeamUsers(users || []);
         } catch {
           // ignore
         }
@@ -291,7 +226,7 @@ export const DashboardOverview: React.FC = () => {
     {
       name: "Projects",
       count: stats.projects_count,
-      trend: "↑ 14%",
+      trend: stats.projects_count > 0 ? "Active" : "--",
       icon: FolderGit2,
       iconColor: "text-slate-700",
       iconBg: "bg-slate-100 border-slate-200/60",
@@ -299,8 +234,8 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Datasets",
-      count: stats.projects_count > 0 ? stats.projects_count * 2 : 0,
-      trend: "↑ 33%",
+      count: stats.datasets_count ?? 0,
+      trend: (stats.datasets_count ?? 0) > 0 ? "Synced" : "--",
       icon: Database,
       iconColor: "text-slate-700",
       iconBg: "bg-slate-100 border-slate-200/60",
@@ -308,8 +243,8 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       name: "Experiments",
-      count: stats.models_count * 3,
-      trend: "↑ 27%",
+      count: stats.models_count,
+      trend: stats.models_count > 0 ? "Tracked" : "--",
       icon: FlaskConical,
       iconColor: "text-slate-700",
       iconBg: "bg-slate-100 border-slate-200/60",
@@ -318,7 +253,7 @@ export const DashboardOverview: React.FC = () => {
     {
       name: "Models",
       count: stats.models_count,
-      trend: "↑ 20%",
+      trend: stats.models_count > 0 ? "Registered" : "--",
       icon: Box,
       iconColor: "text-slate-700",
       iconBg: "bg-slate-100 border-slate-200/60",
@@ -327,7 +262,7 @@ export const DashboardOverview: React.FC = () => {
     {
       name: "Deployments",
       count: stats.active_deployments,
-      trend: "↑ 50%",
+      trend: stats.active_deployments > 0 ? "Running" : "--",
       icon: Server,
       iconColor: "text-slate-700",
       iconBg: "bg-slate-100 border-slate-200/60",
@@ -346,11 +281,21 @@ export const DashboardOverview: React.FC = () => {
     { time: "Now", p50: 2.8, p95: 5.4, p99: 8.4, reqs: 1420 },
   ];
 
-  // ── Stage Breakdown for Donut Chart ────────────────────────────────────
+  // ── Stage Breakdown for Donut Chart (Dynamique & Réel) ─────────────────
   const stageCounts = useMemo(() => {
-    const counts = { PRODUCTION: 6, STAGING: 5, DEVELOPMENT: 4 };
-    return { ...counts, total: 15 };
-  }, []);
+    // Calcul direct à partir des modèles réels chargés ou des stats backend
+    if (models.length > 0) {
+      const prod = models.filter((m) => (m.stage || "").toUpperCase() === "PRODUCTION").length;
+      const stag = models.filter((m) => (m.stage || "").toUpperCase() === "STAGING").length;
+      const dev = models.filter((m) => (m.stage || "").toUpperCase() === "DEVELOPMENT" || (m.stage || "").toUpperCase() === "CANDIDATE").length;
+      return { PRODUCTION: prod, STAGING: stag, DEVELOPMENT: dev, total: models.length };
+    }
+    const prod = stats.stages?.production || 0;
+    const stag = stats.stages?.staging || 0;
+    const dev = stats.stages?.development || 0;
+    const total = prod + stag + dev;
+    return { PRODUCTION: prod, STAGING: stag, DEVELOPMENT: dev, total: total || 1 };
+  }, [models, stats.stages]);
 
   const prodPct = Math.round((stageCounts.PRODUCTION / stageCounts.total) * 100);
   const stagPct = Math.round((stageCounts.STAGING / stageCounts.total) * 100);
@@ -774,7 +719,7 @@ export const DashboardOverview: React.FC = () => {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-xl font-semibold font-mono text-slate-900">
-                  {stats.models_count || 15}
+                  {stats.models_count}
                 </span>
                 <span className="text-[10px] text-slate-400 uppercase tracking-wider">
                   Models
@@ -786,19 +731,15 @@ export const DashboardOverview: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-500" />
-                <span className="text-slate-600">Production ({stageCounts.PRODUCTION || 6})</span>
+                <span className="text-slate-600">Production ({stageCounts.PRODUCTION})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-300" />
-                <span className="text-slate-600">Staging ({stageCounts.STAGING || 2})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-slate-400" />
-                <span className="text-slate-600">Candidate (3)</span>
+                <span className="text-slate-600">Staging ({stageCounts.STAGING})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-slate-300" />
-                <span className="text-slate-600">Development ({stageCounts.DEVELOPMENT || 4})</span>
+                <span className="text-slate-600">Development ({stageCounts.DEVELOPMENT})</span>
               </div>
             </div>
           </div>
@@ -1099,10 +1040,19 @@ export const DashboardOverview: React.FC = () => {
               <p className="text-[11px] text-slate-400 mt-0.5">Core service availability &amp; 30-day uptime</p>
             </div>
             <ul className="divide-y divide-slate-100">
-              {SERVICES.map((s) => (
+              {(services.length > 0 ? services : [
+                { name: "Database (PostgreSQL/SQLite)", status: "online" as const, latency: "1.2ms", uptime: "99.99%" },
+                { name: "MLflow Tracking Server", status: "online" as const, latency: "14.5ms", uptime: "99.95%" },
+                { name: "MinIO S3 Artifact Store", status: "online" as const, latency: "8.1ms", uptime: "99.98%" },
+                { name: "Model Serving (Docker Engine)", status: "online" as const, latency: "3.4ms", uptime: "99.99%" },
+              ]).map((s) => (
                 <li key={s.name} className="flex items-center justify-between py-2 text-xs">
                   <span className="flex items-center gap-2 font-medium text-slate-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        s.status === "online" ? "bg-emerald-500" : "bg-rose-500"
+                      }`}
+                    />
                     {s.name}
                   </span>
                   <span className="flex items-center gap-3 font-mono text-[11px] text-slate-500">
@@ -1115,7 +1065,9 @@ export const DashboardOverview: React.FC = () => {
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Overall Availability</span>
-            <span className="text-emerald-700 font-semibold">99.96%</span>
+            <span className="text-emerald-700 font-semibold">
+              {services.every((s) => s.status === "online") ? "100.0% Operational" : "Degraded"}
+            </span>
           </div>
         </div>
       </div>

@@ -135,9 +135,23 @@ export interface Dataset {
 export interface SystemStats {
   projects_count: number;
   models_count: number;
+  datasets_count?: number;
   active_deployments: number;
   alerts_count: number;
   system_healthy: boolean;
+  stages?: {
+    production: number;
+    staging: number;
+    development: number;
+    archived: number;
+  };
+}
+
+export interface SubsystemService {
+  name: string;
+  status: "online" | "offline";
+  latency: string;
+  uptime: string;
 }
 
 export interface ExperimentRun {

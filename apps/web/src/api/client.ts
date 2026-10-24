@@ -5,6 +5,7 @@ import {
   Deployment,
   Dataset,
   SystemStats,
+  SubsystemService,
   User,
   AuthTokens,
   ApiKey,
@@ -211,35 +212,36 @@ export const createDataset = async (data: {
   return res.data;
 };
 
-// ── System Stats ───────────────────────────────────────────────────
+// ── System Stats & Subsystem Health ───────────────────────────────
 
 export const fetchSystemStats = async (): Promise<SystemStats> => {
   try {
-    const [projectsRes, modelsRes, deploymentsRes] = await Promise.all([
-      api.get("/projects/"),
-      api.get("/models/"),
-      api.get("/deployments/"),
-    ]);
-
-    const activeDeps = (deploymentsRes.data.deployments || []).filter(
-      (d: any) => d.status === "RUNNING"
-    ).length;
-
-    return {
-      projects_count: projectsRes.data.total || 0,
-      models_count: modelsRes.data.total || 0,
-      active_deployments: activeDeps,
-      alerts_count: 0,
-      system_healthy: true,
-    };
+    const res = await api.get("/health/stats");
+    return res.data;
   } catch (err) {
     return {
       projects_count: 0,
       models_count: 0,
+      datasets_count: 0,
       active_deployments: 0,
       alerts_count: 0,
       system_healthy: false,
+      stages: { production: 0, staging: 0, development: 0, archived: 0 },
     };
+  }
+};
+
+export const fetchSystemServices = async (): Promise<SubsystemService[]> => {
+  try {
+    const res = await api.get("/health/services");
+    return res.data;
+  } catch (err) {
+    return [
+      { name: "Database (PostgreSQL/SQLite)", status: "offline", latency: "--", uptime: "0%" },
+      { name: "MLflow Tracking Server", status: "offline", latency: "--", uptime: "0%" },
+      { name: "MinIO S3 Artifact Store", status: "offline", latency: "--", uptime: "0%" },
+      { name: "Model Serving (Docker Engine)", status: "offline", latency: "--", uptime: "0%" },
+    ];
   }
 };
 

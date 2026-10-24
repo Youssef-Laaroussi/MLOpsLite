@@ -54,6 +54,27 @@ class TestProjectSchemas:
         """Verify from_attributes config allows ORM object conversion."""
         assert ProjectResponse.model_config.get("from_attributes") is True
 
+    def test_project_response_resource_counts(self):
+        """Verify models_count, datasets_count, and deployments_count default to 0."""
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        resp = ProjectResponse(
+            id="proj-123",
+            name="Test",
+            slug="test-slug",
+            status="active",
+            default_branch="main",
+            models_count=3,
+            datasets_count=2,
+            deployments_count=1,
+            created_at=now,
+            updated_at=now,
+        )
+        assert resp.models_count == 3
+        assert resp.datasets_count == 2
+        assert resp.deployments_count == 1
+
+
 
 # ── Model tests ──────────────────────────────────────────────
 

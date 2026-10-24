@@ -51,10 +51,15 @@ export interface Project {
   slug: string;
   description?: string;
   git_url?: string;
-  status: "ACTIVE" | "ARCHIVED";
+  default_branch?: string;
+  status: "active" | "archived" | "ACTIVE" | "ARCHIVED";
+  models_count?: number;
+  datasets_count?: number;
+  deployments_count?: number;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface ModelVersion {
   version: number;
@@ -136,6 +141,7 @@ export interface SystemStats {
   projects_count: number;
   models_count: number;
   datasets_count?: number;
+  experiments_count?: number;
   active_deployments: number;
   alerts_count: number;
   system_healthy: boolean;
@@ -145,6 +151,28 @@ export interface SystemStats {
     development: number;
     archived: number;
   };
+  funnel?: { name: string; value: number }[];
+  benchmarks?: {
+    model: string;
+    full_name: string;
+    stage: string;
+    auc: number;
+    f1: number;
+    has_metrics: boolean;
+  }[];
+  latency_telemetry?: {
+    time: string;
+    p50: number;
+    p95: number;
+    p99: number;
+    reqs: number;
+  }[];
+  drift_trajectory?: {
+    date: string;
+    model_name: string;
+    drift_share: number;
+    drift_status: string;
+  }[];
 }
 
 export interface SubsystemService {

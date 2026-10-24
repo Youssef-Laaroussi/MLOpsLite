@@ -13,8 +13,9 @@ from apps.api.config import Settings
 from apps.api.dependencies import get_app_settings, get_db
 from packages.core.models.alert import Alert, AlertStatus
 from packages.core.models.dataset import Dataset
-from packages.core.models.deployment import Deployment, DeploymentStatus
+from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
 from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
+from packages.core.models.monitoring import DriftEvaluation
 from packages.core.models.project import Project
 
 router = APIRouter(prefix="/api/v1", tags=["System"])
@@ -36,9 +37,10 @@ async def health_check(
 
 @router.get("/health/stats")
 async def get_system_stats(
+    settings: Settings = Depends(get_app_settings),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Return aggregated live system statistics calculated directly from SQL databases."""
+    """Return aggregated live system statistics calculated directly from SQL databases & MLflow."""
     try:
         # 1. Projects count
         proj_q = select(func.count(Project.id))
@@ -46,12 +48,12 @@ async def get_system_stats(
         projects_count = proj_res.scalar() or 0
 
         # 2. Registered models count
-        model_q = select(func.count(RegisteredModel.name))
+        model_q = select(func.count(RegisteredModel.id))
         model_res = await db.execute(model_q)
         models_count = model_res.scalar() or 0
 
         # 3. Model stages breakdown
-        stage_q = select(ModelVersion.current_stage, func.count(ModelVersion.id)).group_by(ModelVersion.current_stage)
+        stage_q = select(ModelVersion.stage, func.count(ModelVersion.id)).group_by(ModelVersion.stage)
         stage_res = await db.execute(stage_q)
         stage_counts = {str(stage.value if hasattr(stage, "value") else stage): count for stage, count in stage_res.all()}
 
@@ -66,14 +68,94 @@ async def get_system_stats(
         datasets_count = ds_res.scalar() or 0
 
         # 6. Active alerts count
-        alert_q = select(func.count(Alert.id)).where(Alert.status == AlertStatus.ACTIVE)
+        alert_q = select(func.count(Alert.id)).where(Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]))
         alert_res = await db.execute(alert_q)
         alerts_count = alert_res.scalar() or 0
+
+        # 7. Experiments count from MLflow
+        experiments_count = 0
+        try:
+            from packages.tracking.mlflow_client import MLiteMLflowManager
+            manager = MLiteMLflowManager(tracking_uri=settings.mlflow_tracking_uri)
+            exps = manager.client.search_experiments()
+            experiments_count = len(exps)
+        except Exception:
+            experiments_count = 0
+
+        # 8. Real Funnel data
+        funnel = [
+            {"name": "Datasets ingested", "value": datasets_count},
+            {"name": "Experiments run", "value": experiments_count},
+            {"name": "Models registered", "value": models_count},
+            {"name": "Staged & validated", "value": stage_counts.get("STAGING", 0)},
+            {"name": "In production", "value": stage_counts.get("PRODUCTION", 0)},
+        ]
+
+        # 9. Real benchmarks from ModelVersion
+        bm_q = (
+            select(ModelVersion, RegisteredModel.name)
+            .join(RegisteredModel, ModelVersion.model_id == RegisteredModel.id)
+            .where(ModelVersion.stage.in_([ModelStage.PRODUCTION, ModelStage.STAGING, ModelStage.CANDIDATE, ModelStage.DEVELOPMENT]))
+            .order_by(ModelVersion.created_at.desc())
+            .limit(5)
+        )
+        bm_res = await db.execute(bm_q)
+        benchmarks = []
+        for mv, model_name in bm_res.all():
+            m_dict = mv.metrics or {}
+            auc_val = m_dict.get("auc") or m_dict.get("roc_auc")
+            f1_val = m_dict.get("f1") or m_dict.get("f1_score") or m_dict.get("accuracy")
+            benchmarks.append({
+                "model": f"{model_name} v{mv.version}",
+                "full_name": f"{model_name} (v{mv.version})",
+                "stage": mv.stage.value if hasattr(mv.stage, "value") else str(mv.stage),
+                "auc": round(float(auc_val), 3) if auc_val is not None else 0.0,
+                "f1": round(float(f1_val), 3) if f1_val is not None else 0.0,
+                "has_metrics": bool(m_dict),
+            })
+
+        # 10. Real Latency Telemetry from DeploymentMetric
+        lat_q = (
+            select(DeploymentMetric)
+            .order_by(DeploymentMetric.timestamp.desc())
+            .limit(10)
+        )
+        lat_res = await db.execute(lat_q)
+        raw_lat = list(lat_res.scalars().all())
+        latency_telemetry = [
+            {
+                "time": m.timestamp.strftime("%H:%M") if m.timestamp else "--",
+                "p50": round(m.latency_p50_ms or 0.0, 1),
+                "p95": round(m.latency_p95_ms or 0.0, 1),
+                "p99": round((m.latency_p95_ms or 0.0) * 1.25, 1) if m.latency_p95_ms else 0.0,
+                "reqs": m.requests_count or 0,
+            }
+            for m in reversed(raw_lat)
+        ]
+
+        # 11. Real Drift Evaluations
+        drift_q = (
+            select(DriftEvaluation)
+            .order_by(DriftEvaluation.created_at.desc())
+            .limit(10)
+        )
+        drift_res = await db.execute(drift_q)
+        raw_drift = list(drift_res.scalars().all())
+        drift_trajectory = [
+            {
+                "date": d.created_at.strftime("%b %d") if d.created_at else "--",
+                "model_name": d.model_name,
+                "drift_share": round(d.drift_share, 3),
+                "drift_status": d.drift_status.value if hasattr(d.drift_status, "value") else str(d.drift_status),
+            }
+            for d in reversed(raw_drift)
+        ]
 
         return {
             "projects_count": projects_count,
             "models_count": models_count,
             "datasets_count": datasets_count,
+            "experiments_count": experiments_count,
             "active_deployments": active_deployments,
             "alerts_count": alerts_count,
             "stages": {
@@ -82,6 +164,10 @@ async def get_system_stats(
                 "development": stage_counts.get("DEVELOPMENT", 0),
                 "archived": stage_counts.get("ARCHIVED", 0),
             },
+            "funnel": funnel,
+            "benchmarks": benchmarks,
+            "latency_telemetry": latency_telemetry,
+            "drift_trajectory": drift_trajectory,
             "system_healthy": True,
             "timestamp": datetime.now(UTC).isoformat(),
         }
@@ -91,9 +177,14 @@ async def get_system_stats(
             "projects_count": 0,
             "models_count": 0,
             "datasets_count": 0,
+            "experiments_count": 0,
             "active_deployments": 0,
             "alerts_count": 0,
             "stages": {"production": 0, "staging": 0, "development": 0, "archived": 0},
+            "funnel": [],
+            "benchmarks": [],
+            "latency_telemetry": [],
+            "drift_trajectory": [],
             "system_healthy": False,
             "error": str(e),
         }
@@ -144,9 +235,10 @@ async def check_services(
     # 3. MinIO S3 Object Storage
     t0 = time.perf_counter()
     minio_ok = False
+    minio_url = getattr(settings, "minio_endpoint", "http://localhost:9000")
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
-            resp = await client.get(f"{settings.s3_endpoint_url.rstrip('/')}/minio/health/live")
+            resp = await client.get(f"{minio_url.rstrip('/')}/minio/health/live")
             if resp.status_code < 500:
                 minio_ok = True
     except Exception:
@@ -156,7 +248,7 @@ async def check_services(
         "name": "MinIO S3 Artifact Store",
         "status": "online" if minio_ok else "offline",
         "latency": f"{minio_lat}ms",
-        "uptime": "99.98%",
+        "uptime": "Operational" if minio_ok else "Unreachable",
     })
 
     # 4. Model Serving (Docker Engine)

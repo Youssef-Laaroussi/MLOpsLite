@@ -7,6 +7,7 @@ import {
   SystemStats,
   SubsystemService,
   User,
+  UserRole,
   AuthTokens,
   ApiKey,
   AuditLog,
@@ -128,10 +129,21 @@ export const fetchProjects = async (): Promise<Project[]> => {
   return res.data.projects || [];
 };
 
-export const createProject = async (data: { name: string; slug: string; description?: string }): Promise<Project> => {
+export const createProject = async (data: {
+  name: string;
+  slug?: string;
+  description?: string;
+  git_url?: string;
+}): Promise<Project> => {
   const res = await api.post("/projects/", data);
   return res.data;
 };
+
+export const archiveProject = async (slugOrId: string): Promise<Project> => {
+  const res = await api.delete(`/projects/${slugOrId}`);
+  return res.data;
+};
+
 
 // ── Models & Registry ──────────────────────────────────────────────
 

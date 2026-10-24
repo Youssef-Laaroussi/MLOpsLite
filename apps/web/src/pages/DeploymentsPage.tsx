@@ -855,7 +855,7 @@ export const DeploymentsPage: React.FC = () => {
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${d.status === "RUNNING"
                               ? "bg-[#3BB48C]"
-                              : d.status === "STARTING"
+                              : d.status === "PENDING"
                                 ? "bg-amber-500"
                                 : "bg-rose-500"
                             }`}
@@ -863,7 +863,7 @@ export const DeploymentsPage: React.FC = () => {
                         <span className={
                           d.status === "RUNNING"
                             ? "text-slate-800 font-medium"
-                            : d.status === "STARTING"
+                            : d.status === "PENDING"
                               ? "text-amber-700"
                               : "text-rose-700"
                         }>

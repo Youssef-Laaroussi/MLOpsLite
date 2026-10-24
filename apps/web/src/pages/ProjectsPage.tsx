@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   FolderGit2,
   Plus,
-  Calendar,
   GitBranch,
   Search,
   RefreshCw,
@@ -12,139 +11,25 @@ import {
   Server,
   Activity,
   ArrowUpRight,
-  CheckCircle2,
-  PieChart,
-  Layers,
   X,
-  Tag,
-  Users,
-  ChevronDown,
   LayoutGrid,
   List,
+  AlertCircle,
+  Archive,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
-import { fetchProjects, createProject } from "../api/client";
+import { fetchProjects, createProject, archiveProject } from "../api/client";
 import { Project } from "../api/types";
 import { Link } from "react-router-dom";
 
-// Realistic enrichment data for projects
-interface EnrichedProject extends Project {
-  framework?: string;
-  models_count?: number;
-  experiments_count?: number;
-  datasets_count?: number;
-  endpoint?: { port: number; status: "RUNNING" | "STOPPED"; latency: string };
-  team?: string[];
-}
-
-const DEFAULT_PROJECTS: EnrichedProject[] = [
-  {
-    id: "proj-01",
-    name: "Fraud Anomaly Detection",
-    slug: "fraud-anomaly-detection",
-    description: "Real-time payment fraud anomaly detection pipeline with automated drift alerts and sub-5ms inference.",
-    git_url: "https://github.com/mlite-platform/fraud-detector.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 45).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    framework: "XGBoost",
-    models_count: 3,
-    experiments_count: 18,
-    datasets_count: 2,
-    endpoint: { port: 8100, status: "RUNNING", latency: "3.2 ms" },
-    team: ["admin", "khalid", "youssef"],
-  },
-  {
-    id: "proj-02",
-    name: "Customer Churn Retention",
-    slug: "customer-churn-xgb",
-    description: "Predictive telecom churn classification utilizing gradient boosted decision trees with SMOTE balancing.",
-    git_url: "https://github.com/mlite-platform/customer-churn.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 30).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    framework: "LightGBM",
-    models_count: 2,
-    experiments_count: 24,
-    datasets_count: 3,
-    endpoint: { port: 8101, status: "RUNNING", latency: "4.1 ms" },
-    team: ["youssef", "yassi"],
-  },
-  {
-    id: "proj-03",
-    name: "Sentiment NLP Classifier",
-    slug: "sentiment-nlp-bert",
-    description: "Customer feedback sentiment classification with quantized transformer architecture and live streaming.",
-    git_url: "https://github.com/mlite-platform/sentiment-bert.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 20).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 14).toISOString(),
-    framework: "Transformers",
-    models_count: 2,
-    experiments_count: 12,
-    datasets_count: 2,
-    endpoint: { port: 8102, status: "RUNNING", latency: "7.8 ms" },
-    team: ["admin", "khalid"],
-  },
-  {
-    id: "proj-04",
-    name: "Demand Forecasting LSTM",
-    slug: "demand-forecasting-lstm",
-    description: "Multi-horizon store inventory demand forecasting combining seasonal Prophet decomposition and deep LSTMs.",
-    git_url: "https://github.com/mlite-platform/demand-forecasting.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 12).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 28).toISOString(),
-    framework: "PyTorch",
-    models_count: 1,
-    experiments_count: 8,
-    datasets_count: 4,
-    endpoint: { port: 8103, status: "RUNNING", latency: "5.6 ms" },
-    team: ["yassi", "admin"],
-  },
-  {
-    id: "proj-05",
-    name: "Credit Default Scoring",
-    slug: "credit-default-scoring",
-    description: "Consumer creditworthiness risk assessment scoring engine complying with strict fair-lending governance.",
-    git_url: "https://github.com/mlite-platform/credit-risk.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 60).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 72).toISOString(),
-    framework: "Scikit-Learn",
-    models_count: 2,
-    experiments_count: 15,
-    datasets_count: 2,
-    team: ["khalid", "youssef"],
-  },
-  {
-    id: "proj-06",
-    name: "E-Commerce Recommender",
-    slug: "ecommerce-recommender",
-    description: "Two-tower collaborative filtering recommendation model generating personalized item suggestions.",
-    git_url: "https://github.com/mlite-platform/recommender.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 18).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-    framework: "TensorFlow",
-    models_count: 1,
-    experiments_count: 9,
-    datasets_count: 3,
-    team: ["youssef"],
-  },
-];
-
 export const ProjectsPage: React.FC = () => {
-  const [projects, setProjects] = useState<EnrichedProject[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
   const [sortBy, setSortBy] = useState<"activity" | "name" | "models">("activity");
-
-  // Date range filter matching user screenshot ("Last 6 months")
-  const [timeRange, setTimeRange] = useState<string>("Last 6 months");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
 
   // View Mode: Table (default as preferred by user) or Grid
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -155,36 +40,28 @@ export const ProjectsPage: React.FC = () => {
   const [slug, setSlug] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [gitUrl, setGitUrl] = useState<string>("");
-  const [framework, setFramework] = useState<string>("XGBoost");
   const [creating, setCreating] = useState<boolean>(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  // Velocity chart filter
-  const [hoveredWeek, setHoveredWeek] = useState<{ week: string; commits: number; runs: number } | null>(null);
+  // Archive action state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Project activity chart hover point (from user's design reference)
+  // Velocity chart hover state
+  const [hoveredWeek, setHoveredWeek] = useState<{ week: string; count: number } | null>(null);
+
+  // Project activity chart hover point
   const [hoveredActivity, setHoveredActivity] = useState<{ month: string; value: number } | null>(null);
 
   const loadProjects = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchProjects();
-      if (data && data.length > 0) {
-        // Merge API data with rich details
-        const merged = data.map((p, idx) => ({
-          ...p,
-          framework: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.framework || "XGBoost",
-          models_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.models_count || 2,
-          experiments_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.experiments_count || 10,
-          datasets_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.datasets_count || 2,
-          endpoint: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.endpoint,
-          team: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.team || ["admin"],
-        }));
-        setProjects(merged);
-      } else {
-        setProjects(DEFAULT_PROJECTS);
-      }
-    } catch (e) {
-      setProjects(DEFAULT_PROJECTS);
+      setProjects(data || []);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Failed to load projects from server";
+      setError(msg);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -198,53 +75,40 @@ export const ProjectsPage: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
-      const newSlug = slug.trim() || name.toLowerCase().replace(/\s+/g, "-");
-      const created = await createProject({
+      const payload: { name: string; slug?: string; description?: string; git_url?: string } = {
         name: name.trim(),
-        slug: newSlug,
-        description: description.trim(),
-      });
-      const enriched: EnrichedProject = {
-        ...created,
-        git_url: gitUrl.trim() || `https://github.com/mlite-platform/${newSlug}.git`,
-        framework,
-        models_count: 0,
-        experiments_count: 0,
-        datasets_count: 0,
-        team: ["You"],
       };
-      setProjects((prev) => [enriched, ...prev]);
+      if (slug.trim()) payload.slug = slug.trim().toLowerCase().replace(/\s+/g, "-");
+      if (description.trim()) payload.description = description.trim();
+      if (gitUrl.trim()) payload.git_url = gitUrl.trim();
+
+      const created = await createProject(payload);
+      setProjects((prev) => [created, ...prev]);
       setShowModal(false);
       setName("");
       setSlug("");
       setDescription("");
       setGitUrl("");
-    } catch (err) {
-      const newSlug = slug.trim() || name.toLowerCase().replace(/\s+/g, "-");
-      const newProj: EnrichedProject = {
-        id: `proj-${Date.now()}`,
-        name: name.trim(),
-        slug: newSlug,
-        description: description.trim() || "Machine learning project workspace.",
-        git_url: gitUrl.trim() || `https://github.com/mlite-platform/${newSlug}.git`,
-        status: "ACTIVE",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        framework,
-        models_count: 0,
-        experiments_count: 0,
-        datasets_count: 0,
-        team: ["You"],
-      };
-      setProjects((prev) => [newProj, ...prev]);
-      setShowModal(false);
-      setName("");
-      setSlug("");
-      setDescription("");
-      setGitUrl("");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Failed to create project";
+      setCreateError(msg);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleArchive = async (proj: Project) => {
+    if (!window.confirm(`Are you sure you want to archive project "${proj.name}"?`)) return;
+    setActionLoading(proj.id);
+    try {
+      const updated = await archiveProject(proj.slug || proj.id);
+      setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+    } catch (err: any) {
+      alert(`Error archiving project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -255,9 +119,9 @@ export const ProjectsPage: React.FC = () => {
         const matchesQuery =
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (p.framework && p.framework.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
+          (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        const statusNormalized = (p.status || "").toUpperCase();
+        const matchesStatus = statusFilter === "ALL" || statusNormalized === statusFilter;
         return matchesQuery && matchesStatus;
       })
       .sort((a, b) => {
@@ -267,38 +131,49 @@ export const ProjectsPage: React.FC = () => {
       });
   }, [projects, searchQuery, statusFilter, sortBy]);
 
+  // Aggregate Real Counts
   const totalModels = useMemo(() => projects.reduce((sum, p) => sum + (p.models_count || 0), 0), [projects]);
-  const totalRuns = useMemo(() => projects.reduce((sum, p) => sum + (p.experiments_count || 0), 0), [projects]);
+  const totalDatasets = useMemo(() => projects.reduce((sum, p) => sum + (p.datasets_count || 0), 0), [projects]);
+  const totalDeployments = useMemo(() => projects.reduce((sum, p) => sum + (p.deployments_count || 0), 0), [projects]);
 
-  // Weekly velocity timeline data
-  const velocityWeeks = [
-    { week: "Week 1", commits: 14, runs: 28 },
-    { week: "Week 2", commits: 22, runs: 36 },
-    { week: "Week 3", commits: 18, runs: 31 },
-    { week: "Week 4", commits: 35, runs: 54 },
-    { week: "Week 5", commits: 28, runs: 42 },
-    { week: "Week 6", commits: 42, runs: 65 },
-    { week: "Week 7", commits: 38, runs: 58 },
-    { week: "Current", commits: 48, runs: 72 },
-  ];
+  // Status Breakdown based on real project data
+  const statusBreakdown = useMemo(() => {
+    const total = projects.length;
+    if (total === 0) {
+      return {
+        active: { count: 0, pct: 0 },
+        archived: { count: 0, pct: 0 },
+      };
+    }
+    const active = projects.filter((p) => (p.status || "").toLowerCase() === "active").length;
+    const archived = projects.filter((p) => (p.status || "").toLowerCase() === "archived").length;
+    return {
+      active: { count: active, pct: Math.round((active / total) * 100) },
+      archived: { count: archived, pct: Math.round((archived / total) * 100) },
+    };
+  }, [projects]);
 
-  // Exact Project Activity monthly data from user's design reference (Apr - Sep)
-  const activityData = [
-    { month: "Apr", value: 18, x: 55, y: 138.5 },
-    { month: "May", value: 27, x: 139, y: 122.75 },
-    { month: "Jun", value: 35, x: 223, y: 108.75 },
-    { month: "Jul", value: 31, x: 307, y: 115.75 },
-    { month: "Aug", value: 44, x: 391, y: 93.0 },
-    { month: "Sep", value: 52, x: 475, y: 79.0 },
-  ];
+  // Creation Velocity across the last 6 months (Real dates)
+  const monthlyActivity = useMemo(() => {
+    const now = new Date();
+    const months: { month: string; value: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = d.toLocaleString("en-US", { month: "short" });
+      const year = d.getFullYear();
+      const monthIdx = d.getMonth();
 
-  // Exact Project Status Counts from user reference (8 total projects: 5 Active, 2 Completed, 1 Archived)
-  const totalProjectsCount = projects.length || 8;
-  const statusBreakdown = {
-    active: { count: 5, pct: 62 },
-    completed: { count: 2, pct: 25 },
-    archived: { count: 1, pct: 13 },
-  };
+      const count = projects.filter((p) => {
+        const created = new Date(p.created_at);
+        return created.getFullYear() === year && created.getMonth() === monthIdx;
+      }).length;
+
+      months.push({ month: monthName, value: count });
+    }
+    return months;
+  }, [projects]);
+
+  const maxMonthlyVal = Math.max(...monthlyActivity.map((m) => m.value), 1);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
@@ -309,44 +184,11 @@ export const ProjectsPage: React.FC = () => {
             Workspaces &amp; Projects
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Organize ML repositories, pipelines, model registries, and team access
+            Organize ML repositories, pipelines, model registries, and datasets
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Time Range Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200/90 rounded text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
-                        ? "bg-slate-100 text-slate-900 font-medium"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button
             onClick={loadProjects}
             className="p-1.5 bg-white border border-slate-200/90 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
@@ -365,440 +207,233 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards ── */}
+      {/* ── Backend Error Banner ── */}
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-start gap-2.5 text-xs text-rose-800">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-semibold">Failed to fetch projects:</span> {error}
+          </div>
+          <button
+            onClick={loadProjects}
+            className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-900 rounded font-medium text-[11px] transition shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── Top 4 KPI StatCards (Real Database Metrics) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Active Workspaces"
-          value={`${projects.length || 8}`}
-          subtitle="Managed Git repositories"
+          value={loading ? "..." : `${projects.length}`}
+          subtitle="Managed ML workspaces"
           icon={FolderGit2}
           color="brand"
-          trend="+14% MoM"
         />
         <StatCard
           title="Cataloged Models"
-          value={`${totalModels || 15}`}
-          subtitle="Production & staging"
+          value={loading ? "..." : `${totalModels}`}
+          subtitle="Linked to workspaces"
           icon={Box}
           color="brand"
-          trend="100% verified"
         />
         <StatCard
-          title="Pipeline Executions"
-          value={`${totalRuns || 67}`}
-          subtitle="MLflow tracked runs"
-          icon={FlaskConical}
+          title="Managed Datasets"
+          value={loading ? "..." : `${totalDatasets}`}
+          subtitle="Linked datasets"
+          icon={Database}
           color="emerald"
-          trend="+27% velocity"
         />
         <StatCard
-          title="Serving Containers"
-          value="6"
-          subtitle="Active Docker endpoints"
+          title="Active Deployments"
+          value={loading ? "..." : `${totalDeployments}`}
+          subtitle="Inference containers"
           icon={Server}
           color="emerald"
-          trend="100% Online"
-          isLive
+          isLive={totalDeployments > 0}
         />
       </div>
 
-      {/* ── Visual Charts Row: Activity Velocity & Domain Breakdown ── */}
+      {/* ── Visual Analytics Row: Real Activity Trend & Status Distribution ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* CHART 1: Project Velocity & Commit Activity (7 cols) */}
+        {/* CHART 1: Project Creation Timeline (7 cols) */}
         <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
               <div>
                 <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Project Activity &amp; Training Velocity
+                  Project Workspace Creation
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Code commits vs. MLflow pipeline runs across 8 weeks
+                  Real workspace creation activity over the last 6 months
                 </p>
               </div>
 
               <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-xs bg-emerald-500" /> Runs
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-xs bg-slate-400" /> Commits
+                <span className="flex items-center gap-1.5 font-mono">
+                  <span className="w-2 h-2 rounded-xs bg-emerald-500" /> New Workspaces
                 </span>
               </div>
             </div>
 
-            <div className="relative h-44 w-full flex items-end justify-between gap-2 px-2 pb-2">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 border-b border-slate-100">
-                <div className="w-full border-t border-slate-100" />
-                <div className="w-full border-t border-slate-100" />
-                <div className="w-full border-t border-slate-100" />
+            {projects.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <Activity className="w-6 h-6 mb-1 text-slate-300" />
+                <span>No workspace activity recorded yet</span>
               </div>
-
-              {velocityWeeks.map((vw, i) => {
-                const maxVal = 80;
-                const runHeight = (vw.runs / maxVal) * 100;
-                const commitHeight = (vw.commits / maxVal) * 100;
-
-                return (
-                  <div
-                    key={i}
-                    className="relative z-10 w-full group h-full flex flex-col justify-end items-center cursor-pointer"
-                    onMouseEnter={() => setHoveredWeek(vw)}
-                    onMouseLeave={() => setHoveredWeek(null)}
-                  >
-                    <div className="w-full max-w-[32px] flex items-end justify-center gap-1 h-full">
-                      <div
-                        className="w-1/2 bg-slate-300 group-hover:bg-slate-400 rounded-t-xs transition-colors"
-                        style={{ height: `${commitHeight}%` }}
-                      />
-                      <div
-                        className="w-1/2 bg-emerald-500 group-hover:bg-emerald-600 rounded-t-xs transition-colors"
-                        style={{ height: `${runHeight}%` }}
-                      />
-                    </div>
-
-                    <div className="text-[10px] font-mono text-slate-400 mt-2 group-hover:text-slate-800 transition-colors">
-                      {vw.week.replace("Week ", "W")}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {hoveredWeek && (
-                <div className="absolute top-1 right-2 bg-white text-slate-800 text-[11px] font-mono px-3 py-1.5 rounded-md shadow-md border border-slate-200 pointer-events-none">
-                  <span className="text-slate-500">{hoveredWeek.week}: </span>
-                  <span className="text-emerald-700 font-semibold">{hoveredWeek.runs} runs</span> •{" "}
-                  <span className="text-slate-600 font-semibold">{hoveredWeek.commits} commits</span>
+            ) : (
+              <div className="relative h-44 w-full flex items-end justify-between gap-3 px-2 pb-2">
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 border-b border-slate-100">
+                  <div className="w-full border-t border-slate-100" />
+                  <div className="w-full border-t border-slate-100" />
+                  <div className="w-full border-t border-slate-100" />
                 </div>
-              )}
-            </div>
+
+                {monthlyActivity.map((ma, i) => {
+                  const barHeight = Math.max((ma.value / maxMonthlyVal) * 100, ma.value > 0 ? 12 : 4);
+                  return (
+                    <div
+                      key={i}
+                      className="relative z-10 w-full group h-full flex flex-col justify-end items-center cursor-pointer"
+                      onMouseEnter={() => setHoveredWeek({ week: ma.month, count: ma.value })}
+                      onMouseLeave={() => setHoveredWeek(null)}
+                    >
+                      <div className="w-full max-w-[36px] flex items-end justify-center h-full">
+                        <div
+                          className={`w-full rounded-t-xs transition-colors ${
+                            ma.value > 0
+                              ? "bg-emerald-500 group-hover:bg-emerald-600"
+                              : "bg-slate-200 group-hover:bg-slate-300"
+                          }`}
+                          style={{ height: `${barHeight}%` }}
+                        />
+                      </div>
+
+                      <div className="text-[10px] font-mono text-slate-400 mt-2 group-hover:text-slate-800 transition-colors">
+                        {ma.month}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {hoveredWeek && (
+                  <div className="absolute top-1 right-2 bg-white text-slate-800 text-[11px] font-mono px-3 py-1.5 rounded-md shadow-md border border-slate-200 pointer-events-none">
+                    <span className="text-slate-500">{hoveredWeek.week}: </span>
+                    <span className="text-emerald-700 font-semibold">{hoveredWeek.count} workspace(s)</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Peak: 72 runs / week</span>
-            <span className="text-emerald-700 font-medium">Pipeline Nominal</span>
+            <span>Workspace Total: {projects.length}</span>
+            <span className="text-emerald-700 font-medium">Database Synchronized</span>
           </div>
         </div>
 
-        {/* CHART 2: Project Framework & Architecture Breakdown (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  ML Framework &amp; Domains
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Ecosystem distribution across active repositories
-                </p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">
-                {projects.length} Repos
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 my-2">
-              <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="10" />
-
-                  {/* Gradient Boosted (Emerald - 40%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth="10"
-                    strokeDasharray="95.5 238.76"
-                    strokeDashoffset="0"
-                  />
-
-                  {/* Deep Learning / Transformers (Slate-600 - 35%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="10"
-                    strokeDasharray="83.5 238.76"
-                    strokeDashoffset="-95.5"
-                  />
-
-                  {/* Traditional ML / Scikit (Slate-300 - 25%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#CBD5E1"
-                    strokeWidth="10"
-                    strokeDasharray="59.7 238.76"
-                    strokeDashoffset="-179"
-                  />
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xl font-semibold font-mono text-slate-900">
-                    {projects.length}
-                  </span>
-                  <span className="text-[9px] text-slate-400 uppercase tracking-wider">
-                    Stacks
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 w-full text-xs">
-                <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                  <span className="flex items-center gap-1.5 text-slate-700">
-                    <span className="w-2 h-2 rounded-xs bg-emerald-500" />
-                    Boosted Trees
-                  </span>
-                  <span className="font-mono text-emerald-700 font-semibold">40%</span>
-                </div>
-
-                <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                  <span className="flex items-center gap-1.5 text-slate-700">
-                    <span className="w-2 h-2 rounded-xs bg-slate-600" />
-                    Deep Learning
-                  </span>
-                  <span className="font-mono text-slate-700 font-semibold">35%</span>
-                </div>
-
-                <div className="flex items-center justify-between py-1">
-                  <span className="flex items-center gap-1.5 text-slate-700">
-                    <span className="w-2 h-2 rounded-xs bg-slate-300" />
-                    Linear &amp; Anomaly
-                  </span>
-                  <span className="font-mono text-slate-500 font-semibold">25%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Runtime: Python 3.11</span>
-            <span className="text-slate-700">Verified</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Additional Analytics Row: Project activity (Line Chart) & Projects by status (Donut) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* CARD 1: Project activity */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Project Activity Trend
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Monthly pipeline and model activity index</p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">6-Month Rolling</span>
-            </div>
-
-            <div className="relative w-full h-48 pt-1">
-              <svg viewBox="0 0 520 200" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                {/* Y-Axis Grid Lines & Tick Labels (80, 60, 40, 20, 0) */}
-                {[
-                  { val: 80, y: 25 },
-                  { val: 60, y: 60 },
-                  { val: 40, y: 95 },
-                  { val: 20, y: 130 },
-                  { val: 0, y: 165 },
-                ].map((tick) => (
-                  <g key={tick.val}>
-                    <line
-                      x1="38"
-                      y1={tick.y}
-                      x2="505"
-                      y2={tick.y}
-                      stroke="#F1F5F9"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x="28"
-                      y={tick.y + 3.5}
-                      textAnchor="end"
-                      className="text-[10px] fill-slate-400 font-mono"
-                    >
-                      {tick.val}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Emerald Activity Line */}
-                <path
-                  d="M 55 130 L 139 116 L 223 103 L 307 110 L 391 88 L 475 74"
-                  fill="none"
-                  stroke="#10B981"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Data Points, Values on Top, and Hover Circle */}
-                {activityData.map((pt, idx) => {
-                  const ptsY = [130, 116, 103, 110, 88, 74];
-                  const y = ptsY[idx];
-                  const isHovered = hoveredActivity?.month === pt.month;
-                  return (
-                    <g
-                      key={pt.month}
-                      className="cursor-pointer"
-                      onMouseEnter={() => setHoveredActivity({ month: pt.month, value: pt.value })}
-                      onMouseLeave={() => setHoveredActivity(null)}
-                    >
-                      <text
-                        x={pt.x}
-                        y={y - 8}
-                        textAnchor="middle"
-                        className="text-[11px] font-mono fill-slate-700"
-                      >
-                        {pt.value}
-                      </text>
-
-                      <circle
-                        cx={pt.x}
-                        cy={y}
-                        r={isHovered ? 4.5 : 3}
-                        fill="#10B981"
-                        stroke="#FFFFFF"
-                        strokeWidth={1.5}
-                      />
-
-                      <text
-                        x={pt.x}
-                        y="185"
-                        textAnchor="middle"
-                        className="text-[11px] fill-slate-500 font-sans"
-                      >
-                        {pt.month}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-          </div>
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Index Baseline: 100</span>
-            <span className="text-emerald-700 font-medium">+189% Velocity</span>
-          </div>
-        </div>
-
-        {/* CARD 2: Projects by status */}
+        {/* CHART 2: Real Projects by Status (5 cols) */}
         <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
             <div className="mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Projects by Status
+                  Workspaces by Status
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Lifecycle state governance</p>
               </div>
-              <span className="text-[11px] font-mono text-slate-500">{totalProjectsCount} Total</span>
+              <span className="text-[11px] font-mono text-slate-500">{projects.length} Total</span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-              {/* Donut Chart with Centered Number */}
-              <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#F1F5F9"
-                    strokeWidth="12"
-                  />
+            {projects.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <FolderGit2 className="w-6 h-6 mb-1 text-slate-300" />
+                <span>No projects recorded</span>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                {/* Donut Chart with Centered Number */}
+                <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="54"
+                      fill="none"
+                      stroke="#F1F5F9"
+                      strokeWidth="12"
+                    />
 
-                  {/* Active (Green - 62%) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth="12"
-                    strokeDasharray="212.06 339.29"
-                    strokeDashoffset="0"
-                  />
+                    {/* Active Slice */}
+                    {statusBreakdown.active.pct > 0 && (
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="54"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="12"
+                        strokeDasharray={`${(statusBreakdown.active.pct / 100) * 339.29} 339.29`}
+                        strokeDashoffset="0"
+                      />
+                    )}
 
-                  {/* Completed (Muted Slate-600 - 25%) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="12"
-                    strokeDasharray="84.82 339.29"
-                    strokeDashoffset="-212.06"
-                  />
+                    {/* Archived Slice */}
+                    {statusBreakdown.archived.pct > 0 && (
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="54"
+                        fill="none"
+                        stroke="#94A3B8"
+                        strokeWidth="12"
+                        strokeDasharray={`${(statusBreakdown.archived.pct / 100) * 339.29} 339.29`}
+                        strokeDashoffset={`${-((statusBreakdown.active.pct / 100) * 339.29)}`}
+                      />
+                    )}
+                  </svg>
 
-                  {/* Archived (Light Slate - 13%) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#CBD5E1"
-                    strokeWidth="12"
-                    strokeDasharray="42.41 339.29"
-                    strokeDashoffset="-296.88"
-                  />
-                </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-semibold font-mono text-slate-900">
+                      {projects.length}
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                      Total
+                    </span>
+                  </div>
+                </div>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xl font-semibold font-mono text-slate-900">
-                    {totalProjectsCount}
-                  </span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                    Total
-                  </span>
+                {/* Legend List */}
+                <div className="flex-1 w-full space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-slate-50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-xs bg-emerald-500" />
+                      <span className="text-slate-700">Active</span>
+                    </div>
+                    <span className="font-mono text-slate-900 font-semibold">
+                      {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-xs bg-slate-400" />
+                      <span className="text-slate-700">Archived</span>
+                    </div>
+                    <span className="font-mono text-slate-500 font-semibold">
+                      {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              {/* Legend List */}
-              <div className="flex-1 w-full space-y-2 text-xs">
-                <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-xs bg-emerald-500" />
-                    <span className="text-slate-700">Active</span>
-                  </div>
-                  <span className="font-mono text-slate-900 font-semibold">
-                    {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-xs bg-slate-600" />
-                    <span className="text-slate-700">Completed</span>
-                  </div>
-                  <span className="font-mono text-slate-900 font-semibold">
-                    {statusBreakdown.completed.count} ({statusBreakdown.completed.pct}%)
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-xs bg-slate-300" />
-                    <span className="text-slate-700">Archived</span>
-                  </div>
-                  <span className="font-mono text-slate-500 font-semibold">
-                    {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
-                  </span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
+
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Governance Gate</span>
-            <span className="text-emerald-700 font-medium">Passed</span>
+            <span>Governance</span>
+            <span className="text-emerald-700 font-medium">PostgreSQL Live</span>
           </div>
         </div>
       </div>
@@ -811,7 +446,7 @@ export const ProjectsPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search workspaces by name, slug, framework..."
+            placeholder="Search workspaces by name, slug, description..."
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50/60 border border-slate-200/80 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition text-slate-900 placeholder:text-slate-400"
           />
         </div>
@@ -874,32 +509,52 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Projects Display: TABLE VIEW (Default & Preferred) ── */}
-      {filteredProjects.length === 0 ? (
+      {/* ── Projects Display ── */}
+      {loading ? (
+        <div className="py-16 text-center bg-white border border-slate-200/80 rounded-md">
+          <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin mx-auto mb-2" />
+          <p className="text-xs text-slate-500 font-medium">Loading project workspaces...</p>
+        </div>
+      ) : filteredProjects.length === 0 ? (
         <div className="text-center py-12 bg-white border border-slate-200/80 rounded-md">
           <FolderGit2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-xs font-semibold text-slate-800">No Workspaces Found</h3>
+          <h3 className="text-xs font-semibold text-slate-800">
+            {projects.length === 0 ? "No Project Workspaces Yet" : "No Matching Workspaces Found"}
+          </h3>
           <p className="text-xs text-slate-400 mt-0.5 max-w-sm mx-auto">
-            No projects match the current search or status filter.
+            {projects.length === 0
+              ? "Create your first ML project workspace to organize models, experiments, and datasets."
+              : "No projects match the current search or status filter."}
           </p>
-          <button
-            onClick={() => {
-              setSearchQuery("");
-              setStatusFilter("ALL");
-            }}
-            className="mt-3 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition"
-          >
-            Reset Filters
-          </button>
+          {projects.length === 0 ? (
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Project
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("ALL");
+              }}
+              className="mt-3 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       ) : viewMode === "table" ? (
+        /* ── TABLE VIEW (Default) ── */
         <div className="bg-white border border-slate-200/80 rounded-md overflow-hidden">
           <div className="px-4 py-2.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
               Workspaces ({filteredProjects.length})
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              {totalModels} models • {totalRuns} runs
+              {totalModels} models • {totalDatasets} datasets • {totalDeployments} deployments
             </span>
           </div>
 
@@ -908,10 +563,9 @@ export const ProjectsPage: React.FC = () => {
               <thead className="bg-[#F8FAFC] border-b border-slate-200/80 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-2.5">Workspace</th>
-                  <th className="px-3 py-2.5">Framework</th>
+                  <th className="px-3 py-2.5">Branch</th>
                   <th className="px-3 py-2.5">Resources</th>
-                  <th className="px-3 py-2.5">Serving Endpoint</th>
-                  <th className="px-3 py-2.5">Team</th>
+                  <th className="px-3 py-2.5">Created</th>
                   <th className="px-3 py-2.5">Status</th>
                   <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
@@ -931,7 +585,7 @@ export const ProjectsPage: React.FC = () => {
                             </span>
                           </div>
                           {proj.description && (
-                            <p className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
+                            <p className="text-[11px] text-slate-400 truncate max-w-sm mt-0.5">
                               {proj.description}
                             </p>
                           )}
@@ -939,47 +593,33 @@ export const ProjectsPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Framework */}
+                    {/* Git Branch / URL */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-[11px] text-slate-600">
-                        {proj.framework || "XGBoost"}
-                      </span>
-                    </td>
-
-                    {/* MLOps Resources (Compact inline monospaced counts) */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div className="flex items-center gap-2 font-mono text-[11px] text-slate-600">
-                        <span title="Models">{proj.models_count || 0}m</span>
-                        <span className="text-slate-300">•</span>
-                        <span title="Runs">{proj.experiments_count || 0}r</span>
-                        <span className="text-slate-300">•</span>
-                        <span title="Datasets">{proj.datasets_count || 0}d</span>
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600">
+                        <GitBranch className="w-3 h-3 text-slate-400" />
+                        <span>{proj.default_branch || "main"}</span>
                       </div>
                     </td>
 
-                    {/* Live Serving Endpoint */}
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px]">
-                      {proj.endpoint ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          <span className="text-slate-800">:{proj.endpoint.port}</span>
-                          <span className="text-slate-400">({proj.endpoint.latency})</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
+                    {/* MLOps Resources (Real DB counts) */}
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-2 font-mono text-[11px] text-slate-600">
+                        <span title="Models" className="text-slate-800 font-semibold">{proj.models_count || 0}m</span>
+                        <span className="text-slate-300">•</span>
+                        <span title="Datasets">{proj.datasets_count || 0}d</span>
+                        <span className="text-slate-300">•</span>
+                        <span title="Deployments">{proj.deployments_count || 0}dep</span>
+                      </div>
                     </td>
 
-                    {/* Team Collaborators */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="text-[11px] text-slate-600 font-mono">
-                        {(proj.team || ["admin"]).join(", ")}
-                      </span>
+                    {/* Created Date */}
+                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-500">
+                      {new Date(proj.created_at).toLocaleDateString()}
                     </td>
 
                     {/* Status */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <StatusBadge status={proj.status} />
+                      <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
                     </td>
 
                     {/* Actions */}
@@ -995,6 +635,16 @@ export const ProjectsPage: React.FC = () => {
                           >
                             <GitBranch className="w-3.5 h-3.5" />
                           </a>
+                        )}
+                        {(proj.status || "").toLowerCase() === "active" && (
+                          <button
+                            onClick={() => handleArchive(proj)}
+                            disabled={actionLoading === proj.id}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
+                            title="Archive Workspace"
+                          >
+                            <Archive className="w-3.5 h-3.5" />
+                          </button>
                         )}
                         <Link
                           to="/app/experiments"
@@ -1012,7 +662,7 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* ── ALTERNATIVE GRID CARDS VIEW ── */
+        /* ── GRID CARDS VIEW ── */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProjects.map((proj) => (
             <div
@@ -1021,17 +671,17 @@ export const ProjectsPage: React.FC = () => {
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
-                  <span className="font-mono text-[11px] text-slate-500">
+                  <span className="font-mono text-[11px] text-slate-500 truncate">
                     {proj.slug}
                   </span>
-                  <StatusBadge status={proj.status} />
+                  <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
                 </div>
 
                 <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors line-clamp-1">
                   {proj.name}
                 </h3>
                 <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                  {proj.description || "Production ML pipeline workspace with automated lineage."}
+                  {proj.description || "Workspace for models, experiments, and datasets."}
                 </p>
 
                 <div className="grid grid-cols-3 gap-2 p-2 bg-slate-50/70 border border-slate-100 rounded text-center mb-3">
@@ -1042,40 +692,23 @@ export const ProjectsPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="border-x border-slate-200/70">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Runs</span>
-                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
-                      {proj.experiments_count || 0}
-                    </span>
-                  </div>
-                  <div>
                     <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Datasets</span>
                     <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
                       {proj.datasets_count || 0}
                     </span>
                   </div>
-                </div>
-
-                {proj.endpoint ? (
-                  <div className="p-2 rounded bg-emerald-50/50 border border-emerald-200/60 flex items-center justify-between text-[11px] font-mono mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-slate-800">:{proj.endpoint.port} Live</span>
-                    </div>
-                    <span className="text-emerald-700 font-medium">
-                      {proj.endpoint.latency}
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Deploys</span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
+                      {proj.deployments_count || 0}
                     </span>
                   </div>
-                ) : (
-                  <div className="p-2 rounded bg-slate-50/60 border border-slate-200/60 flex items-center justify-between text-[11px] font-mono mb-3 text-slate-400">
-                    <span>No active endpoint</span>
-                    <span>Staging</span>
-                  </div>
-                )}
+                </div>
               </div>
 
               <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[11px] font-mono text-slate-500">
-                  {(proj.team || ["admin"]).join(", ")}
+                  {new Date(proj.created_at).toLocaleDateString()}
                 </span>
 
                 <div className="flex items-center gap-1.5">
@@ -1089,6 +722,16 @@ export const ProjectsPage: React.FC = () => {
                     >
                       <GitBranch className="w-3.5 h-3.5" />
                     </a>
+                  )}
+                  {(proj.status || "").toLowerCase() === "active" && (
+                    <button
+                      onClick={() => handleArchive(proj)}
+                      disabled={actionLoading === proj.id}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
+                      title="Archive Workspace"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                    </button>
                   )}
                   <Link
                     to="/app/experiments"
@@ -1114,12 +757,22 @@ export const ProjectsPage: React.FC = () => {
                 Create New Project Workspace
               </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setCreateError(null);
+                }}
                 className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {createError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{createError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreate} className="space-y-3.5">
               <div>
@@ -1136,42 +789,22 @@ export const ProjectsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
-                    Slug (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="credit-risk"
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
-                    Primary Framework
-                  </label>
-                  <select
-                    value={framework}
-                    onChange={(e) => setFramework(e.target.value)}
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-medium"
-                  >
-                    <option value="XGBoost">XGBoost</option>
-                    <option value="LightGBM">LightGBM</option>
-                    <option value="PyTorch">PyTorch</option>
-                    <option value="Transformers">Transformers</option>
-                    <option value="Scikit-Learn">Scikit-Learn</option>
-                    <option value="TensorFlow">TensorFlow</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Slug (optional — auto-generated from name)
+                </label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="credit-risk"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                />
               </div>
 
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
-                  Git Repository URL
+                  Git Repository URL (optional)
                 </label>
                 <input
                   type="url"
@@ -1198,7 +831,10 @@ export const ProjectsPage: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setCreateError(null);
+                  }}
                   className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
                 >
                   Cancel

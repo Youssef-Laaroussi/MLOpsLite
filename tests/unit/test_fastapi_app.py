@@ -112,6 +112,22 @@ class TestHealthEndpoints:
         assert resp.status_code == 200
         assert resp.json()["status"] == "ready"
 
+    def test_health_stats(self, app):
+        resp = _run(_get(app, "/api/v1/health/stats"))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "projects_count" in data
+        assert "models_count" in data
+        assert "datasets_count" in data
+        assert "experiments_count" in data
+        assert "active_deployments" in data
+        assert "stages" in data
+        assert "funnel" in data
+        assert "benchmarks" in data
+        assert "latency_telemetry" in data
+        assert "drift_trajectory" in data
+        assert data["system_healthy"] is True
+
 
 # ── Scaffold routers ──────────────────────────────────────
 

@@ -71,10 +71,14 @@ class ProjectResponse(BaseModel):
     default_branch: str
     config_yaml: str | None = None
     status: str
+    models_count: int = 0
+    datasets_count: int = 0
+    deployments_count: int = 0
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
 
 
 class ProjectListResponse(BaseModel):

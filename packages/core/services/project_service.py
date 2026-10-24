@@ -39,7 +39,33 @@ class ProjectService:
         result = await self.session.execute(
             select(Project).where((Project.slug == slug_or_id) | (Project.id == slug_or_id))
         )
-        return result.scalar_one_or_none()
+        project = result.scalar_one_or_none()
+        if project:
+            from packages.core.models.model_registry import RegisteredModel
+            from packages.core.models.dataset import Dataset
+            from packages.core.models.deployment import Deployment
+
+            m_count = (
+                await self.session.execute(
+                    select(func.count(RegisteredModel.id)).where(RegisteredModel.project_id == project.id)
+                )
+            ).scalar() or 0
+            d_count = (
+                await self.session.execute(
+                    select(func.count(Dataset.id)).where(Dataset.project_id == project.id)
+                )
+            ).scalar() or 0
+            dep_count = (
+                await self.session.execute(
+                    select(func.count(Deployment.id)).where(Deployment.project_id == project.id)
+                )
+            ).scalar() or 0
+
+            setattr(project, "models_count", m_count)
+            setattr(project, "datasets_count", d_count)
+            setattr(project, "deployments_count", dep_count)
+
+        return project
 
     async def list_projects(
         self,
@@ -63,6 +89,43 @@ class ProjectService:
 
         count_result = await self.session.execute(count_query)
         total = count_result.scalar() or 0
+
+        # Populate real resource counts for each project
+        if projects:
+            project_ids = [p.id for p in projects]
+
+            from packages.core.models.model_registry import RegisteredModel
+            from packages.core.models.dataset import Dataset
+            from packages.core.models.deployment import Deployment
+
+            models_stmt = (
+                select(RegisteredModel.project_id, func.count(RegisteredModel.id))
+                .where(RegisteredModel.project_id.in_(project_ids))
+                .group_by(RegisteredModel.project_id)
+            )
+            models_res = await self.session.execute(models_stmt)
+            model_counts = dict(models_res.all())
+
+            datasets_stmt = (
+                select(Dataset.project_id, func.count(Dataset.id))
+                .where(Dataset.project_id.in_(project_ids))
+                .group_by(Dataset.project_id)
+            )
+            datasets_res = await self.session.execute(datasets_stmt)
+            dataset_counts = dict(datasets_res.all())
+
+            deployments_stmt = (
+                select(Deployment.project_id, func.count(Deployment.id))
+                .where(Deployment.project_id.in_(project_ids))
+                .group_by(Deployment.project_id)
+            )
+            deployments_res = await self.session.execute(deployments_stmt)
+            deployment_counts = dict(deployments_res.all())
+
+            for p in projects:
+                setattr(p, "models_count", model_counts.get(p.id, 0))
+                setattr(p, "datasets_count", dataset_counts.get(p.id, 0))
+                setattr(p, "deployments_count", deployment_counts.get(p.id, 0))
 
         return projects, total
 

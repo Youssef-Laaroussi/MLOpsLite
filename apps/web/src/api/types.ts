@@ -204,3 +204,47 @@ export interface Experiment {
   runs?: ExperimentRun[];
 }
 
+export interface DriftEvaluationItem {
+  id: string;
+  model_name: string;
+  deployment_id?: string | null;
+  drift_share: number;
+  drift_status: "LOW" | "MEDIUM" | "HIGH";
+  drifted_features?: string[] | null;
+  metrics?: Record<string, any> | null;
+  html_report_path?: string | null;
+  created_at: string;
+}
+
+export interface TelemetryPoint {
+  time: string;
+  p50: number;
+  p95: number;
+  p99: number;
+  requests: number;
+  errors: number;
+}
+
+export interface DataQualitySummary {
+  id: string;
+  dataset_id: string;
+  score: number;
+  status: "PASS" | "WARN" | "FAIL";
+  rows_count: number;
+  cols_count: number;
+  null_percentage: number;
+  duplicate_percentage: number;
+  created_at: string;
+}
+
+export interface MonitoringSummary {
+  model_name: string;
+  models_available: string[];
+  latest_drift?: DriftEvaluationItem | null;
+  drift_history: DriftEvaluationItem[];
+  telemetry: TelemetryPoint[];
+  active_deployments: number;
+  total_predictions: number;
+  latest_quality?: DataQualitySummary | null;
+}
+

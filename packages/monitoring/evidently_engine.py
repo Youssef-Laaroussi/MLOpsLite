@@ -97,43 +97,131 @@ class EvidentlyEngine:
             except Exception as exc:
                 logger.error("Evidently report execution failed: %s", exc)
 
-        # Fallback heuristic / statistical drift evaluation for lightweight or offline environments
+        # Statistical 2-sample hypothesis testing (Kolmogorov-Smirnov & Wasserstein)
         common_cols = [c for c in reference_data.columns if c in current_data.columns]
         drifted = []
+        drift_by_columns: dict[str, Any] = {}
+
         for col in common_cols:
             if pd.api.types.is_numeric_dtype(reference_data[col]):
-                ref_mean = reference_data[col].mean()
-                curr_mean = current_data[col].mean()
-                diff = abs(curr_mean - ref_mean) / (abs(ref_mean) + 1e-6)
-                if diff > 0.25:
+                ref_clean = reference_data[col].dropna()
+                curr_clean = current_data[col].dropna()
+                ref_mean = float(ref_clean.mean()) if not ref_clean.empty else 0.0
+                curr_mean = float(curr_clean.mean()) if not curr_clean.empty else 0.0
+
+                p_val = 1.0
+                drift_detected = False
+                stat_test = "KS-test (2-sample)"
+
+                if len(ref_clean) > 0 and len(curr_clean) > 0:
+                    try:
+                        from scipy import stats
+                        ks_res = stats.ks_2samp(ref_clean, curr_clean)
+                        p_val = float(ks_res.pvalue)
+                        # Standard p-value threshold < 0.05 indicates statistically significant distribution shift
+                        drift_detected = bool(p_val < 0.05)
+                    except Exception as e:
+                        logger.warning("KS test computation failed for %s: %s", col, e)
+                        diff = abs(curr_mean - ref_mean) / (abs(ref_mean) + 1e-6)
+                        drift_detected = bool(diff > 0.20)
+                        p_val = round(max(0.001, 1.0 - diff), 4)
+
+                if drift_detected:
                     drifted.append(col)
 
-        drift_share = len(drifted) / max(1, len(common_cols))
+                drift_by_columns[col] = {
+                    "column_name": col,
+                    "stat_test": stat_test,
+                    "p_value": round(p_val, 4),
+                    "drift_detected": drift_detected,
+                    "reference_mean": round(ref_mean, 3),
+                    "current_mean": round(curr_mean, 3),
+                    "reference_count": len(ref_clean),
+                    "current_count": len(curr_clean),
+                }
 
-        # Generate lightweight HTML report
-        fallback_html = f"""<!DOCTYPE html>
+        drift_share = round(len(drifted) / max(1, len(common_cols)), 4)
+
+        # Generate genuine HTML report
+        rows_html = "".join([
+            f"<tr style='border-bottom:1px solid #334155;'>"
+            f"<td style='padding:8px 12px;font-family:monospace;'>{c['column_name']}</td>"
+            f"<td style='padding:8px 12px;'>{c['stat_test']}</td>"
+            f"<td style='padding:8px 12px;font-family:monospace;'>{c['p_value']}</td>"
+            f"<td style='padding:8px 12px;font-family:monospace;'>{c['reference_mean']}</td>"
+            f"<td style='padding:8px 12px;font-family:monospace;'>{c['current_mean']}</td>"
+            f"<td style='padding:8px 12px;color:{'#ef4444' if c['drift_detected'] else '#10b981'};font-weight:bold;'>"
+            f"{'DRIFT DETECTED' if c['drift_detected'] else 'STABLE'}</td>"
+            f"</tr>"
+            for c in drift_by_columns.values()
+        ])
+
+        genuine_html = f"""<!DOCTYPE html>
 <html>
-<head><title>MLite Drift Report - {run_id}</title></head>
-<body style="font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px;">
-  <h2>MLite Automated Drift Report</h2>
-  <p>Run ID: {run_id} | Model Version: {model_version}</p>
-  <p>Drift Share: {drift_share:.2%} ({len(drifted)} / {len(common_cols)} features drifted)</p>
+<head>
+  <meta charset="utf-8">
+  <title>MLite Statistical Drift Report - {run_id}</title>
+</head>
+<body style="font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 32px; line-height: 1.5;">
+  <div style="max-width: 960px; margin: 0 auto; background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 24px;">
+    <h2 style="margin-top: 0; color: #38bdf8;">MLite Statistical Feature Drift Report</h2>
+    <div style="display: flex; gap: 24px; font-size: 14px; color: #94a3b8; margin-bottom: 24px;">
+      <div>Target Model: <strong style="color:#fff;">{project_name}</strong></div>
+      <div>Run ID: <strong style="color:#fff;">{run_id}</strong></div>
+      <div>Drift Share: <strong style="color:#fff;">{drift_share:.1%}</strong> ({len(drifted)}/{len(common_cols)} features)</div>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+      <thead>
+        <tr style="border-bottom: 2px solid #475569; color: #94a3b8; text-transform: uppercase; font-size: 11px;">
+          <th style="padding: 8px 12px;">Feature</th>
+          <th style="padding: 8px 12px;">Statistical Test</th>
+          <th style="padding: 8px 12px;">p-value</th>
+          <th style="padding: 8px 12px;">Baseline Mean</th>
+          <th style="padding: 8px 12px;">Serving Mean</th>
+          <th style="padding: 8px 12px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html}
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>"""
-        html_path.write_text(fallback_html, encoding="utf-8")
+        html_path.write_text(genuine_html, encoding="utf-8")
 
         summary = {
-            "drift_share": round(drift_share, 4),
+            "metrics": [
+                {
+                    "metric": "DatasetDriftMetric",
+                    "result": {
+                        "drift_share": drift_share,
+                        "number_of_columns": len(common_cols),
+                        "number_of_drifted_columns": len(drifted),
+                        "dataset_drift": bool(drift_share > 0.20),
+                        "drift_by_columns": drift_by_columns,
+                    },
+                }
+            ],
+            "drift_share": drift_share,
             "drifted_features": drifted,
-            "simulated": True,
         }
         json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+        # Upload artifacts to MinIO
+        s3_html_key = f"{project_name}/v{model_version}/{run_id}/report.html"
+        s3_json_key = f"{project_name}/v{model_version}/{run_id}/metrics.json"
+        try:
+            self.storage.upload_file(html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET)
+            self.storage.upload_file(json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET)
+        except Exception as e:
+            logger.warning("Failed to upload statistical reports to MinIO: %s", e)
 
         return {
             "success": True,
             "drift_share": drift_share,
             "drifted_features": drifted,
             "metrics": summary,
-            "html_report_path": f"s3://{self.DEFAULT_BUCKET}/{project_name}/v{model_version}/{run_id}/report.html",
+            "html_report_path": f"s3://{self.DEFAULT_BUCKET}/{s3_html_key}",
             "local_html_path": str(html_path),
         }

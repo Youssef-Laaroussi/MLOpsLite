@@ -13,6 +13,7 @@ import {
   AuditLog,
   Experiment,
   ExperimentRun,
+  MonitoringSummary,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -308,5 +309,27 @@ export const createExperiment = async (data: { name: string; tags?: Record<strin
 
 export const deleteExperiment = async (experimentId: string): Promise<void> => {
   await api.delete(`/experiments/${experimentId}`);
+};
+
+// ── Monitoring & Observability ─────────────────────────────────────
+
+export const fetchMonitoringSummary = async (modelName?: string): Promise<MonitoringSummary> => {
+  const res = await api.get("/monitoring/summary", { params: { model_name: modelName } });
+  return res.data;
+};
+
+export const triggerDriftCheck = async (data: {
+  model_name: string;
+  drift_threshold?: number;
+  reference_dataset_id?: string;
+  current_dataset_id?: string;
+}): Promise<any> => {
+  const res = await api.post("/monitoring/drift/check", data);
+  return res.data;
+};
+
+export const fetchDriftReportHtml = async (reportId: string): Promise<string> => {
+  const res = await api.get(`/monitoring/reports/${reportId}/html`);
+  return res.data;
 };
 

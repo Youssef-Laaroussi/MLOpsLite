@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
@@ -117,14 +118,26 @@ export const ProjectsPage: React.FC = () => {
   const [editStatus, setEditStatus] = useState<string>("active");
   const [savingEdit, setSavingEdit] = useState<boolean>(false);
 
+  // Notification banner state
+  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  const showToast = (type: "success" | "error", text: string) => {
+    setToastMessage({ type, text });
+    setTimeout(() => {
+      setToastMessage((current) => (current?.text === text ? null : current));
+    }, 4000);
+  };
+
   const handleArchive = async (proj: Project) => {
-    if (!window.confirm(`Are you sure you want to archive project "${proj.name}"?`)) return;
     setActionLoading(proj.id);
     try {
       const updated = await archiveProject(proj.slug || proj.id);
       setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+      showToast("success", `Project "${proj.name}" was successfully archived.`);
     } catch (err: any) {
-      alert(`Error archiving project: ${err.response?.data?.detail || err.message}`);
+      showToast("error", `Failed to archive project: ${err.response?.data?.detail || err.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -153,23 +166,27 @@ export const ProjectsPage: React.FC = () => {
       });
       setProjects((prev) => prev.map((p) => (p.id === editingProject.id ? updated : p)));
       setEditingProject(null);
+      showToast("success", `Project "${updated.name}" updated successfully.`);
     } catch (err: any) {
-      alert(`Error updating project: ${err.response?.data?.detail || err.message}`);
+      showToast("error", `Failed to update project: ${err.response?.data?.detail || err.message}`);
     } finally {
       setSavingEdit(false);
     }
   };
 
-  const handleDelete = async (proj: Project) => {
-    if (!window.confirm(`Permanently delete project "${proj.name}"? This will delete all associated project records and cannot be undone.`)) return;
-    setActionLoading(proj.id);
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
     try {
-      await deleteProject(proj.slug || proj.id);
-      setProjects((prev) => prev.filter((p) => p.id !== proj.id));
+      await deleteProject(projectToDelete.slug || projectToDelete.id);
+      const deletedName = projectToDelete.name;
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+      setProjectToDelete(null);
+      showToast("success", `Project "${deletedName}" has been permanently deleted.`);
     } catch (err: any) {
-      alert(`Error deleting project: ${err.response?.data?.detail || err.message}`);
+      showToast("error", `Failed to delete project: ${err.response?.data?.detail || err.message}`);
     } finally {
-      setActionLoading(null);
+      setDeleting(false);
     }
   };
 
@@ -178,8 +195,9 @@ export const ProjectsPage: React.FC = () => {
     try {
       const updated = await updateProject(proj.slug || proj.id, { status: "active" });
       setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+      showToast("success", `Project "${proj.name}" restored to active status.`);
     } catch (err: any) {
-      alert(`Error restoring project: ${err.response?.data?.detail || err.message}`);
+      showToast("error", `Failed to restore project: ${err.response?.data?.detail || err.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -279,6 +297,32 @@ export const ProjectsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Toast Action Notification Banner ── */}
+      {toastMessage && (
+        <div
+          className={`p-3 rounded-md flex items-center justify-between text-xs animate-in fade-in duration-200 ${
+            toastMessage.type === "success"
+              ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+              : "bg-rose-50 border border-rose-200 text-rose-800"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {toastMessage.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="font-medium">{toastMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-slate-600 p-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── Backend Error Banner ── */}
       {error && (
@@ -739,7 +783,7 @@ export const ProjectsPage: React.FC = () => {
                         )}
 
                         <button
-                          onClick={() => handleDelete(proj)}
+                          onClick={() => setProjectToDelete(proj)}
                           disabled={actionLoading === proj.id}
                           className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                           title="Delete Project Permanently"
@@ -854,7 +898,7 @@ export const ProjectsPage: React.FC = () => {
                   )}
 
                   <button
-                    onClick={() => handleDelete(proj)}
+                    onClick={() => setProjectToDelete(proj)}
                     disabled={actionLoading === proj.id}
                     className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                     title="Delete Project Permanently"
@@ -1084,6 +1128,52 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── Modal: Confirm Permanent Deletion ── */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 bg-rose-50 rounded-full border border-rose-200">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Delete Project Workspace?
+                </h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  {projectToDelete.name} ({projectToDelete.slug})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded border border-slate-200/80">
+              Are you sure you want to permanently delete this project? This will remove all associated database records and cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setProjectToDelete(null)}
+                className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="px-3.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting && <RefreshCw className="w-3 h-3 animate-spin" />}
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

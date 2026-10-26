@@ -224,6 +224,38 @@ export const createDataset = async (data: {
   return res.data;
 };
 
+export const uploadDatasetFile = async (datasetId: string, file: File, description?: string): Promise<any> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (description) formData.append("description", description);
+  const res = await api.post(`/datasets/${datasetId}/upload`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const fetchDatasetVersions = async (datasetId: string): Promise<any[]> => {
+  const res = await api.get(`/datasets/${datasetId}/versions`);
+  return res.data || [];
+};
+
+export const fetchDvcStatus = async (): Promise<{
+  is_installed: boolean;
+  remote_name: string;
+  remote_bucket: string;
+  remote_prefix: string;
+  minio_endpoint: string;
+  dvc_dir_exists: boolean;
+}> => {
+  const res = await api.get("/datasets/dvc/status");
+  return res.data;
+};
+
+export const deleteDataset = async (datasetId: string): Promise<void> => {
+  await api.delete(`/datasets/${datasetId}`);
+};
+
+
 // ── System Stats & Subsystem Health ───────────────────────────────
 
 export const fetchSystemStats = async (): Promise<SystemStats> => {
@@ -260,25 +292,21 @@ export const fetchSystemServices = async (): Promise<SubsystemService[]> => {
 // ── Experiments & Runs (MLflow Proxy) ──────────────────────────────
 
 export const fetchExperiments = async (project?: string): Promise<Experiment[]> => {
-  try {
-    const res = await api.get("/experiments/", { params: { project } });
-    return res.data.experiments || [];
-  } catch {
-    return [];
-  }
+  const res = await api.get("/experiments/", { params: { project } });
+  return res.data.experiments || [];
 };
 
 export const fetchExperimentRuns = async (experimentId: string): Promise<ExperimentRun[]> => {
-  try {
-    const res = await api.get(`/experiments/${experimentId}/runs`);
-    return res.data.runs || [];
-  } catch {
-    return [];
-  }
+  const res = await api.get(`/experiments/${experimentId}/runs`);
+  return res.data.runs || [];
 };
 
 export const createExperiment = async (data: { name: string; tags?: Record<string, string> }): Promise<any> => {
   const res = await api.post("/experiments/", data);
   return res.data;
+};
+
+export const deleteExperiment = async (experimentId: string): Promise<void> => {
+  await api.delete(`/experiments/${experimentId}`);
 };
 

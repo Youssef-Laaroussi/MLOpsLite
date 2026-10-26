@@ -33,6 +33,20 @@ async def _get(app, path, headers=None):
         return await ac.get(path, headers=headers or {})
 
 
+async def _post(app, path, json=None, headers=None):
+    """Perform an async POST request against the test app."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        return await ac.post(path, json=json, headers=headers or {})
+
+
+async def _delete(app, path, headers=None):
+    """Perform an async DELETE request against the test app."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        return await ac.delete(path, headers=headers or {})
+
+
 async def _options(app, path, headers=None):
     """Perform an async OPTIONS request against the test app."""
     transport = ASGITransport(app=app)
@@ -147,12 +161,41 @@ class TestScaffoldRouters:
         assert resp.status_code == 200
         assert resp.json() == {"datasets": [], "total": 0}
 
+    def test_dvc_status(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/datasets/dvc/status"))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "is_installed" in data
+        assert "remote_name" in data
+        assert "remote_bucket" in data
+        assert "minio_endpoint" in data
+
+
     def test_list_experiments(self, authed_app):
         resp = _run(_get(authed_app, "/api/v1/experiments/"))
         assert resp.status_code == 200
         data = resp.json()
         assert "experiments" in data
         assert isinstance(data.get("experiments"), list)
+
+    def test_experiment_lifecycle(self, authed_app):
+        import uuid
+        exp_name = f"pytest-exp-{uuid.uuid4().hex[:6]}"
+        # Create experiment
+        create_resp = _run(_post(authed_app, "/api/v1/experiments/", {"name": exp_name, "tags": {"team": "qa"}}))
+        assert create_resp.status_code == 201
+        created = create_resp.json()
+        assert created["name"] == exp_name
+        exp_id = created["experiment_id"]
+
+        # List runs (should be 0)
+        runs_resp = _run(_get(authed_app, f"/api/v1/experiments/{exp_id}/runs"))
+        assert runs_resp.status_code == 200
+        assert runs_resp.json()["runs"] == []
+
+        # Delete experiment
+        del_resp = _run(_delete(authed_app, f"/api/v1/experiments/{exp_id}"))
+        assert del_resp.status_code == 204
 
     def test_list_models(self, authed_app):
         resp = _run(_get(authed_app, "/api/v1/models/"))

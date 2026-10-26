@@ -3,11 +3,14 @@
 Provides dataset registration, schema extraction, MinIO synchronization, and versioning.
 """
 
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
@@ -185,3 +188,61 @@ async def validate_dataset(
     await db.flush()
     await db.refresh(report)
     return report
+
+
+
+@router.post("/{dataset_id}/upload", response_model=DatasetVersionResponse, status_code=status.HTTP_201_CREATED)
+async def upload_dataset_file(
+    dataset_id: str,
+    file: UploadFile = File(..., description="CSV, Parquet, or JSON tabular data file"),
+    description: str | None = Form(None),
+    service: DatasetService = Depends(_get_service),
+) -> Any:
+    """Upload a real data file, extract schema, hash SHA-256, store in MinIO S3, and create a version."""
+    dataset = await service.get_dataset(dataset_id)
+    if dataset is None:
+        raise NotFoundError("Dataset", dataset_id)
+
+    # Save uploaded bytes to a temporary staging file
+    suffix = Path(file.filename or "data.csv").suffix
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp_path = Path(tmp.name)
+        shutil.copyfileobj(file.file, tmp)
+
+    try:
+        version = await service.register_version(
+            dataset_id=dataset_id,
+            file_path=tmp_path,
+            description=description or f"Uploaded {file.filename}",
+        )
+        return version
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+
+@router.get("/dvc/status")
+async def get_dvc_status() -> dict[str, Any]:
+    """Check live DVC configuration, MinIO remote target, and CLI availability."""
+    from packages.data.dvc_manager import DVCManager
+    mgr = DVCManager()
+    return {
+        "is_installed": mgr.is_dvc_installed,
+        "remote_name": mgr.DEFAULT_REMOTE_NAME,
+        "remote_bucket": mgr.DEFAULT_BUCKET,
+        "remote_prefix": mgr.DEFAULT_PREFIX,
+        "minio_endpoint": mgr.minio_endpoint,
+        "dvc_dir_exists": (Path(".") / ".dvc").exists(),
+    }
+
+
+@router.delete("/{dataset_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_dataset(
+    dataset_id: str,
+    service: DatasetService = Depends(_get_service),
+) -> None:
+    """Delete a dataset and its versions."""
+    deleted = await service.delete_dataset(dataset_id)
+    if not deleted:
+        raise NotFoundError("Dataset", dataset_id)
+

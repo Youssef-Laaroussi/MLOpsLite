@@ -1,13 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Database,
-  Calendar,
-  ChevronDown,
   Search,
-  Filter,
   Eye,
   GitBranch,
-  Download,
   Copy,
   Check,
   CheckCircle2,
@@ -18,37 +14,29 @@ import {
   ArrowRight,
   ShieldCheck,
   BarChart2,
-  ExternalLink,
   Table as TableIcon,
   RefreshCw,
-  Sparkles,
   Server,
-  Box,
-  Hash,
   Plus,
   Upload,
+  Terminal,
+  Trash2,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
-import { fetchDatasets, createDataset } from "../api/client";
-import { Dataset, DatasetColumn } from "../api/types";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie
-} from "recharts";
-import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
-
+  fetchDatasets,
+  createDataset,
+  uploadDatasetFile,
+  fetchDatasetVersions,
+  fetchDvcStatus,
+  deleteDataset,
+} from "../api/client";
+import { Dataset, DatasetVersion } from "../api/types";
 
 export const DatasetsPage: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Search & Filtering
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,125 +45,69 @@ export const DatasetsPage: React.FC = () => {
 
   // Inspection Modal state
   const [inspectingDataset, setInspectingDataset] = useState<Dataset | null>(null);
-  const [activeInspectorTab, setActiveInspectorTab] = useState<"preview" | "profiling" | "quality">("preview");
+  const [activeInspectorTab, setActiveInspectorTab] = useState<"versions" | "profiling" | "dvc">("versions");
+  const [datasetVersions, setDatasetVersions] = useState<DatasetVersion[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
 
   // Lineage Drawer/Modal state
   const [lineageDataset, setLineageDataset] = useState<Dataset | null>(null);
 
+  // DVC System Status state
+  const [dvcStatus, setDvcStatus] = useState<{
+    is_installed: boolean;
+    remote_name: string;
+    remote_bucket: string;
+    remote_prefix: string;
+    minio_endpoint: string;
+    dvc_dir_exists: boolean;
+  } | null>(null);
+  const [showDvcModal, setShowDvcModal] = useState(false);
+
   // Copy feedback state
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
 
-  // Export notification state
-  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
-
-  // Time range filter state ("Last 6 months" default)
-  const [timeRange, setTimeRange] = useState<string>("Last 6 months");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
+  // Toast notification state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Create Dataset Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [newDatasetName, setNewDatasetName] = useState("");
   const [newDatasetFormat, setNewDatasetFormat] = useState("CSV");
   const [newDatasetDescription, setNewDatasetDescription] = useState("");
-  const [newDatasetRows, setNewDatasetRows] = useState("10000");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  // File selection helper (Parcourir...)
+  // File selection helper
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
 
-    // Auto-fill dataset name from filename if empty
     if (!newDatasetName.trim()) {
       const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/\s+/g, "_").toLowerCase();
       setNewDatasetName(cleanName);
     }
 
-    // Auto-detect format
     const ext = file.name.split(".").pop()?.toUpperCase();
     if (ext === "CSV") setNewDatasetFormat("CSV");
     else if (ext === "PARQUET") setNewDatasetFormat("PARQUET");
     else if (ext === "JSON") setNewDatasetFormat("JSON");
-
-    // Estimate row count roughly if CSV
-    if (file.size > 0) {
-      const approxRows = Math.max(1, Math.round(file.size / 120));
-      setNewDatasetRows(approxRows.toString());
-    }
-  };
-
-  const handleCreateDataset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDatasetName.trim()) return;
-    setCreating(true);
-    try {
-      const created = await createDataset({
-        name: newDatasetName.trim(),
-        format: newDatasetFormat.toUpperCase(),
-        description: newDatasetDescription.trim() || undefined,
-      });
-      // Ensure local state is updated immediately with enriched metrics from real file if provided
-      const actualSize = selectedFile ? selectedFile.size : 4200000;
-      const actualRows = parseInt(newDatasetRows, 10) || 10000;
-      const enriched: Dataset = {
-        ...created,
-        format: newDatasetFormat.toUpperCase(),
-        row_count: actualRows,
-        size_bytes: actualSize,
-        quality_score: 99.4,
-        created_at: new Date().toISOString(),
-        hash_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        s3_key: `s3://mlopslite-datasets/${newDatasetName.toLowerCase().replace(/\s+/g, "_")}.${newDatasetFormat.toLowerCase()}`,
-      };
-      setDatasets((prev) => [enriched, ...prev]);
-      setShowCreateModal(false);
-      setNewDatasetName("");
-      setNewDatasetDescription("");
-      setSelectedFile(null);
-      setExportSuccess(`Dataset "${enriched.name}" (${formatBytes(actualSize)}) created successfully!`);
-      setTimeout(() => setExportSuccess(null), 3000);
-    } catch (err: any) {
-      // Local fallback for standalone demo / offline mode
-      const actualSize = selectedFile ? selectedFile.size : 4200000;
-      const actualRows = parseInt(newDatasetRows, 10) || 10000;
-      const dummyId = `ds-${Date.now()}`;
-      const fallback: Dataset = {
-        id: dummyId,
-        name: newDatasetName.trim(),
-        format: newDatasetFormat.toUpperCase(),
-        description: newDatasetDescription.trim() || "Managed ML tabular dataset.",
-        row_count: actualRows,
-        size_bytes: actualSize,
-        quality_score: 99.4,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        hash_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        s3_key: `s3://mlopslite-datasets/${newDatasetName.toLowerCase().replace(/\s+/g, "_")}.${newDatasetFormat.toLowerCase()}`,
-      };
-      setDatasets((prev) => [fallback, ...prev]);
-      setShowCreateModal(false);
-      setNewDatasetName("");
-      setNewDatasetDescription("");
-      setSelectedFile(null);
-      setExportSuccess(`Dataset "${fallback.name}" (${formatBytes(actualSize)}) registered successfully!`);
-      setTimeout(() => setExportSuccess(null), 3000);
-    } finally {
-      setCreating(false);
-    }
   };
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      setDatasets((await fetchDatasets()) ?? []);
-      setLoadError(null);
+      const [dsList, dvcInfo] = await Promise.all([
+        fetchDatasets(),
+        fetchDvcStatus().catch(() => null),
+      ]);
+      setDatasets(dsList || []);
+      if (dvcInfo) setDvcStatus(dvcInfo);
     } catch (err: any) {
       setDatasets([]);
-      setLoadError(err?.response?.data?.detail || err?.message || "Failed to load datasets.");
+      setLoadError(err?.response?.data?.detail || err?.message || "Failed to load datasets from backend.");
     } finally {
       setLoading(false);
     }
@@ -185,34 +117,77 @@ export const DatasetsPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Format bytes into human readable string
+  const handleCreateDataset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDatasetName.trim()) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const created = await createDataset({
+        name: newDatasetName.trim(),
+        format: newDatasetFormat.toUpperCase(),
+        description: newDatasetDescription.trim() || undefined,
+      });
+
+      // If a real file was selected, immediately upload it to register v1 with real SHA-256 and MinIO key
+      if (selectedFile) {
+        await uploadDatasetFile(created.id, selectedFile, newDatasetDescription.trim() || undefined);
+      }
+
+      await loadData();
+      setShowCreateModal(false);
+      setNewDatasetName("");
+      setNewDatasetDescription("");
+      setSelectedFile(null);
+      setToastMessage(`Dataset "${created.name}" created and synced to MinIO!`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Failed to create dataset";
+      setCreateError(msg);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteDataset = async (datasetId: string, datasetName: string) => {
+    if (!confirm(`Are you sure you want to delete dataset "${datasetName}"?`)) return;
+    try {
+      await deleteDataset(datasetId);
+      await loadData();
+      setToastMessage(`Dataset "${datasetName}" deleted.`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || err.message || "Failed to delete dataset");
+    }
+  };
+
+  const openInspector = async (d: Dataset) => {
+    setInspectingDataset(d);
+    setActiveInspectorTab("versions");
+    setLoadingVersions(true);
+    try {
+      const versions = await fetchDatasetVersions(d.id);
+      setDatasetVersions(versions);
+    } catch (err) {
+      setDatasetVersions([]);
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
   const formatBytes = (bytes?: number) => {
-    if (!bytes) return "0 MB";
+    if (!bytes || bytes === 0) return "0 MB";
     const mb = bytes / (1024 * 1024);
+    if (mb < 0.1) return `${(bytes / 1024).toFixed(1)} KB`;
     if (mb < 1024) return `${mb.toFixed(1)} MB`;
     return `${(mb / 1024).toFixed(2)} GB`;
   };
 
-  // Copy SHA-256 helper
   const handleCopyHash = (hash?: string) => {
     if (!hash) return;
     navigator.clipboard.writeText(hash);
     setCopiedHash(hash);
     setTimeout(() => setCopiedHash(null), 2000);
-  };
-
-  // Export sample dataset
-  const handleExportSample = (dataset: Dataset) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataset.sample_records || [], null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `${dataset.name.replace(/\.[^/.]+$/, "")}_sample.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-
-    setExportSuccess(`Sample of ${dataset.name} exported successfully!`);
-    setTimeout(() => setExportSuccess(null), 3000);
   };
 
   // Filter & Sort
@@ -222,8 +197,8 @@ export const DatasetsPage: React.FC = () => {
         const matchesQuery =
           d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (d.description && d.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (d.columns && d.columns.some((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase())));
-        const matchesFormat = formatFilter === "ALL" || d.format.toUpperCase() === formatFilter.toUpperCase();
+          (d.hash_sha256 && d.hash_sha256.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesFormat = formatFilter === "ALL" || (d.format || "").toUpperCase() === formatFilter.toUpperCase();
         return matchesQuery && matchesFormat;
       })
       .sort((a, b) => {
@@ -233,30 +208,20 @@ export const DatasetsPage: React.FC = () => {
       });
   }, [datasets, searchQuery, formatFilter, sortBy]);
 
-  // Aggregate Data Analyst KPIs
+  // Real aggregate KPIs
   const totalRows = useMemo(() => datasets.reduce((sum, d) => sum + (d.row_count || 0), 0), [datasets]);
   const totalSizeBytes = useMemo(() => datasets.reduce((sum, d) => sum + (d.size_bytes || 0), 0), [datasets]);
-  const avgQualityScore = useMemo(() => {
-    const scored = datasets.filter((d) => d.quality_score);
-    if (!scored.length) return 98.4;
-    return (scored.reduce((sum, d) => sum + (d.quality_score || 0), 0) / scored.length).toFixed(1);
-  }, [datasets]);
+  const totalVersions = useMemo(() => datasets.reduce((sum, d) => sum + (d.version_num || 0), 0), [datasets]);
 
-  // Real format distribution computed directly from datasets
+  // Real format distribution
   const formatStats = useMemo(() => {
-    if (!datasets.length) {
-      return [
-        { format: "Parquet", bytes: 45100000, pct: 52, count: 12, color: "bg-[#3BB48C]" },
-        { format: "CSV", bytes: 26000000, pct: 30, count: 8, color: "bg-slate-500" },
-        { format: "JSON", bytes: 15600000, pct: 18, count: 4, color: "bg-slate-400" },
-      ];
-    }
+    if (!datasets.length) return [];
     const map = new Map<string, { bytes: number; count: number }>();
     let totalBytes = 0;
     datasets.forEach((d) => {
       const fmt = (d.format || "CSV").toUpperCase();
       const current = map.get(fmt) || { bytes: 0, count: 0 };
-      const b = d.size_bytes || 1024 * 1024;
+      const b = d.size_bytes || 0;
       current.bytes += b;
       current.count += 1;
       totalBytes += b;
@@ -280,17 +245,28 @@ export const DatasetsPage: React.FC = () => {
   }, [datasets]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
       {/* Toast Notification */}
-      {loadError && (
-        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-sm font-semibold text-rose-700">
-          {loadError}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-md shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
+          {toastMessage}
         </div>
       )}
-      {exportSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
-          {exportSuccess}
+
+      {/* Backend Error Banner */}
+      {loadError && (
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs font-semibold text-rose-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{loadError}</span>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded text-[11px]"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -298,57 +274,38 @@ export const DatasetsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
           <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
-            Datasets
+            Datasets &amp; Data Versioning
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage data versions, lineage, and object storage schemas
+            DVC reproducible data lineage, SHA-256 versioning, and MinIO S3 object store
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Time Range Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* DVC Status Pill Button */}
+          <button
+            onClick={() => setShowDvcModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+            title="Inspect DVC MinIO Remote Config"
+          >
+            <Terminal className="w-3.5 h-3.5 text-slate-500" />
+            <span>DVC Remote</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${dvcStatus ? "bg-emerald-500" : "bg-slate-300"}`} />
+          </button>
 
           <button
             onClick={loadData}
             className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
-            title="Refresh metadata"
+            title="Refresh datasets"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
 
-          {/* New Dataset Action Button */}
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setShowCreateModal(true);
+              setCreateError(null);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3BB48C] hover:bg-[#329F7B] text-white rounded-lg text-xs font-semibold shadow-2xs transition active:translate-y-0.5 cursor-pointer border border-[#329F7B]"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -361,210 +318,137 @@ export const DatasetsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Indexed Datasets"
-          value={datasets.length || 24}
-          subtitle="Cataloged & versioned SHA-256"
+          value={loading ? "..." : `${datasets.length}`}
+          subtitle="Cataloged in PostgreSQL"
           icon={Database}
           color="brand"
         />
         <StatCard
           title="Tabular Rows"
-          value={totalRows > 0 ? `${(totalRows / 1000).toFixed(0)}k` : "693k"}
-          subtitle="Training & validation records"
+          value={loading ? "..." : totalRows > 0 ? totalRows.toLocaleString() : "0"}
+          subtitle="Actual verified records"
           icon={TableIcon}
           color="brand"
-          trend="+18% this month"
         />
         <StatCard
-          title="Quality Score"
-          value={`${avgQualityScore}%`}
-          subtitle="Average completeness & hygiene"
+          title="Versioned Fingerprints"
+          value={loading ? "..." : `${totalVersions}`}
+          subtitle="Immutable SHA-256 versions"
           icon={ShieldCheck}
           color="emerald"
-          isLive={true}
+          isLive={totalVersions > 0}
         />
         <StatCard
           title="MinIO S3 Volume"
-          value={formatBytes(totalSizeBytes || 86700000)}
-          subtitle="Deduplicated & synchronized storage"
+          value={loading ? "..." : formatBytes(totalSizeBytes)}
+          subtitle="Stored in mlite-datasets bucket"
           icon={Server}
           color="brand"
         />
       </div>
 
-      {/* ── Visual Analytics Row: Datasets by Type & Storage Breakdown (Snowflake Sober Style) ── */}
+      {/* ── Visual Analytics Row: Formats & Storage Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* CARD 1: Datasets by type (7 cols) - Clean Snowflake Bar Chart */}
+        {/* CARD 1: Datasets by Format */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Datasets by Type
+                  Datasets by Storage Format
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Distribution across data modalities</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Distribution across registered formats</p>
               </div>
-              <span className="text-[11px] font-mono text-slate-500">24 cataloged</span>
+              <span className="text-[11px] font-mono text-slate-500">{datasets.length} cataloged</span>
             </div>
 
-            {/* Vertical Bar Chart with clean slate grid */}
-            <div className="relative h-48 w-full flex flex-col justify-between pt-2 pb-6">
-              {/* Horizontal grid lines & Y-axis labels */}
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 pr-2">
-                {[15, 10, 5, 0].map((val) => (
-                  <div key={val} className="flex items-center gap-2.5 w-full">
-                    <span className="w-5 text-right text-[11px] font-mono text-slate-400">
-                      {val}
-                    </span>
-                    <div className="flex-1 border-t border-slate-100" />
-                  </div>
-                ))}
+            {datasets.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <Database className="w-6 h-6 mb-1 text-slate-300" />
+                <span>No datasets indexed yet</span>
               </div>
-
-              {/* 4 Bars aligned to baseline */}
-              <div className="relative z-10 flex-1 ml-9 mr-4 flex items-end justify-around gap-6 pb-6">
-                {/* Tabular: 12 */}
-                <div className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
-                  <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-emerald-700">
-                    12
-                  </span>
-                  <div
-                    className="w-full max-w-[56px] bg-[#3BB48C] rounded-t transition-all group-hover:bg-[#329F7B]"
-                    style={{ height: `${(12 / 15) * 100}%` }}
-                  />
-                  <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
-                    Tabular
-                  </span>
-                </div>
-
-                {/* Time Series: 5 */}
-                <div className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
-                  <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-slate-900">
-                    5
-                  </span>
-                  <div
-                    className="w-full max-w-[56px] bg-slate-500 rounded-t transition-all group-hover:bg-slate-600"
-                    style={{ height: `${(5 / 15) * 100}%` }}
-                  />
-                  <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
-                    Time Series
-                  </span>
-                </div>
-
-                {/* Text: 4 */}
-                <div className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
-                  <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-slate-900">
-                    4
-                  </span>
-                  <div
-                    className="w-full max-w-[56px] bg-slate-400 rounded-t transition-all group-hover:bg-slate-500"
-                    style={{ height: `${(4 / 15) * 100}%` }}
-                  />
-                  <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
-                    Text
-                  </span>
-                </div>
-
-                {/* Image: 3 */}
-                <div className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
-                  <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-emerald-700">
-                    3
-                  </span>
-                  <div
-                    className="w-full max-w-[56px] bg-[#3BB48C]/70 rounded-t transition-all group-hover:bg-[#3BB48C]"
-                    style={{ height: `${(3 / 15) * 100}%` }}
-                  />
-                  <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
-                    Image
-                  </span>
+            ) : (
+              <div className="relative h-44 w-full flex flex-col justify-between pt-2 pb-6">
+                <div className="relative z-10 flex-1 ml-4 mr-4 flex items-end justify-around gap-6 pb-6">
+                  {formatStats.map((st) => (
+                    <div key={st.format} className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+                      <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-emerald-700">
+                        {st.count}
+                      </span>
+                      <div
+                        className={`w-full max-w-[56px] ${st.color} rounded-t transition-all`}
+                        style={{ height: `${Math.max((st.count / Math.max(...formatStats.map((f) => f.count), 1)) * 100, 15)}%` }}
+                      />
+                      <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
+                        {st.format}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Storage: MinIO S3 cluster</span>
-            <span className="text-emerald-700 font-medium">
-              100% SHA-256 Verified
-            </span>
+            <span className="text-emerald-700 font-medium">100% SHA-256 Content-Addressed</span>
           </div>
         </div>
 
-        {/* CARD 2: Storage Volume & Data Health Index (5 cols) - Snowflake clean format */}
+        {/* CARD 2: DVC Remote Target & Data Health */}
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Storage &amp; Hygiene
+                  DVC &amp; Object Store Remote
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Format share &amp; automated checks</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">MinIO remote storage endpoint &amp; bucket</p>
               </div>
-              <span className="text-[11px] font-mono text-slate-500">
-                86.6 MB
-              </span>
+              <span className="text-[11px] font-mono text-emerald-700">Online</span>
             </div>
 
-            {/* Format Distribution Clean Real Data Rows */}
-            <div className="space-y-2 mb-4">
-              {formatStats.map((item) => (
-                <div key={item.format} className="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
-                  <span className="flex items-center gap-2 font-medium text-slate-700">
-                    <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <span>{item.format}</span>
-                    <span className="text-[11px] text-slate-400 font-mono">({item.count} files)</span>
-                  </span>
-                  <div className="flex items-center gap-2 font-mono text-[11px] text-slate-700">
-                    <span>{formatBytes(item.bytes)}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="font-semibold">{item.pct}%</span>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-2 mb-4 text-xs font-mono">
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <span className="text-slate-400 block text-[10px] uppercase">MinIO Bucket Target</span>
+                <span className="text-slate-800 font-semibold">s3://mlite-datasets/dvc-cache</span>
+              </div>
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <span className="text-slate-400 block text-[10px] uppercase">Endpoint URL</span>
+                <span className="text-slate-800">{dvcStatus?.minio_endpoint || "http://mlite-storage:9000"}</span>
+              </div>
             </div>
 
-            {/* Data Hygiene Checks - Real Data Metrics */}
-            <div className="pt-3 border-t border-slate-100">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                Hygiene Checks
+            <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Total Versions Tracked</span>
+                <span className="font-mono text-slate-800 font-semibold">{totalVersions} versions</span>
               </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600">Completeness</span>
-                  <span className="font-mono text-slate-800 font-semibold">{avgQualityScore}%</span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600">SHA-256 Verified</span>
-                  <span className="font-mono text-slate-800 font-semibold">
-                    {datasets.filter(d => d.hash_sha256).length}/{datasets.length || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600">Columns Profiled</span>
-                  <span className="font-mono text-slate-800 font-semibold">
-                    {datasets.reduce((sum, d) => sum + (d.columns?.length || d.column_count || 0), 0)} cols
-                  </span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">SHA-256 Verified Files</span>
+                <span className="font-mono text-slate-800 font-semibold">
+                  {datasets.filter((d) => d.hash_sha256).length}/{datasets.length}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Storage Provider: MinIO</span>
-            <span className="text-slate-700">{datasets.length} Objects Indexed</span>
+            <span>DVC CLI: {dvcStatus?.is_installed ? "Ready" : "Standalone S3 Mode"}</span>
+            <span className="text-slate-700">{datasets.length} Objects Synced</span>
           </div>
         </div>
       </div>
 
-      {/* Explorer Toolbar: Search, Format Pills, Sort (Snowflake clean style) */}
+      {/* Explorer Toolbar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search datasets, schema columns or SHA-256..."
+            placeholder="Search datasets by name, description or SHA-256..."
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] focus:border-[#3BB48C] transition font-sans"
           />
         </div>
@@ -575,10 +459,11 @@ export const DatasetsPage: React.FC = () => {
             <button
               key={fmt}
               onClick={() => setFormatFilter(fmt)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap border ${formatFilter === fmt
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap border ${
+                formatFilter === fmt
                   ? "bg-[#3BB48C] text-white border-[#329F7B]"
                   : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
-                }`}
+              }`}
             >
               {fmt === "ALL" ? "All formats" : fmt}
             </button>
@@ -600,7 +485,7 @@ export const DatasetsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Datasets Table - Dense, High-readability Snowflake layout */}
+      {/* Main Datasets Table */}
       <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
         <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -612,7 +497,7 @@ export const DatasetsPage: React.FC = () => {
             </span>
           </div>
           <span className="text-xs text-slate-500 font-mono">
-            {filteredDatasets.reduce((sum, d) => sum + (d.row_count || 0), 0).toLocaleString()} total records
+            {totalRows.toLocaleString()} total verified records
           </span>
         </div>
 
@@ -620,20 +505,41 @@ export const DatasetsPage: React.FC = () => {
           <table className="w-full text-left text-xs text-slate-700 border-collapse">
             <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-2">Dataset &amp; Hash</th>
+                <th className="px-4 py-2">Dataset &amp; Version Hash</th>
                 <th className="px-3 py-2">Format</th>
                 <th className="px-3 py-2">Records &amp; Size</th>
-                <th className="px-3 py-2">Quality</th>
-                <th className="px-3 py-2">Lineage</th>
-                <th className="px-3 py-2">Updated</th>
+                <th className="px-3 py-2">DVC Storage Key</th>
+                <th className="px-3 py-2">Registered</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredDatasets.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
-                    No dataset matches your search criteria.
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                    <RefreshCw className="w-5 h-5 text-emerald-600 animate-spin mx-auto mb-2" />
+                    <span>Loading datasets from database...</span>
+                  </td>
+                </tr>
+              ) : filteredDatasets.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                    <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <div className="font-semibold text-slate-700 text-xs">No Datasets Found</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {datasets.length === 0
+                        ? "Register a dataset to start tracking data versions and MinIO lineage."
+                        : "No dataset matches your search criteria."}
+                    </div>
+                    {datasets.length === 0 && (
+                      <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3BB48C] hover:bg-[#329F7B] text-white rounded text-xs font-semibold"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Register Dataset</span>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -648,17 +554,23 @@ export const DatasetsPage: React.FC = () => {
                         <div>
                           <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                             <span>{d.name}</span>
-                            {d.version_num && (
-                              <span className="text-slate-400 font-mono text-[11px]">
+                            {d.version_num ? (
+                              <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px]">
                                 v{d.version_num}
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200 font-mono text-[10px]">
+                                v0 (unversioned)
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-500 line-clamp-1 max-w-sm">
-                            {d.description || "No description provided"}
-                          </p>
-                          {d.hash_sha256 && (
-                            <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 mt-0.5">
+                          {d.description && (
+                            <p className="text-[11px] text-slate-500 line-clamp-1 max-w-sm mt-0.5">
+                              {d.description}
+                            </p>
+                          )}
+                          {d.hash_sha256 ? (
+                            <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 mt-0.5">
                               <span className="truncate max-w-[150px] sm:max-w-[220px]">
                                 sha256:{d.hash_sha256.slice(0, 16)}...
                               </span>
@@ -674,14 +586,18 @@ export const DatasetsPage: React.FC = () => {
                                 )}
                               </button>
                             </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                              Pending file upload
+                            </span>
                           )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Format - Clean plain text */}
+                    {/* Format */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-[11px] text-slate-700">
+                      <span className="font-mono text-[11px] text-slate-700 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">
                         {d.format}
                       </span>
                     </td>
@@ -689,7 +605,7 @@ export const DatasetsPage: React.FC = () => {
                     {/* Volume (Rows & Size) */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <div className="font-mono text-slate-800 text-[11px] font-medium">
-                        {d.row_count ? `${d.row_count.toLocaleString()} rows` : "—"}
+                        {d.row_count ? `${d.row_count.toLocaleString()} rows` : "0 rows"}
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono">
                         {d.column_count ? `${d.column_count} cols • ` : ""}
@@ -697,69 +613,49 @@ export const DatasetsPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Quality / Health - Pure clean metric without badge */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] font-medium text-slate-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C]" />
-                        <span>{d.quality_score ? `${d.quality_score}%` : "98.5%"}</span>
-                      </div>
-                    </td>
-
-                    {/* Lineage - Clean readable text without chunky badges */}
-                    <td className="px-3 py-2.5">
-                      {d.downstream_models && d.downstream_models.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {d.downstream_models.map((mod, i) => (
-                            <span
-                              key={i}
-                              className="text-slate-700 text-[11px] font-mono flex items-center gap-1"
-                            >
-                              <Box className="w-3 h-3 text-slate-400" />
-                              <span>{mod}</span>
-                              {i < (d.downstream_models?.length || 0) - 1 && <span className="text-slate-300">,</span>}
-                            </span>
-                          ))}
-                        </div>
+                    {/* S3 Key / MinIO */}
+                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                      {d.s3_key ? (
+                        <span className="truncate max-w-[200px] block" title={d.s3_key}>
+                          {d.s3_key.replace("s3://", "")}
+                        </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-mono">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
 
                     {/* Date */}
                     <td className="px-3 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                      {d.created_at ? d.created_at.slice(0, 10) : "—"}
+                      {d.created_at ? new Date(d.created_at).toLocaleDateString() : "—"}
                     </td>
 
                     {/* Actions */}
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => {
-                            setInspectingDataset(d);
-                            setActiveInspectorTab("preview");
-                          }}
+                          onClick={() => openInspector(d)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition shadow-2xs hover:border-[#3BB48C]"
-                          title="Preview and statistical profiling"
+                          title="View version history and DVC commands"
                         >
                           <Eye className="w-3 h-3 text-[#3BB48C]" />
-                          Inspect
+                          Versions
                         </button>
 
                         <button
                           onClick={() => setLineageDataset(d)}
                           className="flex items-center gap-1 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-medium transition"
-                          title="View data lineage"
+                          title="View data lineage graph"
                         >
                           <GitBranch className="w-3 h-3 text-slate-500" />
                           Lineage
                         </button>
 
                         <button
-                          onClick={() => handleExportSample(d)}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Export JSON sample"
+                          onClick={() => handleDeleteDataset(d.id, d.name)}
+                          className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-200 text-[11px] transition"
+                          title="Delete dataset and versions"
                         >
-                          <Download className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -771,11 +667,11 @@ export const DatasetsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── MODAL 1: DATA INSPECTOR & PROFILER ── */}
+      {/* ── MODAL 1: VERSIONS & DVC INSPECTOR ── */}
       {inspectingDataset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-md w-full max-w-5xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-            {/* Modal Header */}
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+            {/* Header */}
             <div className="px-5 py-3.5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded bg-slate-100 text-slate-700 shrink-0">
@@ -789,34 +685,13 @@ export const DatasetsPage: React.FC = () => {
                     <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-600 border border-slate-200">
                       {inspectingDataset.format}
                     </span>
-                    {inspectingDataset.version_num && (
-                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-mono border border-slate-200">
-                        v{inspectingDataset.version_num}
-                      </span>
-                    )}
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-mono border border-emerald-200">
+                      {datasetVersions.length} versions
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    {inspectingDataset.description || "No description provided"}
+                    {inspectingDataset.description || "Logical dataset version tracking"}
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 font-mono">
-                    <span>
-                      {inspectingDataset.row_count?.toLocaleString()} rows
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {inspectingDataset.columns?.length || inspectingDataset.column_count || 0} columns
-                    </span>
-                    <span>•</span>
-                    <span>
-                      Size: {formatBytes(inspectingDataset.size_bytes)}
-                    </span>
-                    {inspectingDataset.s3_key && (
-                      <>
-                        <span>•</span>
-                        <span className="text-slate-400 truncate max-w-xs">{inspectingDataset.s3_key}</span>
-                      </>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -828,203 +703,92 @@ export const DatasetsPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Tabs */}
+            {/* Tabs */}
             <div className="px-5 border-b border-slate-200 bg-white flex items-center justify-between">
               <div className="flex items-center gap-5">
                 <button
-                  onClick={() => setActiveInspectorTab("preview")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "preview"
+                  onClick={() => setActiveInspectorTab("versions")}
+                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
+                    activeInspectorTab === "versions"
                       ? "border-[#3BB48C] text-[#3BB48C]"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
+                  }`}
                 >
-                  <TableIcon className="w-3.5 h-3.5" />
-                  Data Preview
+                  <Layers className="w-3.5 h-3.5" />
+                  Version Lineage ({datasetVersions.length})
                 </button>
-
                 <button
-                  onClick={() => setActiveInspectorTab("profiling")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "profiling"
+                  onClick={() => setActiveInspectorTab("dvc")}
+                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
+                    activeInspectorTab === "dvc"
                       ? "border-[#3BB48C] text-[#3BB48C]"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
+                  }`}
                 >
-                  <BarChart2 className="w-3.5 h-3.5" />
-                  Column Profiling
-                </button>
-
-                <button
-                  onClick={() => setActiveInspectorTab("quality")}
-                  className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeInspectorTab === "quality"
-                      ? "border-[#3BB48C] text-[#3BB48C]"
-                      : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Health &amp; Quality
+                  <Terminal className="w-3.5 h-3.5" />
+                  DVC Push / Pull Commands
                 </button>
               </div>
-
-              <button
-                onClick={() => handleExportSample(inspectingDataset)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition"
-              >
-                <Download className="w-3 h-3" />
-                Export Sample
-              </button>
             </div>
 
-            {/* Modal Content Body */}
+            {/* Body */}
             <div className="p-5 overflow-y-auto max-h-[60vh] space-y-4">
-              {/* TAB 1: PREVIEW */}
-              {activeInspectorTab === "preview" && (
+              {activeInspectorTab === "versions" && (
                 <div>
-                  <div className="flex items-center justify-between mb-2 text-[11px] text-slate-500">
-                    <span>
-                      Sample: first {inspectingDataset.sample_records?.length || 0} rows.
-                    </span>
-                    <span className="font-mono text-emerald-700">
-                      SHA-256 Verified
-                    </span>
-                  </div>
-
-                  {inspectingDataset.sample_records && inspectingDataset.sample_records.length > 0 ? (
-                    <div className="border border-slate-200 rounded overflow-x-auto">
+                  {loadingVersions ? (
+                    <div className="py-8 text-center text-xs text-slate-400">Loading versions...</div>
+                  ) : datasetVersions.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400 bg-slate-50 rounded border border-slate-200">
+                      No versions registered yet for this dataset. Upload a file to create v1.
+                    </div>
+                  ) : (
+                    <div className="border border-slate-200 rounded overflow-hidden">
                       <table className="w-full text-left text-xs text-slate-800 border-collapse">
-                        <thead className="bg-[#F8FAFC] border-b border-slate-200 font-mono text-[11px] text-slate-500">
+                        <thead className="bg-[#F8FAFC] border-b border-slate-200 font-semibold text-[11px] text-slate-500 uppercase">
                           <tr>
-                            <th className="px-3 py-2 text-slate-400 font-normal">#</th>
-                            {Object.keys(inspectingDataset.sample_records[0]).map((col) => (
-                              <th key={col} className="px-3 py-2 font-medium whitespace-nowrap text-slate-700">
-                                {col}
-                              </th>
-                            ))}
+                            <th className="px-3 py-2">Version</th>
+                            <th className="px-3 py-2">SHA-256 Hash</th>
+                            <th className="px-3 py-2">Rows</th>
+                            <th className="px-3 py-2">Size</th>
+                            <th className="px-3 py-2">Storage Key</th>
+                            <th className="px-3 py-2">Created</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
-                          {inspectingDataset.sample_records.map((row, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/80 transition">
-                              <td className="px-3 py-1.5 text-slate-400">{idx + 1}</td>
-                              {Object.values(row).map((val: any, cIdx) => (
-                                <td key={cIdx} className="px-3 py-1.5 whitespace-nowrap">
-                                  {typeof val === "boolean" ? (
-                                    <span className="font-mono text-[11px] text-slate-700">
-                                      {val ? "true" : "false"}
-                                    </span>
-                                  ) : val === null || val === undefined ? (
-                                    <span className="text-slate-400 italic">null</span>
-                                  ) : (
-                                    String(val)
-                                  )}
-                                </td>
-                              ))}
+                          {datasetVersions.map((v) => (
+                            <tr key={v.id} className="hover:bg-slate-50/80 transition">
+                              <td className="px-3 py-2 font-semibold text-emerald-700">v{v.version_num}</td>
+                              <td className="px-3 py-2 text-slate-600 truncate max-w-[180px]">
+                                {v.hash_sha256}
+                              </td>
+                              <td className="px-3 py-2 text-slate-800">{v.row_count?.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-slate-600">{formatBytes(v.size_bytes)}</td>
+                              <td className="px-3 py-2 text-slate-500 truncate max-w-[200px]">{v.s3_key || "—"}</td>
+                              <td className="px-3 py-2 text-slate-400">
+                                {new Date(v.created_at).toLocaleDateString()}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-                  ) : (
-                    <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded border border-slate-200">
-                      No sample records extracted for this file.
-                    </div>
                   )}
                 </div>
               )}
 
-              {/* TAB 2: COLUMN PROFILING */}
-              {activeInspectorTab === "profiling" && (
-                <div>
-                  <div className="border border-slate-200 rounded overflow-hidden">
-                    <table className="w-full text-left text-xs text-slate-800 border-collapse">
-                      <thead className="bg-[#F8FAFC] border-b border-slate-200 font-semibold text-[11px] text-slate-500 uppercase">
-                        <tr>
-                          <th className="px-3 py-2">Column Name</th>
-                          <th className="px-3 py-2">Type</th>
-                          <th className="px-3 py-2">Nulls</th>
-                          <th className="px-3 py-2">Unique</th>
-                          <th className="px-3 py-2">Examples / Range</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {inspectingDataset.columns && inspectingDataset.columns.length > 0 ? (
-                          inspectingDataset.columns.map((col, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/80 transition">
-                              <td className="px-3 py-2 font-mono text-[11px] font-semibold text-slate-900">
-                                {col.name}
-                              </td>
-                              <td className="px-3 py-2">
-                                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-100 text-slate-700 border border-slate-200">
-                                  {col.dtype}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 font-mono text-[11px] text-slate-600">
-                                {col.null_count} ({col.null_pct || 0}%)
-                              </td>
-                              <td className="px-3 py-2 font-mono text-[11px] text-slate-600">
-                                {col.unique_count ? col.unique_count.toLocaleString() : "—"}
-                              </td>
-                              <td className="px-3 py-2 text-slate-500 font-mono text-[11px]">
-                                {col.min_val !== undefined && col.max_val !== undefined ? (
-                                  <span>[{col.min_val} ... {col.max_val}]</span>
-                                ) : col.sample_values ? (
-                                  <span>{col.sample_values.join(", ")}</span>
-                                ) : (
-                                  "—"
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="px-3 py-6 text-center text-slate-400">
-                              No column profiling available.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: QUALITY & HYGIENE */}
-              {activeInspectorTab === "quality" && (
+              {activeInspectorTab === "dvc" && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-3 rounded border border-slate-200 bg-slate-50/70">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-slate-700">Completeness</span>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#3BB48C]" />
-                      </div>
-                      <div className="text-xl font-mono font-bold text-slate-900">
-                        {inspectingDataset.quality_score || 99.2}%
-                      </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        No missing mandatory fields.
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded border border-slate-200 bg-slate-50/70">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-slate-700">Duplicate Check</span>
-                        <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
-                      </div>
-                      <div className="text-xl font-mono font-bold text-slate-900">0.0% Duplicates</div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        Record keys 100% unique.
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded border border-slate-200 bg-slate-50/70">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-slate-700">Schema Conformance</span>
-                        <Check className="w-3.5 h-3.5 text-[#3BB48C]" />
-                      </div>
-                      <div className="text-xl font-mono font-bold text-slate-900">Compliant</div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        Conforms to Arrow specifications.
-                      </p>
-                    </div>
+                  <div className="p-3 bg-slate-900 text-slate-100 rounded-md font-mono text-xs space-y-2">
+                    <div className="text-slate-400 text-[11px]"># 1. Initialize DVC with MinIO S3 Remote</div>
+                    <div className="text-emerald-400">mlite data dvc-init --remote minio</div>
+                    <div className="text-slate-400 text-[11px] pt-1"># 2. Track dataset in DVC</div>
+                    <div className="text-emerald-400">dvc add data/{inspectingDataset.name}.{inspectingDataset.format.toLowerCase()}</div>
+                    <div className="text-slate-400 text-[11px] pt-1"># 3. Push data to MinIO remote storage</div>
+                    <div className="text-emerald-400">dvc push</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs text-slate-600 space-y-1">
+                    <div className="font-semibold text-slate-800">MinIO Target Bucket:</div>
+                    <div className="font-mono text-[11px] text-slate-700">s3://mlite-datasets/dvc-cache/</div>
                   </div>
                 </div>
               )}
@@ -1033,11 +797,62 @@ export const DatasetsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── MODAL 2: DATA LINEAGE DAG ── */}
+      {/* ── MODAL 2: DVC REMOTE CONFIGURATION ── */}
+      {showDvcModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-[#3BB48C]" />
+                <h3 className="text-sm font-semibold text-slate-900">DVC MinIO Configuration</h3>
+              </div>
+              <button onClick={() => setShowDvcModal(false)} className="p-1 rounded text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-mono">
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
+                <span className="text-slate-500">Remote Name:</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.remote_name || "minio"}</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
+                <span className="text-slate-500">MinIO S3 Bucket:</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.remote_bucket || "mlite-datasets"}</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
+                <span className="text-slate-500">MinIO Endpoint:</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.minio_endpoint || "http://localhost:9000"}</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
+                <span className="text-slate-500">DVC CLI Host Status:</span>
+                <span className={`font-semibold ${dvcStatus?.is_installed ? "text-emerald-700" : "text-amber-700"}`}>
+                  {dvcStatus?.is_installed ? "Installed in PATH" : "Available via MinIO S3 API"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-900 text-slate-200 rounded font-mono text-xs">
+              <div className="text-slate-400 text-[11px] mb-1">CLI Remote Setup:</div>
+              <div>mlite data dvc-init --remote minio</div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowDvcModal(false)}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 3: LINEAGE GRAPH ── */}
       {lineageDataset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-4xl p-5 shadow-xl overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
@@ -1056,10 +871,8 @@ export const DatasetsPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Lineage Flow Diagram */}
             <div className="bg-slate-50/70 border border-slate-200 rounded p-4 overflow-x-auto">
               <div className="flex flex-col md:flex-row items-center justify-between gap-3 min-w-[650px]">
-                {/* Node 1: S3 MinIO Source */}
                 <div className="flex-1 bg-white border border-slate-200 p-3 rounded text-center">
                   <div className="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center mx-auto mb-1.5">
                     <Server className="w-4 h-4" />
@@ -1067,13 +880,12 @@ export const DatasetsPage: React.FC = () => {
                   <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Storage Source</div>
                   <div className="font-semibold text-slate-900 text-xs mt-0.5">MinIO S3 Bucket</div>
                   <div className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
-                    {lineageDataset.s3_key || "s3://mlopslite-datasets/..."}
+                    {lineageDataset.s3_key || `s3://mlite-datasets/${lineageDataset.name}`}
                   </div>
                 </div>
 
                 <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 hidden md:block" />
 
-                {/* Node 2: Dataset Version */}
                 <div className="flex-1 bg-white border-2 border-[#3BB48C] p-3 rounded text-center">
                   <div className="w-8 h-8 rounded bg-[#3BB48C]/10 text-[#3BB48C] flex items-center justify-center mx-auto mb-1.5">
                     <Database className="w-4 h-4" />
@@ -1081,58 +893,32 @@ export const DatasetsPage: React.FC = () => {
                   <div className="text-[10px] font-semibold text-[#3BB48C] uppercase tracking-wider">Active Dataset</div>
                   <div className="font-semibold text-slate-900 text-xs mt-0.5 truncate">{lineageDataset.name}</div>
                   <div className="text-[10px] font-mono text-slate-500 mt-0.5">
-                    v{lineageDataset.version_num || 1} • {lineageDataset.row_count?.toLocaleString()} rows
+                    v{lineageDataset.version_num || 0} • {lineageDataset.row_count?.toLocaleString()} rows
                   </div>
                 </div>
 
                 <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 hidden md:block" />
 
-                {/* Node 3: Model Training Run */}
                 <div className="flex-1 bg-white border border-slate-200 p-3 rounded text-center">
                   <div className="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center mx-auto mb-1.5">
-                    <Box className="w-4 h-4" />
+                    <Layers className="w-4 h-4" />
                   </div>
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Trained Model</div>
-                  <div className="font-semibold text-slate-900 text-xs mt-0.5">
-                    {lineageDataset.downstream_models?.[0] || "Associated Model"}
-                  </div>
-                  <div className="text-[10px] font-mono text-[#3BB48C] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 mt-1 inline-block">
-                    Stage: PRODUCTION
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">SHA-256 Provenance</div>
+                  <div className="font-semibold text-slate-900 text-xs mt-0.5">Content Addressed</div>
+                  <div className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
+                    {lineageDataset.hash_sha256 ? lineageDataset.hash_sha256.slice(0, 16) + "..." : "Pending"}
                   </div>
                 </div>
-
-                <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 hidden md:block" />
-
-                {/* Node 4: Serving Endpoint */}
-                <div className="flex-1 bg-white border border-slate-200 p-3 rounded text-center">
-                  <div className="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center mx-auto mb-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Live Inference</div>
-                  <div className="font-semibold text-slate-900 text-xs mt-0.5">FastAPI Container</div>
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">Port: 8100 • 3.2ms</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Impact Analysis Alert */}
-            <div className="mt-3.5 p-3 rounded bg-amber-50/70 border border-amber-200 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-900">
-                <span className="font-semibold">Lineage Impact Alert:</span>
-                <p className="mt-0.5 text-amber-800 text-[11px]">
-                  Modifications to <strong>{lineageDataset.name}</strong> will update the SHA-256 fingerprint and notify downstream models ({lineageDataset.downstream_models?.join(", ") || "none"}).
-                </p>
               </div>
             </div>
           </div>
         </div>
       )}
-      {/* ── MODAL 3: CREATE NEW DATASET ── */}
+
+      {/* ── MODAL 4: CREATE / UPLOAD DATASET ── */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-5 shadow-xl overflow-hidden animate-in zoom-in-95 duration-150">
-            {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded bg-[#3BB48C]/10 text-[#3BB48C]">
@@ -1143,7 +929,7 @@ export const DatasetsPage: React.FC = () => {
                     Register New Dataset
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Add a logical dataset container to MinIO and catalog schema
+                    Upload raw data to MinIO with SHA-256 deduplication and schema extraction
                   </p>
                 </div>
               </div>
@@ -1155,9 +941,14 @@ export const DatasetsPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Form */}
+            {createError && (
+              <div className="mt-3 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{createError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateDataset} className="space-y-3.5 mt-4">
-              {/* File Upload / Parcourir section */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Source File (CSV, Parquet, JSON)
@@ -1165,10 +956,10 @@ export const DatasetsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded text-xs font-medium text-slate-700 cursor-pointer transition shadow-2xs hover:border-[#3BB48C]">
                     <Upload className="w-3.5 h-3.5 text-[#3BB48C]" />
-                    <span>Parcourir...</span>
+                    <span>Choose File...</span>
                     <input
                       type="file"
-                      accept=".csv,.parquet,.json,.arrow"
+                      accept=".csv,.parquet,.json"
                       onChange={handleFileChange}
                       className="hidden"
                     />
@@ -1179,7 +970,7 @@ export const DatasetsPage: React.FC = () => {
                         {selectedFile.name} ({formatBytes(selectedFile.size)})
                       </span>
                     ) : (
-                      "Aucun fichier sélectionné (optionnel)"
+                      "No file selected"
                     )}
                   </span>
                   {selectedFile && (
@@ -1188,7 +979,7 @@ export const DatasetsPage: React.FC = () => {
                       onClick={() => setSelectedFile(null)}
                       className="text-[11px] text-slate-400 hover:text-rose-600 transition"
                     >
-                      Effacer
+                      Clear
                     </button>
                   )}
                 </div>
@@ -1208,41 +999,24 @@ export const DatasetsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Storage Format
-                  </label>
-                  <select
-                    value={newDatasetFormat}
-                    onChange={(e) => setNewDatasetFormat(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3BB48C]"
-                  >
-                    <option value="CSV">CSV (Delimited)</option>
-                    <option value="PARQUET">PARQUET (Columnar)</option>
-                    <option value="JSON">JSON (Record-based)</option>
-                    <option value="DELTA">DELTA (Lakehouse)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Number of Records
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newDatasetRows}
-                    onChange={(e) => setNewDatasetRows(e.target.value)}
-                    placeholder="10000"
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-[#3BB48C]"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Storage Format
+                </label>
+                <select
+                  value={newDatasetFormat}
+                  onChange={(e) => setNewDatasetFormat(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3BB48C]"
+                >
+                  <option value="CSV">CSV (Delimited)</option>
+                  <option value="PARQUET">PARQUET (Columnar)</option>
+                  <option value="JSON">JSON (Record-based)</option>
+                </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Description &amp; Context
+                  Description
                 </label>
                 <textarea
                   rows={2}
@@ -1253,14 +1027,6 @@ export const DatasetsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 font-mono">
-                <span className="text-slate-800 font-semibold block mb-0.5">S3 Object Key:</span>
-                <span className="text-slate-600 truncate block">
-                  s3://mlopslite-datasets/{newDatasetName ? newDatasetName.toLowerCase().replace(/\s+/g, "_") : "dataset"}.{newDatasetFormat.toLowerCase()}
-                </span>
-              </div>
-
-              {/* Form Actions */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
@@ -1275,7 +1041,7 @@ export const DatasetsPage: React.FC = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#3BB48C] hover:bg-[#329F7B] disabled:opacity-50 rounded border border-[#329F7B] transition cursor-pointer shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>{creating ? "Registering..." : "Create Dataset"}</span>
+                  <span>{creating ? "Registering & Uploading..." : "Create Dataset"}</span>
                 </button>
               </div>
             </form>

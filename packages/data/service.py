@@ -119,17 +119,62 @@ class DatasetService:
         self,
         project_id: str | None = None,
     ) -> list[Dataset]:
-        """List registered datasets, optionally filtered by project."""
+        """List registered datasets, optionally filtered by project, enriched with latest version details."""
         query = select(Dataset).order_by(Dataset.created_at.desc())
         if project_id:
             query = query.where(Dataset.project_id == project_id)
         result = await self.session.execute(query)
-        return list(result.scalars().all())
+        datasets = list(result.scalars().all())
+
+        if datasets:
+            for d in datasets:
+                versions = await self.get_versions(d.id)
+                setattr(d, "versions_count", len(versions))
+                if versions:
+                    latest = versions[0]
+                    setattr(d, "latest_version", latest)
+                    setattr(d, "version_num", latest.version_num)
+                    setattr(d, "row_count", latest.row_count)
+                    setattr(d, "column_count", latest.column_count)
+                    setattr(d, "size_bytes", latest.size_bytes)
+                    setattr(d, "hash_sha256", latest.hash_sha256)
+                    setattr(d, "s3_key", latest.s3_key)
+                else:
+                    setattr(d, "latest_version", None)
+                    setattr(d, "version_num", None)
+                    setattr(d, "row_count", 0)
+                    setattr(d, "column_count", 0)
+                    setattr(d, "size_bytes", 0)
+                    setattr(d, "hash_sha256", None)
+                    setattr(d, "s3_key", None)
+
+        return datasets
 
     async def get_dataset(self, dataset_id: str) -> Dataset | None:
-        """Fetch dataset by ID."""
+        """Fetch dataset by ID, enriched with latest version details."""
         result = await self.session.execute(select(Dataset).where(Dataset.id == dataset_id))
-        return result.scalar_one_or_none()
+        d = result.scalar_one_or_none()
+        if d:
+            versions = await self.get_versions(d.id)
+            setattr(d, "versions_count", len(versions))
+            if versions:
+                latest = versions[0]
+                setattr(d, "latest_version", latest)
+                setattr(d, "version_num", latest.version_num)
+                setattr(d, "row_count", latest.row_count)
+                setattr(d, "column_count", latest.column_count)
+                setattr(d, "size_bytes", latest.size_bytes)
+                setattr(d, "hash_sha256", latest.hash_sha256)
+                setattr(d, "s3_key", latest.s3_key)
+            else:
+                setattr(d, "latest_version", None)
+                setattr(d, "version_num", None)
+                setattr(d, "row_count", 0)
+                setattr(d, "column_count", 0)
+                setattr(d, "size_bytes", 0)
+                setattr(d, "hash_sha256", None)
+                setattr(d, "s3_key", None)
+        return d
 
     async def get_dataset_by_name(self, name: str, project_id: str | None = None) -> Dataset | None:
         """Fetch dataset by name."""
@@ -137,7 +182,21 @@ class DatasetService:
         if project_id:
             query = query.where(Dataset.project_id == project_id)
         result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        d = result.scalar_one_or_none()
+        if d:
+            versions = await self.get_versions(d.id)
+            setattr(d, "versions_count", len(versions))
+            if versions:
+                latest = versions[0]
+                setattr(d, "latest_version", latest)
+                setattr(d, "version_num", latest.version_num)
+                setattr(d, "row_count", latest.row_count)
+                setattr(d, "column_count", latest.column_count)
+                setattr(d, "size_bytes", latest.size_bytes)
+                setattr(d, "hash_sha256", latest.hash_sha256)
+                setattr(d, "s3_key", latest.s3_key)
+        return d
+
 
     async def get_versions(self, dataset_id: str) -> list[DatasetVersion]:
         """Fetch all versions of a dataset ordered by version descending."""
@@ -149,11 +208,16 @@ class DatasetService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_version(self, dataset_id: str, version_num: int) -> DatasetVersion | None:
-        """Fetch specific version of a dataset."""
-        query = select(DatasetVersion).where(
-            DatasetVersion.dataset_id == dataset_id,
-            DatasetVersion.version_num == version_num,
-        )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+    async def delete_dataset(self, dataset_id: str) -> bool:
+        """Delete a dataset and its versions from the database."""
+        result = await self.session.execute(select(Dataset).where(Dataset.id == dataset_id))
+        d = result.scalar_one_or_none()
+        if not d:
+            return False
+        # Delete associated versions first
+        versions = await self.get_versions(dataset_id)
+        for v in versions:
+            await self.session.delete(v)
+        await self.session.delete(d)
+        await self.session.commit()
+        return True

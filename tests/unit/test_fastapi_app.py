@@ -141,6 +141,19 @@ class TestHealthEndpoints:
         assert "latency_telemetry" in data
         assert "drift_trajectory" in data
         assert data["system_healthy"] is True
+        assert data["time_range"] == "all"
+
+    def test_health_stats_time_range_filter(self, app):
+        resp_7d = _run(_get(app, "/api/v1/health/stats?time_range=7d"))
+        assert resp_7d.status_code == 200
+        data_7d = resp_7d.json()
+        assert data_7d["time_range"] == "7d"
+        assert "projects_count" in data_7d
+
+        resp_30d = _run(_get(app, "/api/v1/health/stats?time_range=30d"))
+        assert resp_30d.status_code == 200
+        data_30d = resp_30d.json()
+        assert data_30d["time_range"] == "30d"
 
 
 # ── Scaffold routers ──────────────────────────────────────

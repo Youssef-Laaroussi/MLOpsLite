@@ -2,10 +2,10 @@
 
 import logging
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,38 +37,58 @@ async def health_check(
 
 @router.get("/health/stats")
 async def get_system_stats(
+    time_range: str = Query("all", description="all | 30d | 7d"),
     settings: Settings = Depends(get_app_settings),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Return aggregated live system statistics calculated directly from SQL databases & MLflow."""
+    cutoff = None
+    if time_range == "7d":
+        cutoff = datetime.now(UTC) - timedelta(days=7)
+    elif time_range == "30d":
+        cutoff = datetime.now(UTC) - timedelta(days=30)
+
     try:
         # 1. Projects count
         proj_q = select(func.count(Project.id))
+        if cutoff:
+            proj_q = proj_q.where(Project.created_at >= cutoff)
         proj_res = await db.execute(proj_q)
         projects_count = proj_res.scalar() or 0
 
         # 2. Registered models count
         model_q = select(func.count(RegisteredModel.id))
+        if cutoff:
+            model_q = model_q.where(RegisteredModel.created_at >= cutoff)
         model_res = await db.execute(model_q)
         models_count = model_res.scalar() or 0
 
         # 3. Model stages breakdown
-        stage_q = select(ModelVersion.stage, func.count(ModelVersion.id)).group_by(ModelVersion.stage)
+        stage_q = select(ModelVersion.stage, func.count(ModelVersion.id))
+        if cutoff:
+            stage_q = stage_q.where(ModelVersion.created_at >= cutoff)
+        stage_q = stage_q.group_by(ModelVersion.stage)
         stage_res = await db.execute(stage_q)
         stage_counts = {str(stage.value if hasattr(stage, "value") else stage): count for stage, count in stage_res.all()}
 
         # 4. Active deployments count
         dep_q = select(func.count(Deployment.id)).where(Deployment.status == DeploymentStatus.RUNNING)
+        if cutoff:
+            dep_q = dep_q.where(Deployment.created_at >= cutoff)
         dep_res = await db.execute(dep_q)
         active_deployments = dep_res.scalar() or 0
 
         # 5. Datasets count
         ds_q = select(func.count(Dataset.id))
+        if cutoff:
+            ds_q = ds_q.where(Dataset.created_at >= cutoff)
         ds_res = await db.execute(ds_q)
         datasets_count = ds_res.scalar() or 0
 
         # 6. Active alerts count
         alert_q = select(func.count(Alert.id)).where(Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]))
+        if cutoff:
+            alert_q = alert_q.where(Alert.created_at >= cutoff)
         alert_res = await db.execute(alert_q)
         alerts_count = alert_res.scalar() or 0
 
@@ -96,9 +116,10 @@ async def get_system_stats(
             select(ModelVersion, RegisteredModel.name)
             .join(RegisteredModel, ModelVersion.model_id == RegisteredModel.id)
             .where(ModelVersion.stage.in_([ModelStage.PRODUCTION, ModelStage.STAGING, ModelStage.CANDIDATE, ModelStage.DEVELOPMENT]))
-            .order_by(ModelVersion.created_at.desc())
-            .limit(5)
         )
+        if cutoff:
+            bm_q = bm_q.where(ModelVersion.created_at >= cutoff)
+        bm_q = bm_q.order_by(ModelVersion.created_at.desc()).limit(5)
         bm_res = await db.execute(bm_q)
         benchmarks = []
         for mv, model_name in bm_res.all():
@@ -115,11 +136,10 @@ async def get_system_stats(
             })
 
         # 10. Real Latency Telemetry from DeploymentMetric
-        lat_q = (
-            select(DeploymentMetric)
-            .order_by(DeploymentMetric.timestamp.desc())
-            .limit(10)
-        )
+        lat_q = select(DeploymentMetric)
+        if cutoff:
+            lat_q = lat_q.where(DeploymentMetric.timestamp >= cutoff)
+        lat_q = lat_q.order_by(DeploymentMetric.timestamp.desc()).limit(10)
         lat_res = await db.execute(lat_q)
         raw_lat = list(lat_res.scalars().all())
         latency_telemetry = [
@@ -134,11 +154,10 @@ async def get_system_stats(
         ]
 
         # 11. Real Drift Evaluations
-        drift_q = (
-            select(DriftEvaluation)
-            .order_by(DriftEvaluation.created_at.desc())
-            .limit(10)
-        )
+        drift_q = select(DriftEvaluation)
+        if cutoff:
+            drift_q = drift_q.where(DriftEvaluation.created_at >= cutoff)
+        drift_q = drift_q.order_by(DriftEvaluation.created_at.desc()).limit(10)
         drift_res = await db.execute(drift_q)
         raw_drift = list(drift_res.scalars().all())
         drift_trajectory = [
@@ -169,6 +188,7 @@ async def get_system_stats(
             "latency_telemetry": latency_telemetry,
             "drift_trajectory": drift_trajectory,
             "system_healthy": True,
+            "time_range": time_range,
             "timestamp": datetime.now(UTC).isoformat(),
         }
     except Exception as e:

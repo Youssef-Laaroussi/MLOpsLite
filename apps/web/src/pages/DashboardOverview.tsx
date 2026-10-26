@@ -89,12 +89,13 @@ export const DashboardOverview: React.FC = () => {
   // Latency Chart filter state: 'all' | 'p50' | 'p95' | 'p99'
   const [latencyMetricFilter, setLatencyMetricFilter] = useState<"all" | "p50" | "p95" | "p99">("all");
 
-  const loadData = async () => {
+  const loadData = async (range?: string) => {
     setLoading(true);
     setApiError(null);
+    const activeRange = range !== undefined ? range : timeRange;
     try {
       const [statsData, modelsData, deploymentsData, servicesData] = await Promise.all([
-        fetchSystemStats(),
+        fetchSystemStats(activeRange),
         fetchModels(),
         fetchDeployments(),
         fetchSystemServices(),
@@ -118,8 +119,8 @@ export const DashboardOverview: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(timeRange);
+  }, [timeRange]);
 
   const handleTestPing = async (dep: Deployment) => {
     setPingingId(dep.id);
@@ -268,7 +269,7 @@ export const DashboardOverview: React.FC = () => {
             <span className="font-semibold">{apiError}</span>
           </div>
           <button
-            onClick={loadData}
+            onClick={() => loadData()}
             className="px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold text-[11px] transition"
           >
             Retry
@@ -411,7 +412,7 @@ export const DashboardOverview: React.FC = () => {
           </div>
 
           <button
-            onClick={loadData}
+            onClick={() => loadData()}
             disabled={loading}
             className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-[#3BB48C] hover:border-[#3BB48C]/40 transition shadow-2xs cursor-pointer"
             title="Refresh metrics"

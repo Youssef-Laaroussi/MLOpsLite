@@ -263,21 +263,11 @@ export const deleteDataset = async (datasetId: string): Promise<void> => {
 
 // ── System Stats & Subsystem Health ───────────────────────────────
 
-export const fetchSystemStats = async (): Promise<SystemStats> => {
-  try {
-    const res = await api.get("/health/stats");
-    return res.data;
-  } catch (err) {
-    return {
-      projects_count: 0,
-      models_count: 0,
-      datasets_count: 0,
-      active_deployments: 0,
-      alerts_count: 0,
-      system_healthy: false,
-      stages: { production: 0, staging: 0, development: 0, archived: 0 },
-    };
-  }
+export const fetchSystemStats = async (timeRange?: string): Promise<SystemStats> => {
+  const rangeParam =
+    timeRange === "Last 7 days" ? "7d" : timeRange === "Last 30 days" ? "30d" : "all";
+  const res = await api.get("/health/stats", { params: { time_range: rangeParam } });
+  return res.data;
 };
 
 export const fetchSystemServices = async (): Promise<SubsystemService[]> => {

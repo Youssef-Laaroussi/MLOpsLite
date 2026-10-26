@@ -29,8 +29,9 @@ RUN pip install --no-cache-dir \
     minio \
     httpx
 
-# Copy serving server implementation
-COPY packages/deployment/server /app/server
+# Copy package dependencies so packages.deployment.server resolves correctly
+COPY packages /app/packages
+ENV PYTHONPATH=/app
 
 # Create and switch to non-root user
 RUN useradd -m -u 1000 -s /bin/bash mlite && chown -R mlite:mlite /app
@@ -44,4 +45,4 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Start Uvicorn serving
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "packages.deployment.server.app:app", "--host", "0.0.0.0", "--port", "8000"]

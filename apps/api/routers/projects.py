@@ -79,12 +79,19 @@ async def update_project(
     return ProjectResponse.model_validate(project)
 
 
-@router.delete("/{slug_or_id}", response_model=ProjectResponse)
+@router.delete("/{slug_or_id}")
 async def delete_project(
     slug_or_id: str,
+    permanent: bool = Query(False, description="If true, permanently delete from database"),
     service: ProjectService = Depends(_get_service),
 ) -> Any:
-    """Archive (soft-delete) a project."""
+    """Archive (soft-delete) or permanently delete a project."""
+    if permanent:
+        deleted = await service.hard_delete(slug_or_id)
+        if not deleted:
+            raise NotFoundError("Project", slug_or_id)
+        return {"deleted": True, "id": slug_or_id}
+
     project = await service.archive(slug_or_id)
     if project is None:
         raise NotFoundError("Project", slug_or_id)

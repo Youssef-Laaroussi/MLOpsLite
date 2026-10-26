@@ -149,6 +149,24 @@ export const archiveProject = async (slugOrId: string): Promise<Project> => {
   return res.data;
 };
 
+export const updateProject = async (
+  slugOrId: string,
+  data: {
+    name?: string;
+    description?: string;
+    git_url?: string;
+    default_branch?: string;
+    status?: string;
+  }
+): Promise<Project> => {
+  const res = await api.patch(`/projects/${slugOrId}`, data);
+  return res.data;
+};
+
+export const deleteProject = async (slugOrId: string): Promise<void> => {
+  await api.delete(`/projects/${slugOrId}`, { params: { permanent: true } });
+};
+
 
 // ── Models & Registry ──────────────────────────────────────────────
 

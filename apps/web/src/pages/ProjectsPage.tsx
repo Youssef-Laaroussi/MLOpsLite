@@ -16,10 +16,19 @@ import {
   List,
   AlertCircle,
   Archive,
+  Pencil,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
-import { fetchProjects, createProject, archiveProject } from "../api/client";
+import {
+  fetchProjects,
+  createProject,
+  archiveProject,
+  updateProject,
+  deleteProject,
+} from "../api/client";
 import { Project } from "../api/types";
 import { Link } from "react-router-dom";
 
@@ -99,6 +108,15 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  // Edit modal state
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState<string>("");
+  const [editDescription, setEditDescription] = useState<string>("");
+  const [editGitUrl, setEditGitUrl] = useState<string>("");
+  const [editBranch, setEditBranch] = useState<string>("main");
+  const [editStatus, setEditStatus] = useState<string>("active");
+  const [savingEdit, setSavingEdit] = useState<boolean>(false);
+
   const handleArchive = async (proj: Project) => {
     if (!window.confirm(`Are you sure you want to archive project "${proj.name}"?`)) return;
     setActionLoading(proj.id);
@@ -107,6 +125,61 @@ export const ProjectsPage: React.FC = () => {
       setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
     } catch (err: any) {
       alert(`Error archiving project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openEditModal = (proj: Project) => {
+    setEditingProject(proj);
+    setEditName(proj.name);
+    setEditDescription(proj.description || "");
+    setEditGitUrl(proj.git_url || "");
+    setEditBranch(proj.default_branch || "main");
+    setEditStatus((proj.status || "active").toLowerCase());
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject || !editName.trim()) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateProject(editingProject.slug || editingProject.id, {
+        name: editName.trim(),
+        description: editDescription.trim() || undefined,
+        git_url: editGitUrl.trim() || undefined,
+        default_branch: editBranch.trim() || undefined,
+        status: editStatus,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === editingProject.id ? updated : p)));
+      setEditingProject(null);
+    } catch (err: any) {
+      alert(`Error updating project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async (proj: Project) => {
+    if (!window.confirm(`Permanently delete project "${proj.name}"? This will delete all associated project records and cannot be undone.`)) return;
+    setActionLoading(proj.id);
+    try {
+      await deleteProject(proj.slug || proj.id);
+      setProjects((prev) => prev.filter((p) => p.id !== proj.id));
+    } catch (err: any) {
+      alert(`Error deleting project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRestore = async (proj: Project) => {
+    setActionLoading(proj.id);
+    try {
+      const updated = await updateProject(proj.slug || proj.id, { status: "active" });
+      setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+    } catch (err: any) {
+      alert(`Error restoring project: ${err.response?.data?.detail || err.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -636,7 +709,16 @@ export const ProjectsPage: React.FC = () => {
                             <GitBranch className="w-3.5 h-3.5" />
                           </a>
                         )}
-                        {(proj.status || "").toLowerCase() === "active" && (
+
+                        <button
+                          onClick={() => openEditModal(proj)}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
+                          title="Edit Project"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        {(proj.status || "").toLowerCase() === "active" ? (
                           <button
                             onClick={() => handleArchive(proj)}
                             disabled={actionLoading === proj.id}
@@ -645,7 +727,26 @@ export const ProjectsPage: React.FC = () => {
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRestore(proj)}
+                            disabled={actionLoading === proj.id}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
+                            title="Restore to Active"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
                         )}
+
+                        <button
+                          onClick={() => handleDelete(proj)}
+                          disabled={actionLoading === proj.id}
+                          className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                          title="Delete Project Permanently"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
                         <Link
                           to="/app/experiments"
                           className="flex items-center gap-1 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
@@ -723,7 +824,16 @@ export const ProjectsPage: React.FC = () => {
                       <GitBranch className="w-3.5 h-3.5" />
                     </a>
                   )}
-                  {(proj.status || "").toLowerCase() === "active" && (
+
+                  <button
+                    onClick={() => openEditModal(proj)}
+                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
+                    title="Edit Project"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+
+                  {(proj.status || "").toLowerCase() === "active" ? (
                     <button
                       onClick={() => handleArchive(proj)}
                       disabled={actionLoading === proj.id}
@@ -732,7 +842,26 @@ export const ProjectsPage: React.FC = () => {
                     >
                       <Archive className="w-3.5 h-3.5" />
                     </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRestore(proj)}
+                      disabled={actionLoading === proj.id}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
+                      title="Restore to Active"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
                   )}
+
+                  <button
+                    onClick={() => handleDelete(proj)}
+                    disabled={actionLoading === proj.id}
+                    className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                    title="Delete Project Permanently"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+
                   <Link
                     to="/app/experiments"
                     className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
@@ -845,6 +974,110 @@ export const ProjectsPage: React.FC = () => {
                   className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
                 >
                   {creating ? "Creating..." : "Create Workspace"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Edit Project ── */}
+      {editingProject && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-emerald-600" />
+                Edit Project: {editingProject.name}
+              </h3>
+              <button
+                onClick={() => setEditingProject(null)}
+                className="text-slate-400 hover:text-slate-600 transition p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Git Repository URL
+                </label>
+                <input
+                  type="url"
+                  value={editGitUrl}
+                  onChange={(e) => setEditGitUrl(e.target.value)}
+                  placeholder="https://github.com/org/repo.git"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                    Default Branch
+                  </label>
+                  <input
+                    type="text"
+                    value={editBranch}
+                    onChange={(e) => setEditBranch(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                  >
+                    <option value="active">ACTIVE</option>
+                    <option value="archived">ARCHIVED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit || !editName.trim()}
+                  className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
+                >
+                  {savingEdit ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

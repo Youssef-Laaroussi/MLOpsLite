@@ -156,3 +156,16 @@ class ProjectService:
         await self.session.flush()
         await self.session.refresh(project)
         return project
+
+    async def hard_delete(self, slug_or_id: str) -> bool:
+        """Permanently delete a project from database."""
+        result = await self.session.execute(
+            select(Project).where((Project.slug == slug_or_id) | (Project.id == slug_or_id))
+        )
+        project = result.scalar_one_or_none()
+        if project is None:
+            return False
+
+        await self.session.delete(project)
+        await self.session.flush()
+        return True

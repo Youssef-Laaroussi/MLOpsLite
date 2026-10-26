@@ -1,6 +1,12 @@
 """Core domain models package."""
 
-from packages.core.models.alert import Alert, AlertSeverity, AlertStatus
+from packages.core.models.alert import (
+    Alert,
+    AlertRule,
+    AlertSeverity,
+    AlertStatus,
+    NotificationChannel,
+)
 from packages.core.models.audit import AuditAction, AuditLog
 from packages.core.models.dataset import Dataset, DatasetFormat, DatasetVersion
 from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
@@ -43,6 +49,8 @@ __all__ = [
     "Alert",
     "AlertSeverity",
     "AlertStatus",
+    "AlertRule",
+    "NotificationChannel",
     "RollbackRecord",
     "RollbackPolicy",
     "RollbackStatus",

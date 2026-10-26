@@ -1,9 +1,9 @@
 """Pydantic v2 schemas for Alert management."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 from packages.core.models.alert import AlertSeverity, AlertStatus
 
@@ -55,3 +55,60 @@ class AlertResponse(BaseModel):
 class AlertListResponse(BaseModel):
     alerts: list[AlertResponse]
     total: int
+
+
+RuleMetric = Literal["drift_share", "latency_p95_ms", "failed_deployments"]
+RuleOperator = Literal[">", ">=", "<", "<="]
+ChannelKind = Literal["SLACK", "DISCORD", "WEBHOOK"]
+
+
+class AlertRuleCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    metric: RuleMetric
+    operator: RuleOperator = ">"
+    threshold: float
+    model_name: str | None = None
+    severity: AlertSeverity = AlertSeverity.WARNING
+    enabled: bool = True
+
+
+class AlertRuleUpdate(BaseModel):
+    enabled: bool
+
+
+class AlertRuleResponse(AlertRuleCreate):
+    id: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RuleEvaluationResponse(BaseModel):
+    evaluated: int
+    triggered: list[AlertResponse]
+
+
+class NotificationChannelCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    kind: ChannelKind
+    url: HttpUrl
+
+
+class NotificationChannelResponse(BaseModel):
+    id: str
+    name: str
+    kind: ChannelKind
+    url: str
+    enabled: bool
+    last_test_at: datetime | None = None
+    last_test_ok: bool | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AlertSummaryResponse(BaseModel):
+    open_critical: int
+    open_warning: int
+    resolved_7d: int
+    mttr_minutes: float | None = Field(None, description="None when no alert was ever resolved")

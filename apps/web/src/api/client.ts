@@ -14,6 +14,10 @@ import {
   Experiment,
   ExperimentRun,
   MonitoringSummary,
+  Alert,
+  AlertRule,
+  NotificationChannel,
+  AlertSummary,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -330,6 +334,92 @@ export const triggerDriftCheck = async (data: {
 
 export const fetchDriftReportHtml = async (reportId: string): Promise<string> => {
   const res = await api.get(`/monitoring/reports/${reportId}/html`);
+  return res.data;
+};
+
+// ── Alerts, Rules & Webhook Channels ──────────────────────────────
+
+export const fetchAlerts = async (params?: {
+  status?: string;
+  severity?: string;
+  model_name?: string;
+  limit?: number;
+}): Promise<Alert[]> => {
+  const res = await api.get("/alerts/", { params });
+  return res.data.alerts || [];
+};
+
+export const fetchAlertsSummary = async (): Promise<AlertSummary> => {
+  const res = await api.get("/alerts/summary");
+  return res.data;
+};
+
+export const acknowledgeAlert = async (id: string, acknowledgedBy?: string): Promise<Alert> => {
+  const res = await api.post(`/alerts/${id}/acknowledge`, null, {
+    params: { acknowledged_by: acknowledgedBy || "UI User" },
+  });
+  return res.data;
+};
+
+export const resolveAlert = async (id: string): Promise<Alert> => {
+  const res = await api.post(`/alerts/${id}/resolve`);
+  return res.data;
+};
+
+export const fetchAlertRules = async (): Promise<AlertRule[]> => {
+  const res = await api.get("/alerts/rules");
+  return res.data || [];
+};
+
+export const createAlertRule = async (data: {
+  name: string;
+  metric: "drift_share" | "latency_p95_ms" | "failed_deployments";
+  operator: ">" | ">=" | "<" | "<=";
+  threshold: number;
+  model_name?: string | null;
+  severity?: "INFO" | "WARNING" | "HIGH" | "CRITICAL";
+  enabled?: boolean;
+}): Promise<AlertRule> => {
+  const res = await api.post("/alerts/rules", data);
+  return res.data;
+};
+
+export const toggleAlertRule = async (id: string, enabled: boolean): Promise<AlertRule> => {
+  const res = await api.patch(`/alerts/rules/${id}`, { enabled });
+  return res.data;
+};
+
+export const deleteAlertRule = async (id: string): Promise<void> => {
+  await api.delete(`/alerts/rules/${id}`);
+};
+
+export const evaluateAlertRules = async (): Promise<{ evaluated: number; triggered: Alert[] }> => {
+  const res = await api.post("/alerts/rules/evaluate");
+  return res.data;
+};
+
+export const fetchNotificationChannels = async (): Promise<NotificationChannel[]> => {
+  const res = await api.get("/alerts/channels");
+  return res.data || [];
+};
+
+export const createNotificationChannel = async (data: {
+  name: string;
+  kind: "SLACK" | "DISCORD" | "WEBHOOK";
+  url: string;
+}): Promise<NotificationChannel> => {
+  const res = await api.post("/alerts/channels", data);
+  return res.data;
+};
+
+export const deleteNotificationChannel = async (id: string): Promise<void> => {
+  await api.delete(`/alerts/channels/${id}`);
+};
+
+export const testNotificationChannel = async (
+  id: string
+): Promise<{ channel_id: string; name: string; delivered: boolean; error?: string | null }> => {
+  const res = await api.post(`/alerts/channels/${id}/test`);
   return res.data;
 };
 

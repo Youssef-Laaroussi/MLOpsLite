@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Key,
   LogOut,
@@ -25,7 +25,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ApiKeysModal } from "./ApiKeysModal";
-import { UserRole } from "../api/types";
+import { UserRole, Alert } from "../api/types";
+import { fetchAlerts } from "../api/client";
 
 export interface RouteMeta {
   group: string;
@@ -57,12 +58,6 @@ const QUICK_CREATE = [
   { label: "Deploy a model", href: "/app/deployments", icon: Rocket },
 ];
 
-const NOTIFICATIONS = [
-  { id: 1, kind: "warn", title: "Drift detected on churn-xgb v2", sub: "PSI 0.21 > threshold 0.20", time: "12m", href: "/app/monitoring" },
-  { id: 2, kind: "ok", title: "fraud-detector v3 promoted", sub: "Staging → Production", time: "1h", href: "/app/models" },
-  { id: 3, kind: "ok", title: "Deployment dep-live-02 healthy", sub: "Rolled out on port 8101", time: "3h", href: "/app/deployments" },
-];
-
 const useClickOutside = (ref: React.RefObject<HTMLElement>, cb: () => void) => {
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -76,10 +71,31 @@ const useClickOutside = (ref: React.RefObject<HTMLElement>, cb: () => void) => {
 export const Header: React.FC<HeaderProps> = ({ meta }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [openMenu, setOpenMenu] = useState<null | "user" | "create" | "notif" | "env">(null);
   const [apiKeysModalOpen, setApiKeysModalOpen] = useState(false);
   const [env, setEnv] = useState<"Production" | "Staging" | "Development">("Production");
-  const [unread, setUnread] = useState(NOTIFICATIONS.length);
+  const [realAlerts, setRealAlerts] = useState<Alert[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let mounted = true;
+    fetchAlerts({ status: "OPEN", limit: 5 })
+      .then((items) => {
+        if (!mounted) return;
+        setRealAlerts(items);
+        setUnread(items.length);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setRealAlerts([]);
+        setUnread(0);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthenticated, location.pathname]);
 
   // Command palette
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -245,29 +261,38 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
             {openMenu === "notif" && (
               <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-900">Notifications</span>
+                  <span className="text-sm font-bold text-slate-900">Active Alerts</span>
                   <Link to="/app/alerts" onClick={() => setOpenMenu(null)} className="text-[11px] font-semibold text-[#3BB48C] hover:underline">
                     View all
                   </Link>
                 </div>
-                {NOTIFICATIONS.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => go(n.href)}
-                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-50 last:border-0"
-                  >
-                    {n.kind === "warn" ? (
-                      <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{n.sub}</p>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{n.time}</span>
-                  </button>
-                ))}
+                {realAlerts.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-xs text-slate-400">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-2 opacity-80" />
+                    No open alerts. All systems healthy.
+                  </div>
+                ) : (
+                  realAlerts.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => go("/app/alerts")}
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-50 last:border-0"
+                    >
+                      {n.severity === "CRITICAL" || n.severity === "HIGH" ? (
+                        <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{n.message}</p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>

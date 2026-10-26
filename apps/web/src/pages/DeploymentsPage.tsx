@@ -8,28 +8,14 @@ import {
   Zap,
   CheckCircle2,
   AlertTriangle,
-  Radio,
   Lock,
-  Calendar,
   ChevronDown,
   ChevronUp,
   RefreshCw,
   Search,
   Activity,
-  Cpu,
-  HardDrive,
-  Network,
-  Sliders,
-  Layers,
-  ShieldCheck,
-  TrendingUp,
-  ArrowRight,
-  Gauge,
-  Workflow,
-  Share2,
-  GitBranch,
+  Inbox,
 } from "lucide-react";
-import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
 import {
   fetchDeployments,
@@ -41,10 +27,6 @@ import {
 import { Deployment } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import {
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
   LineChart,
   Line,
   BarChart,
@@ -54,201 +36,62 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Cell,
-  ReferenceLine
+  ReferenceLine,
 } from "recharts";
-import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
-
-const CANARY_SPLIT = [
-  { name: "v2 stable", value: 80, fill: PALETTE.slate },
-  { name: "v3 canary", value: 20, fill: PALETTE.brand },
-];
-
-const RELIABILITY = [
-  { t: "00h", p99: 9.1, err: 0.05 },
-  { t: "04h", p99: 8.7, err: 0.04 },
-  { t: "08h", p99: 10.4, err: 0.12 },
-  { t: "10h", p99: 12.8, err: 0.38 },
-  { t: "12h", p99: 11.2, err: 0.21 },
-  { t: "16h", p99: 9.8, err: 0.08 },
-  { t: "20h", p99: 9.3, err: 0.06 },
-  { t: "24h", p99: 9.0, err: 0.04 },
-];
-
-const HEATMAP = [
-  { name: "fraud-v3", cpu: [32, 38, 45, 52, 61, 68, 74, 71, 66, 58, 49, 44] },
-  { name: "churn-v2", cpu: [20, 22, 25, 31, 40, 47, 52, 49, 41, 33, 27, 24] },
-  { name: "demand-v2", cpu: [41, 48, 55, 63, 72, 79, 84, 88, 81, 70, 58, 50] },
-  { name: "sentiment-v1", cpu: [55, 62, 70, 78, 85, 91, 94, 90, 86, 80, 72, 66] },
-  { name: "credit-v1", cpu: [18, 19, 24, 28, 35, 39, 42, 40, 34, 29, 24, 21] },
-];
-
-const RELEASES = [
-  { id: 1, title: "fraud-detector v3 canary → 20%", detail: "Auto-promote gate passed · a.benali", when: "1h ago", color: PALETTE.brand },
-  { id: 2, title: "sentiment-v1 autoscaled 2 → 4 pods", detail: "CPU > 85% for 5 min", when: "3h ago", color: PALETTE.blue },
-  { id: 3, title: "demand-v2 rolled back to v1", detail: "p99 regression > 15ms · symlink cutover 0.8s", when: "1d ago", color: "#F43F5E" },
-  { id: 4, title: "credit-v1 deployed", detail: "Blue/green · zero downtime · s.karim", when: "2d ago", color: PALETTE.violet },
-];
-
-// Realistic production serving fleet for Data Analyst & MLOps evaluation
-const DEFAULT_DEPLOYMENTS: (Deployment & {
-  traffic_pct?: number;
-  rps?: number;
-  latency_p95?: number;
-  cpu_pct?: number;
-  memory_mb?: number;
-  role?: "PRODUCTION" | "CANARY" | "STAGING";
-})[] = [
-    {
-      id: "dep-prod-01",
-      model_name: "fraud-detector",
-      model_version: 3,
-      port: 8100,
-      endpoint_url: "http://localhost:8100",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-      traffic_pct: 100,
-      rps: 1240,
-      latency_p95: 2.4,
-      cpu_pct: 38,
-      memory_mb: 280,
-      role: "PRODUCTION",
-    },
-    {
-      id: "dep-prod-02",
-      model_name: "customer-churn-xgb",
-      model_version: 2,
-      port: 8101,
-      endpoint_url: "http://localhost:8101",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-      traffic_pct: 90,
-      rps: 650,
-      latency_p95: 3.8,
-      cpu_pct: 26,
-      memory_mb: 340,
-      role: "PRODUCTION",
-    },
-    {
-      id: "dep-canary-02",
-      model_name: "customer-churn-xgb",
-      model_version: 3,
-      port: 8102,
-      endpoint_url: "http://localhost:8102",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-      traffic_pct: 10,
-      rps: 75,
-      latency_p95: 3.2,
-      cpu_pct: 14,
-      memory_mb: 320,
-      role: "CANARY",
-    },
-    {
-      id: "dep-prod-03",
-      model_name: "demand-forecaster-lstm",
-      model_version: 2,
-      port: 8103,
-      endpoint_url: "http://localhost:8103",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 72).toISOString(),
-      traffic_pct: 100,
-      rps: 420,
-      latency_p95: 5.2,
-      cpu_pct: 54,
-      memory_mb: 512,
-      role: "PRODUCTION",
-    },
-    {
-      id: "dep-prod-04",
-      model_name: "credit-default-risk",
-      model_version: 1,
-      port: 8104,
-      endpoint_url: "http://localhost:8104",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 96).toISOString(),
-      traffic_pct: 100,
-      rps: 310,
-      latency_p95: 3.1,
-      cpu_pct: 22,
-      memory_mb: 210,
-      role: "PRODUCTION",
-    },
-    {
-      id: "dep-stg-05",
-      model_name: "sentiment-bert-mini",
-      model_version: 1,
-      port: 8105,
-      endpoint_url: "http://localhost:8105",
-      status: "RUNNING",
-      created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-      traffic_pct: 100,
-      rps: 145,
-      latency_p95: 12.6,
-      cpu_pct: 68,
-      memory_mb: 850,
-      role: "STAGING",
-    },
-  ];
+import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
 
 export const DeploymentsPage: React.FC = () => {
   const { hasRole, user } = useAuth();
   const isAdmin = user?.role === "ADMIN" || hasRole("ADMIN");
-  const [deployments, setDeployments] = useState<typeof DEFAULT_DEPLOYMENTS>(DEFAULT_DEPLOYMENTS);
-  const [loading, setLoading] = useState(true);
+  const canDeploy = hasRole("DEVELOPER");
+  const canRollback = hasRole("MAINTAINER");
 
-  // Top header date filter ("Last 6 months" default)
-  const [timeRange, setTimeRange] = useState<string>("Last 6 months");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Search & Role Filter
+  // Search & Status filter
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  // Selected container node in topology
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>("dep-prod-01");
+  // Selected container node
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Deploy modal
-  const [showModal, setShowModal] = useState(false);
-  const [modelName, setModelName] = useState("");
-  const [modelVersion, setModelVersion] = useState(1);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [deploying, setDeploying] = useState<boolean>(false);
+  const [modelName, setModelName] = useState<string>("");
+  const [modelVersion, setModelVersion] = useState<number>(1);
   const [port, setPort] = useState<number | undefined>(undefined);
+  const [deployError, setDeployError] = useState<string | null>(null);
 
   // Rollback modal
-  const [showRollbackModal, setShowRollbackModal] = useState(false);
-  const [rollbackModelName, setRollbackModelName] = useState("");
-  const [targetVersion, setTargetVersion] = useState(1);
+  const [showRollbackModal, setShowRollbackModal] = useState<boolean>(false);
+  const [rollbackModelName, setRollbackModelName] = useState<string>("");
+  const [targetVersion, setTargetVersion] = useState<number>(1);
   const [rollbackSuccess, setRollbackSuccess] = useState<string | null>(null);
+  const [rollbackError, setRollbackError] = useState<string | null>(null);
 
   // Ping test state
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [pingResult, setPingResult] = useState<{
     id: string;
     latency: number;
-    prediction: any;
+    healthy: boolean;
+    detail?: string;
   } | null>(null);
 
   const loadDeployments = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchDeployments();
-      if (data && data.length > 0) {
-        // Merge API data with rich telemetry
-        const merged = data.map((d, idx) => ({
-          ...d,
-          traffic_pct: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.traffic_pct || 100,
-          rps: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.rps || 350,
-          latency_p95: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.latency_p95 || 3.5,
-          cpu_pct: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.cpu_pct || 25,
-          memory_mb: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.memory_mb || 300,
-          role: DEFAULT_DEPLOYMENTS[idx % DEFAULT_DEPLOYMENTS.length]?.role || "PRODUCTION",
-        }));
-        setDeployments(merged);
-      } else {
-        setDeployments(DEFAULT_DEPLOYMENTS);
+      setDeployments(data || []);
+      if (data && data.length > 0 && !selectedNodeId) {
+        setSelectedNodeId(data[0].id);
       }
-    } catch {
-      setDeployments(DEFAULT_DEPLOYMENTS);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || "Failed to fetch deployments from backend");
     } finally {
       setLoading(false);
     }
@@ -260,101 +103,82 @@ export const DeploymentsPage: React.FC = () => {
 
   const handleDeploy = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDeploying(true);
+    setDeployError(null);
     try {
       await deployModel(modelName, modelVersion, port);
       setShowModal(false);
       setModelName("");
       setModelVersion(1);
       setPort(undefined);
-      loadDeployments();
-    } catch {
-      // Local demo fallback
-      const newDep: typeof DEFAULT_DEPLOYMENTS[0] = {
-        id: "dep-" + Date.now().toString(36),
-        model_name: modelName,
-        model_version: modelVersion,
-        port: port || 8100 + deployments.length,
-        endpoint_url: `http://localhost:${port || 8100 + deployments.length}`,
-        status: "RUNNING",
-        created_at: new Date().toISOString(),
-        traffic_pct: 100,
-        rps: 210,
-        latency_p95: 4.0,
-        cpu_pct: 20,
-        memory_mb: 250,
-        role: "PRODUCTION",
-      };
-      setDeployments((prev) => [newDep, ...prev]);
-      setShowModal(false);
+      await loadDeployments();
+    } catch (err: any) {
+      setDeployError(err?.response?.data?.detail || err?.message || "Container deployment failed");
+    } finally {
+      setDeploying(false);
     }
   };
 
   const handleStop = async (id: string) => {
-    if (!confirm("Are you sure you want to stop this container?")) return;
+    if (!confirm("Are you sure you want to stop and remove this container?")) return;
     try {
       await stopDeployment(id);
-      loadDeployments();
-    } catch {
-      setDeployments((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, status: "STOPPED" } : d))
-      );
+      await loadDeployments();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || "Failed to stop container");
     }
   };
 
   const handleRollbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRollbackSuccess(null);
+    setRollbackError(null);
     try {
       await rollbackDeployment(rollbackModelName, targetVersion);
-      setRollbackSuccess(`Successfully rolled back ${rollbackModelName} to v${targetVersion}`);
-      loadDeployments();
+      setRollbackSuccess(`Successfully rolled back ${rollbackModelName} to version ${targetVersion}`);
+      await loadDeployments();
+      setTimeout(() => {
+        setShowRollbackModal(false);
+        setRollbackSuccess(null);
+      }, 1500);
     } catch (err: any) {
-      setRollbackSuccess(`Rollback failed: ${err?.response?.data?.detail || err?.message || "unknown error"}`);
+      setRollbackError(err?.response?.data?.detail || err?.message || "Rollback failed");
     }
-    setTimeout(() => {
-      setRollbackSuccess(null);
-      setShowRollbackModal(false);
-    }, 1500);
   };
 
   const handleTestPing = async (d: Deployment) => {
     setPingingId(d.id);
+    setPingResult(null);
     try {
       const res = await pingDeployment(d.id);
-      setPingResult({ id: d.id, latency: res.latency_ms, prediction: res.prediction });
+      setPingResult({
+        id: d.id,
+        latency: res.latency_ms,
+        healthy: res.prediction?.healthy ?? false,
+        detail: res.prediction?.status || "Online",
+      });
     } catch (err: any) {
       setPingResult({
         id: d.id,
         latency: 0,
-        prediction: { healthy: false, error: err?.response?.data?.detail || err?.message || "unreachable" },
+        healthy: false,
+        detail: err?.response?.data?.detail || err?.message || "Unreachable",
       });
     } finally {
       setPingingId(null);
     }
   };
 
-  const canDeploy = hasRole("DEVELOPER");
-  const canRollback = hasRole("MAINTAINER");
-
-  // Summary Metrics
-  const totalRps = useMemo(() => deployments.reduce((acc, d) => acc + (d.rps || 0), 0), [deployments]);
+  // Real Fleet Summary Metrics
   const runningCount = useMemo(() => deployments.filter((d) => d.status === "RUNNING").length, [deployments]);
-  const avgLatency = useMemo(() => {
-    const active = deployments.filter((d) => d.status === "RUNNING");
-    if (active.length === 0) return 0;
-    const sum = active.reduce((acc, d) => acc + (d.latency_p95 || 3.5), 0);
-    return (sum / active.length).toFixed(1);
-  }, [deployments]);
+  const stoppedCount = useMemo(() => deployments.filter((d) => d.status === "STOPPED").length, [deployments]);
+  const failedCount = useMemo(() => deployments.filter((d) => d.status === "FAILED").length, [deployments]);
 
-  // Selected container node details
-  const activeNode = useMemo(() => {
-    return deployments.find((d) => d.id === selectedNodeId) || deployments[0];
-  }, [deployments, selectedNodeId]);
+  // Sorting state
+  const [sortField, setSortField] = useState<"model" | "version" | "port" | "status" | "date">("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Sorting state for deployments table
-  const [sortField, setSortField] = useState<"model" | "version" | "port" | "rps" | "latency" | "status" | "role">("model");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
-  const handleSort = (field: "model" | "version" | "port" | "rps" | "latency" | "status" | "role") => {
+  const handleSort = (field: "model" | "version" | "port" | "status" | "date") => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -370,30 +194,29 @@ export const DeploymentsPage: React.FC = () => {
         d.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.port.toString().includes(searchQuery);
-      const matchesRole = roleFilter === "ALL" || (d.role || "PRODUCTION") === roleFilter;
-      return matchesSearch && matchesRole;
+      const matchesStatus = statusFilter === "ALL" || d.status === statusFilter;
+      return matchesSearch && matchesStatus;
     });
 
     return [...list].sort((a, b) => {
       let comparison = 0;
-      if (sortField === "model") {
-        comparison = a.model_name.localeCompare(b.model_name);
-      } else if (sortField === "version") {
-        comparison = a.model_version - b.model_version;
-      } else if (sortField === "port") {
-        comparison = a.port - b.port;
-      } else if (sortField === "rps") {
-        comparison = (a.rps || 0) - (b.rps || 0);
-      } else if (sortField === "latency") {
-        comparison = (a.latency_p95 || 0) - (b.latency_p95 || 0);
-      } else if (sortField === "status") {
-        comparison = a.status.localeCompare(b.status);
-      } else if (sortField === "role") {
-        comparison = (a.role || "").localeCompare(b.role || "");
-      }
+      if (sortField === "model") comparison = a.model_name.localeCompare(b.model_name);
+      else if (sortField === "version") comparison = a.model_version - b.model_version;
+      else if (sortField === "port") comparison = a.port - b.port;
+      else if (sortField === "status") comparison = a.status.localeCompare(b.status);
+      else if (sortField === "date") comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [deployments, searchQuery, roleFilter, sortField, sortDirection]);
+  }, [deployments, searchQuery, statusFilter, sortField, sortDirection]);
+
+  // Real data for SLA Benchmarking Chart
+  const benchmarkData = useMemo(() => {
+    return deployments.map((d) => ({
+      name: `${d.model_name} (v${d.model_version})`,
+      port: d.port,
+      status: d.status,
+    }));
+  }, [deployments]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
@@ -405,60 +228,28 @@ export const DeploymentsPage: React.FC = () => {
               Inference Deployments
             </h2>
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${runningCount > 0 ? "bg-emerald-400 opacity-75" : "bg-slate-300"}`} />
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${runningCount > 0 ? "bg-emerald-500" : "bg-slate-400"}`} />
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Service mesh orchestration, live canary routing topology, and instant zero-downtime rollback
+            Docker inference containers, real-time health inspection, and version cutovers
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Top-Right Calendar Filter matching all sections */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                      ? "bg-emerald-50 text-emerald-800 font-semibold"
-                      : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button
             onClick={loadDeployments}
             className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh deployments"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
           </button>
 
           {canRollback && (
             <button
               onClick={() => setShowRollbackModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs transition shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs transition shadow-2xs cursor-pointer"
               title="Rollback deployment to stable model version"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
@@ -469,10 +260,11 @@ export const DeploymentsPage: React.FC = () => {
           <button
             onClick={() => setShowModal(true)}
             disabled={!canDeploy}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs transition shadow-2xs ${canDeploy
-                ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs transition shadow-2xs ${
+              canDeploy
+                ? "bg-[#3BB48C] hover:bg-[#329F7B] text-white cursor-pointer"
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
-              }`}
+            }`}
             title={canDeploy ? "Launch container" : "Requires Developer role"}
           >
             {canDeploy ? <Plus className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
@@ -481,241 +273,267 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards (Clean, 100% curve-free & sparkline-free) ── */}
+      {/* ── Error Banner ── */}
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-center justify-between text-rose-800 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>Backend Error: {error}</span>
+          </div>
+          <button
+            onClick={loadDeployments}
+            className="underline font-semibold hover:text-rose-900 ml-4 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── Top 4 KPI StatCards (Bound to real backend data) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Active Serving Fleet"
-          value={`${runningCount} Containers`}
-          subtitle="Docker health checks passing"
+          value={deployments.length === 0 ? "0 Containers" : `${runningCount} Running`}
+          subtitle={`${deployments.length} total registered deployments`}
           icon={Server}
-          color="emerald"
-          trend="100% Uptime"
+          color={runningCount > 0 ? "emerald" : "blue"}
+          trend={runningCount > 0 ? "Fleet Online" : "Idle"}
         />
         <StatCard
-          title="Total Serving Traffic"
-          value={`${totalRps.toLocaleString()} req/s`}
-          subtitle="Real-time inference throughput"
+          title="Allocated Ports"
+          value={`${deployments.filter((d) => d.status === "RUNNING").length} Ports`}
+          subtitle="Dynamic port allocator (8100-8200)"
           icon={Zap}
           color="brand"
-          trend="Autoscale Ready"
+          trend="Docker daemon active"
         />
         <StatCard
-          title="Weighted P95 Latency"
-          value={`${avgLatency} ms`}
-          subtitle="Sub-15ms production SLA"
+          title="Stopped / Inactive"
+          value={`${stoppedCount} Stopped`}
+          subtitle="Released port & container resources"
           icon={Activity}
-          color="emerald"
-          trend="P99: 11.2 ms"
+          color="blue"
+          trend={`${failedCount} Failed`}
         />
         <StatCard
           title="Rollback Readiness"
           value="Zero Downtime"
-          subtitle="1-click version cutover"
+          subtitle="symlink & container cutover"
           icon={RotateCcw}
           color="brand"
-          trend="Symlink Active"
+          trend="Ready"
         />
       </div>
 
-      {/* ── Visual Analytics Row: Clean Snowflake Enterprise Analytics ── */}
+      {/* ── Real Deployments Overview Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* VISUAL 1: Ingress Throughput (7 cols) - Clean Line Chart */}
+        {/* Real Fleet Active Port Map */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Ingress Traffic Throughput
+                  Container Port Allocation Map
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Production requests vs Canary (req/s) over last 6 hours
+                  Host port binding per registered inference deployment
                 </p>
               </div>
               <span className="font-mono text-xs text-slate-600 font-semibold">
-                Peak: {totalRps} req/s
+                {deployments.length} Records
               </span>
             </div>
 
             <div className="h-52 w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={[
-                    { time: "10:00", prod: 2150, canary: 180 },
-                    { time: "11:00", prod: 2380, canary: 210 },
-                    { time: "12:00", prod: 2620, canary: 220 },
-                    { time: "13:00", prod: 2510, canary: 205 },
-                    { time: "14:00", prod: 2430, canary: 195 },
-                    { time: "15:00", prod: 2580, canary: 215 },
-                    { time: "16:00", prod: 2640, canary: 200 },
-                  ]}
-                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
-                >
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis
-                    tick={AXIS_TICK}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
-                  />
-                  <RechartsTooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      return (
-                        <BiTooltip
-                          active
-                          label={`Ingress @ ${label}`}
-                          payload={[
-                            { name: "Production Endpoints", value: `${payload.find(p => p.dataKey === "prod")?.value} req/s`, color: "#3BB48C" },
-                            { name: "Canary Endpoints", value: `${payload.find(p => p.dataKey === "canary")?.value} req/s`, color: "#64748B" },
-                          ]}
-                        />
-                      );
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="prod"
-                    name="Production"
-                    stroke="#3BB48C"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "#3BB48C" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="canary"
-                    name="Canary"
-                    stroke="#64748B"
-                    strokeWidth={1.5}
-                    strokeDasharray="3 3"
-                    dot={{ r: 2.5, fill: "#64748B" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {benchmarkData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={benchmarkData}
+                    layout="vertical"
+                    margin={{ top: 0, right: 20, left: 10, bottom: 0 }}
+                    barSize={16}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
+                    <XAxis
+                      type="number"
+                      domain={[8090, 8150]}
+                      tick={AXIS_TICK}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `:${v}`}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ ...AXIS_TICK, fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={140}
+                    />
+                    <RechartsTooltip
+                      cursor={{ fill: "#F8FAFC" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <BiTooltip
+                            active
+                            label={p.name}
+                            payload={[
+                              { name: "Port", value: `:${p.port}`, color: "#3BB48C" },
+                              { name: "Status", value: p.status, color: "#64748B" },
+                            ]}
+                          />
+                        );
+                      }}
+                    />
+                    <Bar dataKey="port" fill="#3BB48C" radius={[0, 3, 3, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
+                  <Inbox className="w-8 h-8 mb-2 stroke-1 text-slate-300" />
+                  <p className="font-semibold text-slate-600">No Containers Deployed</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Click "Deploy Container" to spin up an inference endpoint.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-[2px] bg-[#3BB48C]" />
-                Production
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-[2px] bg-[#64748B] border-t border-dashed" />
-                Canary
-              </span>
-            </div>
-            <span>Zero Dropped Packets</span>
+            <span>Range: 8100 - 8200</span>
+            <span className="text-[#329F7B] font-semibold">{runningCount} Active Bindings</span>
           </div>
         </div>
 
-        {/* VISUAL 2: Fleet SLA Benchmarking (5 cols) - Clean Horizontal Bar Chart */}
+        {/* Selected Container Node Details */}
         <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Fleet SLA Benchmarking
+                  Target Endpoint Inspector
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  P95 Inference Latency (ms) by container
+                  Detailed inspection of selected deployment container
                 </p>
               </div>
               <span className="font-mono text-xs text-slate-500">
-                SLA: &lt;15ms
+                Docker Engine
               </span>
             </div>
 
-            <div className="h-52 w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[
-                    { name: "fraud-v3", lat: 2.4 },
-                    { name: "credit-v1", lat: 3.1 },
-                    { name: "churn-v3", lat: 3.2 },
-                    { name: "churn-v2", lat: 3.8 },
-                    { name: "demand-v2", lat: 5.2 },
-                    { name: "sentiment-v1", lat: 12.6 },
-                  ].sort((a, b) => a.lat - b.lat)}
-                  layout="vertical"
-                  margin={{ top: 0, right: 15, left: 10, bottom: 0 }}
-                  barSize={12}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
-                  <XAxis type="number" domain={[0, 16]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                  <YAxis type="category" dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} width={85} />
-                  <RechartsTooltip
-                    cursor={{ fill: "#F8FAFC" }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const p = payload[0].payload;
-                      return (
-                        <BiTooltip
-                          active
-                          label={p.name}
-                          payload={[
-                            { name: "P95 Latency", value: `${p.lat} ms`, color: "#3BB48C" },
-                          ]}
-                        />
-                      );
-                    }}
-                  />
-                  <ReferenceLine x={15} stroke="#E11D48" strokeDasharray="3 3" label={{ value: "SLA (15ms)", position: "insideTopRight", fill: "#E11D48", fontSize: 10 }} />
-                  <Bar dataKey="lat" fill="#3BB48C" radius={[0, 2, 2, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {selectedNodeId && deployments.find((d) => d.id === selectedNodeId) ? (
+              (() => {
+                const node = deployments.find((d) => d.id === selectedNodeId)!;
+                return (
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded border border-slate-100 font-mono space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Model:</span>
+                        <span className="font-semibold text-slate-900">{node.model_name} (v{node.model_version})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Status:</span>
+                        <span className={node.status === "RUNNING" ? "text-emerald-600 font-semibold" : "text-slate-600"}>
+                          {node.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Endpoint:</span>
+                        <span className="text-slate-900">{node.endpoint_url}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Container ID:</span>
+                        <span className="text-slate-600 truncate max-w-[180px]" title={node.container_id || ""}>
+                          {node.container_id ? node.container_id.slice(0, 12) : "--"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Created:</span>
+                        <span className="text-slate-600">{new Date(node.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => handleTestPing(node)}
+                        disabled={pingingId === node.id || node.status !== "RUNNING"}
+                        className="flex-1 py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <Activity className={`w-3.5 h-3.5 ${pingingId === node.id ? "animate-spin text-emerald-400" : ""}`} />
+                        <span>{pingingId === node.id ? "Probing..." : "Probe /health"}</span>
+                      </button>
+                    </div>
+
+                    {pingResult && pingResult.id === node.id && (
+                      <div className={`p-2.5 rounded text-xs font-mono border ${pingResult.healthy ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}>
+                        <div className="flex justify-between font-semibold">
+                          <span>Health: {pingResult.healthy ? "PASS (200 OK)" : "FAIL"}</span>
+                          <span>{pingResult.latency}ms</span>
+                        </div>
+                        {pingResult.detail && <p className="text-[11px] mt-1">{pingResult.detail}</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <Inbox className="w-8 h-8 mb-2 stroke-1 text-slate-300" />
+                <p className="font-semibold text-slate-600">No Endpoint Selected</p>
+                <p className="text-[11px] text-slate-400 mt-1">Select a row in the table below to inspect.</p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
-            <span>Tier-1 Production Contract</span>
-            <span className="text-[#329F7B] font-semibold">100% Compliant</span>
+            <span>Protocol: HTTP / REST</span>
+            <span className="text-[#329F7B] font-semibold">Standardized Container Contract</span>
           </div>
         </div>
       </div>
 
-
-
-      {/* ── Explorer Toolbar: Search & Role Filters (Snowflake Clean Style) ── */}
+      {/* ── Explorer Toolbar: Search & Status Filters ── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
-        {/* Search */}
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search deployments by model name, container ID, or port..."
+            placeholder="Search deployments by model name, ID, or port..."
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
           />
         </div>
 
-        {/* Role Filter Buttons */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 shrink-0">
-          {["ALL", "PRODUCTION", "CANARY", "STAGING"].map((rl) => (
+          {["ALL", "RUNNING", "STOPPED", "FAILED"].map((st) => (
             <button
-              key={rl}
-              onClick={() => setRoleFilter(rl)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap ${roleFilter === rl
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap cursor-pointer ${
+                statusFilter === st
                   ? "bg-[#3BB48C] text-white shadow-2xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
+              }`}
             >
-              {rl === "ALL" ? "All Containers" : rl}
+              {st === "ALL" ? "All Containers" : st}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── Main Deployments Table (Snowflake Enterprise Look) ── */}
+      {/* ── Main Deployments Table ── */}
       <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
         <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-            Active Serving Endpoints ({filteredDeployments.length})
+            Deployed Endpoints ({filteredDeployments.length})
           </span>
           <span className="text-xs text-slate-500 font-mono">
-            {runningCount} online • Sub-15ms SLA
+            {runningCount} Running • {stoppedCount} Stopped
           </span>
         </div>
 
@@ -728,7 +546,7 @@ export const DeploymentsPage: React.FC = () => {
                   className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Deployment</span>
+                    <span>Model Name</span>
                     {sortField === "model" && (
                       sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
                     )}
@@ -746,34 +564,12 @@ export const DeploymentsPage: React.FC = () => {
                   </div>
                 </th>
                 <th
-                  onClick={() => handleSort("role")}
-                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>Role / Traffic</span>
-                    {sortField === "role" && (
-                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
-                    )}
-                  </div>
-                </th>
-                <th
                   onClick={() => handleSort("port")}
                   className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Port</span>
+                    <span>Host Port</span>
                     {sortField === "port" && (
-                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
-                    )}
-                  </div>
-                </th>
-                <th
-                  onClick={() => handleSort("rps")}
-                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>Throughput &amp; P95</span>
-                    {sortField === "rps" && (
                       sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
                     )}
                   </div>
@@ -789,15 +585,32 @@ export const DeploymentsPage: React.FC = () => {
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-2.5">Live Ping</th>
+                <th
+                  onClick={() => handleSort("date")}
+                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Deployed At</span>
+                    {sortField === "date" && (
+                      sortDirection === "asc" ? <ChevronUp className="w-3 h-3 text-[#3BB48C]" /> : <ChevronDown className="w-3 h-3 text-[#3BB48C]" />
+                    )}
+                  </div>
+                </th>
+                <th className="px-4 py-2.5">Live Probe</th>
                 <th className="px-4 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
+            <tbody className="divide-y divide-slate-200 bg-white font-mono">
               {filteredDeployments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400 font-sans">
-                    No active deployments match the filter. Launch a model container using the button above.
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400 font-sans">
+                    <Inbox className="w-8 h-8 mx-auto mb-2 stroke-1 text-slate-300" />
+                    <p className="font-semibold text-slate-600">No Deployments Found</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {searchQuery || statusFilter !== "ALL"
+                        ? "No deployments match your search filter."
+                        : "No model containers have been deployed yet. Click 'Deploy Container' above."}
+                    </p>
                   </td>
                 </tr>
               ) : (
@@ -805,89 +618,82 @@ export const DeploymentsPage: React.FC = () => {
                   <tr
                     key={d.id}
                     onClick={() => setSelectedNodeId(d.id)}
-                    className={`h-11 hover:bg-slate-50 transition-colors cursor-pointer ${selectedNodeId === d.id ? "bg-slate-50" : ""
-                      }`}
+                    className={`h-11 hover:bg-slate-50 transition-colors cursor-pointer ${
+                      selectedNodeId === d.id ? "bg-slate-50 font-medium" : ""
+                    }`}
                   >
-                    {/* Deployment */}
-                    <td className="px-4 py-2 font-medium text-slate-900">
+                    {/* Model */}
+                    <td className="px-4 py-2 font-sans font-medium text-slate-900">
                       <div className="flex items-center gap-2">
                         <Server className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <div>
                           <div className="font-semibold text-slate-900 leading-tight">
                             {d.model_name}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono" title={`Full ID: ${d.id}`}>
-                            {d.id.slice(0, 12)}
+                          <div className="text-[10px] text-slate-400 font-mono" title={`ID: ${d.id}`}>
+                            {d.id.slice(0, 8)}
                           </div>
                         </div>
                       </div>
                     </td>
 
                     {/* Version */}
-                    <td className="px-4 py-2 font-mono text-xs text-slate-700">
+                    <td className="px-4 py-2 text-xs text-slate-700">
                       v{d.model_version}
                     </td>
 
-                    {/* Role / Traffic */}
-                    <td className="px-4 py-2 font-sans text-xs">
-                      <span className={`text-[11px] font-medium ${d.role === "CANARY" ? "text-amber-700" : d.role === "STAGING" ? "text-slate-600" : "text-slate-800"
-                        }`}>
-                        {d.role || "PRODUCTION"}
-                        {d.role === "CANARY" && ` (${d.traffic_pct}%)`}
-                      </span>
-                    </td>
-
                     {/* Port */}
-                    <td className="px-4 py-2 font-mono text-xs text-slate-600">
+                    <td className="px-4 py-2 text-xs text-slate-600">
                       :{d.port}
                     </td>
 
-                    {/* Throughput & Latency */}
-                    <td className="px-4 py-2 font-mono text-xs text-slate-700">
-                      <span className="font-semibold text-slate-900">{d.rps || 120} rps</span>
-                      <span className="text-slate-300 mx-1.5">•</span>
-                      <span className="text-[#329F7B] font-semibold">{d.latency_p95 || 3.5}ms</span>
-                    </td>
-
-                    {/* Status (Snowflake sober inline dot) */}
+                    {/* Status */}
                     <td className="px-4 py-2">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5 text-[11px]">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${d.status === "RUNNING"
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            d.status === "RUNNING"
                               ? "bg-[#3BB48C]"
                               : d.status === "PENDING"
-                                ? "bg-amber-500"
-                                : "bg-rose-500"
-                            }`}
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                          }`}
                         />
-                        <span className={
-                          d.status === "RUNNING"
-                            ? "text-slate-800 font-medium"
-                            : d.status === "PENDING"
-                              ? "text-amber-700"
-                              : "text-rose-700"
-                        }>
+                        <span
+                          className={
+                            d.status === "RUNNING"
+                              ? "text-emerald-700 font-semibold"
+                              : d.status === "PENDING"
+                              ? "text-amber-700 font-medium"
+                              : "text-slate-600"
+                          }
+                        >
                           {d.status}
                         </span>
                       </div>
                     </td>
 
-                    {/* Live Ping Button */}
+                    {/* Date */}
+                    <td className="px-4 py-2 text-xs text-slate-500 font-sans">
+                      {new Date(d.created_at).toLocaleString()}
+                    </td>
+
+                    {/* Live Probe Button */}
                     <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleTestPing(d)}
                           disabled={pingingId === d.id || d.status !== "RUNNING"}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs bg-slate-800 hover:bg-slate-900 text-white border border-slate-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Send synthetic inference ping"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-sans font-medium transition shadow-2xs bg-slate-800 hover:bg-slate-900 text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Probe /health endpoint"
                         >
                           <Activity className={`w-3 h-3 text-white ${pingingId === d.id ? "animate-spin text-emerald-400" : ""}`} />
                           <span>{pingingId === d.id ? "..." : "Ping"}</span>
                         </button>
 
                         {pingResult && pingResult.id === d.id && (
-                          <span className="font-mono text-[11px] text-[#3BB48C] font-semibold">
-                            {pingResult.latency}ms
+                          <span className={`font-mono text-[11px] font-semibold ${pingResult.healthy ? "text-[#3BB48C]" : "text-rose-600"}`}>
+                            {pingResult.healthy ? `${pingResult.latency}ms` : "down"}
                           </span>
                         )}
                       </div>
@@ -895,26 +701,26 @@ export const DeploymentsPage: React.FC = () => {
 
                     {/* Actions */}
                     <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
-                        {isAdmin && (
+                      <div className="flex items-center justify-end gap-1.5 font-sans">
+                        {isAdmin && d.status === "RUNNING" && (
                           <a
                             href={`${d.endpoint_url}/health`}
                             target="_blank"
                             rel="noreferrer"
                             className="p-1 rounded text-slate-400 hover:text-[#3BB48C] hover:bg-slate-100 transition"
-                            title="Raw Container Probe (Admin Only)"
+                            title="Direct Health Check URL"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
 
-                        {d.status === "RUNNING" && canRollback && (
+                        {d.status === "RUNNING" && canDeploy && (
                           <button
                             onClick={() => handleStop(d.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs bg-[#3BB48C] hover:bg-[#329F7B] text-white border border-[#329F7B] cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition shadow-2xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer"
                             title="Stop container"
                           >
-                            <StopCircle className="w-3 h-3 text-white" />
+                            <StopCircle className="w-3 h-3 text-rose-600" />
                             <span>Stop</span>
                           </button>
                         )}
@@ -928,7 +734,7 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Deploy Modal (Snowflake Enterprise Clean Style) */}
+      {/* Deploy Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
@@ -939,11 +745,19 @@ export const DeploymentsPage: React.FC = () => {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
+
+            {deployError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                <span>{deployError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleDeploy} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
@@ -954,8 +768,8 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  placeholder="e.g. fraud-detector"
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
+                  placeholder="e.g. fraud-classifier-v1"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
                 />
               </div>
               <div>
@@ -968,12 +782,12 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={modelVersion}
                   onChange={(e) => setModelVersion(parseInt(e.target.value) || 1)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Host Port (optional)
+                  Host Port (optional, auto-allocated if empty)
                 </label>
                 <input
                   type="number"
@@ -981,23 +795,24 @@ export const DeploymentsPage: React.FC = () => {
                   max={65535}
                   value={port || ""}
                   onChange={(e) => setPort(e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="e.g. 8100"
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
+                  placeholder="Auto (8100-8200)"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition"
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold shadow-2xs transition"
+                  disabled={deploying}
+                  className="px-3.5 py-1.5 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold shadow-2xs transition disabled:opacity-50 cursor-pointer"
                 >
-                  Launch Container
+                  {deploying ? "Deploying Container..." : "Launch Container"}
                 </button>
               </div>
             </form>
@@ -1005,7 +820,7 @@ export const DeploymentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Rollback Modal (Snowflake Enterprise Clean Style) */}
+      {/* Rollback Modal */}
       {showRollbackModal && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
@@ -1019,16 +834,23 @@ export const DeploymentsPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowRollbackModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {rollbackSuccess && (
-              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-800 font-medium flex items-center gap-2">
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800 font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#3BB48C]" />
                 {rollbackSuccess}
+              </div>
+            )}
+
+            {rollbackError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 font-medium flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                {rollbackError}
               </div>
             )}
 
@@ -1042,8 +864,8 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={rollbackModelName}
                   onChange={(e) => setRollbackModelName(e.target.value)}
-                  placeholder="e.g. fraud-detector"
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
+                  placeholder="e.g. fraud-classifier-v1"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
                 />
               </div>
 
@@ -1057,7 +879,7 @@ export const DeploymentsPage: React.FC = () => {
                   required
                   value={targetVersion}
                   onChange={(e) => setTargetVersion(parseInt(e.target.value) || 1)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] transition font-sans"
                 />
               </div>
 
@@ -1065,13 +887,13 @@ export const DeploymentsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowRollbackModal(false)}
-                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition"
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-2xs transition"
+                  className="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer"
                 >
                   Confirm Rollback
                 </button>

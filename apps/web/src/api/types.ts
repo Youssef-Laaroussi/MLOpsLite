@@ -248,3 +248,52 @@ export interface MonitoringSummary {
   latest_quality?: DataQualitySummary | null;
 }
 
+export type AlertSeverity = "INFO" | "WARNING" | "HIGH" | "CRITICAL";
+export type AlertStatus = "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+
+export interface Alert {
+  id: string;
+  project_id?: string | null;
+  model_name?: string | null;
+  deployment_id?: string | null;
+  event_type: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  details_json?: Record<string, any> | null;
+  status: AlertStatus;
+  acknowledged_by?: string | null;
+  created_at: string;
+  resolved_at?: string | null;
+}
+
+export interface AlertRule {
+  id: string;
+  name: string;
+  metric: "drift_share" | "latency_p95_ms" | "failed_deployments";
+  operator: ">" | ">=" | "<" | "<=";
+  threshold: number;
+  model_name?: string | null;
+  severity: AlertSeverity;
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface NotificationChannel {
+  id: string;
+  name: string;
+  kind: "SLACK" | "DISCORD" | "WEBHOOK";
+  url: string;
+  enabled: boolean;
+  last_test_at?: string | null;
+  last_test_ok?: boolean | null;
+  created_at: string;
+}
+
+export interface AlertSummary {
+  open_critical: number;
+  open_warning: number;
+  resolved_7d: number;
+  mttr_minutes: number | null;
+}
+

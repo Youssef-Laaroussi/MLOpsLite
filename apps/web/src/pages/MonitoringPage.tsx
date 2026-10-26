@@ -1,24 +1,20 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
-  LineChart as LineChartIcon,
   CheckCircle2,
   Activity,
   RefreshCw,
-  Zap,
   ShieldCheck,
-  Calendar,
   ChevronDown,
   Layers,
-  ArrowUpRight,
-  Filter,
-  BarChart3,
-  Sliders,
-  Check,
+  Server,
+  AlertTriangle,
+  ExternalLink,
+  Inbox,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
+import { fetchMonitoringSummary, triggerDriftCheck } from "../api/client";
+import { MonitoringSummary } from "../api/types";
 import {
-  AreaChart,
-  Area,
   LineChart,
   Line,
   XAxis,
@@ -27,58 +23,11 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   ReferenceLine,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  RadialBarChart,
-  RadialBar,
   Legend,
 } from "recharts";
-import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
-const LATENCY_PCT = [
-  { t: "00h", p50: 2.8, p95: 5.1, p99: 8.2 },
-  { t: "04h", p50: 2.6, p95: 4.9, p99: 7.9 },
-  { t: "08h", p50: 3.1, p95: 5.8, p99: 9.4 },
-  { t: "12h", p50: 3.4, p95: 6.3, p99: 10.6 },
-  { t: "16h", p50: 3.2, p95: 5.9, p99: 9.1 },
-  { t: "20h", p50: 2.9, p95: 5.4, p99: 8.6 },
-  { t: "24h", p50: 2.8, p95: 5.2, p99: 8.9 },
-];
+import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
 
-const DRIFT_RADAR = [
-  { feature: "transaction_amt", prev: 0.04, curr: 0.05 },
-  { feature: "distance_home", prev: 0.06, curr: 0.08 },
-  { feature: "card_age", prev: 0.03, curr: 0.03 },
-  { feature: "daily_txn", prev: 0.09, curr: 0.14 },
-  { feature: "merchant_cat", prev: 0.05, curr: 0.06 },
-];
-
-const QUALITY_BAND = [
-  { d: "W1", f1: 0.942, band: [0.93, 0.954] },
-  { d: "W2", f1: 0.938, band: [0.925, 0.951] },
-  { d: "W3", f1: 0.935, band: [0.92, 0.95] },
-  { d: "W4", f1: 0.929, band: [0.912, 0.946] },
-  { d: "W5", f1: 0.931, band: [0.915, 0.947] },
-  { d: "W6", f1: 0.926, band: [0.907, 0.945] },
-];
-
-const DATA_QUALITY = [
-  { name: "Completeness", value: 99, fill: PALETTE.brand },
-  { name: "Validity", value: 97, fill: PALETTE.blue },
-  { name: "Freshness", value: 94, fill: PALETTE.violet },
-  { name: "Uniqueness", value: 91, fill: PALETTE.amber },
-];
-
-const INCIDENTS = [
-  { id: 1, level: "Info", color: PALETTE.brand, title: "Drift check passed", detail: "4/4 features in bounds · PSI 0.035", when: "2 min ago" },
-  { id: 2, level: "Warning", color: PALETTE.amber, title: "daily_txn trending up", detail: "PSI 0.14 — approaching slight-shift threshold", when: "1h ago" },
-  { id: 3, level: "Action", color: PALETTE.blue, title: "Shadow model evaluated", detail: "v4 candidate F1 +0.8% vs. production", when: "4h ago" },
-  { id: 4, level: "Resolved", color: PALETTE.violet, title: "Latency spike mitigated", detail: "Autoscaled 2 → 4 pods, p99 back < 10ms", when: "1d ago" },
-];
-
-interface FeatureDrift {
+interface FeatureRow {
   feature: string;
   stat_test: string;
   p_val: number;
@@ -88,133 +37,98 @@ interface FeatureDrift {
   curr_mean: string;
 }
 
-const FEATURE_DISTRIBUTIONS: Record<string, { bin: string; reference: number; serving: number }[]> = {
-  transaction_amount: [
-    { bin: "$0-40", reference: 5, serving: 4 },
-    { bin: "$40-80", reference: 14, serving: 13 },
-    { bin: "$80-120", reference: 28, serving: 25 },
-    { bin: "$120-160", reference: 34, serving: 36 },
-    { bin: "$160-200", reference: 12, serving: 15 },
-    { bin: "$200-240", reference: 5, serving: 5 },
-    { bin: "$240+", reference: 2, serving: 2 },
-  ],
-  distance_from_home: [
-    { bin: "0-5km", reference: 16, serving: 15 },
-    { bin: "5-10km", reference: 32, serving: 30 },
-    { bin: "10-15km", reference: 26, serving: 28 },
-    { bin: "15-20km", reference: 14, serving: 16 },
-    { bin: "20-25km", reference: 8, serving: 7 },
-    { bin: "25km+", reference: 4, serving: 4 },
-  ],
-  card_age_months: [
-    { bin: "0-6m", reference: 12, serving: 13 },
-    { bin: "6-12m", reference: 20, serving: 21 },
-    { bin: "12-24m", reference: 36, serving: 34 },
-    { bin: "24-36m", reference: 20, serving: 21 },
-    { bin: "36m+", reference: 12, serving: 11 },
-  ],
-  daily_txn_count: [
-    { bin: "1-2", reference: 26, serving: 24 },
-    { bin: "3-4", reference: 44, serving: 42 },
-    { bin: "5-6", reference: 20, serving: 22 },
-    { bin: "7-8", reference: 7, serving: 8 },
-    { bin: "9+", reference: 3, serving: 4 },
-  ],
-};
-
 export const MonitoringPage: React.FC = () => {
-  const [evaluating, setEvaluating] = useState(false);
-  const [lastCheck, setLastCheck] = useState("Just now");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [evaluating, setEvaluating] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Top header date filter ("Last 6 months" default)
-  const [timeRange, setTimeRange] = useState<string>("Last 6 months");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
-
-  // Model selection
-  const [selectedModel, setSelectedModel] = useState<string>("fraud-detector (v3)");
+  const [summary, setSummary] = useState<MonitoringSummary | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState<boolean>(false);
-
-  // Selected feature for distribution visualization
   const [selectedFeatureIndex, setSelectedFeatureIndex] = useState<number>(0);
 
-  const [features, setFeatures] = useState<FeatureDrift[]>([
-    {
-      feature: "transaction_amount",
-      stat_test: "Wasserstein",
-      p_val: 0.89,
-      score: 94,
-      drift: false,
-      ref_mean: "$142.50",
-      curr_mean: "$144.10",
-    },
-    {
-      feature: "distance_from_home",
-      stat_test: "KS Test",
-      p_val: 0.74,
-      score: 88,
-      drift: false,
-      ref_mean: "14.2 km",
-      curr_mean: "15.0 km",
-    },
-    {
-      feature: "card_age_months",
-      stat_test: "KS Test",
-      p_val: 0.95,
-      score: 98,
-      drift: false,
-      ref_mean: "28.4 mo",
-      curr_mean: "28.1 mo",
-    },
-    {
-      feature: "daily_txn_count",
-      stat_test: "Chi-Square",
-      p_val: 0.62,
-      score: 82,
-      drift: false,
-      ref_mean: "4.1 txns",
-      curr_mean: "4.3 txns",
-    },
-  ]);
-
-  // Daily PSI trend data points
-  const [psiTrend, setPsiTrend] = useState<number[]>([
-    0.032, 0.041, 0.038, 0.052, 0.044, 0.039, 0.035,
-  ]);
-
-  const psiChartData = useMemo(() => {
-    const dates = ["Sep 10", "Sep 12", "Sep 14", "Sep 16", "Sep 18", "Sep 20", "Sep 22"];
-    return dates.map((date, idx) => ({
-      date,
-      psi: psiTrend[idx] ?? 0.035,
-    }));
-  }, [psiTrend]);
-
-  const handleRunEvaluation = () => {
-    setEvaluating(true);
-    setTimeout(() => {
-      setEvaluating(false);
-      setLastCheck("Few seconds ago");
-      setFeatures((prev) =>
-        prev.map((f) => ({
-          ...f,
-          p_val: parseFloat((0.68 + Math.random() * 0.28).toFixed(2)),
-          score: Math.round(82 + Math.random() * 16),
-        }))
-      );
-      setPsiTrend([
-        0.032,
-        0.041,
-        0.038,
-        0.052,
-        0.044,
-        0.039,
-        parseFloat((0.025 + Math.random() * 0.02).toFixed(3)),
-      ]);
-    }, 850);
+  const loadData = async (modelName?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetchMonitoringSummary(modelName);
+      setSummary(res);
+      if (!selectedModel && res.model_name) {
+        setSelectedModel(res.model_name);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || "Failed to load monitoring metrics");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleSelectModel = (model: string) => {
+    setSelectedModel(model);
+    setIsModelDropdownOpen(false);
+    setSelectedFeatureIndex(0);
+    loadData(model);
+  };
+
+  const handleRunEvaluation = async () => {
+    if (!selectedModel && !summary?.model_name) return;
+    setEvaluating(true);
+    setError(null);
+    try {
+      await triggerDriftCheck({
+        model_name: selectedModel || summary!.model_name,
+        drift_threshold: 0.05,
+      });
+      await loadData(selectedModel || summary?.model_name);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || "Drift evaluation failed");
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  // Derive genuine features table from latest_drift metrics
+  const features: FeatureRow[] = useMemo(() => {
+    if (!summary?.latest_drift?.metrics?.metrics?.[0]?.result?.drift_by_columns) {
+      return [];
+    }
+    const cols = summary.latest_drift.metrics.metrics[0].result.drift_by_columns;
+    return Object.entries(cols).map(([name, col]: [string, any]) => {
+      const pVal = col.p_value ?? 1.0;
+      const isDrift = Boolean(col.drift_detected);
+      const score = Math.round(Math.max(0, Math.min(100, (1 - (isDrift ? 0.7 : 0.05)) * 100 * pVal)));
+      return {
+        feature: name,
+        stat_test: col.stat_test || "KS-test (2-sample)",
+        p_val: pVal,
+        score: score > 0 ? score : (isDrift ? 15 : 95),
+        drift: isDrift,
+        ref_mean: col.reference_mean !== undefined ? String(col.reference_mean) : "--",
+        curr_mean: col.current_mean !== undefined ? String(col.current_mean) : "--",
+      };
+    });
+  }, [summary]);
+
+  // Derive genuine PSI / drift timeline from drift_history
+  const psiTimeline = useMemo(() => {
+    if (!summary?.drift_history?.length) return [];
+    return summary.drift_history
+      .slice()
+      .reverse()
+      .map((d) => ({
+        date: new Date(d.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        psi: d.drift_share,
+      }));
+  }, [summary]);
+
   const activeFeature = features[selectedFeatureIndex] || features[0];
-  const currentPsi = psiTrend[psiTrend.length - 1];
+  const driftedCount = features.filter((f) => f.drift).length;
+  const currentPsi = summary?.latest_drift ? summary.latest_drift.drift_share : 0.0;
+  const activeDeploymentsCount = summary?.active_deployments ?? 0;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
@@ -231,545 +145,369 @@ export const MonitoringPage: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Continuous evaluation of production data drift (Evidently AI, PSI score) and inference telemetry
+            Continuous real-time evaluation of data drift (Evidently AI, KS-test) and live serving telemetry
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Time Range Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Model Selector Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
             >
               <Layers className="w-3.5 h-3.5 text-slate-400" />
-              <span>{selectedModel}</span>
+              <span>{selectedModel || summary?.model_name || "Select Model"}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {[
-                  "fraud-detector (v3)",
-                  "customer-churn-xgb (v2)",
-                  "demand-forecaster-lstm (v2)",
-                  "credit-default-risk (v1)",
-                ].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setSelectedModel(m);
-                      setIsModelDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      selectedModel === m
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
+              <div className="absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-md shadow-lg z-30 py-1 text-xs">
+                {summary?.models_available && summary.models_available.length > 0 ? (
+                  summary.models_available.map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => handleSelectModel(m)}
+                      className={`w-full text-left px-3 py-1.5 text-xs transition ${
+                        selectedModel === m
+                          ? "bg-slate-100 text-slate-900 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-xs text-slate-400">No registered models found</div>
+                )}
               </div>
             )}
           </div>
 
+          {/* Run Evaluation Trigger */}
           <button
             onClick={handleRunEvaluation}
-            disabled={evaluating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50"
+            disabled={evaluating || loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#3BB48C] hover:bg-[#329F7B] text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${evaluating ? "animate-spin" : ""}`} />
-            {evaluating ? "Calculating..." : "Run Drift Evaluation"}
+            {evaluating ? "Running Evaluation..." : "Run Drift Evaluation"}
           </button>
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards (Clean, 100% curve-free & sparkline-free) ── */}
+      {/* ── Error Banner ── */}
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-center justify-between text-rose-800 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>Backend Error: {error}</span>
+          </div>
+          <button
+            onClick={() => loadData(selectedModel)}
+            className="underline font-semibold hover:text-rose-900 ml-4 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── KPI StatCards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Data Drift Status"
-          value="0 Drifted Features"
-          subtitle="4 / 4 features in baseline bounds"
+          value={
+            !summary?.latest_drift
+              ? "No Evaluation Yet"
+              : driftedCount === 0
+              ? "0 Drifted Features"
+              : `${driftedCount} Features Drifted`
+          }
+          subtitle={
+            summary?.latest_drift
+              ? `${features.length - driftedCount} / ${features.length} features stable`
+              : "Run drift evaluation to analyze"
+          }
           icon={CheckCircle2}
-          color="emerald"
-          trend="100% In-Bounds"
+          color={!summary?.latest_drift ? "blue" : driftedCount === 0 ? "emerald" : "rose"}
+          trend={!summary?.latest_drift ? "Pending" : driftedCount === 0 ? "In-Bounds" : "Shift Detected"}
         />
         <StatCard
-          title="Avg Inference Latency"
-          value="3.2 ms"
-          subtitle="P95: 5.8 ms • Live cluster"
+          title="Active Serving Nodes"
+          value={`${activeDeploymentsCount} Endpoints`}
+          subtitle={`Docker Serving Fleet for ${selectedModel || "model"}`}
+          icon={Server}
+          color="brand"
+          trend={activeDeploymentsCount > 0 ? "Online" : "Idle"}
+        />
+        <StatCard
+          title="Drift Share Score"
+          value={summary?.latest_drift ? `${(currentPsi * 100).toFixed(1)}%` : "--"}
+          subtitle={
+            summary?.latest_drift
+              ? `Status: ${summary.latest_drift.drift_status}`
+              : "Awaiting run"
+          }
           icon={Activity}
-          color="brand"
-          trend="Sub-10ms SLA"
+          color={!summary?.latest_drift ? "blue" : currentPsi < 0.2 ? "emerald" : "amber"}
+          trend={!summary?.latest_drift ? "--" : currentPsi < 0.2 ? "Stable Dist." : "Shift Detected"}
         />
         <StatCard
-          title="Monitored Predictions"
-          value="24,819"
-          subtitle={`Telemetry buffer (${lastCheck})`}
-          icon={Zap}
-          color="brand"
-          trend="+12% traffic"
-        />
-        <StatCard
-          title="Evidently AI Health"
-          value="100% Verified"
-          subtitle="KS & Wasserstein tests pass"
+          title="Total Feedback Ingested"
+          value={`${summary?.total_predictions ?? 0} Predictions`}
+          subtitle="Real matched ground-truth records"
           icon={ShieldCheck}
           color="emerald"
-          trend="Audited"
+          trend="Telemetry Active"
         />
       </div>
 
-      {/* ── Visual Analytics Row: Enterprise Standard Observability Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* GRAPH 1: Population Stability Index (PSI) Drift Timeline (7 cols) - Enterprise Standard AreaChart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-[#3BB48C]" />
-                  Population Stability Index (PSI) Trend
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Daily aggregate statistical drift against baseline reference distribution
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Current PSI: {currentPsi} (Stable)
-                </span>
-              </div>
-            </div>
-
-            {/* Standard Recharts PSI Line / Area Chart */}
-            <div className="h-[210px] w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={psiChartData}
-                  margin={{ top: 15, right: 20, left: -15, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="psiAreaGrad" x1="0%" y1="0%" x2="0%" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.25} />
-                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis
-                    domain={[0, 0.30]}
-                    ticks={[0.0, 0.10, 0.20, 0.30]}
-                    tick={AXIS_TICK}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => v.toFixed(2)}
-                  />
-                  <ReferenceLine
-                    y={0.10}
-                    stroke={PALETTE.amber}
-                    strokeDasharray="4 4"
-                    label={{ value: "Slight Shift (0.10)", position: "top", fill: PALETTE.amber, fontSize: 10, fontWeight: 600 }}
-                  />
-                  <ReferenceLine
-                    y={0.25}
-                    stroke={PALETTE.rose}
-                    strokeDasharray="4 4"
-                    label={{ value: "Drift Warning (0.25)", position: "top", fill: PALETTE.rose, fontSize: 10, fontWeight: 600 }}
-                  />
-                  <RechartsTooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      const val = payload[0].value as number;
-                      return (
-                        <BiTooltip
-                          active
-                          label={`Evaluation: ${label}`}
-                          payload={[
-                            { name: "PSI Score", value: val.toFixed(3), color: PALETTE.brand },
-                            { name: "Safe Threshold", value: "< 0.10", color: PALETTE.amber },
-                            { name: "Stability Status", value: val < 0.10 ? "Stable (In Bounds)" : "Investigate Drift", color: val < 0.10 ? PALETTE.brand : PALETTE.rose },
-                          ]}
-                        />
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="psi"
-                    stroke={PALETTE.brand}
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#psiAreaGrad)"
-                    dot={{ r: 4, fill: PALETTE.brand, stroke: "#FFFFFF", strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Bottom Status strip */}
-            <div className="mt-3.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center justify-between text-xs text-[#1A7456]">
-              <span className="font-semibold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
-                All 7 evaluation checkpoints securely within the safe green band (&lt; 0.10 PSI).
-              </span>
-              <span className="font-mono font-bold">Stable Distribution</span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Evaluation Engine: Evidently AI v0.4</span>
-            <span className="text-slate-700 font-bold">Sampling: 100% Production Traffic</span>
-          </div>
-        </div>
-
-        {/* GRAPH 2: Feature Distribution Comparison (5 cols) - Enterprise Standard Histogram Overlay */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      {/* ── Main Charts Row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Drift Timeline Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <BarChart3 className="w-4 h-4 text-[#3BB48C]" />
-                  Distribution Overlay
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Historical Drift Share Timeline
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Reference baseline vs live serving distribution
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Sequential statistical drift evaluations from PostgreSQL &amp; MinIO
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {activeFeature.score}% Overlap
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                Latest: {summary?.latest_drift ? `${(summary.latest_drift.drift_share * 100).toFixed(1)}%` : "--"}
               </span>
             </div>
 
-            {/* Feature selector tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2">
-              {features.map((f, fIdx) => (
-                <button
-                  key={f.feature}
-                  onClick={() => setSelectedFeatureIndex(fIdx)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition whitespace-nowrap cursor-pointer ${
-                    selectedFeatureIndex === fIdx
-                      ? "bg-[#3BB48C] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {f.feature.length > 14 ? f.feature.slice(0, 12) + ".." : f.feature}
-                </button>
-              ))}
-            </div>
-
-            {/* Standard Recharts Binned Density Area Chart */}
-            <div className="h-[210px] w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={FEATURE_DISTRIBUTIONS[activeFeature.feature] || FEATURE_DISTRIBUTIONS["transaction_amount"]}
-                  margin={{ top: 10, right: 15, left: -15, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="distServingGrad" x1="0%" y1="0%" x2="0%" y2="1">
-                      <stop offset="5%" stopColor={PALETTE.brand} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={PALETTE.brand} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid {...GRID_PROPS} />
-                  <XAxis dataKey="bin" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis
-                    tick={AXIS_TICK}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <RechartsTooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      return (
-                        <BiTooltip
-                          active
-                          label={`Bucket: ${label}`}
-                          payload={[
-                            { name: "Live Serving", value: `${payload.find(p => p.dataKey === "serving")?.value}%`, color: PALETTE.brand },
-                            { name: "Reference Baseline", value: `${payload.find(p => p.dataKey === "reference")?.value}%`, color: PALETTE.slate },
-                          ]}
-                        />
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="reference"
-                    stroke={PALETTE.slate}
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    fill={PALETTE.slate}
-                    fillOpacity={0.1}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="serving"
-                    stroke={PALETTE.brand}
-                    strokeWidth={2.5}
-                    fill="url(#distServingGrad)"
-                    fillOpacity={1}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Test statistics strip */}
-            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-mono block">Statistical Test</span>
-                <span className="font-semibold text-slate-800">{activeFeature.stat_test}</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-mono block">p-value (Threshold &gt; 0.05)</span>
-                <span className="font-semibold text-emerald-700 font-mono">{activeFeature.p_val} (Passed)</span>
-              </div>
+            <div className="h-56 w-full mt-2">
+              {psiTimeline.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={psiTimeline} margin={{ top: 15, right: 15, left: -15, bottom: 0 }}>
+                    <CartesianGrid {...GRID_PROPS} />
+                    <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis
+                      domain={[0, 1.0]}
+                      ticks={[0.0, 0.25, 0.5, 0.75, 1.0]}
+                      tick={AXIS_TICK}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                    />
+                    <ReferenceLine
+                      y={0.20}
+                      stroke="#D97706"
+                      strokeDasharray="3 3"
+                      label={{ value: "Warning threshold (20%)", position: "insideTopRight", fill: "#D97706", fontSize: 10 }}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        const val = payload[0].value as number;
+                        return (
+                          <BiTooltip
+                            active
+                            label={`Evaluation Time: ${label}`}
+                            payload={[
+                              { name: "Drift Share", value: `${(val * 100).toFixed(1)}%`, color: "#3BB48C" },
+                              { name: "Threshold", value: "20.0%", color: "#64748B" },
+                            ]}
+                          />
+                        );
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="psi"
+                      stroke="#3BB48C"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#3BB48C" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
+                  <Inbox className="w-8 h-8 mb-2 stroke-1 text-slate-300" />
+                  <p className="font-semibold text-slate-600">No Drift History Available</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Click "Run Drift Evaluation" above to generate statistical analysis.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Reference: {activeFeature.ref_mean}</span>
-            <span className="text-slate-800 font-bold">Serving: {activeFeature.curr_mean}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 2: Latency Percentiles & Per-Feature Drift Radar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-[#3BB48C]" />
-                Inference Latency Percentiles
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5 mb-4">p50 / p95 / p99 over the last 24h against the 10 ms SLA</p>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">p99 8.9 ms</span>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={LATENCY_PCT} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid {...GRID_PROPS} />
-                <XAxis dataKey="t" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                <RechartsTooltip content={<BiTooltip />} />
-                <ReferenceLine y={10} stroke={PALETTE.rose} strokeDasharray="4 4" label={{ value: "SLA 10ms", fill: PALETTE.rose, fontSize: 10, position: "insideTopRight" }} />
-                <Line type="monotone" dataKey="p50" name="p50" stroke={PALETTE.brand} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="p95" name="p95" stroke={PALETTE.blue} strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="p99" name="p99" stroke={PALETTE.violet} strokeWidth={2.5} strokeDasharray="5 4" dot={false} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Engine: 2-sample KS-test &amp; MinIO S3</span>
+            <span className={currentPsi <= 0.2 ? "text-[#329F7B] font-semibold" : "text-amber-600 font-semibold"}>
+              {summary?.latest_drift ? (currentPsi <= 0.2 ? "Stable Distribution" : "Action Required") : "Pending Run"}
+            </span>
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-[#3BB48C]" />
-            Feature Drift Radar
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">PSI per feature — current vs. last week</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={DRIFT_RADAR} outerRadius="70%">
-                <PolarGrid stroke="#E2E8F0" />
-                <PolarAngleAxis dataKey="feature" tick={{ fontSize: 10, fill: "#64748B", fontWeight: 600 }} />
-                <PolarRadiusAxis domain={[0, 0.3]} tick={false} axisLine={false} />
-                <Radar name="Last week" dataKey="prev" stroke={PALETTE.slate} fill={PALETTE.slate} fillOpacity={0.1} strokeWidth={2} />
-                <Radar name="Current" dataKey="curr" stroke={PALETTE.brand} fill={PALETTE.brand} fillOpacity={0.3} strokeWidth={2.5} />
-                <RechartsTooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 3: Model Quality Decay & Data Quality Gauges ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-[#3BB48C]" />
-            Model Quality Over Time
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-4">Rolling F1 with 95% confidence band — retrain trigger at 0.90</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={QUALITY_BAND} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid {...GRID_PROPS} />
-                <XAxis dataKey="d" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis domain={[0.86, 0.98]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                <RechartsTooltip content={<BiTooltip valueFormatter={(v) => (typeof v === "number" ? v.toFixed(3) : String(v))} />} />
-                <ReferenceLine y={0.9} stroke={PALETTE.amber} strokeDasharray="4 4" label={{ value: "Retrain trigger", fill: PALETTE.amber, fontSize: 10, position: "insideBottomRight" }} />
-                <Area type="monotone" dataKey="band" name="95% CI" stroke="none" fill={PALETTE.brand} fillOpacity={0.15} />
-                <Area type="monotone" dataKey="f1" name="F1 score" stroke={PALETTE.brand} strokeWidth={2.5} fill="none" dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all">
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-            Data Quality Gauges
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">Live serving data health (%)</p>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart data={DATA_QUALITY} innerRadius="25%" outerRadius="100%" startAngle={90} endAngle={-270}>
-                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar dataKey="value" background={{ fill: "#F1F5F9" }} cornerRadius={8} />
-                <RechartsTooltip />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
-            {DATA_QUALITY.map((g) => (
-              <span key={g.name} className="flex items-center justify-between text-xs text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: g.fill }} />
-                  {g.name}
-                </span>
-                <strong className="text-slate-900">{g.value}%</strong>
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Row 4: Live Incident Feed ── */}
-      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 sm:p-7 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-[#3BB48C]" />
-          Live Observability Feed
-        </h3>
-        <p className="text-xs text-slate-500 mt-0.5 mb-4">Latest drift checks, anomalies and automated actions</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {INCIDENTS.map((i) => (
-            <div key={i.id} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md transition" style={{ borderTop: `3px solid ${i.color}` }}>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.color }}>{i.level}</span>
-                <span className="text-[11px] text-slate-400">{i.when}</span>
-              </div>
-              <div className="text-sm font-semibold text-slate-900 mt-2">{i.title}</div>
-              <div className="text-xs text-slate-500 mt-1">{i.detail}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Feature Distribution & Drift Scores (Evidently AI) Table ── */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        {/* Real Live Latency & Telemetry */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
-              Feature Distribution &amp; Drift Scores (Evidently AI)
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Live Latency Telemetry
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  p50 &amp; p95 percentiles from Docker Serving containers
+                </p>
+              </div>
+              <span className="font-mono text-xs text-slate-600 font-semibold">
+                SLA: &lt; 20ms
+              </span>
+            </div>
+
+            <div className="h-56 w-full mt-2">
+              {summary?.telemetry && summary.telemetry.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={summary.telemetry} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                    <CartesianGrid {...GRID_PROPS} />
+                    <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
+                    <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `${v} ms`} />} />
+                    <Line type="monotone" dataKey="p50" name="p50" stroke="#3BB48C" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="p95" name="p95" stroke="#64748B" strokeWidth={1.5} dot={false} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
+                  <Server className="w-8 h-8 mb-2 stroke-1 text-slate-300" />
+                  <p className="font-semibold text-slate-600">No Telemetry Recorded</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Deploy a container to record live inference latency and error rates.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
+            <span>Fleet Target: &lt; 20 ms</span>
+            <span className="text-slate-600 font-medium">
+              {summary?.telemetry?.length ?? 0} Points Recorded
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Feature Distribution & Drift Scores Table ── */}
+      <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Feature Distribution &amp; Statistical Drift
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Automated 2-sample hypothesis testing for each model input column
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Automated 2-sample hypothesis testing (KS-test) for each column in dataset
             </p>
           </div>
-          <span className="text-xs text-slate-400 font-mono">Last eval: {lastCheck}</span>
+          <div className="flex items-center gap-3">
+            {summary?.latest_drift?.id && (
+              <a
+                href={`/api/v1/monitoring/reports/${summary.latest_drift.id}/html`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs font-medium text-[#329F7B] hover:text-[#257A5E] bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded transition"
+              >
+                <span>View Full HTML Report</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            <span className="text-xs text-slate-500 font-mono">
+              Evaluated:{" "}
+              {summary?.latest_drift?.created_at
+                ? new Date(summary.latest_drift.created_at).toLocaleString()
+                : "Never"}
+            </span>
+          </div>
         </div>
 
-        <div className="space-y-3">
-          {features.map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedFeatureIndex(idx)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer group ${
-                selectedFeatureIndex === idx
-                  ? "bg-slate-50/80 border-[#3BB48C] shadow-xs"
-                  : "bg-white border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-sm group-hover:text-[#1A7456] transition-colors">
-                      {item.feature}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-bold">
-                      {item.stat_test}
-                    </span>
-                    {selectedFeatureIndex === idx && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Active Overlay
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-400 font-mono mt-1 flex items-center gap-3">
-                    <span>
-                      p-value: <strong className="text-slate-800">{item.p_val}</strong> (threshold &gt; 0.05)
-                    </span>
-                    <span>•</span>
-                    <span>Ref: {item.ref_mean}</span>
-                    <span>•</span>
-                    <span>Curr: {item.curr_mean}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                  {/* Visual Confidence Bar */}
-                  <div className="w-32 hidden md:block">
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                      <span>Stability</span>
-                      <span className="font-mono font-bold text-emerald-700">{item.score}%</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#3BB48C] rounded-full transition-all duration-500"
-                        style={{ width: `${item.score}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Stable
-                  </span>
-                </div>
-              </div>
+        <div className="overflow-x-auto">
+          {features.length > 0 ? (
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-2.5">Feature Column</th>
+                  <th className="px-4 py-2.5">Statistical Test</th>
+                  <th className="px-4 py-2.5">p-value</th>
+                  <th className="px-4 py-2.5">Baseline Ref Mean</th>
+                  <th className="px-4 py-2.5">Current Serving Mean</th>
+                  <th className="px-4 py-2.5 min-w-[120px]">Distribution Stability</th>
+                  <th className="px-4 py-2.5 text-right">Drift Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {features.map((item, idx) => {
+                  const isSelected = selectedFeatureIndex === idx;
+                  return (
+                    <tr
+                      key={item.feature}
+                      onClick={() => setSelectedFeatureIndex(idx)}
+                      className={`h-11 transition-colors cursor-pointer ${
+                        isSelected ? "bg-slate-50 font-medium" : "hover:bg-slate-50/70"
+                      }`}
+                    >
+                      <td className="px-4 py-2 font-sans font-medium text-slate-900">
+                        {item.feature}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600 text-[11px]">
+                        {item.stat_test}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="font-semibold text-slate-900">{item.p_val}</span>
+                        <span className="text-slate-400 text-[11px] ml-1">
+                          ({item.drift ? "< 0.05" : ">= 0.05"})
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">{item.ref_mean}</td>
+                      <td className="px-4 py-2 text-slate-900">{item.curr_mean}</td>
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
+                            <div
+                              className={`h-full rounded-full ${item.drift ? "bg-rose-500" : "bg-[#3BB48C]"}`}
+                              style={{ width: `${item.score}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] text-slate-600 shrink-0">
+                            {item.score}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                        {item.drift ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            Drift Detected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#329F7B]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#3BB48C]" />
+                            Stable
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs">
+              <Inbox className="w-10 h-10 mb-2 stroke-1 text-slate-300" />
+              <p className="font-semibold text-slate-600">No Feature Drift Data Available</p>
+              <p className="text-[11px] text-slate-400 mt-1 max-w-sm text-center">
+                Trigger a drift evaluation on this model to compute 2-sample KS tests and inspect column distributions.
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

@@ -149,27 +149,40 @@ async def check_deployment_health(
             "detail": f"Container status is {deployment.status.value}",
         }
 
-    # Attempt HTTP probe to container's health endpoint
-    health_url = f"{deployment.endpoint_url}/health"
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            resp = await client.get(health_url)
-            return {
-                "deployment_id": deployment_id,
-                "status": "healthy" if resp.status_code == 200 else "degraded",
-                "healthy": resp.status_code == 200,
-                "http_status": resp.status_code,
-                "response": resp.json()
-                if resp.headers.get("content-type", "").startswith("application/json")
-                else resp.text,
-            }
-    except Exception as exc:
-        return {
-            "deployment_id": deployment_id,
-            "status": "unreachable",
-            "healthy": False,
-            "error": str(exc),
-        }
+    # Attempt HTTP probe: try endpoint_url, and if in Docker container fallback to host.docker.internal or container name
+    urls_to_try = [f"{deployment.endpoint_url}/health"]
+    if deployment.container_id:
+        # If in docker, localhost:port refers to the api container itself; try container port 8000 directly via container name or host.docker.internal
+        urls_to_try.append(f"http://host.docker.internal:{deployment.port}/health")
+        try:
+            c_name = f"mlite-{deployment.model_name}-v{deployment.model_version}-{deployment.port}"
+            urls_to_try.append(f"http://{c_name}:8000/health")
+        except Exception:
+            pass
+
+    last_error = None
+    for health_url in urls_to_try:
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                resp = await client.get(health_url)
+                return {
+                    "deployment_id": deployment_id,
+                    "status": "healthy" if resp.status_code == 200 else "degraded",
+                    "healthy": resp.status_code == 200,
+                    "http_status": resp.status_code,
+                    "response": resp.json()
+                    if resp.headers.get("content-type", "").startswith("application/json")
+                    else resp.text,
+                }
+        except Exception as exc:
+            last_error = exc
+
+    return {
+        "deployment_id": deployment_id,
+        "status": "unreachable",
+        "healthy": False,
+        "error": str(last_error),
+    }
 
 
 @router.get("/{deployment_id}/metrics", response_model=list[DeploymentMetricResponse])

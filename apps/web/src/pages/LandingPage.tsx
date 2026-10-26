@@ -57,6 +57,9 @@ export const LandingPage: React.FC = () => {
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  // Terminal preview state
+  const [showTerminalPreview, setShowTerminalPreview] = useState(false);
+
   const faqItems = [
     {
       q: "What is MLite and how is it different from cloud MLOps platforms?",
@@ -243,14 +246,6 @@ export const LandingPage: React.FC = () => {
             <a href="#faq" className="hover:text-[#3BB48C] transition">FAQ</a>
             <a href="#contact" className="hover:text-[#3BB48C] transition">Contact</a>
             <a
-              href="http://localhost:8000/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#3BB48C] transition flex items-center gap-1"
-            >
-              API Docs <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            </a>
-            <a
               href="https://github.com/Youssef-Laaroussi/MLOpsLite"
               target="_blank"
               rel="noreferrer"
@@ -280,7 +275,7 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ── Hero Section (Sans carrés de grille, vraies couleurs éclatantes et fond image 100% transparent) ── */}
-      <section className="relative pt-16 sm:pt-24 lg:pt-28 pb-20 lg:pb-28 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
+      <section className="relative pt-12 sm:pt-16 lg:pt-20 pb-14 lg:pb-16 overflow-hidden bg-[#F8FAFC] border-b border-slate-100">
         {/* Vraies couleurs éclatantes : Neural Network Plexus supérieur droit sans ternissement */}
         <div className="absolute -top-12 -right-16 w-[38rem] sm:w-[46rem] lg:w-[54rem] pointer-events-none z-0 opacity-100 select-none mix-blend-multiply">
           <img
@@ -314,18 +309,8 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
             {/* ── Left Column: Natural, Frameless & Seamless Layout (No Box Border) ── */}
             <div className="lg:col-span-6 flex flex-col items-start gap-6 text-left relative z-20">
-              {/* Pill Badge matching Qubly "v3.1 released. Learn more" */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/90 backdrop-blur-xs border border-emerald-200/80 text-emerald-800 text-xs font-semibold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>v1.0 Production-Ready</span>
-                <span className="text-slate-300">•</span>
-                <a href="#features" className="text-emerald-700 hover:text-emerald-900 underline font-bold transition">
-                  Learn more
-                </a>
-              </div>
-
-              {/* Bold High-Contrast Heading */}
-              <h1 className="font-sans text-3xl sm:text-4xl lg:text-[2.85rem] font-extrabold text-slate-900 leading-[1.18] tracking-tight">
+              {/* Bold High-Contrast Heading (Claude Editorial Typography) */}
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.95rem] font-bold text-slate-900 leading-[1.18] tracking-tight">
                 Modern MLOps <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A7456] via-[#3BB48C] to-teal-600">
                   Infrastructure, Self-Hosted
@@ -346,41 +331,68 @@ export const LandingPage: React.FC = () => {
                   Start free console <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
-                  href="http://localhost:8000/docs"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="#architecture"
                   className="px-7 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 hover:border-slate-300 shadow-xs transition flex items-center gap-2"
                 >
                   Learn More
                 </a>
               </div>
 
-              {/* Minimalist, Clean Quickstart Command Bar */}
-              <div className="pt-2 w-full max-w-md">
+              {/* Minimalist, Clean Quickstart Command Bar with interactive execution preview */}
+              <div className="pt-2 w-full max-w-md space-y-2">
                 <div className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 text-xs font-mono shadow-sm">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <Terminal className="w-3.5 h-3.5 text-[#3BB48C] shrink-0" />
                     <span className="text-[#3BB48C] font-bold select-none">$</span>
                     <span className="text-slate-200 select-all truncate">{installCmd}</span>
                   </div>
-                  <button
-                    onClick={handleCopy}
-                    className="ml-2 pl-2 border-l border-slate-700 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
-                    title="Copy command"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
+                  <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-700">
+                    <button
+                      onClick={() => setShowTerminalPreview(!showTerminalPreview)}
+                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-emerald-400 font-bold transition cursor-pointer"
+                      title="Simulate startup output"
+                    >
+                      {showTerminalPreview ? "Hide logs" : "Simulate"}
+                    </button>
+                    <button
+                      onClick={handleCopy}
+                      className="text-slate-400 hover:text-white transition cursor-pointer p-1"
+                      title="Copy command"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Interactive Simulated Container Stack Logs */}
+                {showTerminalPreview && (
+                  <div className="p-3 bg-slate-950/95 border border-slate-800 rounded-xl font-mono text-[11px] text-slate-300 space-y-1.5 shadow-xl animate-fadeIn">
+                    <div className="text-emerald-400 font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Docker Compose Stack Initialized
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded font-bold uppercase">
+                        Running
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-[10px] space-y-0.5 pt-1 border-t border-slate-800">
+                      <div>✔ <span className="text-slate-200">postgres:16</span> (metadata store) · port 5432</div>
+                      <div>✔ <span className="text-slate-200">minio-s3</span> (artifact storage) · port 9000</div>
+                      <div>✔ <span className="text-slate-200">mlflow-server</span> (run registry) · port 5000</div>
+                      <div>✔ <span className="text-slate-200">fastapi-engine</span> (REST API core) · port 8000</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ── Right Column: Seamless 3D Isometric MLOps Illustration (Abaissée légèrement) ── */}
-            <div className="lg:col-span-6 relative flex items-center justify-center pt-6 lg:pt-10 translate-y-3 sm:translate-y-5">
+            {/* ── Right Column: 3D Isometric MLOps Illustration ── */}
+            <div className="lg:col-span-6 relative flex items-center justify-center pt-4 lg:pt-6">
               {/* Soft Ambient Glow */}
-              <div className="absolute w-[32rem] h-[32rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10" />
+              <div className="absolute w-[30rem] h-[30rem] bg-gradient-to-tr from-[#3BB48C]/20 via-teal-100/35 to-emerald-200/15 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-soft" />
 
-              {/* Illustration 3D Isométrique totalement fondue, fond blanc supprimé par mix-blend-multiply et masque doux */}
-              <div className="relative w-full max-w-xl group transition-transform duration-500 hover:scale-[1.02]">
+              {/* Clean 3D Isometric Illustration with subtle organic levitation */}
+              <div className="relative w-full max-w-xl group transition-transform duration-700 hover:scale-[1.02] animate-float-slow">
                 <img
                   src="/hero-isometric.jpg"
                   alt="MLite Real-time MLOps Platform Isometric Illustration"
@@ -398,35 +410,86 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── Lifecycle Strip ── */}
-      <section className="py-10 border-b border-slate-100 bg-[#F8FAFC]">
+      <section className="py-16 sm:py-20 border-b border-slate-200/80 bg-gradient-to-b from-[#F8FAFC] to-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <p className="text-center text-xs font-black text-slate-400 uppercase tracking-widest mb-6">
-            Autonomous Machine Learning Lifecycle Pipeline
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+          <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Integrated MLOps Stack
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Autonomous Machine Learning Lifecycle Pipeline
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500">
+              End-to-end automated pipeline powered by production-proven open-source foundations.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center">
             {[
-              { title: "Data Lineage", desc: "DVC + MinIO S3", icon: Database },
-              { title: "Experimentation", desc: "Native MLflow", icon: Boxes },
-              { title: "Model Registry", desc: "Stages & Signatures", icon: ShieldCheck },
-              { title: "Docker Serving", desc: "Sub-50ms Runtime", icon: Server },
-              { title: "Drift Guard", desc: "Evidently AI", icon: LineChart },
-              { title: "Smart Alerts", desc: "Webhooks & Slack", icon: Radio },
-              { title: "Auto-Rollback", desc: "Zero Downtime", icon: RotateCcw },
-            ].map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  ref={addRevealRef}
-                  className={`p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/50 hover:shadow-md transition-all group opacity-0 delay-${(idx + 1) * 100}`}
-                  style={{ animationDelay: `${idx * 80}ms` }}
-                >
-                  <Icon className="w-4 h-4 mx-auto text-[#3BB48C] mb-1.5 group-hover:scale-110 transition-transform" />
-                  <div className="text-xs font-bold text-slate-800">{item.title}</div>
-                  <div className="text-[11px] text-[#1A7456] font-semibold mt-0.5">{item.desc}</div>
+              { title: "Data Lineage", desc: "DVC + MinIO S3", favicon: "/logos/minio.png", alt: "MinIO S3" },
+              { title: "Experimentation", desc: "Native MLflow", favicon: "/logos/mlflow.png", alt: "MLflow" },
+              { title: "Model Registry", desc: "Stages & Signatures", favicon: "/logos/pytorch.png", alt: "PyTorch" },
+              { title: "Docker Serving", desc: "Sub-50ms Runtime", favicon: "/logos/docker.png", alt: "Docker" },
+              { title: "Drift Guard", desc: "Evidently AI", favicon: "/logos/evidently.png", alt: "Evidently AI" },
+              { title: "Smart Alerts", desc: "Webhooks & Slack", favicon: "/logos/slack.png", alt: "Slack" },
+              { title: "Auto-Rollback", desc: "Zero Downtime", favicon: "/logos/rollback.svg", alt: "Zero-Downtime Rollback" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                ref={addRevealRef}
+                className="p-5 sm:p-6 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group opacity-0 cursor-default flex flex-col items-center justify-between"
+                style={{ animationDelay: `${idx * 80}ms` }}
+              >
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:scale-105 group-hover:bg-white group-hover:shadow-xs transition-all duration-200 p-2 mb-3">
+                  <img
+                    src={item.favicon}
+                    alt={item.alt}
+                    className="w-10 h-10 sm:w-11 sm:h-11 object-contain select-none"
+                    loading="lazy"
+                  />
                 </div>
-              );
-            })}
+                <div className="w-full">
+                  <div className="text-sm font-bold text-slate-900">
+                    {item.title}
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium mt-1">
+                    {item.desc}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── High-Contrast Platform Metrics Strip (Positioned lower to leave first page uncropped) ── */}
+      <section className="bg-slate-900 text-white py-8 border-y border-slate-800 relative z-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-slate-800">
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-[#3BB48C] font-mono tracking-tight flex items-center justify-center gap-1">
+                <span>&lt; 5ms</span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Docker Container Latency</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                99.99%
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Zero-Downtime Reliability</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                100%
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Self-Hosted &amp; Air-Gapped</p>
+            </div>
+            <div className="pt-2 md:pt-0">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                0$
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Per-Prediction Egress Tax</p>
+            </div>
           </div>
         </div>
       </section>
@@ -541,42 +604,48 @@ export const LandingPage: React.FC = () => {
                 title: "PostgreSQL 16",
                 role: "Metadata Engine",
                 desc: "ACID transactions for model registry, deployment statuses, audit logs, and metrics tracking.",
-                icon: Database,
+                favicon: "/logos/postgresql.svg",
+                alt: "PostgreSQL",
               },
               {
                 title: "MinIO S3",
                 role: "Object Storage",
                 desc: "S3-compatible bucket storage for raw datasets, model weights, and drift baseline distributions.",
-                icon: HardDrive,
+                favicon: "/logos/minio.png",
+                alt: "MinIO S3",
               },
               {
                 title: "Docker Compose",
                 role: "Container Orchestrator",
                 desc: "Zero-dependency single-command orchestration across VPS, bare-metal, or on-prem servers.",
-                icon: Server,
+                favicon: "/logos/docker.png",
+                alt: "Docker",
               },
               {
                 title: "FastAPI Async",
                 role: "High-Speed REST Core",
                 desc: "Sub-millisecond routing, OpenAPI/Swagger generation, and built-in security headers.",
-                icon: Zap,
+                favicon: "/logos/fastapi.png",
+                alt: "FastAPI",
               },
-            ].map((arch, idx) => {
-              const Icon = arch.icon;
-              return (
-                <div
-                  key={idx}
-                  className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mb-4">
-                    <Icon className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
-                  <h3 className="text-base font-bold text-slate-900 mt-0.5 mb-2">{arch.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{arch.desc}</p>
+            ].map((arch, idx) => (
+              <div
+                key={idx}
+                className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:border-[#3BB48C]/60 hover:shadow-lg transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1.5 mb-4 group-hover:scale-105 group-hover:shadow-xs transition-all duration-200">
+                  <img
+                    src={arch.favicon}
+                    alt={arch.alt}
+                    className="w-9 h-9 object-contain select-none"
+                    loading="lazy"
+                  />
                 </div>
-              );
-            })}
+                <div className="text-xs font-mono font-bold text-[#3BB48C] uppercase">{arch.role}</div>
+                <h3 className="text-base font-bold text-slate-900 mt-0.5 mb-2">{arch.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{arch.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -645,12 +714,10 @@ export const LandingPage: React.FC = () => {
                 <p className="text-xs text-slate-500">
                   Still have questions? Check our{" "}
                   <a
-                    href="http://localhost:8000/docs"
-                    target="_blank"
-                    rel="noreferrer"
+                    href="#architecture"
                     className="text-[#3BB48C] font-semibold hover:underline"
                   >
-                    API Documentation
+                    architecture documentation
                   </a>{" "}
                   or send us a message in the contact form below.
                 </p>
@@ -667,9 +734,8 @@ export const LandingPage: React.FC = () => {
                       onClick={() => setOpenFaq(isOpen ? null : idx)}
                       className="w-full py-5 flex items-center justify-between text-left gap-4 cursor-pointer select-none group"
                     >
-                      <span className={`text-base sm:text-lg font-semibold transition-colors ${
-                        isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
-                      }`}>
+                      <span className={`text-base sm:text-lg font-semibold transition-colors ${isOpen ? "text-[#1A7456]" : "text-slate-900 group-hover:text-[#3BB48C]"
+                        }`}>
                         {item.q}
                       </span>
                       <div className="shrink-0 text-slate-500 group-hover:text-[#3BB48C] transition-colors ml-4">

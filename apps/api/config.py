@@ -78,18 +78,22 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
-        """Fail-safe check: prevent insecure defaults in production."""
-        if self.environment.lower() in ("production", "prod"):
-            if self.jwt_secret_key == "mlite-dev-secret-key-change-in-production":
-                raise ValueError(
-                    "CRITICAL SECURITY CONFIGURATION: In production, SECRET_KEY must be "
-                    "explicitly set to a secure secret (e.g. openssl rand -hex 32)."
-                )
-            if self.admin_password == "admin123456":
-                raise ValueError(
-                    "CRITICAL SECURITY CONFIGURATION: In production, ADMIN_PASSWORD must be "
-                    "configured and not use the default developer password."
-                )
+        """Fail-safe check: refuse to start in production with insecure settings."""
+        if self.environment.lower() not in ("production", "prod"):
+            return self
+        problems = []
+        if len(self.jwt_secret_key) < 32 or "dev" in self.jwt_secret_key.lower():
+            problems.append("SECRET_KEY must be a random value >= 32 chars (openssl rand -hex 32)")
+        if self.admin_password == "admin123456" or len(self.admin_password) < 12:
+            problems.append("ADMIN_PASSWORD must be set and >= 12 chars")
+        if self.database_url.startswith("sqlite"):
+            problems.append("DATABASE_URL must point to PostgreSQL (SQLite is not production-safe)")
+        if "*" in self.allowed_origins:
+            problems.append("ALLOWED_ORIGINS must list explicit origins, not '*'")
+        if self.debug:
+            problems.append("DEBUG must be false")
+        if problems:
+            raise ValueError("Insecure production configuration:\n - " + "\n - ".join(problems))
         return self
 
 

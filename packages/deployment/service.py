@@ -122,7 +122,24 @@ class DeploymentService:
             query = query.where(Deployment.status == status)
 
         result = await self.session.execute(query)
-        return list(result.scalars().all())
+        deployments = list(result.scalars().all())
+
+        # Sync live state from Docker daemon
+        if self.docker_manager.is_available:
+            updated = False
+            for d in deployments:
+                if d.status == DeploymentStatus.RUNNING and d.container_id:
+                    c_info = self.docker_manager.get_container_status(d.container_id)
+                    actual_status = c_info.get("status")
+                    if actual_status in ("STOPPED", "FAILED"):
+                        d.status = DeploymentStatus[actual_status]
+                        d.error_message = c_info.get("error") or f"Container {actual_status.lower()}"
+                        self.port_allocator.release(d.port)
+                        updated = True
+            if updated:
+                await self.session.flush()
+
+        return deployments
 
     async def record_metrics(
         self,

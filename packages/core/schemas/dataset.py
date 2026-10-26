@@ -59,8 +59,16 @@ class DatasetResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     latest_version: DatasetVersionResponse | None = None
+    versions_count: int = 0
+    row_count: int = 0
+    column_count: int = 0
+    size_bytes: int = 0
+    hash_sha256: str | None = None
+    version_num: int | None = None
+    s3_key: str | None = None
 
     model_config = {"from_attributes": True}
+
 
 
 class DatasetListResponse(BaseModel):

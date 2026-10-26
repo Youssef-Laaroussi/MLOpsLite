@@ -33,6 +33,20 @@ async def _get(app, path, headers=None):
         return await ac.get(path, headers=headers or {})
 
 
+async def _post(app, path, json=None, headers=None):
+    """Perform an async POST request against the test app."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        return await ac.post(path, json=json, headers=headers or {})
+
+
+async def _delete(app, path, headers=None):
+    """Perform an async DELETE request against the test app."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        return await ac.delete(path, headers=headers or {})
+
+
 async def _options(app, path, headers=None):
     """Perform an async OPTIONS request against the test app."""
     transport = ASGITransport(app=app)
@@ -112,6 +126,35 @@ class TestHealthEndpoints:
         assert resp.status_code == 200
         assert resp.json()["status"] == "ready"
 
+    def test_health_stats(self, app):
+        resp = _run(_get(app, "/api/v1/health/stats"))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "projects_count" in data
+        assert "models_count" in data
+        assert "datasets_count" in data
+        assert "experiments_count" in data
+        assert "active_deployments" in data
+        assert "stages" in data
+        assert "funnel" in data
+        assert "benchmarks" in data
+        assert "latency_telemetry" in data
+        assert "drift_trajectory" in data
+        assert data["system_healthy"] is True
+        assert data["time_range"] == "all"
+
+    def test_health_stats_time_range_filter(self, app):
+        resp_7d = _run(_get(app, "/api/v1/health/stats?time_range=7d"))
+        assert resp_7d.status_code == 200
+        data_7d = resp_7d.json()
+        assert data_7d["time_range"] == "7d"
+        assert "projects_count" in data_7d
+
+        resp_30d = _run(_get(app, "/api/v1/health/stats?time_range=30d"))
+        assert resp_30d.status_code == 200
+        data_30d = resp_30d.json()
+        assert data_30d["time_range"] == "30d"
+
 
 # ── Scaffold routers ──────────────────────────────────────
 
@@ -119,42 +162,71 @@ class TestHealthEndpoints:
 class TestScaffoldRouters:
     """Verify that all placeholder routers respond correctly."""
 
-    def test_list_projects(self, app):
-        resp = _run(_get(app, "/api/v1/projects/"))
+    def test_list_projects(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/projects/"))
         assert resp.status_code == 200
         data = resp.json()
         assert data.get("projects") == []
         assert data.get("total") == 0
 
-    def test_list_datasets(self, app):
-        resp = _run(_get(app, "/api/v1/datasets/"))
+    def test_list_datasets(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/datasets/"))
         assert resp.status_code == 200
         assert resp.json() == {"datasets": [], "total": 0}
 
-    def test_list_experiments(self, app):
-        resp = _run(_get(app, "/api/v1/experiments/"))
+    def test_dvc_status(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/datasets/dvc/status"))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "is_installed" in data
+        assert "remote_name" in data
+        assert "remote_bucket" in data
+        assert "minio_endpoint" in data
+
+
+    def test_list_experiments(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/experiments/"))
         assert resp.status_code == 200
         data = resp.json()
         assert "experiments" in data
         assert isinstance(data.get("experiments"), list)
 
-    def test_list_models(self, app):
-        resp = _run(_get(app, "/api/v1/models/"))
+    def test_experiment_lifecycle(self, authed_app):
+        import uuid
+        exp_name = f"pytest-exp-{uuid.uuid4().hex[:6]}"
+        # Create experiment
+        create_resp = _run(_post(authed_app, "/api/v1/experiments/", {"name": exp_name, "tags": {"team": "qa"}}))
+        assert create_resp.status_code == 201
+        created = create_resp.json()
+        assert created["name"] == exp_name
+        exp_id = created["experiment_id"]
+
+        # List runs (should be 0)
+        runs_resp = _run(_get(authed_app, f"/api/v1/experiments/{exp_id}/runs"))
+        assert runs_resp.status_code == 200
+        assert runs_resp.json()["runs"] == []
+
+        # Delete experiment
+        del_resp = _run(_delete(authed_app, f"/api/v1/experiments/{exp_id}"))
+        assert del_resp.status_code == 204
+
+    def test_list_models(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/models/"))
         assert resp.status_code == 200
         assert resp.json() == {"models": [], "total": 0}
 
-    def test_list_deployments(self, app):
-        resp = _run(_get(app, "/api/v1/deployments/"))
+    def test_list_deployments(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/deployments/"))
         assert resp.status_code == 200
         assert resp.json() == {"deployments": [], "total": 0}
 
-    def test_list_monitoring(self, app):
-        resp = _run(_get(app, "/api/v1/monitoring/"))
+    def test_list_monitoring(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/monitoring/"))
         assert resp.status_code == 200
         assert resp.json() == {"reports": [], "total": 0}
 
-    def test_list_alerts(self, app):
-        resp = _run(_get(app, "/api/v1/alerts/"))
+    def test_list_alerts(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/alerts/"))
         assert resp.status_code == 200
         assert resp.json() == {"alerts": [], "total": 0}
 

@@ -19,9 +19,7 @@ from packages.core.models.model_registry import ModelStage, ModelVersion, Regist
 from packages.core.models.project import Project, ProjectStatus
 from packages.core.models.user import User, UserRole
 
-TEST_DB_URL = os.getenv(
-    "TEST_DATABASE_URL", os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-)
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 
 @pytest.fixture

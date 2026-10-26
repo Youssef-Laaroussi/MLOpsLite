@@ -5,12 +5,19 @@ import {
   Deployment,
   Dataset,
   SystemStats,
+  SubsystemService,
   User,
+  UserRole,
   AuthTokens,
   ApiKey,
   AuditLog,
   Experiment,
   ExperimentRun,
+  MonitoringSummary,
+  Alert,
+  AlertRule,
+  NotificationChannel,
+  AlertSummary,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -32,13 +39,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: handle 401 errors
+// Interceptor: on 401, clear the stale session and redirect to sign-in
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      // We don't automatically wipe if user is in mock/demo mode
+    const url: string = error.config?.url || "";
+    if (error.response?.status === 401 && !url.startsWith("/auth/")) {
+      ["mlite_token", "mlite_refresh_token", "mlite_user"].forEach((k) => localStorage.removeItem(k));
+      if (window.location.pathname.startsWith("/app")) window.location.assign("/signin");
     }
     return Promise.reject(error);
   }
@@ -89,6 +97,29 @@ export const fetchUsers = async (): Promise<User[]> => {
   return res.data.users || [];
 };
 
+export const createUser = async (data: {
+  email: string;
+  username: string;
+  password: string;
+  full_name?: string;
+  role: UserRole;
+}): Promise<User> => {
+  const res = await api.post("/users", data);
+  return res.data;
+};
+
+export const updateUser = async (
+  userId: string,
+  data: {
+    full_name?: string;
+    role?: UserRole;
+    is_active?: boolean;
+  }
+): Promise<User> => {
+  const res = await api.patch(`/users/${userId}`, data);
+  return res.data;
+};
+
 // ── Audit Logs ─────────────────────────────────────────────────────
 
 export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> => {
@@ -103,10 +134,39 @@ export const fetchProjects = async (): Promise<Project[]> => {
   return res.data.projects || [];
 };
 
-export const createProject = async (data: { name: string; slug: string; description?: string }): Promise<Project> => {
+export const createProject = async (data: {
+  name: string;
+  slug?: string;
+  description?: string;
+  git_url?: string;
+}): Promise<Project> => {
   const res = await api.post("/projects/", data);
   return res.data;
 };
+
+export const archiveProject = async (slugOrId: string): Promise<Project> => {
+  const res = await api.delete(`/projects/${slugOrId}`);
+  return res.data;
+};
+
+export const updateProject = async (
+  slugOrId: string,
+  data: {
+    name?: string;
+    description?: string;
+    git_url?: string;
+    default_branch?: string;
+    status?: string;
+  }
+): Promise<Project> => {
+  const res = await api.patch(`/projects/${slugOrId}`, data);
+  return res.data;
+};
+
+export const deleteProject = async (slugOrId: string): Promise<void> => {
+  await api.delete(`/projects/${slugOrId}`, { params: { permanent: true } });
+};
+
 
 // ── Models & Registry ──────────────────────────────────────────────
 
@@ -155,30 +215,19 @@ export const rollbackDeployment = async (modelName: string, targetVersion: numbe
 
 export const testModelPrediction = async (
   endpointUrl: string,
-  inputs: number[][] = [[0.45, 120.5, 1.0, 0.0]]
+  inputs: number[][]
 ): Promise<{ prediction: any; latency_ms: number }> => {
   const start = performance.now();
-  try {
-    const res = await axios.post(
-      `${endpointUrl.replace(/\/$/, "")}/predict`,
-      { inputs },
-      { timeout: 3000 }
-    );
-    const latency_ms = Math.round(performance.now() - start);
-    return { prediction: res.data, latency_ms };
-  } catch {
-    // If local endpoint is mock or container offline, return realistic simulated response
-    const latency_ms = Math.round(15 + Math.random() * 25);
-    return {
-      prediction: {
-        predictions: [Math.random() > 0.5 ? 1 : 0],
-        probabilities: [parseFloat((0.75 + Math.random() * 0.23).toFixed(4))],
-        model_version: "v1.0-live",
-        status: "success",
-      },
-      latency_ms,
-    };
-  }
+  // Errors propagate to the caller: never fabricate predictions.
+  const res = await axios.post(`${endpointUrl.replace(/\/$/, "")}/predict`, { inputs }, { timeout: 10000 });
+  return { prediction: res.data, latency_ms: Math.round(performance.now() - start) };
+};
+
+/** Real liveness probe routed through the authenticated backend (no CORS / no container exposure). */
+export const pingDeployment = async (id: string): Promise<{ prediction: any; latency_ms: number }> => {
+  const start = performance.now();
+  const res = await api.get(`/deployments/${id}/health`);
+  return { prediction: res.data, latency_ms: Math.round(performance.now() - start) };
 };
 
 // ── Datasets ───────────────────────────────────────────────────────
@@ -188,60 +237,197 @@ export const fetchDatasets = async (): Promise<Dataset[]> => {
   return res.data.datasets || [];
 };
 
-// ── System Stats ───────────────────────────────────────────────────
+export const createDataset = async (data: {
+  name: string;
+  format?: string;
+  description?: string;
+  project_id?: string;
+}): Promise<Dataset> => {
+  const res = await api.post("/datasets/", data);
+  return res.data;
+};
 
-export const fetchSystemStats = async (): Promise<SystemStats> => {
+export const uploadDatasetFile = async (datasetId: string, file: File, description?: string): Promise<any> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (description) formData.append("description", description);
+  const res = await api.post(`/datasets/${datasetId}/upload`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const fetchDatasetVersions = async (datasetId: string): Promise<any[]> => {
+  const res = await api.get(`/datasets/${datasetId}/versions`);
+  return res.data || [];
+};
+
+export const fetchDvcStatus = async (): Promise<{
+  is_installed: boolean;
+  remote_name: string;
+  remote_bucket: string;
+  remote_prefix: string;
+  minio_endpoint: string;
+  dvc_dir_exists: boolean;
+}> => {
+  const res = await api.get("/datasets/dvc/status");
+  return res.data;
+};
+
+export const deleteDataset = async (datasetId: string): Promise<void> => {
+  await api.delete(`/datasets/${datasetId}`);
+};
+
+
+// ── System Stats & Subsystem Health ───────────────────────────────
+
+export const fetchSystemStats = async (timeRange?: string): Promise<SystemStats> => {
+  const rangeParam =
+    timeRange === "Last 7 days" ? "7d" : timeRange === "Last 30 days" ? "30d" : "all";
+  const res = await api.get("/health/stats", { params: { time_range: rangeParam } });
+  return res.data;
+};
+
+export const fetchSystemServices = async (): Promise<SubsystemService[]> => {
   try {
-    const [projectsRes, modelsRes, deploymentsRes] = await Promise.all([
-      api.get("/projects/"),
-      api.get("/models/"),
-      api.get("/deployments/"),
-    ]);
-
-    const activeDeps = (deploymentsRes.data.deployments || []).filter(
-      (d: any) => d.status === "RUNNING"
-    ).length;
-
-    return {
-      projects_count: projectsRes.data.total || 0,
-      models_count: modelsRes.data.total || 0,
-      active_deployments: activeDeps,
-      alerts_count: 0,
-      system_healthy: true,
-    };
+    const res = await api.get("/health/services");
+    return res.data;
   } catch (err) {
-    return {
-      projects_count: 0,
-      models_count: 0,
-      active_deployments: 0,
-      alerts_count: 0,
-      system_healthy: false,
-    };
+    return [
+      { name: "Database (PostgreSQL/SQLite)", status: "offline", latency: "--", uptime: "0%" },
+      { name: "MLflow Tracking Server", status: "offline", latency: "--", uptime: "0%" },
+      { name: "MinIO S3 Artifact Store", status: "offline", latency: "--", uptime: "0%" },
+      { name: "Model Serving (Docker Engine)", status: "offline", latency: "--", uptime: "0%" },
+    ];
   }
 };
 
 // ── Experiments & Runs (MLflow Proxy) ──────────────────────────────
 
 export const fetchExperiments = async (project?: string): Promise<Experiment[]> => {
-  try {
-    const res = await api.get("/experiments/", { params: { project } });
-    return res.data.experiments || [];
-  } catch {
-    return [];
-  }
+  const res = await api.get("/experiments/", { params: { project } });
+  return res.data.experiments || [];
 };
 
 export const fetchExperimentRuns = async (experimentId: string): Promise<ExperimentRun[]> => {
-  try {
-    const res = await api.get(`/experiments/${experimentId}/runs`);
-    return res.data.runs || [];
-  } catch {
-    return [];
-  }
+  const res = await api.get(`/experiments/${experimentId}/runs`);
+  return res.data.runs || [];
 };
 
 export const createExperiment = async (data: { name: string; tags?: Record<string, string> }): Promise<any> => {
   const res = await api.post("/experiments/", data);
+  return res.data;
+};
+
+export const deleteExperiment = async (experimentId: string): Promise<void> => {
+  await api.delete(`/experiments/${experimentId}`);
+};
+
+// ── Monitoring & Observability ─────────────────────────────────────
+
+export const fetchMonitoringSummary = async (modelName?: string): Promise<MonitoringSummary> => {
+  const res = await api.get("/monitoring/summary", { params: { model_name: modelName } });
+  return res.data;
+};
+
+export const triggerDriftCheck = async (data: {
+  model_name: string;
+  drift_threshold?: number;
+  reference_dataset_id?: string;
+  current_dataset_id?: string;
+}): Promise<any> => {
+  const res = await api.post("/monitoring/drift/check", data);
+  return res.data;
+};
+
+export const fetchDriftReportHtml = async (reportId: string): Promise<string> => {
+  const res = await api.get(`/monitoring/reports/${reportId}/html`);
+  return res.data;
+};
+
+// ── Alerts, Rules & Webhook Channels ──────────────────────────────
+
+export const fetchAlerts = async (params?: {
+  status?: string;
+  severity?: string;
+  model_name?: string;
+  limit?: number;
+}): Promise<Alert[]> => {
+  const res = await api.get("/alerts/", { params });
+  return res.data.alerts || [];
+};
+
+export const fetchAlertsSummary = async (): Promise<AlertSummary> => {
+  const res = await api.get("/alerts/summary");
+  return res.data;
+};
+
+export const acknowledgeAlert = async (id: string, acknowledgedBy?: string): Promise<Alert> => {
+  const res = await api.post(`/alerts/${id}/acknowledge`, null, {
+    params: { acknowledged_by: acknowledgedBy || "UI User" },
+  });
+  return res.data;
+};
+
+export const resolveAlert = async (id: string): Promise<Alert> => {
+  const res = await api.post(`/alerts/${id}/resolve`);
+  return res.data;
+};
+
+export const fetchAlertRules = async (): Promise<AlertRule[]> => {
+  const res = await api.get("/alerts/rules");
+  return res.data || [];
+};
+
+export const createAlertRule = async (data: {
+  name: string;
+  metric: "drift_share" | "latency_p95_ms" | "failed_deployments";
+  operator: ">" | ">=" | "<" | "<=";
+  threshold: number;
+  model_name?: string | null;
+  severity?: "INFO" | "WARNING" | "HIGH" | "CRITICAL";
+  enabled?: boolean;
+}): Promise<AlertRule> => {
+  const res = await api.post("/alerts/rules", data);
+  return res.data;
+};
+
+export const toggleAlertRule = async (id: string, enabled: boolean): Promise<AlertRule> => {
+  const res = await api.patch(`/alerts/rules/${id}`, { enabled });
+  return res.data;
+};
+
+export const deleteAlertRule = async (id: string): Promise<void> => {
+  await api.delete(`/alerts/rules/${id}`);
+};
+
+export const evaluateAlertRules = async (): Promise<{ evaluated: number; triggered: Alert[] }> => {
+  const res = await api.post("/alerts/rules/evaluate");
+  return res.data;
+};
+
+export const fetchNotificationChannels = async (): Promise<NotificationChannel[]> => {
+  const res = await api.get("/alerts/channels");
+  return res.data || [];
+};
+
+export const createNotificationChannel = async (data: {
+  name: string;
+  kind: "SLACK" | "DISCORD" | "WEBHOOK";
+  url: string;
+}): Promise<NotificationChannel> => {
+  const res = await api.post("/alerts/channels", data);
+  return res.data;
+};
+
+export const deleteNotificationChannel = async (id: string): Promise<void> => {
+  await api.delete(`/alerts/channels/${id}`);
+};
+
+export const testNotificationChannel = async (
+  id: string
+): Promise<{ channel_id: string; name: string; delivered: boolean; error?: string | null }> => {
+  const res = await api.post(`/alerts/channels/${id}/test`);
   return res.data;
 };
 

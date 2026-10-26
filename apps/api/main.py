@@ -13,8 +13,11 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 
 from apps.api.config import get_settings
 from apps.api.errors import register_exception_handlers
@@ -32,6 +35,8 @@ from apps.api.routers import (
     projects,
     rollback,
 )
+from packages.core.models.user import UserRole
+from packages.core.security.dependencies import get_current_user, require_role
 
 logger = logging.getLogger("mlite.api")
 
@@ -112,6 +117,8 @@ def create_app() -> FastAPI:
     """Build and return the fully-configured FastAPI application."""
     settings = get_settings()
 
+    is_prod = settings.environment.lower() in ("production", "prod")
+
     app = FastAPI(
         title=settings.app_name,
         description=(
@@ -120,9 +127,9 @@ def create_app() -> FastAPI:
             "deployments, and monitoring from a single unified API."
         ),
         version=settings.app_version,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if not is_prod else None,
+        redoc_url="/redoc" if not is_prod else None,
+        openapi_url="/openapi.json" if not is_prod else None,
         lifespan=lifespan,
         license_info={"name": "Apache 2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
         contact={
@@ -148,18 +155,43 @@ def create_app() -> FastAPI:
     # ── Exception handlers ──────────────────────────────────
     register_exception_handlers(app)
 
-    # ── Routers ─────────────────────────────────────────────
+    # Public: health probes + auth (login/register). Audit and rollback have granular RBAC dependencies.
     app.include_router(health.router)
-    app.include_router(projects.router)
-    app.include_router(datasets.router)
-    app.include_router(experiments.router)
-    app.include_router(models.router)
-    app.include_router(deployments.router)
-    app.include_router(monitoring.router)
-    app.include_router(alerts.router)
-    app.include_router(rollback.router)
     app.include_router(auth.router)
     app.include_router(audit.router)
+    app.include_router(rollback.router)
+    protected = [Depends(get_current_user)]
+    for r in (projects, datasets, experiments, models, deployments, monitoring, alerts):
+        app.include_router(r.router, dependencies=protected)
+
+    # ── Admin-only Documentation in Production ────────────────
+    if is_prod:
+        admin_doc_deps = [Depends(require_role(UserRole.ADMIN))]
+
+        @app.get("/admin/docs", include_in_schema=False, dependencies=admin_doc_deps)
+        async def admin_swagger_ui():
+            return get_swagger_ui_html(
+                openapi_url="/admin/openapi.json",
+                title=f"{settings.app_name} - Admin Swagger Docs",
+            )
+
+        @app.get("/admin/redoc", include_in_schema=False, dependencies=admin_doc_deps)
+        async def admin_redoc_ui():
+            return get_redoc_html(
+                openapi_url="/admin/openapi.json",
+                title=f"{settings.app_name} - Admin ReDoc",
+            )
+
+        @app.get("/admin/openapi.json", include_in_schema=False, dependencies=admin_doc_deps)
+        async def admin_openapi_schema():
+            return JSONResponse(
+                get_openapi(
+                    title=app.title,
+                    version=app.version,
+                    routes=app.routes,
+                    description=app.description,
+                )
+            )
 
     # ── Legacy root health (backward-compat) ────────────────
     @app.get("/health", tags=["Health"], include_in_schema=False)

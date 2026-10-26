@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Key,
   LogOut,
@@ -25,7 +25,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ApiKeysModal } from "./ApiKeysModal";
-import { UserRole } from "../api/types";
+import { UserRole, Alert } from "../api/types";
+import { fetchAlerts } from "../api/client";
 
 export interface RouteMeta {
   group: string;
@@ -57,12 +58,6 @@ const QUICK_CREATE = [
   { label: "Deploy a model", href: "/app/deployments", icon: Rocket },
 ];
 
-const NOTIFICATIONS = [
-  { id: 1, kind: "warn", title: "Drift detected on churn-xgb v2", sub: "PSI 0.21 > threshold 0.20", time: "12m", href: "/app/monitoring" },
-  { id: 2, kind: "ok", title: "fraud-detector v3 promoted", sub: "Staging → Production", time: "1h", href: "/app/models" },
-  { id: 3, kind: "ok", title: "Deployment dep-live-02 healthy", sub: "Rolled out on port 8101", time: "3h", href: "/app/deployments" },
-];
-
 const useClickOutside = (ref: React.RefObject<HTMLElement>, cb: () => void) => {
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -76,10 +71,31 @@ const useClickOutside = (ref: React.RefObject<HTMLElement>, cb: () => void) => {
 export const Header: React.FC<HeaderProps> = ({ meta }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [openMenu, setOpenMenu] = useState<null | "user" | "create" | "notif" | "env">(null);
   const [apiKeysModalOpen, setApiKeysModalOpen] = useState(false);
   const [env, setEnv] = useState<"Production" | "Staging" | "Development">("Production");
-  const [unread, setUnread] = useState(NOTIFICATIONS.length);
+  const [realAlerts, setRealAlerts] = useState<Alert[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let mounted = true;
+    fetchAlerts({ status: "OPEN", limit: 5 })
+      .then((items) => {
+        if (!mounted) return;
+        setRealAlerts(items);
+        setUnread(items.length);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setRealAlerts([]);
+        setUnread(0);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthenticated, location.pathname]);
 
   // Command palette
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -125,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
   const roleBadge = (role?: UserRole) =>
     role === "ADMIN"
       ? "bg-rose-50 text-rose-700 border-rose-200"
-      : "bg-emerald-50 text-emerald-700 border-emerald-200";
+      : "bg-[#475569] text-white border-[#334155] shadow-2xs";
 
   const envDot =
     env === "Production" ? "bg-emerald-500" : env === "Staging" ? "bg-amber-500" : "bg-sky-500";
@@ -245,29 +261,38 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
             {openMenu === "notif" && (
               <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-900">Notifications</span>
+                  <span className="text-sm font-bold text-slate-900">Active Alerts</span>
                   <Link to="/app/alerts" onClick={() => setOpenMenu(null)} className="text-[11px] font-semibold text-[#3BB48C] hover:underline">
                     View all
                   </Link>
                 </div>
-                {NOTIFICATIONS.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => go(n.href)}
-                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-50 last:border-0"
-                  >
-                    {n.kind === "warn" ? (
-                      <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{n.sub}</p>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{n.time}</span>
-                  </button>
-                ))}
+                {realAlerts.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-xs text-slate-400">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-2 opacity-80" />
+                    No open alerts. All systems healthy.
+                  </div>
+                ) : (
+                  realAlerts.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => go("/app/alerts")}
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 transition border-b border-slate-50 last:border-0"
+                    >
+                      {n.severity === "CRITICAL" || n.severity === "HIGH" ? (
+                        <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{n.message}</p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -281,43 +306,59 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                 className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition"
               >
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs ${user.role === "ADMIN"
-                      ? "bg-gradient-to-tr from-rose-500 to-pink-600"
-                      : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs overflow-hidden ${user.role === "ADMIN"
+                    ? "bg-gradient-to-tr from-rose-500 to-pink-600"
+                    : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
                     }`}
                 >
-                  {user.username.charAt(0).toUpperCase()}
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user.username.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {openMenu === "user" && (
                 <div className="absolute right-0 mt-2 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
-                  <div className="px-4 py-2.5 border-b border-slate-100">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                     <p className="text-xs font-bold text-slate-900">{user.full_name || user.username}</p>
                     <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
-                    <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
-                      {user.role === "ADMIN" ? "ADMIN" : "USER"}
-                    </span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
+                        {user.role}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Online
+                      </span>
+                    </div>
                   </div>
                   <div className="py-1">
                     <Link
                       to="/app/settings"
                       onClick={() => setOpenMenu(null)}
-                      className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between group"
                     >
-                      <Settings className="w-3.5 h-3.5 text-slate-400" />
-                      Settings
+                      <span className="flex items-center gap-2.5">
+                        <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#3BB48C] transition" />
+                        Settings & Profile
+                      </span>
+                      <span className="text-[10px] text-slate-400">Manage</span>
                     </Link>
                     <button
                       onClick={() => {
                         setOpenMenu(null);
                         setApiKeysModalOpen(true);
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between group"
                     >
-                      <Key className="w-3.5 h-3.5 text-slate-400" />
-                      API Keys & Tokens
+                      <span className="flex items-center gap-2.5">
+                        <Key className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#3BB48C] transition" />
+                        API & CLI Keys
+                      </span>
+                      <span className="text-[10px] text-slate-400">Tokens</span>
                     </button>
                   </div>
                   <div className="pt-1 border-t border-slate-100">
@@ -326,7 +367,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                         logout();
                         setOpenMenu(null);
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       Sign Out

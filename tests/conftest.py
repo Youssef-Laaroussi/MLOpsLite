@@ -122,6 +122,16 @@ def app():
 
 
 @pytest.fixture
+def authed_app(app, sample_user):
+    """FastAPI application instance with authenticated user dependency override."""
+    from packages.core.security.dependencies import get_current_user
+
+    app.dependency_overrides[get_current_user] = lambda: sample_user
+    yield app
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
 async def async_client(app) -> AsyncGenerator[AsyncClient, None]:
     """AsyncClient bound to the test FastAPI app."""
     transport = ASGITransport(app=app)

@@ -5,6 +5,13 @@ import { BrowserRouter } from "react-router-dom";
 import { DashboardOverview } from "../pages/DashboardOverview";
 import { AuthProvider } from "../context/AuthContext";
 
+class MockResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.ResizeObserver = global.ResizeObserver || MockResizeObserver;
+
 // Mock API client
 vi.mock("../api/client", () => ({
   fetchSystemStats: vi.fn().mockResolvedValue({
@@ -27,8 +34,8 @@ vi.mock("../api/client", () => ({
       status: "RUNNING",
     },
   ]),
-  testModelPrediction: vi.fn().mockResolvedValue({
-    prediction: { predictions: [1] },
+  pingDeployment: vi.fn().mockResolvedValue({
+    prediction: { healthy: true },
     latency_ms: 12,
   }),
 }));
@@ -43,9 +50,10 @@ describe("DashboardOverview Component", () => {
       </AuthProvider>
     );
 
-    expect(screen.getByText(/Active Projects/i)).toBeDefined();
-    expect(screen.getByText(/Registered Models/i)).toBeDefined();
-    expect(screen.getByText(/Live Deployments/i)).toBeDefined();
-    expect(screen.getByText(/Active Alerts/i)).toBeDefined();
+    expect(screen.getByText("Quick actions")).toBeDefined();
+    expect(screen.getAllByText("Projects").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Models").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Deployments").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Experiments").length).toBeGreaterThan(0);
   });
 });

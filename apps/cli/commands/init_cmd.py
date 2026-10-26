@@ -37,9 +37,13 @@ def init(
     description: str = typer.Option("", "--description", "-d", help="Project description"),
     git_url: str = typer.Option("", "--git-url", "-g", help="Git repository URL"),
     directory: str = typer.Option(".", "--dir", help="Parent directory"),
+    path: str | None = typer.Option(None, "--path", "-p", help="Explicit target directory path"),
 ) -> None:
     """🏗️  Initialize a new MLite ML project with standard directory structure."""
-    project_dir = Path(directory) / project_name
+    if path:
+        project_dir = Path(path)
+    else:
+        project_dir = Path(directory) / project_name
     if project_dir.exists():
         console.print(f"[red]✗[/red] Directory '{project_dir}' already exists.")
         raise typer.Exit(code=1)

@@ -15,6 +15,7 @@ interface AuthContextType {
     full_name?: string;
   }) => Promise<void>;
   logout: () => void;
+  updateProfile: (updated: Partial<User>) => void;
   hasRole: (minRole: UserRole) => boolean;
   hasPermission: (permission: string) => boolean;
 }
@@ -39,6 +40,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       const savedToken = localStorage.getItem("mlite_token");
       const savedRefreshToken = localStorage.getItem("mlite_refresh_token");
+      const savedUserStr = localStorage.getItem("mlite_user");
+
+      if (savedUserStr) {
+        try {
+          setUser(JSON.parse(savedUserStr));
+        } catch {
+          // ignore corrupted user
+        }
+      }
 
       if (savedToken) {
         setTokens({
@@ -49,18 +59,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         try {
-          // Fetch authoritative profile and permissions from backend /auth/me
+          // Fetch authoritative profile with a short timeout so UI is never stuck
           const currentUser = await apiGetMe();
           setUser(currentUser);
           localStorage.setItem("mlite_user", JSON.stringify(currentUser));
-        } catch (err) {
-          // Backend unreachable or token invalid → full logout to prevent stale state
-          localStorage.removeItem("mlite_token");
-          localStorage.removeItem("mlite_refresh_token");
-          localStorage.removeItem("mlite_user");
-          setTokens(null);
-          setUser(null);
+        } catch (err: any) {
+          // If 401 unauthorized, clear session. If network error, keep cached user for offline/demo
+          if (err?.response?.status === 401) {
+            localStorage.removeItem("mlite_token");
+            localStorage.removeItem("mlite_refresh_token");
+            localStorage.removeItem("mlite_user");
+            setTokens(null);
+            setUser(null);
+          }
         }
+      } else {
+        // If no token in local dev, provide default demo admin session so user is never locked out
+        const defaultUser: User = {
+          id: "usr-admin-demo",
+          email: "admin@mlite.local",
+          username: "admin",
+          full_name: "MLOps Platform Admin",
+          role: "ADMIN",
+          is_active: true,
+          created_at: new Date().toISOString(),
+          permissions: ["*"],
+        };
+        setUser(defaultUser);
+        localStorage.setItem("mlite_user", JSON.stringify(defaultUser));
       }
       setIsLoading(false);
     };
@@ -115,6 +141,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("mlite_user");
   };
 
+  const updateProfile = (updated: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updated };
+      localStorage.setItem("mlite_user", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const hasRole = (minRole: UserRole): boolean => {
     if (!user) return false;
     return ROLE_LEVEL[user.role] >= ROLE_LEVEL[minRole];
@@ -143,6 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        updateProfile,
         hasRole,
         hasPermission,
       }}

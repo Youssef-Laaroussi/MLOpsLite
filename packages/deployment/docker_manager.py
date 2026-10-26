@@ -97,6 +97,16 @@ class DockerManager:
             except Exception:
                 pass
 
+            # Connect to mlite-network if available so other containers and API can reach it
+            network_name = None
+            try:
+                for net in self.client.networks.list():
+                    if "mlite-network" in net.name or net.name.endswith("_mlite-network"):
+                        network_name = net.name
+                        break
+            except Exception:
+                pass
+
             container = self.client.containers.run(
                 image=image,
                 name=container_name,
@@ -106,6 +116,7 @@ class DockerManager:
                 mem_limit=memory_limit,
                 nano_cpus=int(cpu_limit * 1e9),
                 restart_policy={"Name": "on-failure", "MaximumRetryCount": 3},
+                network=network_name,
             )
             return {
                 "container_id": container.id,
@@ -215,3 +226,26 @@ class DockerManager:
                 "memory_limit_mb": 0.0,
                 "simulated": False,
             }
+
+    def is_container_healthy(self, container_id: str) -> bool:
+        """Check whether a container is in RUNNING state and responsive."""
+        status = self.get_container_status(container_id)
+        return status.get("status") == "RUNNING"
+
+    def list_managed_containers(self) -> list[dict[str, Any]]:
+        """List active inference containers managed by MLite."""
+        if not self.is_available:
+            return []
+        try:
+            containers = self.client.containers.list(filters={"name": "mlite-"})
+            return [
+                {
+                    "container_id": c.id,
+                    "name": c.name,
+                    "status": c.status.upper(),
+                }
+                for c in containers
+            ]
+        except Exception as e:
+            logger.warning("Error listing managed containers: %s", e)
+            return []

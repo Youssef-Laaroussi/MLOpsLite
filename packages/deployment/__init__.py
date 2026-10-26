@@ -2,8 +2,6 @@
 
 from packages.deployment.docker_manager import DockerManager
 from packages.deployment.ports import PortAllocationError, PortAllocator
-from packages.deployment.service import DeploymentService
-from packages.deployment.supervisor import DeploymentSupervisor
 
 __all__ = [
     "PortAllocator",
@@ -12,3 +10,13 @@ __all__ = [
     "DeploymentService",
     "DeploymentSupervisor",
 ]
+
+
+def __getattr__(name: str):
+    if name == "DeploymentService":
+        from packages.deployment.service import DeploymentService
+        return DeploymentService
+    if name == "DeploymentSupervisor":
+        from packages.deployment.supervisor import DeploymentSupervisor
+        return DeploymentSupervisor
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

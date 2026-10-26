@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   FolderGit2,
   Plus,
-  Calendar,
   GitBranch,
   Search,
   RefreshCw,
@@ -12,139 +11,35 @@ import {
   Server,
   Activity,
   ArrowUpRight,
-  CheckCircle2,
-  PieChart,
-  Layers,
   X,
-  Tag,
-  Users,
-  ChevronDown,
   LayoutGrid,
   List,
+  AlertCircle,
+  Archive,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
-import { fetchProjects, createProject } from "../api/client";
+import {
+  fetchProjects,
+  createProject,
+  archiveProject,
+  updateProject,
+  deleteProject,
+} from "../api/client";
 import { Project } from "../api/types";
 import { Link } from "react-router-dom";
 
-// Realistic enrichment data for projects
-interface EnrichedProject extends Project {
-  framework?: string;
-  models_count?: number;
-  experiments_count?: number;
-  datasets_count?: number;
-  endpoint?: { port: number; status: "RUNNING" | "STOPPED"; latency: string };
-  team?: string[];
-}
-
-const DEFAULT_PROJECTS: EnrichedProject[] = [
-  {
-    id: "proj-01",
-    name: "Fraud Anomaly Detection",
-    slug: "fraud-anomaly-detection",
-    description: "Real-time payment fraud anomaly detection pipeline with automated drift alerts and sub-5ms inference.",
-    git_url: "https://github.com/mlite-platform/fraud-detector.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 45).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    framework: "XGBoost",
-    models_count: 3,
-    experiments_count: 18,
-    datasets_count: 2,
-    endpoint: { port: 8100, status: "RUNNING", latency: "3.2 ms" },
-    team: ["admin", "khalid", "youssef"],
-  },
-  {
-    id: "proj-02",
-    name: "Customer Churn Retention",
-    slug: "customer-churn-xgb",
-    description: "Predictive telecom churn classification utilizing gradient boosted decision trees with SMOTE balancing.",
-    git_url: "https://github.com/mlite-platform/customer-churn.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 30).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    framework: "LightGBM",
-    models_count: 2,
-    experiments_count: 24,
-    datasets_count: 3,
-    endpoint: { port: 8101, status: "RUNNING", latency: "4.1 ms" },
-    team: ["youssef", "yassi"],
-  },
-  {
-    id: "proj-03",
-    name: "Sentiment NLP Classifier",
-    slug: "sentiment-nlp-bert",
-    description: "Customer feedback sentiment classification with quantized transformer architecture and live streaming.",
-    git_url: "https://github.com/mlite-platform/sentiment-bert.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 20).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 14).toISOString(),
-    framework: "Transformers",
-    models_count: 2,
-    experiments_count: 12,
-    datasets_count: 2,
-    endpoint: { port: 8102, status: "RUNNING", latency: "7.8 ms" },
-    team: ["admin", "khalid"],
-  },
-  {
-    id: "proj-04",
-    name: "Demand Forecasting LSTM",
-    slug: "demand-forecasting-lstm",
-    description: "Multi-horizon store inventory demand forecasting combining seasonal Prophet decomposition and deep LSTMs.",
-    git_url: "https://github.com/mlite-platform/demand-forecasting.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 12).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 28).toISOString(),
-    framework: "PyTorch",
-    models_count: 1,
-    experiments_count: 8,
-    datasets_count: 4,
-    endpoint: { port: 8103, status: "RUNNING", latency: "5.6 ms" },
-    team: ["yassi", "admin"],
-  },
-  {
-    id: "proj-05",
-    name: "Credit Default Scoring",
-    slug: "credit-default-scoring",
-    description: "Consumer creditworthiness risk assessment scoring engine complying with strict fair-lending governance.",
-    git_url: "https://github.com/mlite-platform/credit-risk.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 60).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 72).toISOString(),
-    framework: "Scikit-Learn",
-    models_count: 2,
-    experiments_count: 15,
-    datasets_count: 2,
-    team: ["khalid", "youssef"],
-  },
-  {
-    id: "proj-06",
-    name: "E-Commerce Recommender",
-    slug: "ecommerce-recommender",
-    description: "Two-tower collaborative filtering recommendation model generating personalized item suggestions.",
-    git_url: "https://github.com/mlite-platform/recommender.git",
-    status: "ACTIVE",
-    created_at: new Date(Date.now() - 3600000 * 24 * 18).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-    framework: "TensorFlow",
-    models_count: 1,
-    experiments_count: 9,
-    datasets_count: 3,
-    team: ["youssef"],
-  },
-];
-
 export const ProjectsPage: React.FC = () => {
-  const [projects, setProjects] = useState<EnrichedProject[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
   const [sortBy, setSortBy] = useState<"activity" | "name" | "models">("activity");
-
-  // Date range filter matching user screenshot ("Last 6 months")
-  const [timeRange, setTimeRange] = useState<string>("Last 6 months");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
 
   // View Mode: Table (default as preferred by user) or Grid
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -155,36 +50,28 @@ export const ProjectsPage: React.FC = () => {
   const [slug, setSlug] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [gitUrl, setGitUrl] = useState<string>("");
-  const [framework, setFramework] = useState<string>("XGBoost");
   const [creating, setCreating] = useState<boolean>(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  // Velocity chart filter
-  const [hoveredWeek, setHoveredWeek] = useState<{ week: string; commits: number; runs: number } | null>(null);
+  // Archive action state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Project activity chart hover point (from user's design reference)
+  // Velocity chart hover state
+  const [hoveredWeek, setHoveredWeek] = useState<{ week: string; count: number } | null>(null);
+
+  // Project activity chart hover point
   const [hoveredActivity, setHoveredActivity] = useState<{ month: string; value: number } | null>(null);
 
   const loadProjects = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchProjects();
-      if (data && data.length > 0) {
-        // Merge API data with rich details
-        const merged = data.map((p, idx) => ({
-          ...p,
-          framework: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.framework || "XGBoost",
-          models_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.models_count || 2,
-          experiments_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.experiments_count || 10,
-          datasets_count: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.datasets_count || 2,
-          endpoint: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.endpoint,
-          team: DEFAULT_PROJECTS[idx % DEFAULT_PROJECTS.length]?.team || ["admin"],
-        }));
-        setProjects(merged);
-      } else {
-        setProjects(DEFAULT_PROJECTS);
-      }
-    } catch (e) {
-      setProjects(DEFAULT_PROJECTS);
+      setProjects(data || []);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Failed to load projects from server";
+      setError(msg);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -198,53 +85,121 @@ export const ProjectsPage: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
-      const newSlug = slug.trim() || name.toLowerCase().replace(/\s+/g, "-");
-      const created = await createProject({
+      const payload: { name: string; slug?: string; description?: string; git_url?: string } = {
         name: name.trim(),
-        slug: newSlug,
-        description: description.trim(),
-      });
-      const enriched: EnrichedProject = {
-        ...created,
-        git_url: gitUrl.trim() || `https://github.com/mlite-platform/${newSlug}.git`,
-        framework,
-        models_count: 0,
-        experiments_count: 0,
-        datasets_count: 0,
-        team: ["You"],
       };
-      setProjects((prev) => [enriched, ...prev]);
+      if (slug.trim()) payload.slug = slug.trim().toLowerCase().replace(/\s+/g, "-");
+      if (description.trim()) payload.description = description.trim();
+      if (gitUrl.trim()) payload.git_url = gitUrl.trim();
+
+      const created = await createProject(payload);
+      setProjects((prev) => [created, ...prev]);
       setShowModal(false);
       setName("");
       setSlug("");
       setDescription("");
       setGitUrl("");
-    } catch (err) {
-      const newSlug = slug.trim() || name.toLowerCase().replace(/\s+/g, "-");
-      const newProj: EnrichedProject = {
-        id: `proj-${Date.now()}`,
-        name: name.trim(),
-        slug: newSlug,
-        description: description.trim() || "Machine learning project workspace.",
-        git_url: gitUrl.trim() || `https://github.com/mlite-platform/${newSlug}.git`,
-        status: "ACTIVE",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        framework,
-        models_count: 0,
-        experiments_count: 0,
-        datasets_count: 0,
-        team: ["You"],
-      };
-      setProjects((prev) => [newProj, ...prev]);
-      setShowModal(false);
-      setName("");
-      setSlug("");
-      setDescription("");
-      setGitUrl("");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Failed to create project";
+      setCreateError(msg);
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Edit modal state
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState<string>("");
+  const [editDescription, setEditDescription] = useState<string>("");
+  const [editGitUrl, setEditGitUrl] = useState<string>("");
+  const [editBranch, setEditBranch] = useState<string>("main");
+  const [editStatus, setEditStatus] = useState<string>("active");
+  const [savingEdit, setSavingEdit] = useState<boolean>(false);
+
+  // Notification banner state
+  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  const showToast = (type: "success" | "error", text: string) => {
+    setToastMessage({ type, text });
+    setTimeout(() => {
+      setToastMessage((current) => (current?.text === text ? null : current));
+    }, 4000);
+  };
+
+  const handleArchive = async (proj: Project) => {
+    setActionLoading(proj.id);
+    try {
+      const updated = await archiveProject(proj.slug || proj.id);
+      setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+      showToast("success", `Project "${proj.name}" was successfully archived.`);
+    } catch (err: any) {
+      showToast("error", `Failed to archive project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openEditModal = (proj: Project) => {
+    setEditingProject(proj);
+    setEditName(proj.name);
+    setEditDescription(proj.description || "");
+    setEditGitUrl(proj.git_url || "");
+    setEditBranch(proj.default_branch || "main");
+    setEditStatus((proj.status || "active").toLowerCase());
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject || !editName.trim()) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateProject(editingProject.slug || editingProject.id, {
+        name: editName.trim(),
+        description: editDescription.trim() || undefined,
+        git_url: editGitUrl.trim() || undefined,
+        default_branch: editBranch.trim() || undefined,
+        status: editStatus,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === editingProject.id ? updated : p)));
+      setEditingProject(null);
+      showToast("success", `Project "${updated.name}" updated successfully.`);
+    } catch (err: any) {
+      showToast("error", `Failed to update project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteProject(projectToDelete.slug || projectToDelete.id);
+      const deletedName = projectToDelete.name;
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+      setProjectToDelete(null);
+      showToast("success", `Project "${deletedName}" has been permanently deleted.`);
+    } catch (err: any) {
+      showToast("error", `Failed to delete project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleRestore = async (proj: Project) => {
+    setActionLoading(proj.id);
+    try {
+      const updated = await updateProject(proj.slug || proj.id, { status: "active" });
+      setProjects((prev) => prev.map((p) => (p.id === proj.id ? updated : p)));
+      showToast("success", `Project "${proj.name}" restored to active status.`);
+    } catch (err: any) {
+      showToast("error", `Failed to restore project: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -255,9 +210,9 @@ export const ProjectsPage: React.FC = () => {
         const matchesQuery =
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (p.framework && p.framework.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
+          (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        const statusNormalized = (p.status || "").toUpperCase();
+        const matchesStatus = statusFilter === "ALL" || statusNormalized === statusFilter;
         return matchesQuery && matchesStatus;
       })
       .sort((a, b) => {
@@ -267,88 +222,67 @@ export const ProjectsPage: React.FC = () => {
       });
   }, [projects, searchQuery, statusFilter, sortBy]);
 
+  // Aggregate Real Counts
   const totalModels = useMemo(() => projects.reduce((sum, p) => sum + (p.models_count || 0), 0), [projects]);
-  const totalRuns = useMemo(() => projects.reduce((sum, p) => sum + (p.experiments_count || 0), 0), [projects]);
+  const totalDatasets = useMemo(() => projects.reduce((sum, p) => sum + (p.datasets_count || 0), 0), [projects]);
+  const totalDeployments = useMemo(() => projects.reduce((sum, p) => sum + (p.deployments_count || 0), 0), [projects]);
 
-  // Weekly velocity timeline data
-  const velocityWeeks = [
-    { week: "Week 1", commits: 14, runs: 28 },
-    { week: "Week 2", commits: 22, runs: 36 },
-    { week: "Week 3", commits: 18, runs: 31 },
-    { week: "Week 4", commits: 35, runs: 54 },
-    { week: "Week 5", commits: 28, runs: 42 },
-    { week: "Week 6", commits: 42, runs: 65 },
-    { week: "Week 7", commits: 38, runs: 58 },
-    { week: "Current", commits: 48, runs: 72 },
-  ];
+  // Status Breakdown based on real project data
+  const statusBreakdown = useMemo(() => {
+    const total = projects.length;
+    if (total === 0) {
+      return {
+        active: { count: 0, pct: 0 },
+        archived: { count: 0, pct: 0 },
+      };
+    }
+    const active = projects.filter((p) => (p.status || "").toLowerCase() === "active").length;
+    const archived = projects.filter((p) => (p.status || "").toLowerCase() === "archived").length;
+    return {
+      active: { count: active, pct: Math.round((active / total) * 100) },
+      archived: { count: archived, pct: Math.round((archived / total) * 100) },
+    };
+  }, [projects]);
 
-  // Exact Project Activity monthly data from user's design reference (Apr - Sep)
-  const activityData = [
-    { month: "Apr", value: 18, x: 55, y: 138.5 },
-    { month: "May", value: 27, x: 139, y: 122.75 },
-    { month: "Jun", value: 35, x: 223, y: 108.75 },
-    { month: "Jul", value: 31, x: 307, y: 115.75 },
-    { month: "Aug", value: 44, x: 391, y: 93.0 },
-    { month: "Sep", value: 52, x: 475, y: 79.0 },
-  ];
+  // Creation Velocity across the last 6 months (Real dates)
+  const monthlyActivity = useMemo(() => {
+    const now = new Date();
+    const months: { month: string; value: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = d.toLocaleString("en-US", { month: "short" });
+      const year = d.getFullYear();
+      const monthIdx = d.getMonth();
 
-  // Exact Project Status Counts from user reference (8 total projects: 5 Active, 2 Completed, 1 Archived)
-  const totalProjectsCount = projects.length || 8;
-  const statusBreakdown = {
-    active: { count: 5, pct: 62 },
-    completed: { count: 2, pct: 25 },
-    archived: { count: 1, pct: 13 },
-  };
+      const count = projects.filter((p) => {
+        const created = new Date(p.created_at);
+        return created.getFullYear() === year && created.getMonth() === monthIdx;
+      }).length;
+
+      months.push({ month: monthName, value: count });
+    }
+    return months;
+  }, [projects]);
+
+  const maxMonthlyVal = Math.max(...monthlyActivity.map((m) => m.value), 1);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+          <h2 className="text-lg font-semibold text-slate-900 tracking-tight font-sans">
             Workspaces &amp; Projects
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Organize machine learning repositories, training pipelines, model registries, and team workflows
+            Organize ML repositories, pipelines, model registries, and datasets
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Time Range Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${timeRange === range
-                        ? "bg-emerald-50 text-emerald-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button
             onClick={loadProjects}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
+            className="p-1.5 bg-white border border-slate-200/90 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
             title="Refresh projects"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
@@ -356,7 +290,7 @@ export const ProjectsPage: React.FC = () => {
 
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5" />
             New Project
@@ -364,476 +298,287 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Top 4 KPI StatCards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* ── Toast Action Notification Banner ── */}
+      {toastMessage && (
+        <div
+          className={`p-3 rounded-md flex items-center justify-between text-xs animate-in fade-in duration-200 ${
+            toastMessage.type === "success"
+              ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+              : "bg-rose-50 border border-rose-200 text-rose-800"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {toastMessage.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="font-medium">{toastMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-slate-600 p-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Backend Error Banner ── */}
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-start gap-2.5 text-xs text-rose-800">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-semibold">Failed to fetch projects:</span> {error}
+          </div>
+          <button
+            onClick={loadProjects}
+            className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-900 rounded font-medium text-[11px] transition shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── Top 4 KPI StatCards (Real Database Metrics) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Active Workspaces"
-          value={`${projects.length || 8} Projects`}
-          subtitle="Managed Git repositories & pipelines"
+          value={loading ? "..." : `${projects.length}`}
+          subtitle="Managed ML workspaces"
           icon={FolderGit2}
           color="brand"
-          trend="+14% this month"
         />
         <StatCard
-          title="Linked Models"
-          value={`${totalModels || 15} Cataloged`}
-          subtitle="Production & staging registries"
+          title="Cataloged Models"
+          value={loading ? "..." : `${totalModels}`}
+          subtitle="Linked to workspaces"
           icon={Box}
           color="brand"
-          trend="100% verified"
         />
         <StatCard
-          title="Pipeline Runs"
-          value={`${totalRuns || 67} Completed`}
-          subtitle="MLflow tracked experiments"
-          icon={FlaskConical}
+          title="Managed Datasets"
+          value={loading ? "..." : `${totalDatasets}`}
+          subtitle="Linked datasets"
+          icon={Database}
           color="emerald"
-          trend="+27% velocity"
         />
         <StatCard
-          title="Live Containers"
-          value="6 Endpoints"
-          subtitle="FastAPI containers serving live"
+          title="Active Deployments"
+          value={loading ? "..." : `${totalDeployments}`}
+          subtitle="Inference containers"
           icon={Server}
           color="emerald"
-          trend="100% Online"
+          isLive={totalDeployments > 0}
         />
       </div>
 
-      {/* ── Visual Charts Row: Activity Velocity & Domain Breakdown ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* CHART 1: Project Velocity & Commit Activity (7 cols / 58%) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+      {/* ── Visual Analytics Row: Real Activity Trend & Status Distribution ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* CHART 1: Project Creation Timeline (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <GitBranch className="w-4 h-4 text-emerald-600" />
-                  Project Activity &amp; Training Velocity
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                    8-Week Velocity
-                  </span>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Project Workspace Creation
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Code commits, automated CI tests, and MLflow pipeline executions
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Real workspace creation activity over the last 6 months
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3BB48C]" /> Runs
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-300" /> Commits
+              <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
+                <span className="flex items-center gap-1.5 font-mono">
+                  <span className="w-2 h-2 rounded-xs bg-emerald-500" /> New Workspaces
                 </span>
               </div>
             </div>
 
-            <div className="relative h-48 w-full flex items-end justify-between gap-3 px-3 pb-2">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 border-b border-slate-200">
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
-                <div className="w-full border-t border-slate-100 border-dashed" />
+            {projects.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <Activity className="w-6 h-6 mb-1 text-slate-300" />
+                <span>No workspace activity recorded yet</span>
               </div>
-
-              {velocityWeeks.map((vw, i) => {
-                const maxVal = 80;
-                const runHeight = (vw.runs / maxVal) * 100;
-                const commitHeight = (vw.commits / maxVal) * 100;
-
-                return (
-                  <div
-                    key={i}
-                    className="relative z-10 w-full group h-full flex flex-col justify-end items-center cursor-pointer"
-                    onMouseEnter={() => setHoveredWeek(vw)}
-                    onMouseLeave={() => setHoveredWeek(null)}
-                  >
-                    <div className="w-full max-w-[36px] flex items-end justify-center gap-1 h-full">
-                      <div
-                        className="w-1/2 bg-emerald-300 group-hover:bg-emerald-400 rounded-t-md transition-all duration-300"
-                        style={{ height: `${commitHeight}%` }}
-                      />
-                      <div
-                        className="w-1/2 bg-[#3BB48C] group-hover:bg-[#2e9471] rounded-t-md transition-all duration-300 shadow-2xs"
-                        style={{ height: `${runHeight}%` }}
-                      />
-                    </div>
-
-                    <div className="text-[10px] font-mono font-bold text-slate-400 mt-2.5 group-hover:text-slate-900 transition-colors">
-                      {vw.week.replace("Week ", "W")}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {hoveredWeek && (
-                <div className="absolute top-2 right-4 bg-slate-900 text-white text-[11px] font-mono px-3 py-1.5 rounded-xl shadow-xl border border-slate-700 pointer-events-none animate-in fade-in">
-                  <span className="text-slate-400">{hoveredWeek.week}: </span>
-                  <span className="text-[#3BB48C] font-bold">{hoveredWeek.runs} pipeline runs</span> •{" "}
-                  <span className="text-emerald-300 font-bold">{hoveredWeek.commits} commits</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Peak cadence: 72 runs / week</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              CI/CD Pipeline Healthy
-            </span>
-          </div>
-        </div>
-
-        {/* CHART 2: Project Framework & Architecture Breakdown (5 cols / 42%) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                  <PieChart className="w-4 h-4 text-emerald-600" />
-                  ML Framework &amp; Domains
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Ecosystem distribution across active repositories
-                </p>
-              </div>
-              <span className="text-xs font-mono font-bold text-slate-400">
-                {projects.length} Repos
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-4">
-              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" strokeWidth="12" />
-
-                  {/* Gradient Boosted (Purple - 40%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#8B5CF6"
-                    strokeWidth="12"
-                    strokeDasharray="95.5 238.76"
-                    strokeDashoffset="0"
-                    strokeLinecap="round"
-                    className="hover:stroke-[#7C3AED] transition-all cursor-pointer"
-                  />
-
-                  {/* Deep Learning / Transformers (Blue - 35%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#3B82F6"
-                    strokeWidth="12"
-                    strokeDasharray="83.5 238.76"
-                    strokeDashoffset="-95.5"
-                    strokeLinecap="round"
-                    className="hover:stroke-[#2563EB] transition-all cursor-pointer"
-                  />
-
-                  {/* Traditional ML / Scikit (Emerald - 25%) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth="12"
-                    strokeDasharray="59.7 238.76"
-                    strokeDashoffset="-179"
-                    strokeLinecap="round"
-                    className="hover:stroke-[#059669] transition-all cursor-pointer"
-                  />
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {projects.length}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Stacks
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2.5 w-full max-w-[200px]">
-                <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
-                      Boosted Trees
-                    </span>
-                    <span className="font-mono font-bold text-purple-700">40%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">XGBoost &amp; LightGBM</span>
+            ) : (
+              <div className="relative h-44 w-full flex items-end justify-between gap-3 px-2 pb-2">
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 border-b border-slate-100">
+                  <div className="w-full border-t border-slate-100" />
+                  <div className="w-full border-t border-slate-100" />
+                  <div className="w-full border-t border-slate-100" />
                 </div>
 
-                <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
-                      Deep Learning
-                    </span>
-                    <span className="font-mono font-bold text-blue-700">35%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">PyTorch &amp; Transformers</span>
-                </div>
-
-                <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                      Linear &amp; Anomaly
-                    </span>
-                    <span className="font-mono font-bold text-emerald-700">25%</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">Scikit-Learn &amp; IF</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-            <span>Container Base: Python 3.11</span>
-            <span className="text-slate-700 font-bold">Poetry &amp; Conda Validated</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Additional Analytics Row: Project activity (Line Chart) & Projects by status (Donut) ── */}
-      {/* Exactly as requested in user's design reference */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* CARD 1: Project activity */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">
-              Project activity
-            </h3>
-
-            <div className="relative w-full h-56 pt-2">
-              <svg viewBox="0 0 520 215" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                {/* Y-Axis Grid Lines & Tick Labels (80, 60, 40, 20, 0) */}
-                {[
-                  { val: 80, y: 30 },
-                  { val: 60, y: 65 },
-                  { val: 40, y: 100 },
-                  { val: 20, y: 135 },
-                  { val: 0, y: 170 },
-                ].map((tick) => (
-                  <g key={tick.val}>
-                    <line
-                      x1="38"
-                      y1={tick.y}
-                      x2="505"
-                      y2={tick.y}
-                      stroke="#EEF2F6"
-                      strokeWidth="1.2"
-                    />
-                    <text
-                      x="26"
-                      y={tick.y + 4}
-                      textAnchor="end"
-                      className="text-[11px] font-bold fill-slate-400 font-sans"
-                    >
-                      {tick.val}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Emerald Activity Line */}
-                <path
-                  d="M 55 138.5 L 139 122.75 L 223 108.75 L 307 115.75 L 391 93.0 L 475 79.0"
-                  fill="none"
-                  stroke="#10B981"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Data Points, Values on Top, and Hover Circle */}
-                {activityData.map((pt) => {
-                  const isHovered = hoveredActivity?.month === pt.month;
+                {monthlyActivity.map((ma, i) => {
+                  const barHeight = Math.max((ma.value / maxMonthlyVal) * 100, ma.value > 0 ? 12 : 4);
                   return (
-                    <g
-                      key={pt.month}
-                      className="cursor-pointer"
-                      onMouseEnter={() => setHoveredActivity({ month: pt.month, value: pt.value })}
-                      onMouseLeave={() => setHoveredActivity(null)}
+                    <div
+                      key={i}
+                      className="relative z-10 w-full group h-full flex flex-col justify-end items-center cursor-pointer"
+                      onMouseEnter={() => setHoveredWeek({ week: ma.month, count: ma.value })}
+                      onMouseLeave={() => setHoveredWeek(null)}
                     >
-                      {/* Value label on top of point */}
-                      <text
-                        x={pt.x}
-                        y={pt.y - 12}
-                        textAnchor="middle"
-                        className="text-[12px] font-extrabold fill-slate-800 transition-all font-sans"
-                      >
-                        {pt.value}
-                      </text>
+                      <div className="w-full max-w-[36px] flex items-end justify-center h-full">
+                        <div
+                          className={`w-full rounded-t-xs transition-colors ${
+                            ma.value > 0
+                              ? "bg-emerald-500 group-hover:bg-emerald-600"
+                              : "bg-slate-200 group-hover:bg-slate-300"
+                          }`}
+                          style={{ height: `${barHeight}%` }}
+                        />
+                      </div>
 
-                      {/* Point Circle */}
-                      <circle
-                        cx={pt.x}
-                        cy={pt.y}
-                        r={isHovered ? 6 : 4.5}
-                        fill="#10B981"
-                        stroke="#FFFFFF"
-                        strokeWidth={isHovered ? 2.5 : 1.5}
-                        className="transition-all duration-200"
-                      />
-
-                      {/* X-Axis Month Label */}
-                      <text
-                        x={pt.x}
-                        y="198"
-                        textAnchor="middle"
-                        className="text-[12px] font-bold fill-slate-500 font-sans"
-                      >
-                        {pt.month}
-                      </text>
-                    </g>
+                      <div className="text-[10px] font-mono text-slate-400 mt-2 group-hover:text-slate-800 transition-colors">
+                        {ma.month}
+                      </div>
+                    </div>
                   );
                 })}
-              </svg>
-            </div>
+
+                {hoveredWeek && (
+                  <div className="absolute top-1 right-2 bg-white text-slate-800 text-[11px] font-mono px-3 py-1.5 rounded-md shadow-md border border-slate-200 pointer-events-none">
+                    <span className="text-slate-500">{hoveredWeek.week}: </span>
+                    <span className="text-emerald-700 font-semibold">{hoveredWeek.count} workspace(s)</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <span>Workspace Total: {projects.length}</span>
+            <span className="text-emerald-700 font-medium">Database Synchronized</span>
           </div>
         </div>
 
-        {/* CARD 2: Projects by status */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs hover:border-[#3BB48C]/40 transition-all flex flex-col justify-between">
+        {/* CHART 2: Real Projects by Status (5 cols) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">
-              Projects by status
-            </h3>
-
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
-              {/* Donut Chart with Centered Number */}
-              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                  {/* Background Track */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#F1F5F9"
-                    strokeWidth="16"
-                  />
-
-                  {/* Active (Green - 62% ~ 212.06px of 339.29px) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#10B981"
-                    strokeWidth="16"
-                    strokeDasharray="212.06 339.29"
-                    strokeDashoffset="0"
-                    className="hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-
-                  {/* Completed (Blue - 25% ~ 84.82px) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#3B82F6"
-                    strokeWidth="16"
-                    strokeDasharray="84.82 339.29"
-                    strokeDashoffset="-212.06"
-                    className="hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-
-                  {/* Archived (Purple - 13% ~ 42.41px) */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="54"
-                    fill="none"
-                    stroke="#8B5CF6"
-                    strokeWidth="16"
-                    strokeDasharray="42.41 339.29"
-                    strokeDashoffset="-296.88"
-                    className="hover:opacity-90 transition-opacity cursor-pointer"
-                  />
-                </svg>
-
-                {/* Center Count */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">
-                    {totalProjectsCount}
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-500 mt-0.5">
-                    projects
-                  </span>
-                </div>
+            <div className="mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                  Workspaces by Status
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Lifecycle state governance</p>
               </div>
-
-              {/* Legend matching user screenshot exactly */}
-              <div className="flex-1 w-full space-y-3.5">
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0" />
-                    <span className="font-semibold text-slate-700">Active</span>
-                  </div>
-                  <span className="font-bold text-slate-800">
-                    {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shrink-0" />
-                    <span className="font-semibold text-slate-700">Completed</span>
-                  </div>
-                  <span className="font-bold text-slate-800">
-                    {statusBreakdown.completed.count} ({statusBreakdown.completed.pct}%)
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6] shrink-0" />
-                    <span className="font-semibold text-slate-700">Archived</span>
-                  </div>
-                  <span className="font-bold text-slate-800">
-                    {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
-                  </span>
-                </div>
-              </div>
+              <span className="text-[11px] font-mono text-slate-500">{projects.length} Total</span>
             </div>
+
+            {projects.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                <FolderGit2 className="w-6 h-6 mb-1 text-slate-300" />
+                <span>No projects recorded</span>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                {/* Donut Chart with Centered Number */}
+                <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="54"
+                      fill="none"
+                      stroke="#F1F5F9"
+                      strokeWidth="12"
+                    />
+
+                    {/* Active Slice */}
+                    {statusBreakdown.active.pct > 0 && (
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="54"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="12"
+                        strokeDasharray={`${(statusBreakdown.active.pct / 100) * 339.29} 339.29`}
+                        strokeDashoffset="0"
+                      />
+                    )}
+
+                    {/* Archived Slice */}
+                    {statusBreakdown.archived.pct > 0 && (
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="54"
+                        fill="none"
+                        stroke="#94A3B8"
+                        strokeWidth="12"
+                        strokeDasharray={`${(statusBreakdown.archived.pct / 100) * 339.29} 339.29`}
+                        strokeDashoffset={`${-((statusBreakdown.active.pct / 100) * 339.29)}`}
+                      />
+                    )}
+                  </svg>
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-semibold font-mono text-slate-900">
+                      {projects.length}
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                      Total
+                    </span>
+                  </div>
+                </div>
+
+                {/* Legend List */}
+                <div className="flex-1 w-full space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-slate-50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-xs bg-emerald-500" />
+                      <span className="text-slate-700">Active</span>
+                    </div>
+                    <span className="font-mono text-slate-900 font-semibold">
+                      {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-xs bg-slate-400" />
+                      <span className="text-slate-700">Archived</span>
+                    </div>
+                    <span className="font-mono text-slate-500 font-semibold">
+                      {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <span>Governance</span>
+            <span className="text-emerald-700 font-medium">PostgreSQL Live</span>
           </div>
         </div>
       </div>
 
       {/* ── Explorer Toolbar: Search, Status Filter, Sort, View Mode ── */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-md p-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects by name, description, slug, or framework..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C] transition"
+            placeholder="Search workspaces by name, slug, description..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50/60 border border-slate-200/80 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition text-slate-900 placeholder:text-slate-400"
           />
         </div>
 
         {/* Status Filter Pills */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {(["ALL", "ACTIVE", "ARCHIVED"] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${statusFilter === st
-                  ? "bg-[#3BB48C] text-white shadow-xs"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                statusFilter === st
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100/70 hover:bg-slate-200/70 text-slate-600"
+              }`}
             >
               {st}
             </button>
@@ -842,11 +587,11 @@ export const ProjectsPage: React.FC = () => {
 
         {/* Sort dropdown */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-bold text-slate-400">Sort by:</span>
+          <span className="text-[11px] text-slate-400">Sort:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
+            className="text-xs bg-slate-50/60 border border-slate-200/80 text-slate-700 py-1 px-2.5 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
             <option value="activity">Recent Activity</option>
             <option value="name">Name (A-Z)</option>
@@ -855,184 +600,203 @@ export const ProjectsPage: React.FC = () => {
         </div>
 
         {/* View Mode Toggle: Table (default) vs Grid Cards */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-xl shrink-0">
+        <div className="flex items-center p-0.5 bg-slate-100/80 rounded shrink-0">
           <button
             onClick={() => setViewMode("table")}
-            className={`p-1.5 rounded-lg transition ${viewMode === "table"
-                ? "bg-white text-slate-900 shadow-2xs"
+            className={`p-1 rounded transition ${
+              viewMode === "table"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
                 : "text-slate-500 hover:text-slate-800"
-              }`}
+            }`}
             title="Table View (Recommended)"
           >
-            <List className="w-4 h-4" />
+            <List className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-lg transition ${viewMode === "grid"
-                ? "bg-white text-slate-900 shadow-2xs"
+            className={`p-1 rounded transition ${
+              viewMode === "grid"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
                 : "text-slate-500 hover:text-slate-800"
-              }`}
+            }`}
             title="Grid Cards View"
           >
-            <LayoutGrid className="w-4 h-4" />
+            <LayoutGrid className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* ── Projects Display: TABLE VIEW (Default & Preferred) ── */}
-      {filteredProjects.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-slate-200 rounded-3xl shadow-xs">
-          <FolderGit2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-800">No Projects Found</h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
-            No projects match your filter criteria. Create a new workspace or reset search.
+      {/* ── Projects Display ── */}
+      {loading ? (
+        <div className="py-16 text-center bg-white border border-slate-200/80 rounded-md">
+          <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin mx-auto mb-2" />
+          <p className="text-xs text-slate-500 font-medium">Loading project workspaces...</p>
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="text-center py-12 bg-white border border-slate-200/80 rounded-md">
+          <FolderGit2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <h3 className="text-xs font-semibold text-slate-800">
+            {projects.length === 0 ? "No Project Workspaces Yet" : "No Matching Workspaces Found"}
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5 max-w-sm mx-auto">
+            {projects.length === 0
+              ? "Create your first ML project workspace to organize models, experiments, and datasets."
+              : "No projects match the current search or status filter."}
           </p>
-          <button
-            onClick={() => {
-              setSearchQuery("");
-              setStatusFilter("ALL");
-            }}
-            className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
-          >
-            Reset Filters
-          </button>
+          {projects.length === 0 ? (
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Project
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("ALL");
+              }}
+              className="mt-3 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       ) : viewMode === "table" ? (
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Workspaces &amp; Repositories ({filteredProjects.length})
+        /* ── TABLE VIEW (Default) ── */
+        <div className="bg-white border border-slate-200/80 rounded-md overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+              Workspaces ({filteredProjects.length})
             </span>
-            <span className="text-xs text-slate-400 font-mono">
-              {totalModels} linked models • {totalRuns} total runs
+            <span className="text-[11px] text-slate-400 font-mono">
+              {totalModels} models • {totalDatasets} datasets • {totalDeployments} deployments
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-[#F8FAFC] border-b border-slate-200/80 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3.5">Workspace &amp; Project</th>
-                  <th className="px-4 py-3.5">Framework</th>
-                  <th className="px-4 py-3.5">MLOps Resources</th>
-                  <th className="px-4 py-3.5">Serving Endpoint</th>
-                  <th className="px-4 py-3.5">Collaborators</th>
-                  <th className="px-4 py-3.5">Status</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
+                  <th className="px-4 py-2.5">Workspace</th>
+                  <th className="px-3 py-2.5">Branch</th>
+                  <th className="px-3 py-2.5">Resources</th>
+                  <th className="px-3 py-2.5">Created</th>
+                  <th className="px-3 py-2.5">Status</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredProjects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-[#F0FDF9]/40 transition group">
+                  <tr key={proj.id} className="hover:bg-slate-50/80 transition group">
                     {/* Project Name, Slug & Description */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                          <FolderGit2 className="w-4 h-4 stroke-[2.2]" />
-                        </div>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <FolderGit2 className="w-4 h-4 text-slate-400 shrink-0" />
                         <div>
-                          <div className="font-bold text-slate-900 flex items-center gap-2">
+                          <div className="font-medium text-slate-900 flex items-center gap-2">
                             <span>{proj.name}</span>
-                            <span className="font-mono text-[10px] px-2 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200/60">
                               {proj.slug}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 line-clamp-1 max-w-sm mt-0.5">
-                            {proj.description || "Production ML pipeline workspace with automated lineage."}
-                          </p>
+                          {proj.description && (
+                            <p className="text-[11px] text-slate-400 truncate max-w-sm mt-0.5">
+                              {proj.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Framework */}
-                    <td className="px-4 py-4">
-                      <span className="px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-xs font-mono font-bold whitespace-nowrap">
-                        {proj.framework || "XGBoost"}
-                      </span>
-                    </td>
-
-                    {/* MLOps Resources (3 Pillars) */}
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold border border-slate-200"
-                          title="Linked Models"
-                        >
-                          <Box className="w-3 h-3 text-slate-500" />
-                          {proj.models_count || 2}m
-                        </span>
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold border border-purple-200"
-                          title="Experiment Runs"
-                        >
-                          <FlaskConical className="w-3 h-3 text-purple-600" />
-                          {proj.experiments_count || 12}r
-                        </span>
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200"
-                          title="Linked Datasets"
-                        >
-                          <Database className="w-3 h-3 text-blue-500" />
-                          {proj.datasets_count || 2}d
-                        </span>
+                    {/* Git Branch / URL */}
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600">
+                        <GitBranch className="w-3 h-3 text-slate-400" />
+                        <span>{proj.default_branch || "main"}</span>
                       </div>
                     </td>
 
-                    {/* Live Serving Endpoint */}
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {proj.endpoint ? (
-                        <div className="flex items-center gap-2 font-mono text-xs">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="font-bold text-slate-800">Port :{proj.endpoint.port}</span>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                            {proj.endpoint.latency}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400 font-mono italic">Staging</span>
-                      )}
+                    {/* MLOps Resources (Real DB counts) */}
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-2 font-mono text-[11px] text-slate-600">
+                        <span title="Models" className="text-slate-800 font-semibold">{proj.models_count || 0}m</span>
+                        <span className="text-slate-300">•</span>
+                        <span title="Datasets">{proj.datasets_count || 0}d</span>
+                        <span className="text-slate-300">•</span>
+                        <span title="Deployments">{proj.deployments_count || 0}dep</span>
+                      </div>
                     </td>
 
-                    {/* Team Collaborators */}
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center -space-x-1.5">
-                        {(proj.team || ["admin"]).slice(0, 3).map((member, i) => (
-                          <div
-                            key={i}
-                            title={member}
-                            className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3BB48C] to-emerald-300 text-white font-black text-[10px] flex items-center justify-center border-2 border-white shadow-2xs"
-                          >
-                            {member.charAt(0).toUpperCase()}
-                          </div>
-                        ))}
-                      </div>
+                    {/* Created Date */}
+                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-500">
+                      {new Date(proj.created_at).toLocaleDateString()}
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <StatusBadge status={proj.status} />
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         {proj.git_url && (
                           <a
                             href={proj.git_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
-                            title="Open Git Repository"
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                            title="Git Repository"
                           >
-                            <GitBranch className="w-4 h-4" />
+                            <GitBranch className="w-3.5 h-3.5" />
                           </a>
                         )}
+
+                        <button
+                          onClick={() => openEditModal(proj)}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
+                          title="Edit Project"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        {(proj.status || "").toLowerCase() === "active" ? (
+                          <button
+                            onClick={() => handleArchive(proj)}
+                            disabled={actionLoading === proj.id}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
+                            title="Archive Workspace"
+                          >
+                            <Archive className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRestore(proj)}
+                            disabled={actionLoading === proj.id}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
+                            title="Restore to Active"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setProjectToDelete(proj)}
+                          disabled={actionLoading === proj.id}
+                          className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                          title="Delete Project Permanently"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
                         <Link
                           to="/app/experiments"
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
+                          className="flex items-center gap-1 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
                         >
                           Workspace
-                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          <ArrowUpRight className="w-3 h-3 text-slate-400" />
                         </Link>
                       </div>
                     </td>
@@ -1043,110 +807,111 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* ── ALTERNATIVE GRID CARDS VIEW ── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        /* ── GRID CARDS VIEW ── */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProjects.map((proj) => (
             <div
               key={proj.id}
-              className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:border-[#3BB48C]/60 hover:shadow-lg transition-all duration-300 shadow-xs group"
+              className="bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs group"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
-                      {proj.slug}
-                    </span>
-                    {proj.framework && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-bold">
-                        {proj.framework}
-                      </span>
-                    )}
-                  </div>
-                  <StatusBadge status={proj.status} />
+                <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
+                  <span className="font-mono text-[11px] text-slate-500 truncate">
+                    {proj.slug}
+                  </span>
+                  <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-1">
+                <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors line-clamp-1">
                   {proj.name}
                 </h3>
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
-                  {proj.description || "Production ML pipeline workspace with automated lineage."}
+                <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                  {proj.description || "Workspace for models, experiments, and datasets."}
                 </p>
 
-                <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-4 text-center">
+                <div className="grid grid-cols-3 gap-2 p-2 bg-slate-50/70 border border-slate-100 rounded text-center mb-3">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Models</span>
-                    <span className="text-xs font-black text-slate-800 flex items-center justify-center gap-1 mt-0.5">
-                      <Box className="w-3 h-3 text-slate-500" />
-                      {proj.models_count || 2}
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Models</span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
+                      {proj.models_count || 0}
                     </span>
                   </div>
-                  <div className="border-x border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Runs</span>
-                    <span className="text-xs font-black text-slate-800 flex items-center justify-center gap-1 mt-0.5">
-                      <FlaskConical className="w-3 h-3 text-[#3BB48C]" />
-                      {proj.experiments_count || 12}
+                  <div className="border-x border-slate-200/70">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Datasets</span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
+                      {proj.datasets_count || 0}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Datasets</span>
-                    <span className="text-xs font-black text-slate-800 flex items-center justify-center gap-1 mt-0.5">
-                      <Database className="w-3 h-3 text-blue-500" />
-                      {proj.datasets_count || 2}
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Deploys</span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
+                      {proj.deployments_count || 0}
                     </span>
                   </div>
                 </div>
-
-                {proj.endpoint ? (
-                  <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 flex items-center justify-between text-xs mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="font-bold text-emerald-900 font-mono text-[11px]">
-                        Port :{proj.endpoint.port} • Live Serving
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-emerald-700 font-bold">
-                      {proj.endpoint.latency}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs mb-4 text-slate-400 font-mono text-[11px]">
-                    <span>No active serving container</span>
-                    <span>Staging</span>
-                  </div>
-                )}
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center -space-x-1.5">
-                  {(proj.team || ["admin"]).slice(0, 3).map((member, i) => (
-                    <div
-                      key={i}
-                      title={member}
-                      className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#3BB48C] to-emerald-300 text-white font-black text-[10px] flex items-center justify-center border-2 border-white shadow-2xs"
-                    >
-                      {member.charAt(0).toUpperCase()}
-                    </div>
-                  ))}
-                </div>
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-500">
+                  {new Date(proj.created_at).toLocaleDateString()}
+                </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {proj.git_url && (
                     <a
                       href={proj.git_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
-                      title="Open Git Repository"
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                      title="Git Repository"
                     >
-                      <GitBranch className="w-4 h-4" />
+                      <GitBranch className="w-3.5 h-3.5" />
                     </a>
                   )}
+
+                  <button
+                    onClick={() => openEditModal(proj)}
+                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
+                    title="Edit Project"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+
+                  {(proj.status || "").toLowerCase() === "active" ? (
+                    <button
+                      onClick={() => handleArchive(proj)}
+                      disabled={actionLoading === proj.id}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
+                      title="Archive Workspace"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRestore(proj)}
+                      disabled={actionLoading === proj.id}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
+                      title="Restore to Active"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setProjectToDelete(proj)}
+                    disabled={actionLoading === proj.id}
+                    className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                    title="Delete Project Permanently"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+
                   <Link
                     to="/app/experiments"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
                   >
                     Workspace
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    <ArrowUpRight className="w-3 h-3 text-slate-400" />
                   </Link>
                 </div>
               </div>
@@ -1157,24 +922,34 @@ export const ProjectsPage: React.FC = () => {
 
       {/* ── Modal: Create New Project ── */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-7 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <FolderGit2 className="w-5 h-5 text-[#3BB48C]" />
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <FolderGit2 className="w-4 h-4 text-emerald-600" />
                 Create New Project Workspace
               </h3>
               <button
-                onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                onClick={() => {
+                  setShowModal(false);
+                  setCreateError(null);
+                }}
+                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            {createError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{createError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreate} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
                   Project Name
                 </label>
                 <input
@@ -1183,81 +958,64 @@ export const ProjectsPage: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Credit Risk Assessment"
-                  className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Slug (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="credit-risk"
-                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Primary Framework
-                  </label>
-                  <select
-                    value={framework}
-                    onChange={(e) => setFramework(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition font-bold"
-                  >
-                    <option value="XGBoost">XGBoost</option>
-                    <option value="LightGBM">LightGBM</option>
-                    <option value="PyTorch">PyTorch</option>
-                    <option value="Transformers">Transformers</option>
-                    <option value="Scikit-Learn">Scikit-Learn</option>
-                    <option value="TensorFlow">TensorFlow</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Slug (optional — auto-generated from name)
+                </label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="credit-risk"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Git Repository URL
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Git Repository URL (optional)
                 </label>
                 <input
                   type="url"
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
                   placeholder="https://github.com/org/repo.git"
-                  className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition font-mono text-xs"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
                   Description
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
+                  rows={2}
                   placeholder="Describe your project goals, data sources, and target metrics..."
-                  className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition"
+                  onClick={() => {
+                    setShowModal(false);
+                    setCreateError(null);
+                  }}
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !name.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold transition shadow-md shadow-[#3BB48C]/25 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
                 >
                   {creating ? "Creating..." : "Create Workspace"}
                 </button>
@@ -1266,6 +1024,156 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── Modal: Edit Project ── */}
+      {editingProject && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-emerald-600" />
+                Edit Project: {editingProject.name}
+              </h3>
+              <button
+                onClick={() => setEditingProject(null)}
+                className="text-slate-400 hover:text-slate-600 transition p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Git Repository URL
+                </label>
+                <input
+                  type="url"
+                  value={editGitUrl}
+                  onChange={(e) => setEditGitUrl(e.target.value)}
+                  placeholder="https://github.com/org/repo.git"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                    Default Branch
+                  </label>
+                  <input
+                    type="text"
+                    value={editBranch}
+                    onChange={(e) => setEditBranch(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                  >
+                    <option value="active">ACTIVE</option>
+                    <option value="archived">ARCHIVED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit || !editName.trim()}
+                  className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
+                >
+                  {savingEdit ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Confirm Permanent Deletion ── */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 bg-rose-50 rounded-full border border-rose-200">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Delete Project Workspace?
+                </h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  {projectToDelete.name} ({projectToDelete.slug})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded border border-slate-200/80">
+              Are you sure you want to permanently delete this project? This will remove all associated database records and cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setProjectToDelete(null)}
+                className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="px-3.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting && <RefreshCw className="w-3 h-3 animate-spin" />}
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

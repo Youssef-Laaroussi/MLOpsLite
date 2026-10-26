@@ -5,7 +5,9 @@ from datetime import datetime
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
+    Float,
     ForeignKey,
     String,
     Text,
@@ -70,3 +72,38 @@ class Alert(Base, UUIDMixin, TimestampMixin):
     )
     acknowledged_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AlertRule(Base, UUIDMixin, TimestampMixin):
+    """Threshold rule evaluated against real monitoring metrics (metric OP threshold)."""
+
+    __tablename__ = "alert_rules"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    metric: Mapped[str] = mapped_column(
+        String(50), nullable=False, doc="drift_share | latency_p95_ms | failed_deployments"
+    )
+    operator: Mapped[str] = mapped_column(String(2), nullable=False, default=">")
+    threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    model_name: Mapped[str | None] = mapped_column(
+        String(200), nullable=True, doc="Scope; NULL means all models"
+    )
+    severity: Mapped[AlertSeverity] = mapped_column(
+        SAEnum(AlertSeverity, name="alert_severity", create_constraint=True),
+        default=AlertSeverity.WARNING,
+        nullable=False,
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class NotificationChannel(Base, UUIDMixin, TimestampMixin):
+    """Outbound webhook destination (Slack, Discord or generic HTTP)."""
+
+    __tablename__ = "notification_channels"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False, doc="SLACK | DISCORD | WEBHOOK")
+    url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_test_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)

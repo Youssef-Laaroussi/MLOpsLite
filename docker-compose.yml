@@ -141,6 +141,10 @@ services:
     volumes:
       - ./apps:/app/apps
       - ./packages:/app/packages
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "982"
+      - "root"
     command: ["uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "${API_PORT:-8000}:8000"

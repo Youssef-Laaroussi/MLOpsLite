@@ -60,11 +60,15 @@ class DriftEvaluationResponse(BaseModel):
     drift_share: float
     drift_status: DriftSeverity
     drifted_features: list[str] | None = None
-    metrics: dict[str, Any] | None = None
+    metrics_json: dict[str, Any] | None = Field(default=None, alias="metrics")
     html_report_path: str | None = None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @property
+    def metrics(self) -> dict[str, Any] | None:
+        return self.metrics_json
 
 
 class FeedbackRequest(BaseModel):
@@ -100,3 +104,24 @@ class ModelPerformanceResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TelemetryMetricPoint(BaseModel):
+    time: str
+    p50: float
+    p95: float
+    p99: float
+    requests: int
+    errors: int
+
+
+class MonitoringSummaryResponse(BaseModel):
+    model_name: str
+    models_available: list[str]
+    latest_drift: DriftEvaluationResponse | None = None
+    drift_history: list[DriftEvaluationResponse] = []
+    telemetry: list[TelemetryMetricPoint] = []
+    active_deployments: int = 0
+    total_predictions: int = 0
+    latest_quality: DataQualityReportResponse | None = None
+

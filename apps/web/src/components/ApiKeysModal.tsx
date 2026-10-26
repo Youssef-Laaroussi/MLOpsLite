@@ -23,29 +23,25 @@ export const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose }) =
   const [loading, setLoading] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const errMsg = (err: any, fallback: string) =>
+    err?.response?.data?.detail || err?.response?.data?.message || err?.message || fallback;
 
   useEffect(() => {
     if (isOpen) {
+      setNewlyCreatedKey(null);
       loadKeys();
     }
   }, [isOpen]);
 
   const loadKeys = async () => {
     try {
-      const data = await fetchApiKeys();
-      setKeys(data);
+      setKeys(await fetchApiKeys());
+      setError(null);
     } catch (err) {
-      // Fallback demo keys if backend offline
-      setKeys([
-        {
-          id: "key-dev-01",
-          name: "MLite CLI Local Key",
-          key_prefix: "mlt_live_9a2f",
-          created_at: new Date().toISOString(),
-          is_revoked: false,
-          last_used_at: new Date().toISOString(),
-        },
-      ]);
+      setKeys([]);
+      setError(errMsg(err, "Unable to load API keys."));
     }
   };
 
@@ -55,24 +51,12 @@ export const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose }) =
     setLoading(true);
     try {
       const res = await createApiKey(newKeyName.trim(), 90);
-      setNewlyCreatedKey(res.full_key || "mlt_live_84f9a3c7e1284d0b1a29f8c37d");
+      if (!res.full_key) throw new Error("Server did not return a key.");
+      setNewlyCreatedKey(res.full_key);
       setNewKeyName("");
-      loadKeys();
-    } catch {
-      // Demo mock key
-      const mockKey = "mlt_live_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      setNewlyCreatedKey(mockKey);
-      setKeys((prev) => [
-        {
-          id: "key-" + Date.now(),
-          name: newKeyName.trim(),
-          key_prefix: mockKey.substring(0, 12),
-          created_at: new Date().toISOString(),
-          is_revoked: false,
-        },
-        ...prev,
-      ]);
-      setNewKeyName("");
+      await loadKeys();
+    } catch (err) {
+      setError(errMsg(err, "Failed to create API key."));
     } finally {
       setLoading(false);
     }
@@ -81,16 +65,20 @@ export const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose }) =
   const handleRevoke = async (id: string) => {
     try {
       await revokeApiKey(id);
-      loadKeys();
-    } catch {
-      setKeys((prev) => prev.filter((k) => k.id !== id));
+      await loadKeys();
+    } catch (err) {
+      setError(errMsg(err, "Failed to revoke API key."));
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Clipboard unavailable — copy the key manually.");
+    }
   };
 
   if (!isOpen) return null;
@@ -120,6 +108,11 @@ export const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose }) =
         </div>
 
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+          {error && (
+            <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-700">
+              {error}
+            </div>
+          )}
           {/* Newly Generated Secret Banner */}
           {newlyCreatedKey && (
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">

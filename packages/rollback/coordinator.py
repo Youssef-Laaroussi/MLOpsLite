@@ -321,9 +321,6 @@ class RollbackCoordinator:
                 deployment.id,
                 exc,
             )
-            # For simulated containers, treat as healthy
-            if deployment.container_id and deployment.container_id.startswith("simulated-"):
-                return True
             return False
 
     # Backward compatibility alias

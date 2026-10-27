@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   ArrowUpCircle,
@@ -250,6 +251,7 @@ const DEFAULT_MODELS: (RegisteredModel & { framework?: string; latency_ms?: numb
 
 export const ModelsPage: React.FC = () => {
   const { hasRole } = useAuth();
+  const [searchParams] = useSearchParams();
   const [models, setModels] = useState<typeof DEFAULT_MODELS>(DEFAULT_MODELS);
   const [selectedModel, setSelectedModel] = useState<RegisteredModel | null>(null);
   const [targetStage, setTargetStage] = useState("PRODUCTION");
@@ -260,8 +262,15 @@ export const ModelsPage: React.FC = () => {
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
 
   // Search & Stage Filter
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get("search") || "");
   const [stageFilter, setStageFilter] = useState<string>("ALL");
+
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q !== null) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
 
   // Dynamic real promotion audit trail
   const [promotionEvents, setPromotionEvents] = useState<PromotionAuditItem[]>(INITIAL_PROMOTION_EVENTS);

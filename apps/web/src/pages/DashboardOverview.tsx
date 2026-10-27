@@ -83,6 +83,7 @@ export const DashboardOverview: React.FC = () => {
   const [pingResult, setPingResult] = useState<{
     id: string;
     latency: number;
+    isHealthy: boolean;
     prediction: any;
   } | null>(null);
 
@@ -127,17 +128,28 @@ export const DashboardOverview: React.FC = () => {
     setPingResult(null);
     try {
       const res = await pingDeployment(dep.id);
+      const isHealthy = Boolean(
+        res.prediction?.healthy === true ||
+        res.prediction?.status === "healthy" ||
+        res.prediction?.status === "RUNNING"
+      );
       setPingResult({
         id: dep.id,
         latency: res.latency_ms,
+        isHealthy,
         prediction: res.prediction,
-      });
+      } as any);
     } catch (err: any) {
       setPingResult({
         id: dep.id,
         latency: 0,
-        prediction: { healthy: false, error: err?.response?.data?.detail || err?.message || "unreachable" },
-      });
+        isHealthy: false,
+        prediction: {
+          healthy: false,
+          status: "UNREACHABLE",
+          error: err?.response?.data?.detail || err?.message || "Container unreachable",
+        },
+      } as any);
     } finally {
       setPingingId(null);
     }
@@ -195,12 +207,14 @@ export const DashboardOverview: React.FC = () => {
   // ── Stage Breakdown for Donut Chart (Real values only) ─────────────
   const stageCounts = useMemo(() => {
     const prod = stats.stages?.production || 0;
+    const cand = stats.stages?.candidate || 0;
     const stag = stats.stages?.staging || 0;
     const dev = stats.stages?.development || 0;
     const arch = stats.stages?.archived || 0;
-    const total = prod + stag + dev + arch;
+    const total = prod + cand + stag + dev + arch;
     return {
       PRODUCTION: prod,
+      CANDIDATE: cand,
       STAGING: stag,
       DEVELOPMENT: dev,
       ARCHIVED: arch,
@@ -211,7 +225,8 @@ export const DashboardOverview: React.FC = () => {
   const pieStageData = useMemo(() => {
     return [
       { name: "Production", value: stageCounts.PRODUCTION, color: PALETTE.brand },
-      { name: "Staging", value: stageCounts.STAGING, color: PALETTE.brandLight },
+      { name: "Candidate", value: stageCounts.CANDIDATE, color: PALETTE.brandLight },
+      { name: "Staging", value: stageCounts.STAGING, color: PALETTE.brandPale },
       { name: "Development", value: stageCounts.DEVELOPMENT, color: PALETTE.grayLight },
       { name: "Archived", value: stageCounts.ARCHIVED, color: PALETTE.grayMid },
     ].filter((item) => item.value > 0);
@@ -258,6 +273,9 @@ export const DashboardOverview: React.FC = () => {
       d.model_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [deployments, searchQuery]);
+
+  const displayModels = searchQuery.trim() ? filteredModels : filteredModels.slice(0, 3);
+  const displayDeployments = searchQuery.trim() ? filteredDeployments : filteredDeployments.slice(0, 3);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-150">
@@ -568,20 +586,24 @@ export const DashboardOverview: React.FC = () => {
                       cursor={{ stroke: "#E2E8F0", strokeDasharray: "3 3" }}
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
+                        const p50Item = payload.find((p) => p.dataKey === "p50");
+                        const p95Item = payload.find((p) => p.dataKey === "p95");
+                        const p99Item = payload.find((p) => p.dataKey === "p99");
+                        const tooltipItems = [
+                          ...(p99Item?.value != null ? [{ name: "P99 Spike", value: `${p99Item.value} ms`, color: PALETTE.rose }] : []),
+                          { name: "P95 Tail", value: p95Item?.value != null ? `${p95Item.value} ms` : "--", color: PALETTE.grayDark },
+                          { name: "P50 Median", value: p50Item?.value != null ? `${p50Item.value} ms` : "--", color: PALETTE.brand },
+                        ];
                         return (
                           <BiTooltip
                             active
                             label={label}
-                            payload={[
-                              { name: "P99 Spike", value: `${payload.find((p) => p.dataKey === "p99")?.value} ms`, color: PALETTE.rose },
-                              { name: "P95 Tail", value: `${payload.find((p) => p.dataKey === "p95")?.value} ms`, color: PALETTE.grayDark },
-                              { name: "P50 Median", value: `${payload.find((p) => p.dataKey === "p50")?.value} ms`, color: PALETTE.brand },
-                            ]}
+                            payload={tooltipItems}
                           />
                         );
                       }}
                     />
-                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
+                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && latencyData.some((d) => d.p99 != null) && (
                       <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={1.5} strokeDasharray="3 3" dot={false} activeDot={{ r: 3 }} />
                     )}
                     {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
@@ -598,7 +620,7 @@ export const DashboardOverview: React.FC = () => {
                 <Activity className="w-6 h-6 text-slate-300 mb-1.5" />
                 <p className="text-xs font-semibold text-slate-700">No inference telemetry recorded yet</p>
                 <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm">
-                  Deploy a container endpoint and perform test predictions to log real P50/P95/P99 latency curves.
+                  Deploy a container endpoint and perform test predictions to log real P50/P95 latency curves.
                 </p>
               </div>
             )}
@@ -686,10 +708,14 @@ export const DashboardOverview: React.FC = () => {
             )}
 
             {/* Legend Grid */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px]">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-500" />
                 <span className="text-slate-600">Production ({stageCounts.PRODUCTION})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-emerald-400" />
+                <span className="text-slate-600">Candidate ({stageCounts.CANDIDATE})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-300" />
@@ -755,7 +781,7 @@ export const DashboardOverview: React.FC = () => {
                           : "bg-rose-50 text-rose-700 border border-rose-200"
                       }`}
                     >
-                      {s.status}
+                      {s.uptime || s.status}
                     </span>
                   </div>
                 </div>
@@ -974,16 +1000,16 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {filteredModels.length === 0 ? (
+            {displayModels.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 No cataloged models found.
               </div>
             ) : (
               <div className="space-y-2.5">
-                {filteredModels.slice(0, 3).map((m, idx) => (
+                {displayModels.map((m, idx) => (
                   <Link
                     key={idx}
-                    to="/app/models"
+                    to={`/app/models?search=${encodeURIComponent(m.name)}`}
                     className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -1056,13 +1082,13 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {filteredDeployments.length === 0 ? (
+            {displayDeployments.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 No running containers found.
               </div>
             ) : (
               <div className="space-y-2.5">
-                {filteredDeployments.slice(0, 3).map((d) => (
+                {displayDeployments.map((d) => (
                   <div
                     key={d.id}
                     className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition"
@@ -1102,13 +1128,30 @@ export const DashboardOverview: React.FC = () => {
 
                     {pingResult && pingResult.id === d.id && (
                       <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px] animate-in fade-in">
-                        <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>Probe OK • Latency {pingResult.latency}ms</span>
-                        </div>
-                        <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
-                          Status: {String(pingResult.prediction?.status || (pingResult.prediction?.healthy ? "HEALTHY" : "200 OK"))}
-                        </span>
+                        {pingResult.isHealthy ? (
+                          <>
+                            <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Probe OK • Latency {pingResult.latency}ms</span>
+                            </div>
+                            <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
+                              Status: {String(pingResult.prediction?.status || "HEALTHY")}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1.5 text-rose-700 font-semibold font-mono">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span>Probe Failed • {pingResult.latency > 0 ? `${pingResult.latency}ms` : "Unreachable"}</span>
+                            </div>
+                            <span
+                              className="font-mono text-[10px] bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-md font-semibold max-w-[220px] truncate"
+                              title={String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
+                            >
+                              Status: {String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
+                            </span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

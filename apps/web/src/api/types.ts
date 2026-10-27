@@ -147,6 +147,7 @@ export interface SystemStats {
   system_healthy: boolean;
   stages?: {
     production: number;
+    candidate?: number;
     staging: number;
     development: number;
     archived: number;
@@ -164,7 +165,7 @@ export interface SystemStats {
     time: string;
     p50: number;
     p95: number;
-    p99: number;
+    p99?: number | null;
     reqs: number;
   }[];
   drift_trajectory?: {

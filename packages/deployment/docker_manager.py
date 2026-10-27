@@ -76,17 +76,10 @@ class DockerManager:
         )
 
         if not self.is_available:
-            # Simulated run for offline/testing environments
-            logger.info(
-                "Docker daemon unavailable; generating mock container info for %s", container_name
+            logger.error("Docker daemon is not available or reachable; cannot run container %s", container_name)
+            raise RuntimeError(
+                f"Docker daemon is not available or reachable. Cannot launch inference container for {model_name} v{model_version}."
             )
-            return {
-                "container_id": f"simulated-{container_name}",
-                "name": container_name,
-                "status": "RUNNING",
-                "port": host_port,
-                "simulated": True,
-            }
 
         try:
             # Clean up existing container with same name if any
@@ -132,8 +125,8 @@ class DockerManager:
     def stop_container(self, container_id: str) -> bool:
         """Stop and remove a running container."""
         if not self.is_available:
-            logger.info("Simulated stop of container %s", container_id)
-            return True
+            logger.error("Docker daemon unavailable; cannot stop container %s", container_id)
+            return False
 
         try:
             container = self.client.containers.get(container_id)
@@ -149,10 +142,10 @@ class DockerManager:
         if not self.is_available:
             return {
                 "container_id": container_id,
-                "status": "RUNNING",
-                "exit_code": 0,
-                "error": None,
-                "simulated": True,
+                "status": "STOPPED",
+                "exit_code": -1,
+                "error": "Docker daemon is not available",
+                "simulated": False,
             }
 
         try:
@@ -181,10 +174,10 @@ class DockerManager:
         """Collect live CPU % and Memory MB usage from Docker stats."""
         if not self.is_available:
             return {
-                "cpu_percent": 2.5,
-                "memory_mb": 128.0,
-                "memory_limit_mb": 1024.0,
-                "simulated": True,
+                "cpu_percent": 0.0,
+                "memory_mb": 0.0,
+                "memory_limit_mb": 0.0,
+                "simulated": False,
             }
 
         try:

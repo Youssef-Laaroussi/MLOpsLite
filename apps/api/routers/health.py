@@ -17,10 +17,22 @@ from packages.core.models.deployment import Deployment, DeploymentMetric, Deploy
 from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
 from packages.core.models.monitoring import DriftEvaluation
 from packages.core.models.project import Project
+from packages.core.models.user import User
+from packages.core.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["System"])
 
 logger = logging.getLogger("mlite.api")
+
+
+def _safe_float(val: Any) -> float:
+    """Safely parse metric to float without throwing ValueError on invalid inputs."""
+    if val is None:
+        return 0.0
+    try:
+        return round(float(val), 3)
+    except (ValueError, TypeError):
+        return 0.0
 
 
 @router.get("/health")
@@ -40,8 +52,12 @@ async def get_system_stats(
     time_range: str = Query("all", description="all | 30d | 7d"),
     settings: Settings = Depends(get_app_settings),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Return aggregated live system statistics calculated directly from SQL databases & MLflow."""
+    if time_range not in ("all", "30d", "7d"):
+        time_range = "all"
+
     cutoff = None
     if time_range == "7d":
         cutoff = datetime.now(UTC) - timedelta(days=7)
@@ -107,7 +123,7 @@ async def get_system_stats(
             {"name": "Datasets ingested", "value": datasets_count},
             {"name": "Experiments run", "value": experiments_count},
             {"name": "Models registered", "value": models_count},
-            {"name": "Staged & validated", "value": stage_counts.get("STAGING", 0)},
+            {"name": "Candidates & Staged", "value": stage_counts.get("CANDIDATE", 0) + stage_counts.get("STAGING", 0)},
             {"name": "In production", "value": stage_counts.get("PRODUCTION", 0)},
         ]
 
@@ -124,18 +140,18 @@ async def get_system_stats(
         benchmarks = []
         for mv, model_name in bm_res.all():
             m_dict = mv.metrics or {}
-            auc_val = m_dict.get("auc") or m_dict.get("roc_auc")
-            f1_val = m_dict.get("f1") or m_dict.get("f1_score") or m_dict.get("accuracy")
+            auc_val = _safe_float(m_dict.get("auc") or m_dict.get("roc_auc"))
+            f1_val = _safe_float(m_dict.get("f1") or m_dict.get("f1_score") or m_dict.get("accuracy"))
             benchmarks.append({
                 "model": f"{model_name} v{mv.version}",
                 "full_name": f"{model_name} (v{mv.version})",
                 "stage": mv.stage.value if hasattr(mv.stage, "value") else str(mv.stage),
-                "auc": round(float(auc_val), 3) if auc_val is not None else 0.0,
-                "f1": round(float(f1_val), 3) if f1_val is not None else 0.0,
+                "auc": auc_val,
+                "f1": f1_val,
                 "has_metrics": bool(m_dict),
             })
 
-        # 10. Real Latency Telemetry from DeploymentMetric
+        # 10. Real Latency Telemetry from DeploymentMetric (no fake p99 multiplier)
         lat_q = select(DeploymentMetric)
         if cutoff:
             lat_q = lat_q.where(DeploymentMetric.timestamp >= cutoff)
@@ -145,9 +161,9 @@ async def get_system_stats(
         latency_telemetry = [
             {
                 "time": m.timestamp.strftime("%H:%M") if m.timestamp else "--",
-                "p50": round(m.latency_p50_ms or 0.0, 1),
-                "p95": round(m.latency_p95_ms or 0.0, 1),
-                "p99": round((m.latency_p95_ms or 0.0) * 1.25, 1) if m.latency_p95_ms else 0.0,
+                "p50": round(m.latency_p50_ms, 1) if m.latency_p50_ms is not None else 0.0,
+                "p95": round(m.latency_p95_ms, 1) if m.latency_p95_ms is not None else 0.0,
+                "p99": None,
                 "reqs": m.requests_count or 0,
             }
             for m in reversed(raw_lat)
@@ -179,6 +195,7 @@ async def get_system_stats(
             "alerts_count": alerts_count,
             "stages": {
                 "production": stage_counts.get("PRODUCTION", 0),
+                "candidate": stage_counts.get("CANDIDATE", 0),
                 "staging": stage_counts.get("STAGING", 0),
                 "development": stage_counts.get("DEVELOPMENT", 0),
                 "archived": stage_counts.get("ARCHIVED", 0),
@@ -200,7 +217,7 @@ async def get_system_stats(
             "experiments_count": 0,
             "active_deployments": 0,
             "alerts_count": 0,
-            "stages": {"production": 0, "staging": 0, "development": 0, "archived": 0},
+            "stages": {"production": 0, "candidate": 0, "staging": 0, "development": 0, "archived": 0},
             "funnel": [],
             "benchmarks": [],
             "latency_telemetry": [],
@@ -214,6 +231,7 @@ async def get_system_stats(
 async def check_services(
     settings: Settings = Depends(get_app_settings),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
     """Live connectivity and latency check across all MLOps subsystems."""
     services = []
@@ -231,7 +249,7 @@ async def check_services(
         "name": "Database (PostgreSQL/SQLite)",
         "status": "online" if db_ok else "offline",
         "latency": f"{db_lat}ms",
-        "uptime": "99.99%",
+        "uptime": "Operational" if db_ok else "Offline",
     })
 
     # 2. MLflow Tracking Server
@@ -249,7 +267,7 @@ async def check_services(
         "name": "MLflow Tracking Server",
         "status": "online" if mlflow_ok else "offline",
         "latency": f"{mlflow_lat}ms",
-        "uptime": "99.95%",
+        "uptime": "Operational" if mlflow_ok else "Offline",
     })
 
     # 3. MinIO S3 Object Storage
@@ -268,7 +286,7 @@ async def check_services(
         "name": "MinIO S3 Artifact Store",
         "status": "online" if minio_ok else "offline",
         "latency": f"{minio_lat}ms",
-        "uptime": "Operational" if minio_ok else "Unreachable",
+        "uptime": "Operational" if minio_ok else "Offline",
     })
 
     # 4. Model Serving (Docker Engine)
@@ -285,20 +303,49 @@ async def check_services(
         "name": "Model Serving (Docker Engine)",
         "status": "online" if docker_ok else "offline",
         "latency": f"{docker_lat}ms",
-        "uptime": "99.99%",
+        "uptime": "Operational" if docker_ok else "Offline",
     })
 
     return services
 
 
 @router.get("/ready")
-async def readiness_check() -> dict[str, Any]:
+async def readiness_check(
+    settings: Settings = Depends(get_app_settings),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
     """Readiness probe – checks dependent subsystems."""
     checks: dict[str, str] = {
-        "database": "ok",
-        "storage": "ok",
-        "tracking": "ok",
+        "database": "error",
+        "storage": "error",
+        "tracking": "error",
     }
+    # 1. Database
+    try:
+        await db.execute(select(1))
+        checks["database"] = "ok"
+    except Exception as exc:
+        logger.warning("Database probe failed during readiness check: %s", exc)
+
+    # 2. Storage (MinIO)
+    minio_url = getattr(settings, "minio_endpoint", "http://localhost:9000")
+    try:
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(f"{minio_url.rstrip('/')}/minio/health/live")
+            if resp.status_code < 500:
+                checks["storage"] = "ok"
+    except Exception as exc:
+        logger.warning("Storage probe failed during readiness check: %s", exc)
+
+    # 3. Tracking (MLflow)
+    try:
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(f"{settings.mlflow_tracking_uri.rstrip('/')}/health")
+            if resp.status_code < 500:
+                checks["tracking"] = "ok"
+    except Exception as exc:
+        logger.warning("Tracking probe failed during readiness check: %s", exc)
+
     overall = all(v == "ok" for v in checks.values())
     return {
         "status": "ready" if overall else "degraded",

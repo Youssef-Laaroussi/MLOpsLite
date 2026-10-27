@@ -126,8 +126,16 @@ class TestHealthEndpoints:
         assert resp.status_code == 200
         assert resp.json()["status"] == "ready"
 
-    def test_health_stats(self, app):
+    def test_health_stats_unauthenticated(self, app):
         resp = _run(_get(app, "/api/v1/health/stats"))
+        assert resp.status_code == 401
+
+    def test_health_services_unauthenticated(self, app):
+        resp = _run(_get(app, "/api/v1/health/services"))
+        assert resp.status_code == 401
+
+    def test_health_stats(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/health/stats"))
         assert resp.status_code == 200
         data = resp.json()
         assert "projects_count" in data
@@ -136,6 +144,7 @@ class TestHealthEndpoints:
         assert "experiments_count" in data
         assert "active_deployments" in data
         assert "stages" in data
+        assert "candidate" in data["stages"]
         assert "funnel" in data
         assert "benchmarks" in data
         assert "latency_telemetry" in data
@@ -143,17 +152,28 @@ class TestHealthEndpoints:
         assert data["system_healthy"] is True
         assert data["time_range"] == "all"
 
-    def test_health_stats_time_range_filter(self, app):
-        resp_7d = _run(_get(app, "/api/v1/health/stats?time_range=7d"))
+    def test_health_stats_time_range_filter(self, authed_app):
+        resp_7d = _run(_get(authed_app, "/api/v1/health/stats?time_range=7d"))
         assert resp_7d.status_code == 200
         data_7d = resp_7d.json()
         assert data_7d["time_range"] == "7d"
         assert "projects_count" in data_7d
 
-        resp_30d = _run(_get(app, "/api/v1/health/stats?time_range=30d"))
+        resp_30d = _run(_get(authed_app, "/api/v1/health/stats?time_range=30d"))
         assert resp_30d.status_code == 200
         data_30d = resp_30d.json()
         assert data_30d["time_range"] == "30d"
+
+    def test_health_services(self, authed_app):
+        resp = _run(_get(authed_app, "/api/v1/health/services"))
+        assert resp.status_code == 200
+        services = resp.json()
+        assert isinstance(services, list)
+        assert len(services) == 4
+        for svc in services:
+            assert "name" in svc
+            assert svc["status"] in ("online", "offline")
+            assert svc["uptime"] in ("Operational", "Offline")
 
 
 # ── Scaffold routers ──────────────────────────────────────

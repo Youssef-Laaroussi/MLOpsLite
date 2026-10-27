@@ -20,9 +20,23 @@ vi.mock("../api/client", () => ({
     active_deployments: 2,
     alerts_count: 0,
     system_healthy: true,
+    stages: {
+      production: 2,
+      candidate: 1,
+      staging: 1,
+      development: 1,
+      archived: 0,
+    },
+    latency_telemetry: [
+      { time: "14:00", p50: 2.1, p95: 5.4, p99: null, reqs: 120 },
+    ],
   }),
+  fetchSystemServices: vi.fn().mockResolvedValue([
+    { name: "Database (PostgreSQL/SQLite)", status: "online", latency: "1.2ms", uptime: "Operational" },
+  ]),
   fetchModels: vi.fn().mockResolvedValue([
     { name: "fraud-detector", version: 1, stage: "PRODUCTION" },
+    { name: "churn-risk", version: 2, stage: "CANDIDATE" },
   ]),
   fetchDeployments: vi.fn().mockResolvedValue([
     {
@@ -35,7 +49,7 @@ vi.mock("../api/client", () => ({
     },
   ]),
   pingDeployment: vi.fn().mockResolvedValue({
-    prediction: { healthy: true },
+    prediction: { healthy: true, status: "HEALTHY" },
     latency_ms: 12,
   }),
 }));
@@ -55,5 +69,18 @@ describe("DashboardOverview Component", () => {
     expect(screen.getAllByText("Models").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Deployments").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Experiments").length).toBeGreaterThan(0);
+  });
+
+  it("renders Candidate stage in breakdown legend", async () => {
+    render(
+      <AuthProvider>
+        <BrowserRouter>
+          <DashboardOverview />
+        </BrowserRouter>
+      </AuthProvider>
+    );
+
+    expect(await screen.findByText(/Candidate \(1\)/i)).toBeDefined();
+    expect(screen.getByText(/Production \(2\)/i)).toBeDefined();
   });
 });

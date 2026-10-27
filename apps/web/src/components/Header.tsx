@@ -208,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                   </button>
                 ))}
                 <div className="mt-1 px-2.5 py-2 border-t border-slate-100 text-[11px] text-slate-500">
-                  All services operational · <span className="font-mono">99.98%</span>
+                  Target Scope: <span className="font-semibold text-slate-700">{env} Workspace</span>
                 </div>
               </div>
             )}

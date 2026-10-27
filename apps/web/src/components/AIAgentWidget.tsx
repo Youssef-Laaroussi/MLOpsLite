@@ -164,7 +164,7 @@ export const AIAgentWidget: React.FC = () => {
     {
       id: "welcome-1",
       sender: "agent",
-      text: "Welcome to **MLite AI Copilot**. I am your autonomous MLOps assistant. Ask me anything about deploying models, detecting drift, or managing pipelines.",
+      text: "Welcome to **MLite Assistant**. I can guide you through CLI commands, deployment configurations, drift monitoring, and platform operations.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -230,52 +230,44 @@ export const AIAgentWidget: React.FC = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const lowerQuery = query.toLowerCase();
+    const matched = KNOWLEDGE_RESPONSES.find((item) =>
+      item.keywords.some((kw) => {
+        if (kw.length <= 3) {
+          const regex = new RegExp(`\\b${kw}\\b`, "i");
+          return regex.test(lowerQuery);
+        }
+        return lowerQuery.includes(kw);
+      })
+    );
+
+    let responseMessage: Message;
+
+    if (matched) {
+      responseMessage = {
+        id: "agent-" + Date.now(),
+        sender: "agent",
+        text: matched.reply,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        codeSnippet: matched.codeSnippet,
+        actionLink: matched.actionLink,
+      };
+    } else {
+      responseMessage = {
+        id: "agent-" + Date.now(),
+        sender: "agent",
+        text: `MLite manages end-to-end model lifecycles with verified data lineage, sub-50ms inference runtimes, and real-time Evidently AI drift guards. You can query models or trigger commands directly.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        codeSnippet: {
+          language: "bash",
+          code: `# Check system and component health\nmlite status --all\nmlite models list`,
+        },
+        actionLink: { label: "Go to System Overview", path: "/app" },
+      };
+    }
+
+    setMessages((prev) => [...prev, userMessage, responseMessage]);
     setInputQuery("");
-    setIsTyping(true);
-
-    // Analyze intent and match with domain knowledge
-    setTimeout(() => {
-      const lowerQuery = query.toLowerCase();
-      const matched = KNOWLEDGE_RESPONSES.find((item) =>
-        item.keywords.some((kw) => {
-          if (kw.length <= 3) {
-            // For short words like 'hi', match whole words
-            const regex = new RegExp(`\\b${kw}\\b`, "i");
-            return regex.test(lowerQuery);
-          }
-          return lowerQuery.includes(kw);
-        })
-      );
-
-      let responseMessage: Message;
-
-      if (matched) {
-        responseMessage = {
-          id: "agent-" + Date.now(),
-          sender: "agent",
-          text: matched.reply,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          codeSnippet: matched.codeSnippet,
-          actionLink: matched.actionLink,
-        };
-      } else {
-        responseMessage = {
-          id: "agent-" + Date.now(),
-          sender: "agent",
-          text: `MLite manages end-to-end model lifecycles with verified data lineage, sub-50ms inference runtimes, and real-time Evidently AI drift guards. You can query models or trigger commands directly.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          codeSnippet: {
-            language: "bash",
-            code: `# Check system and component health\nmlite status --all\nmlite models list`,
-          },
-          actionLink: { label: "Go to System Overview", path: "/app" },
-        };
-      }
-
-      setMessages((prev) => [...prev, responseMessage]);
-      setIsTyping(false);
-    }, 600);
   };
 
   // Hide AI Copilot on authentication pages (Sign in & Sign up)
@@ -310,12 +302,12 @@ export const AIAgentWidget: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-white tracking-tight">MLite AI Agent</span>
+                  <span className="font-extrabold text-sm text-white tracking-tight">MLite Assistant</span>
                   <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#3BB48C]/20 text-[#3BB48C] font-bold border border-[#3BB48C]/30">
-                    COPILOT
+                    GUIDE
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">Autonomous MLOps Assistant</p>
+                <p className="text-[11px] text-slate-400 font-medium">MLOps Knowledge &amp; CLI Guide</p>
               </div>
             </div>
 

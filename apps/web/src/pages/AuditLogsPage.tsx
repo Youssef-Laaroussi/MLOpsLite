@@ -25,53 +25,7 @@ export const AuditLogsPage: React.FC = () => {
       const data = await fetchAuditLogs(100);
       setLogs(data);
     } catch {
-      // Fallback realistic audit log data if backend offline
-      setLogs([
-        {
-          id: "aud-001",
-          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-          action: "user.login",
-          resource_type: "user",
-          resource_name: "admin",
-          user_email: "admin@mlite.local",
-          ip_address: "127.0.0.1",
-          status: "SUCCESS",
-          details: { method: "oauth2_password" },
-        },
-        {
-          id: "aud-002",
-          timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-          action: "model.promote",
-          resource_type: "model",
-          resource_name: "fraud-detector:v1",
-          user_email: "sarah@mlite.local",
-          ip_address: "192.168.1.45",
-          status: "SUCCESS",
-          details: { from_stage: "STAGING", to_stage: "PRODUCTION" },
-        },
-        {
-          id: "aud-003",
-          timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
-          action: "deployment.create",
-          resource_type: "deployment",
-          resource_name: "fraud-detector-prod",
-          user_email: "sarah@mlite.local",
-          ip_address: "192.168.1.45",
-          status: "SUCCESS",
-          details: { port: 8100, container: "mlite-serve-fraud-detector" },
-        },
-        {
-          id: "aud-004",
-          timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-          action: "dataset.sync",
-          resource_type: "dataset",
-          resource_name: "transactions-2024.parquet",
-          user_email: "alex@mlite.local",
-          ip_address: "192.168.1.80",
-          status: "SUCCESS",
-          details: { rows: 250000, hash: "sha256:7f4a...b21" },
-        },
-      ]);
+      setLogs([]);
     } finally {
       setLoading(false);
     }

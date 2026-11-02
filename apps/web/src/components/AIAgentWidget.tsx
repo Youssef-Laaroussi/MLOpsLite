@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sparkles,
   Bot,
+  MessageSquare,
   Send,
   X,
   Copy,
@@ -302,12 +303,12 @@ export const AIAgentWidget: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-white tracking-tight">MLite Assistant</span>
+                  <span className="font-extrabold text-sm text-white tracking-tight">AI Copilot</span>
                   <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#3BB48C]/20 text-[#3BB48C] font-bold border border-[#3BB48C]/30">
-                    GUIDE
+                    AUTONOMOUS
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">MLOps Knowledge &amp; CLI Guide</p>
+                <p className="text-[11px] text-slate-400 font-medium">Autonomous MLOps Agent</p>
               </div>
             </div>
 
@@ -491,22 +492,29 @@ export const AIAgentWidget: React.FC = () => {
         </div>
       )}
 
-      {/* ── Floating Launcher Trigger Pill ── */}
+      {/* ── Floating Launcher Trigger (Circular / Round FAB) ── */}
       <button
         onClick={() => {
           setIsOpen(!isOpen);
           if (isMinimized) setIsMinimized(false);
         }}
-        className="group relative flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer border border-slate-700/80"
+        aria-label="Ask MLite AI"
+        title="Ask MLite AI"
+        className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer border border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/50"
       >
-        <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 p-0.5 border border-emerald-500/30">
-          <Sparkles className="w-3 h-3 text-emerald-400" />
-        </div>
-        <span className="font-medium text-xs tracking-tight text-slate-100 flex items-center gap-2">
-          Ask MLite AI
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-          </span>
+        {isOpen ? (
+          <X className="w-6 h-6 text-slate-200 transition-transform duration-200 group-hover:rotate-90" />
+        ) : (
+          <div className="relative flex items-center justify-center">
+            <MessageSquare className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-200" />
+            <Sparkles className="w-3 h-3 text-emerald-400 absolute -top-1 -right-1 fill-emerald-400/20" />
+          </div>
+        )}
+
+        {/* Live status online badge */}
+        <span className="absolute top-0.5 right-0.5 flex h-3.5 w-3.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-900" />
         </span>
       </button>
     </div>

@@ -207,8 +207,9 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     {env === e && <CheckCircle2 className="w-3.5 h-3.5" />}
                   </button>
                 ))}
-                <div className="mt-1 px-2.5 py-2 border-t border-slate-100 text-[11px] text-slate-500">
-                  Target Scope: <span className="font-semibold text-slate-700">{env} Workspace</span>
+                <div className="mt-1 px-2.5 py-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+                  <span>All services operational</span>
+                  <span className="font-mono text-emerald-600 font-bold">99.98%</span>
                 </div>
               </div>
             )}

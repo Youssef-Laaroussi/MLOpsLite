@@ -11,7 +11,6 @@ import {
   AlertCircle,
   ChevronRight,
   Sliders,
-  BarChart3,
   Layers,
   Copy,
   Check,
@@ -272,7 +271,7 @@ export const ExperimentsPage: React.FC = () => {
       )}
 
       {/* ── Top Stat Cards (Real live counts from MLflow) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <StatCard
           title="Active Experiments"
           value={loading ? "..." : `${experiments.length} Experiments`}
@@ -288,22 +287,6 @@ export const ExperimentsPage: React.FC = () => {
           icon={Layers}
           color="brand"
           trend={totalRuns > 0 ? "Active" : "None"}
-        />
-        <StatCard
-          title="MLflow Tracking Host"
-          value="http://mlflow:5000"
-          subtitle="Backend proxy operational"
-          icon={CheckCircle2}
-          color="emerald"
-          trend="Live"
-        />
-        <StatCard
-          title="Artifact Target"
-          value="s3://mlflow-artifacts"
-          subtitle="MinIO persistent bucket"
-          icon={BarChart3}
-          color="brand"
-          trend="S3 MinIO"
         />
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   FolderGit2,
   Database,
@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Search,
   AlertTriangle,
-  Info,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -42,9 +41,6 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
-  FunnelChart,
-  Funnel,
-  LabelList,
   Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
@@ -90,37 +86,52 @@ export const DashboardOverview: React.FC = () => {
   // Latency Chart filter state: 'all' | 'p50' | 'p95' | 'p99'
   const [latencyMetricFilter, setLatencyMetricFilter] = useState<"all" | "p50" | "p95" | "p99">("all");
 
+  const latestRequest = useRef(0);
+
   const loadData = async (range?: string) => {
+    const request = ++latestRequest.current;
     setLoading(true);
     setApiError(null);
     const activeRange = range !== undefined ? range : timeRange;
-    try {
-      const [statsData, modelsData, deploymentsData, servicesData] = await Promise.all([
-        fetchSystemStats(activeRange),
-        fetchModels(),
-        fetchDeployments(),
-        fetchSystemServices(),
-      ]);
+    const [statsResult, modelsResult, deploymentsResult, servicesResult] = await Promise.allSettled([
+      fetchSystemStats(activeRange),
+      fetchModels(),
+      fetchDeployments(),
+      fetchSystemServices(),
+    ]);
 
-      if (statsData) {
-        if (!statsData.system_healthy && (statsData as any).error) {
-          setApiError(`Backend System Error: ${(statsData as any).error}`);
-        }
-        setStats(statsData);
-      }
+    if (request !== latestRequest.current) return;
 
-      setModels(modelsData || []);
-      setDeployments(deploymentsData || []);
-      setServices(servicesData || []);
-    } catch (err: any) {
-      setApiError(err?.response?.data?.detail || err?.message || "Failed to load dashboard metrics.");
-    } finally {
-      setLoading(false);
+    if (statsResult.status === "fulfilled") setStats(statsResult.value);
+    if (modelsResult.status === "fulfilled") setModels(modelsResult.value ?? []);
+    if (deploymentsResult.status === "fulfilled") setDeployments(deploymentsResult.value ?? []);
+    if (servicesResult.status === "fulfilled") setServices(servicesResult.value ?? []);
+
+    const unavailable = [
+      statsResult.status === "rejected" && "system metrics",
+      modelsResult.status === "rejected" && "models",
+      deploymentsResult.status === "rejected" && "deployments",
+      servicesResult.status === "rejected" && "service status",
+    ].filter(Boolean);
+    if (unavailable.length) {
+      setApiError(`Could not refresh: ${unavailable.join(", ")}.`);
+    } else if (statsResult.status === "fulfilled" && statsResult.value.error) {
+      setApiError(statsResult.value.error);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadData(timeRange);
+    void loadData(timeRange);
+    const savedInterval = Number(localStorage.getItem("mlite_pref_refresh"));
+    const interval = [5, 15, 30, 60].includes(savedInterval) ? savedInterval : 15;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void loadData(timeRange);
+    }, interval * 1000);
+    return () => {
+      window.clearInterval(timer);
+      latestRequest.current++;
+    };
   }, [timeRange]);
 
   const handleTestPing = async (dep: Deployment) => {
@@ -232,23 +243,8 @@ export const DashboardOverview: React.FC = () => {
     ].filter((item) => item.value > 0);
   }, [stageCounts]);
 
-  // Real Funnel Data from backend
-  const funnelData = useMemo(() => {
-    if (stats.funnel && stats.funnel.length > 0) {
-      const colors = [
-        PALETTE.grayLight,
-        PALETTE.grayMid,
-        PALETTE.brandPale,
-        PALETTE.brandLight,
-        PALETTE.brandDark,
-      ];
-      return stats.funnel.map((item, idx) => ({
-        ...item,
-        fill: colors[idx % colors.length],
-      }));
-    }
-    return [];
-  }, [stats.funnel]);
+  const lifecycleStages = stats.funnel ?? [];
+  const largestStage = Math.max(1, ...lifecycleStages.map(({ value }) => value));
 
   // Real Latency Telemetry from backend
   const latencyData = stats.latency_telemetry || [];
@@ -800,38 +796,35 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Real Lifecycle Funnel */}
+        {/* Lifecycle activity */}
         <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
             <div className="mb-2 pb-2 border-b border-slate-100">
               <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                Lifecycle Funnel
+                Lifecycle Activity
               </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Ingestion to production progression</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Counts from ingestion through production</p>
             </div>
 
-            {funnelData.some((f) => f.value > 0) ? (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <FunnelChart>
-                    <RechartsTooltip />
-                    <Funnel dataKey="value" data={funnelData} isAnimationActive>
-                      {funnelData.map((f, idx) => (
-                        <Cell key={`funnel-${idx}`} fill={f.fill} />
-                      ))}
-                      <LabelList position="right" fill="#475569" stroke="none" dataKey="name" fontSize={11} />
-                    </Funnel>
-                  </FunnelChart>
-                </ResponsiveContainer>
-              </div>
+            {lifecycleStages.length ? (
+              <ul className="space-y-3 py-2">
+                {lifecycleStages.map(({ name, value }) => (
+                  <li key={name}>
+                    <div className="mb-1 flex justify-between gap-3 text-xs text-slate-700">
+                      <span>{name}</span>
+                      <span className="font-mono tabular-nums">{value.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                      <div
+                        className="h-full rounded-full bg-emerald-600"
+                        style={{ width: `${(value / largestStage) * 100}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div className="h-48 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
-                <Info className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">Funnel pipeline is empty</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Ingest datasets, execute runs and register models to view progression.
-                </p>
-              </div>
+              <p className="py-8 text-center text-xs text-slate-500">No lifecycle activity available.</p>
             )}
           </div>
 
@@ -967,7 +960,7 @@ export const DashboardOverview: React.FC = () => {
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Total Drift Checks: {driftData.length}</span>
-            <span>Evidently PSI</span>
+            <span>Feature drift share</span>
           </div>
         </div>
       </div>

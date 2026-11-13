@@ -415,7 +415,7 @@ export const DatasetsPage: React.FC = () => {
               </div>
               <div className="p-2 bg-slate-50 rounded border border-slate-200">
                 <span className="text-slate-400 block text-[10px] uppercase">Endpoint URL</span>
-                <span className="text-slate-800">{dvcStatus?.minio_endpoint || "http://mlite-storage:9000"}</span>
+                <span className="text-slate-800">{dvcStatus?.minio_endpoint || "Unavailable"}</span>
               </div>
             </div>
 
@@ -434,7 +434,7 @@ export const DatasetsPage: React.FC = () => {
           </div>
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>DVC CLI: {dvcStatus?.is_installed ? "Ready" : "Standalone S3 Mode"}</span>
+            <span>DVC CLI: {!dvcStatus ? "Unavailable" : dvcStatus.is_installed ? "Ready" : "Standalone S3 Mode"}</span>
             <span className="text-slate-700">{datasets.length} Objects Synced</span>
           </div>
         </div>
@@ -814,20 +814,20 @@ export const DatasetsPage: React.FC = () => {
             <div className="space-y-2.5 text-xs font-mono">
               <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
                 <span className="text-slate-500">Remote Name:</span>
-                <span className="font-semibold text-slate-800">{dvcStatus?.remote_name || "minio"}</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.remote_name || "Unavailable"}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
                 <span className="text-slate-500">MinIO S3 Bucket:</span>
-                <span className="font-semibold text-slate-800">{dvcStatus?.remote_bucket || "mlite-datasets"}</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.remote_bucket || "Unavailable"}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
                 <span className="text-slate-500">MinIO Endpoint:</span>
-                <span className="font-semibold text-slate-800">{dvcStatus?.minio_endpoint || "http://localhost:9000"}</span>
+                <span className="font-semibold text-slate-800">{dvcStatus?.minio_endpoint || "Unavailable"}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex justify-between">
                 <span className="text-slate-500">DVC CLI Host Status:</span>
                 <span className={`font-semibold ${dvcStatus?.is_installed ? "text-emerald-700" : "text-amber-700"}`}>
-                  {dvcStatus?.is_installed ? "Installed in PATH" : "Available via MinIO S3 API"}
+                  {!dvcStatus ? "Unavailable" : dvcStatus.is_installed ? "Installed in PATH" : "Available via MinIO S3 API"}
                 </span>
               </div>
             </div>

@@ -27,6 +27,10 @@ vi.mock("../api/client", () => ({
       development: 1,
       archived: 0,
     },
+    funnel: [
+      { name: "Datasets ingested", value: 3 },
+      { name: "Models in production", value: 0 },
+    ],
     latency_telemetry: [
       { time: "14:00", p50: 2.1, p95: 5.4, p99: null, reqs: 120 },
     ],
@@ -82,5 +86,7 @@ describe("DashboardOverview Component", () => {
 
     expect(await screen.findByText(/Candidate \(1\)/i)).toBeDefined();
     expect(screen.getByText(/Production \(2\)/i)).toBeDefined();
+    expect(screen.getByText("Datasets ingested").closest("li")?.textContent).toBe("Datasets ingested3");
+    expect(screen.getByText("Models in production").closest("li")?.textContent).toBe("Models in production0");
   });
 });

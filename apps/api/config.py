@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -75,6 +75,14 @@ class Settings(BaseSettings):
     admin_password: str = os.getenv(
         "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456")
     )
+
+    contact_smtp_host: str = ""
+    contact_smtp_port: int = 587
+    contact_smtp_user: str = ""
+    contact_smtp_password: SecretStr | None = None
+    contact_smtp_starttls: bool = True
+    contact_from_email: str = ""
+    contact_to_email: str = ""
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":

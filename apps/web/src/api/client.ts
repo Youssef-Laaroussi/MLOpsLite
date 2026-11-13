@@ -176,7 +176,8 @@ export const fetchModels = async (): Promise<RegisteredModel[]> => {
 };
 
 export const promoteModelVersion = async (name: string, version: number, stage: string): Promise<any> => {
-  const res = await api.post(`/models/${name}/versions/${version}/promote`, { stage });
+  const res = await api.post(`/models/${encodeURIComponent(name)}/versions/${version}/promote`, { stage });
+  if (res.data.promoted !== true) throw new Error(res.data.error || "The model stage could not be changed.");
   return res.data;
 };
 
@@ -431,3 +432,13 @@ export const testNotificationChannel = async (
   return res.data;
 };
 
+
+
+export const sendContactMessage = async (submission: {
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+}): Promise<void> => {
+  await api.post("/contact", submission, { timeout: 30000 });
+};

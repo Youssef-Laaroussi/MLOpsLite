@@ -26,6 +26,7 @@ from apps.api.routers import (
     alerts,
     audit,
     auth,
+    contact,
     datasets,
     deployments,
     experiments,
@@ -158,6 +159,7 @@ def create_app() -> FastAPI:
     # Public: health probes + auth (login/register). Audit and rollback have granular RBAC dependencies.
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(contact.router)
     app.include_router(audit.router)
     app.include_router(rollback.router)
     protected = [Depends(get_current_user)]

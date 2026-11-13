@@ -15,17 +15,19 @@ import { fetchAuditLogs } from "../api/client";
 
 export const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
 
   const loadLogs = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await fetchAuditLogs(100);
       setLogs(data);
     } catch {
-      setLogs([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -128,10 +130,10 @@ export const AuditLogsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredLogs.length === 0 ? (
+              {loading || loadError || filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    No matching audit log entries found.
+                    {loading ? "Loading audit logs…" : loadError ? "Could not load audit logs. Use Refresh to try again." : "No matching audit log entries found."}
                   </td>
                 </tr>
               ) : (

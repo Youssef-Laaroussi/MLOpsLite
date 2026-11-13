@@ -71,6 +71,7 @@ export interface ModelVersion {
 }
 
 export interface RegisteredModel {
+  framework?: string;
   name: string;
   version: number;
   stage: string;
@@ -138,6 +139,7 @@ export interface Dataset {
 }
 
 export interface SystemStats {
+  error?: string;
   projects_count: number;
   models_count: number;
   datasets_count?: number;

@@ -1,3 +1,4 @@
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -25,7 +26,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
-import { fetchModels, promoteModelVersion } from "../api/client";
+import { api, fetchModels, promoteModelVersion, syncModelMetrics } from "../api/client";
 import { RegisteredModel } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -50,7 +51,9 @@ import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/
 
 export const ModelsPage: React.FC = () => {
   const { user } = useAuth();
+  const { showSuccess } = useActionFeedback();
   const [searchParams] = useSearchParams();
+  const project = searchParams.get("project") || undefined;
   const [models, setModels] = useState<RegisteredModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<RegisteredModel | null>(null);
   const [targetStage, setTargetStage] = useState("PRODUCTION");
@@ -77,7 +80,7 @@ export const ModelsPage: React.FC = () => {
     setLoading(true);
     setLoadError(false);
     try {
-      setModels(await fetchModels());
+      setModels(await fetchModels(project));
     } catch {
       setLoadError(true);
     } finally {
@@ -87,7 +90,7 @@ export const ModelsPage: React.FC = () => {
 
   useEffect(() => {
     void loadModels();
-  }, []);
+  }, [project]);
 
   const handlePromote = async () => {
     if (!selectedModel || promoting) return;
@@ -95,6 +98,7 @@ export const ModelsPage: React.FC = () => {
     setPromotionError(null);
     try {
       await promoteModelVersion(selectedModel.name, selectedModel.version, targetStage);
+      showSuccess(`Model stage updated to ${targetStage}.`);
       setSelectedModel(null);
       await loadModels();
     } catch (error: any) {
@@ -102,6 +106,65 @@ export const ModelsPage: React.FC = () => {
       setPromotionError(typeof detail === "string" ? detail : error instanceof Error ? error.message : "The model stage could not be changed.");
     } finally {
       setPromoting(false);
+    }
+  };
+
+  const [validatingModel, setValidatingModel] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+
+  const validateModel = async (model: RegisteredModel) => {
+    setValidatingModel(true);
+    setValidationMessage(null);
+    try {
+      const { data } = await api.get(`/models/${encodeURIComponent(model.name)}/versions/${model.version}/validation`);
+      setValidationMessage(`${model.name} v${model.version}: artifact found, ${data.signature ? "input signature available" : "input signature missing"}.`);
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      setValidationMessage(typeof detail === "string" ? detail : "Could not validate the model artifact.");
+    } finally {
+      setValidatingModel(false);
+    }
+  };
+
+  const [lineage, setLineage] = useState<{
+    run_id: string | null;
+    metrics: Record<string, number>;
+    git_commit: string | null;
+    dataset_sha256: string | null;
+    matching_datasets: { name: string; version: number }[];
+    model_artifact_present: boolean | null;
+    dependency_files: string[];
+    tracking_available: boolean;
+  } | null>(null);
+  const [lineageError, setLineageError] = useState(false);
+  const [lineageLoading, setLineageLoading] = useState(false);
+
+  const inspectLineage = async (model: RegisteredModel) => {
+    setLineage(null);
+    setLineageError(false);
+    setLineageLoading(true);
+    try {
+      const result = await api.get(`/models/${encodeURIComponent(model.name)}/versions/${model.version}/lineage`);
+      setLineage(result.data);
+    } catch {
+      setLineageError(true);
+    } finally {
+      setLineageLoading(false);
+    }
+  };
+
+  const [syncingMetrics, setSyncingMetrics] = useState(false);
+
+  const syncMetrics = async () => {
+    setSyncingMetrics(true);
+    try {
+      const results = await Promise.allSettled(models.filter((model) => model.mlflow_run_id)
+        .map((model) => syncModelMetrics(model.name, model.version)));
+      await loadModels();
+      const synced = results.filter((result) => result.status === "fulfilled").length;
+      showSuccess(`Synced metrics for ${synced} of ${results.length} model versions.`);
+    } finally {
+      setSyncingMetrics(false);
     }
   };
 
@@ -149,14 +212,14 @@ export const ModelsPage: React.FC = () => {
       } else if (sortField === "framework") {
         comparison = (a.framework || "").localeCompare(b.framework || "");
       } else if (sortField === "latency") {
-        comparison = (a.metrics?.latency_ms || 0) - (b.metrics?.latency_ms || 0);
+        comparison = (a.metrics?.p95_latency_ms || 0) - (b.metrics?.p95_latency_ms || 0);
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
   }, [models, searchQuery, stageFilter, sortField, sortDirection]);
 
   const footprint = models.flatMap(({ name, version, metrics }) => {
-    const lat = metrics?.latency_ms;
+    const lat = metrics?.p95_latency_ms;
     const size = metrics?.size_mb;
     return lat == null && size == null ? [] : [{ name: `${name} v${version}`, lat, size }];
   });
@@ -191,6 +254,12 @@ export const ModelsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {user?.role !== "VIEWER" && models.some((model) => model.mlflow_run_id) && (
+            <button type="button" disabled={syncingMetrics} onClick={() => void syncMetrics()}
+              className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium disabled:opacity-50">
+              {syncingMetrics ? "Syncing…" : "Sync Run Metrics"}
+            </button>
+          )}
           <button
             onClick={loadModels}
             className="p-1.5 bg-white border border-slate-200 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
@@ -339,7 +408,7 @@ export const ModelsPage: React.FC = () => {
                   Model Footprint vs. Speed
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Latency (ms, bars) vs. Memory Size (MB, line)
+                  Serving p95 latency (ms) and artifact size (MB)
                 </p>
               </div>
             </div>
@@ -473,6 +542,30 @@ export const ModelsPage: React.FC = () => {
 
       {loadError && (
         <p role="alert" className="text-xs text-rose-700">Could not load the model registry.</p>
+      )}
+
+      {validationMessage && <p role="status" className="rounded-md border border-slate-200 bg-white p-3 text-sm">{validationMessage}</p>}
+
+      {(lineageLoading || lineageError || lineage) && (
+        <section className="space-y-2 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+          <div className="flex justify-between">
+            <h3 className="font-semibold">Model Lineage</h3>
+            {!lineageLoading && <button type="button" onClick={() => { setLineage(null); setLineageError(false); }}>Close</button>}
+          </div>
+          {lineageLoading && <p role="status">Loading lineage…</p>}
+          {lineageError && <p role="alert">Could not load model lineage.</p>}
+          {lineage && (
+            <dl className="grid gap-2 text-xs">
+              <div><dt className="font-semibold">MLflow run</dt><dd>{lineage.run_id ?? "Unavailable"}</dd></div>
+              <div><dt className="font-semibold">Dataset SHA-256</dt><dd className="break-all">{lineage.dataset_sha256 ?? "Unavailable"}</dd></div>
+              <div><dt className="font-semibold">Uploaded versions matching the checksum</dt><dd>{lineage.matching_datasets.map((dataset) => `${dataset.name} v${dataset.version}`).join(", ") || "None found"}</dd></div>
+              <div><dt className="font-semibold">Git commit</dt><dd className="break-all">{lineage.git_commit ?? "Unavailable"}</dd></div>
+              <div><dt className="font-semibold">MLflow model artifact</dt><dd>{lineage.model_artifact_present == null ? "Unavailable" : lineage.model_artifact_present ? "Found" : "Missing"}</dd></div>
+              <div><dt className="font-semibold">Dependency manifests</dt><dd>{lineage.dependency_files.join(", ") || "Unavailable"}</dd></div>
+              <div><dt className="font-semibold">Recorded metrics</dt><dd>{Object.entries(lineage.metrics).map(([name, value]) => `${name}: ${value}`).join(", ") || "Unavailable"}</dd></div>
+            </dl>
+          )}
+        </section>
       )}
 
       {/* ── Explorer Toolbar: Search & Stage Filter (Snowflake Clean Style) ── */}
@@ -639,7 +732,7 @@ export const ModelsPage: React.FC = () => {
                       {/* Latency */}
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="font-mono text-[11px] text-slate-700">
-                          {m.metrics?.latency_ms != null ? `${m.metrics?.latency_ms} ms` : "—"}
+                          {m.metrics?.p95_latency_ms != null ? `${m.metrics?.p95_latency_ms} ms` : "—"}
                         </span>
                       </td>
 
@@ -659,6 +752,14 @@ export const ModelsPage: React.FC = () => {
 
                       {/* Actions */}
                       <td className="px-4 py-2 text-right whitespace-nowrap">
+                        <button type="button" disabled={validatingModel} onClick={() => void validateModel(m)}
+                          className="mr-2 text-xs text-emerald-700 underline disabled:opacity-50">
+                          Validate
+                        </button>
+                        <button type="button" disabled={lineageLoading} onClick={() => void inspectLineage(m)}
+                          className="mr-2 text-xs text-emerald-700 underline disabled:opacity-50">
+                          Lineage
+                        </button>
                         <button
                           onClick={() => { setPromotionError(null); setSelectedModel(m); }}
                           disabled={!canPromote}

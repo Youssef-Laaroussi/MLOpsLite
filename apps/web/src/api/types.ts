@@ -159,8 +159,9 @@ export interface SystemStats {
     model: string;
     full_name: string;
     stage: string;
-    auc: number;
-    f1: number;
+    auc: number | null;
+    f1: number | null;
+    accuracy?: number | null;
     has_metrics: boolean;
   }[];
   latency_telemetry?: {
@@ -223,7 +224,7 @@ export interface TelemetryPoint {
   time: string;
   p50: number;
   p95: number;
-  p99: number;
+  p99: number | null;
   requests: number;
   errors: number;
 }

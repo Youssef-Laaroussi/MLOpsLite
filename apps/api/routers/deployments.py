@@ -6,7 +6,7 @@ CRUD, lifecycle control, and real-time health monitoring for container deploymen
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
@@ -46,13 +46,16 @@ async def create_deployment(
     service: DeploymentService = Depends(_get_service),
 ) -> Any:
     """Deploy a registered model version into an isolated inference container."""
-    deployment = await service.deploy_model(
-        model_name=payload.model_name,
-        model_version=payload.model_version,
-        requested_port=payload.port,
-        project_id=payload.project_id,
-        config=payload.config,
-    )
+    try:
+        deployment = await service.deploy_model(
+            model_name=payload.model_name,
+            model_version=payload.model_version,
+            requested_port=payload.port,
+            project_id=payload.project_id,
+            config=payload.config,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
     audit = AuditService(session=db)
     await audit.log(

@@ -43,7 +43,7 @@ monitoring:
 Check live feature drift breakdown for an active model:
 
 ```bash
-mlite monitor drift fraud-detector
+mlite monitor drift fraud-detector --reference <reference-dataset-id> --current <current-dataset-id>
 ```
 
 Terminal Output:

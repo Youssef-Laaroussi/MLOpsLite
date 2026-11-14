@@ -1,5 +1,6 @@
 """Deployment supervisor — automated health monitoring, crash detection, and resource telemetry."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -115,3 +116,47 @@ class DeploymentSupervisor:
                 )
 
         return reports
+
+
+async def collect_inference_telemetry() -> None:
+    """Collect serving snapshots independently of dashboard traffic."""
+    from packages.core.db.session import async_session_factory
+
+    seen: dict[str, tuple[float, int]] = {}
+    async with httpx.AsyncClient(timeout=3) as client:
+        while True:
+            try:
+                async with async_session_factory() as session:
+                    result = await session.execute(
+                        select(Deployment).where(Deployment.status == DeploymentStatus.RUNNING)
+                    )
+                    active = list(result.scalars().all())
+                next_seen = {}
+                for deployment in active:
+                    previous = seen.get(deployment.id)
+                    if previous:
+                        next_seen[deployment.id] = previous
+                    name = f"mlite-{deployment.model_name}-v{deployment.model_version}-{deployment.port}"
+                    try:
+                        response = await client.get(f"http://{name}:8000/telemetry")
+                        response.raise_for_status()
+                        sample = response.json()
+                        started, total = float(sample["started_at"]), int(sample["requests"])
+                        prior = previous[1] if previous and previous[0] == started else 0
+                        if total <= prior or sample["p95"] is None:
+                            continue
+                        async with async_session_factory.begin() as session:
+                            session.add(DeploymentMetric(
+                                deployment_id=deployment.id,
+                                requests_count=total - prior,
+                                latency_p50_ms=sample["p50"],
+                                latency_p95_ms=sample["p95"],
+                            ))
+                        next_seen[deployment.id] = (started, total)
+                        seen[deployment.id] = (started, total)
+                    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+                        continue
+                seen = next_seen
+            except Exception:
+                logger.exception("Could not collect inference telemetry")
+            await asyncio.sleep(10)

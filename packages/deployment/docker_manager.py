@@ -5,6 +5,7 @@ and collect live resource utilization metrics (CPU, Memory, I/O).
 """
 
 import logging
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,21 @@ except ImportError:
     NotFound = Exception  # type: ignore
     APIError = Exception  # type: ignore
     _DOCKER_AVAILABLE = False
+
+
+def serving_environment(model_version) -> dict[str, str]:
+    """Pass the registered artifact and storage configuration to a serving container."""
+    uri = model_version.mlflow_model_uri or model_version.artifact_path
+    if not uri:
+        raise ValueError("The registered version has no model artifact.")
+    env = {"MODEL_ARTIFACT_PATH": uri}
+    for key in ("MLFLOW_TRACKING_URI", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"):
+        if os.getenv(key):
+            env[key] = os.environ[key]
+    endpoint = os.getenv("MLFLOW_S3_ENDPOINT_URL") or os.getenv("MINIO_ENDPOINT")
+    if endpoint:
+        env["MLFLOW_S3_ENDPOINT_URL"] = endpoint
+    return env
 
 
 class DockerManager:

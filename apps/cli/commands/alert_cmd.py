@@ -5,6 +5,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
+
 console = Console()
 app = typer.Typer(no_args_is_help=True, help="Manage alerts and incident notifications")
 
@@ -31,7 +33,9 @@ def list_alerts(
         if severity:
             params["severity"] = severity.upper()
 
-        res = httpx.get(f"{api_url}/api/v1/alerts/", params=params, timeout=10.0)
+        res = httpx.get(
+            f"{api_url}/api/v1/alerts/", headers=get_auth_headers(), params=params, timeout=10.0
+        )
         if res.status_code != 200:
             console.print(f"[red]Error {res.status_code}:[/red] {res.text}")
             raise typer.Exit(code=1)
@@ -83,7 +87,11 @@ def acknowledge_alert(
 ) -> None:
     """Acknowledge an open alert."""
     try:
-        res = httpx.post(f"{api_url}/api/v1/alerts/{alert_id}/acknowledge", timeout=10.0)
+        res = httpx.post(
+            f"{api_url}/api/v1/alerts/{alert_id}/acknowledge",
+            headers=get_auth_headers(),
+            timeout=10.0,
+        )
         if res.status_code == 200:
             console.print(f"[green]✓ Alert {alert_id} acknowledged.[/green]")
         else:
@@ -103,7 +111,9 @@ def resolve_alert(
 ) -> None:
     """Mark an alert as resolved."""
     try:
-        res = httpx.post(f"{api_url}/api/v1/alerts/{alert_id}/resolve", timeout=10.0)
+        res = httpx.post(
+            f"{api_url}/api/v1/alerts/{alert_id}/resolve", headers=get_auth_headers(), timeout=10.0
+        )
         if res.status_code == 200:
             console.print(f"[green]✓ Alert {alert_id} resolved.[/green]")
         else:

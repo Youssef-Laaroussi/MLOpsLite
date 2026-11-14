@@ -12,8 +12,8 @@ import {
   Inbox,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
-import { api, fetchMonitoringSummary, triggerDriftCheck } from "../api/client";
-import { MonitoringSummary } from "../api/types";
+import { api, fetchDatasets, fetchMonitoringSummary, triggerDriftCheck } from "../api/client";
+import { Dataset, MonitoringSummary } from "../api/types";
 import {
   LineChart,
   Line,
@@ -95,14 +95,31 @@ export const MonitoringPage: React.FC = () => {
     loadData(model);
   };
 
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [datasetLoadFailed, setDatasetLoadFailed] = useState(false);
+  const [datasetsLoading, setDatasetsLoading] = useState(true);
+  const [referenceDatasetId, setReferenceDatasetId] = useState("");
+  const [currentDatasetId, setCurrentDatasetId] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetchDatasets()
+      .then((items) => { if (active) setDatasets(items.filter((item) => Boolean(item.latest_version || item.version_num))); })
+      .catch(() => { if (active) setDatasetLoadFailed(true); })
+      .finally(() => { if (active) setDatasetsLoading(false); });
+    return () => { active = false; };
+  }, []);
+
   const handleRunEvaluation = async () => {
-    if (!selectedModel && !summary?.model_name) return;
+    const modelName = selectedModel || summary?.model_name;
+    if (!modelName || !referenceDatasetId || !currentDatasetId) return;
     setEvaluating(true);
     setError(null);
     try {
       await triggerDriftCheck({
-        model_name: selectedModel || summary!.model_name,
-        drift_threshold: 0.05,
+        model_name: modelName,
+        reference_dataset_id: referenceDatasetId,
+        current_dataset_id: currentDatasetId,
       });
       await loadData(selectedModel || summary?.model_name);
     } catch (err: any) {
@@ -211,13 +228,39 @@ export const MonitoringPage: React.FC = () => {
           {/* Run Evaluation Trigger */}
           <button
             onClick={handleRunEvaluation}
-            disabled={evaluating || loading}
+            disabled={evaluating || loading || !referenceDatasetId || !currentDatasetId || !(selectedModel || summary?.model_name)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#3BB48C] hover:bg-[#329F7B] text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${evaluating ? "animate-spin" : ""}`} />
             {evaluating ? "Running Evaluation..." : "Run Drift Evaluation"}
           </button>
         </div>
+      </div>
+
+      <div className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+        {[
+          { label: "Reference dataset", value: referenceDatasetId, select: setReferenceDatasetId },
+          { label: "Current dataset", value: currentDatasetId, select: setCurrentDatasetId },
+        ].map(({ label, value, select }) => (
+          <label key={label} className="grid gap-1 text-xs font-medium text-slate-700">
+            {label}
+            <select
+              value={value}
+              onChange={(event) => select(event.target.value)}
+              disabled={evaluating || datasetsLoading || !datasets.length}
+              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm disabled:bg-slate-50"
+            >
+              <option value="">Select a dataset</option>
+              {datasets.map((dataset) => <option key={dataset.id} value={dataset.id}>{dataset.name}</option>)}
+            </select>
+          </label>
+        ))}
+        <p className="text-xs text-slate-500 sm:col-span-2">
+          {datasetLoadFailed ? "Could not load datasets. Refresh the page to try again."
+            : datasetsLoading ? "Loading datasets…"
+            : !datasets.length ? "Upload a dataset in Datasets to run an evaluation."
+            : "Each selection uses its latest uploaded version."}
+        </p>
       </div>
 
       {/* ── Error Banner ── */}

@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
 from packages.data.dvc_manager import DVCManager
 
 console = Console()
@@ -45,7 +46,12 @@ def add_dataset(
             "format": path.suffix.replace(".", "").upper() or "CSV",
             "description": description or f"Dataset from {path.name}",
         }
-        res = httpx.post(f"{api_url}/api/v1/datasets/", json=create_payload, timeout=10.0)
+        res = httpx.post(
+            f"{api_url}/api/v1/datasets/",
+            headers=get_auth_headers(),
+            json=create_payload,
+            timeout=10.0,
+        )
         if res.status_code not in (200, 201):
             console.print(f"[red]Failed to create dataset:[/red] {res.text}")
             raise typer.Exit(code=1)
@@ -53,15 +59,14 @@ def add_dataset(
         ds_data = res.json()
         dataset_id = ds_data["id"]
 
-        # 2. Register version with file path
-        ver_payload = {
-            "dataset_id": dataset_id,
-            "file_path": str(path),
-            "description": description,
-        }
-        ver_res = httpx.post(
-            f"{api_url}/api/v1/datasets/{dataset_id}/versions", json=ver_payload, timeout=30.0
-        )
+        with path.open("rb") as dataset_file:
+            ver_res = httpx.post(
+                f"{api_url}/api/v1/datasets/{dataset_id}/upload",
+                headers=get_auth_headers(),
+                files={"file": (path.name, dataset_file)},
+                data={"description": description} if description else None,
+                timeout=30.0,
+            )
         if ver_res.status_code in (200, 201):
             ver_data = ver_res.json()
             console.print(
@@ -93,7 +98,7 @@ def list_datasets(
 ) -> None:
     """List all registered datasets and their latest versions."""
     try:
-        res = httpx.get(f"{api_url}/api/v1/datasets/", timeout=5.0)
+        res = httpx.get(f"{api_url}/api/v1/datasets/", headers=get_auth_headers(), timeout=5.0)
         if res.status_code != 200:
             console.print(f"[red]Error {res.status_code}:[/red] {res.text}")
             raise typer.Exit(code=1)
@@ -132,7 +137,11 @@ def inspect_file_cli(
 ) -> None:
     """Inspect schema and column details of a local dataset file."""
     try:
-        res = httpx.get(f"{api_url}/api/v1/datasets/inspect?file_path={file_path}", timeout=15.0)
+        res = httpx.get(
+            f"{api_url}/api/v1/datasets/inspect?file_path={file_path}",
+            headers=get_auth_headers(),
+            timeout=15.0,
+        )
         if res.status_code != 200:
             console.print(f"[red]Inspection error:[/red] {res.text}")
             raise typer.Exit(code=1)

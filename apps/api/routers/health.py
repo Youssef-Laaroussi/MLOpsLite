@@ -4,6 +4,7 @@ import logging
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
 import httpx
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
@@ -25,14 +26,12 @@ router = APIRouter(prefix="/api/v1", tags=["System"])
 logger = logging.getLogger("mlite.api")
 
 
-def _safe_float(val: Any) -> float:
-    """Safely parse metric to float without throwing ValueError on invalid inputs."""
-    if val is None:
-        return 0.0
-    try:
-        return round(float(val), 3)
-    except (ValueError, TypeError):
-        return 0.0
+def _score(metrics: dict, *names: str) -> float | None:
+    for name in names:
+        value = metrics.get(name)
+        if isinstance(value, (int, float)) and 0 <= value <= 1:
+            return value
+    return None
 
 
 @router.get("/health")
@@ -140,19 +139,21 @@ async def get_system_stats(
         benchmarks = []
         for mv, model_name in bm_res.all():
             m_dict = mv.metrics or {}
-            auc_val = _safe_float(m_dict.get("auc") or m_dict.get("roc_auc"))
-            f1_val = _safe_float(m_dict.get("f1") or m_dict.get("f1_score") or m_dict.get("accuracy"))
+            auc_val = _score(m_dict, "auc", "roc_auc")
+            f1_val = _score(m_dict, "f1", "f1_score")
+            accuracy = _score(m_dict, "accuracy")
             benchmarks.append({
                 "model": f"{model_name} v{mv.version}",
                 "full_name": f"{model_name} (v{mv.version})",
                 "stage": mv.stage.value if hasattr(mv.stage, "value") else str(mv.stage),
                 "auc": auc_val,
                 "f1": f1_val,
-                "has_metrics": bool(m_dict),
+                "accuracy": accuracy,
+                "has_metrics": any(score is not None for score in (auc_val, f1_val, accuracy)),
             })
 
         # 10. Real Latency Telemetry from DeploymentMetric (no fake p99 multiplier)
-        lat_q = select(DeploymentMetric)
+        lat_q = select(DeploymentMetric).where(DeploymentMetric.requests_count > 0)
         if cutoff:
             lat_q = lat_q.where(DeploymentMetric.timestamp >= cutoff)
         lat_q = lat_q.order_by(DeploymentMetric.timestamp.desc()).limit(10)
@@ -161,8 +162,8 @@ async def get_system_stats(
         latency_telemetry = [
             {
                 "time": m.timestamp.strftime("%H:%M") if m.timestamp else "--",
-                "p50": round(m.latency_p50_ms, 1) if m.latency_p50_ms is not None else 0.0,
-                "p95": round(m.latency_p95_ms, 1) if m.latency_p95_ms is not None else 0.0,
+                "p50": round(m.latency_p50_ms, 3) if m.latency_p50_ms is not None else 0.0,
+                "p95": round(m.latency_p95_ms, 3) if m.latency_p95_ms is not None else 0.0,
                 "p99": None,
                 "reqs": m.requests_count or 0,
             }

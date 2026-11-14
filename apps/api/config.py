@@ -76,6 +76,8 @@ class Settings(BaseSettings):
         "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456")
     )
 
+    evaluation_interval_seconds: int = 0
+
     contact_smtp_host: str = ""
     contact_smtp_port: int = 587
     contact_smtp_user: str = ""

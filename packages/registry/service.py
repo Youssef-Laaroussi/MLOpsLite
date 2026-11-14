@@ -1,5 +1,8 @@
 """Model Registry service — business logic for model registration, versioning, and promotion."""
 
+import asyncio
+import logging
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +11,33 @@ from packages.core.models.model_registry import (
     ModelVersion,
     RegisteredModel,
 )
+
+logger = logging.getLogger(__name__)
+
+
+async def load_run_metrics(run_id: str) -> dict:
+    """Fetch persisted run metrics without blocking the API event loop."""
+    from packages.tracking.mlflow_client import MLiteMLflowManager
+
+    def fetch() -> dict:
+        client = MLiteMLflowManager().client
+        metrics = dict(client.get_run(run_id).data.metrics)
+        try:
+            pending = ["model"]
+            size = 0
+            while pending:
+                for artifact in client.list_artifacts(run_id, pending.pop()):
+                    if artifact.is_dir:
+                        pending.append(artifact.path)
+                    elif artifact.file_size is not None:
+                        size += artifact.file_size
+            if size:
+                metrics["size_mb"] = size / 1_000_000
+        except Exception:
+            logger.warning("Could not measure artifact size for run %s", run_id)
+        return metrics
+
+    return await asyncio.to_thread(fetch)
 
 
 class ModelRegistryService:

@@ -57,9 +57,23 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-#### Install MLite CLI:
+#### Use the MLite CLI with Docker
+
+The dashboard and REST API work without a local CLI installation. With the Compose stack running, you can use the CLI packaged in the API image from the repository root:
+
 ```bash
-pip install --user mlite-cli
+docker compose exec mlite-api mlite --help
+docker compose exec mlite-api mlite login
+docker compose exec mlite-api mlite model list
+```
+
+Paths passed to the container CLI must be accessible inside the container. To use `mlite data add` with a file on your own machine, upload it through the dashboard or use the optional local CLI.
+
+#### Install the CLI locally (optional)
+```bash
+# From the repository root, with your Python environment active
+python -m pip install -e .
+mlite --help
 ```
 
 ---

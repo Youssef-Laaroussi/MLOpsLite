@@ -9,9 +9,10 @@ Creates the ASGI application with:
 - OpenAPI / Swagger UI
 """
 
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -109,7 +110,19 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("⚠️ Admin bootstrap skipped or deferred: %s", exc)
 
-    yield
+    from packages.deployment.supervisor import collect_inference_telemetry
+
+    tasks = [asyncio.create_task(collect_inference_telemetry())]
+    if settings.evaluation_interval_seconds > 0:
+        from apps.worker.evaluation import evaluate_periodically
+        tasks.append(asyncio.create_task(evaluate_periodically(settings.evaluation_interval_seconds)))
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        with suppress(asyncio.CancelledError):
+            await asyncio.gather(*tasks)
     logger.info("🛑  %s shutting down", settings.app_name)
 
 

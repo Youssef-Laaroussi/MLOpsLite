@@ -28,13 +28,28 @@ class BasePredictor:
 
     def load(self) -> bool:
         """Attempt to load the model artifact from disk or MLflow store."""
-        if not self.artifact_path or not Path(self.artifact_path).exists():
-            logger.info(
-                "No artifact found at %s. Using internal heuristic predictor.", self.artifact_path
-            )
-            # Default / heuristic dummy model for testing & initial spins
-            self._loaded = True
-            return True
+        self._loaded = False
+        self._model = None
+        if not self.artifact_path:
+            logger.error("No model artifact configured")
+            return False
+
+        if self.artifact_path.startswith(("runs:/", "models:/", "s3://", "mlflow-artifacts:/")):
+            try:
+                import mlflow.pyfunc
+
+                self._model = mlflow.pyfunc.load_model(self.artifact_path)
+                schema = self._model.metadata.get_input_schema()
+                self._feature_names = schema.input_names() if schema and schema.has_input_names() else []
+                self._loaded = True
+                return True
+            except Exception:
+                logger.exception("Failed to load the registered MLflow model")
+                return False
+
+        if not Path(self.artifact_path).is_file():
+            logger.error("Model artifact is missing: %s", self.artifact_path)
+            return False
 
         try:
             # Try pickle / joblib
@@ -90,23 +105,16 @@ class BasePredictor:
         if not rows:
             return []
 
-        # If actual model object exists with .predict()
-        if self._model is not None and hasattr(self._model, "predict"):
-            try:
-                import numpy as np
+        import numpy as np
 
-                preds = self._model.predict(np.array(rows))
-                return preds.tolist() if hasattr(preds, "tolist") else list(preds)
-            except Exception as exc:
-                logger.warning("Underlying model predict failed: %s; falling back to score.", exc)
+        if self._feature_names:
+            import pandas as pd
 
-        # Fallback scoring heuristic: sums values modulo 2 (classification mock)
-        results = []
-        for r in rows:
-            numeric_vals = [v for v in r if isinstance(v, (int, float))]
-            score = 1 if sum(numeric_vals) % 2 == 1 else 0
-            results.append(score)
-        return results
+            data = pd.DataFrame(rows, columns=self._feature_names)
+        else:
+            data = np.asarray(rows)
+        preds = self._model.predict(data)
+        return preds.tolist() if hasattr(preds, "tolist") else list(preds)
 
     def get_metadata(self) -> dict[str, Any]:
         """Return model metadata and input schema."""

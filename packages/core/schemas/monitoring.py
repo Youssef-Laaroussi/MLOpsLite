@@ -35,8 +35,8 @@ class DataQualityReportResponse(BaseModel):
 class DriftCheckRequest(BaseModel):
     model_name: str
     deployment_id: str | None = None
-    reference_dataset_id: str | None = None
-    current_dataset_id: str | None = None
+    reference_dataset_id: str = Field(min_length=1)
+    current_dataset_id: str = Field(min_length=1)
     drift_threshold: float = Field(0.20, ge=0.01, le=1.0)
     sample_limit: int = Field(5000, ge=50, le=100000)
 
@@ -110,7 +110,7 @@ class TelemetryMetricPoint(BaseModel):
     time: str
     p50: float
     p95: float
-    p99: float
+    p99: float | None
     requests: int
     errors: int
 

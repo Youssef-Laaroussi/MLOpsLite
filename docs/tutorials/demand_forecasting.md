@@ -68,9 +68,8 @@ Output:
 Register the training split with MLite:
 
 ```bash
-mlite data register \
+mlite data add data/daily_sales_train.csv \
   --name store-demand-train \
-  --path data/daily_sales_train.csv \
   --description "140-day store sales with 7-day lags"
 ```
 
@@ -94,22 +93,13 @@ The artifact is saved to `models/demand_forecaster.pkl`.
 Register the model:
 
 ```bash
-mlite models register \
-  --name demand-forecaster \
-  --version 1 \
-  --artifact-uri "models/demand_forecaster.pkl" \
-  --framework scikit-learn \
-  --description "Store-level daily demand predictor"
+mlite model register demand-forecaster --run-id <MLFLOW_RUN_ID>
 ```
 
 Deploy the model container to port `8200`:
 
 ```bash
-mlite deployments create \
-  --name demand-forecaster-prod \
-  --model demand-forecaster \
-  --version 1 \
-  --port 8200
+mlite deploy demand-forecaster --version 1 --port 8200
 ```
 
 Verify the endpoint is operational:

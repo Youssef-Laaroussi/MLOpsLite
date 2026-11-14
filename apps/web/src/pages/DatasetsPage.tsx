@@ -1,3 +1,4 @@
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Database,
@@ -33,7 +34,12 @@ import {
 } from "../api/client";
 import { Dataset, DatasetVersion } from "../api/types";
 
+import { useAuth } from "../context/AuthContext";
+
 export const DatasetsPage: React.FC = () => {
+  const { confirmAction } = useActionFeedback();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -101,10 +107,10 @@ export const DatasetsPage: React.FC = () => {
     try {
       const [dsList, dvcInfo] = await Promise.all([
         fetchDatasets(),
-        fetchDvcStatus().catch(() => null),
+        isAdmin ? fetchDvcStatus().catch(() => null) : Promise.resolve(null),
       ]);
       setDatasets(dsList || []);
-      if (dvcInfo) setDvcStatus(dvcInfo);
+      setDvcStatus(dvcInfo);
     } catch (err: any) {
       setDatasets([]);
       setLoadError(err?.response?.data?.detail || err?.message || "Failed to load datasets from backend.");
@@ -115,7 +121,7 @@ export const DatasetsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [isAdmin]);
 
   const handleCreateDataset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +148,8 @@ export const DatasetsPage: React.FC = () => {
       setToastMessage(`Dataset "${created.name}" created and synced to MinIO!`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || "Failed to create dataset";
+      const detail = err.response?.data?.detail ?? err.response?.data?.error;
+      const msg = typeof detail === "string" ? detail : err.message || "Failed to create dataset";
       setCreateError(msg);
     } finally {
       setCreating(false);
@@ -150,14 +157,14 @@ export const DatasetsPage: React.FC = () => {
   };
 
   const handleDeleteDataset = async (datasetId: string, datasetName: string) => {
-    if (!confirm(`Are you sure you want to delete dataset "${datasetName}"?`)) return;
+    if (!(await confirmAction("Delete dataset?", `Delete “${datasetName}”?`, "Delete dataset"))) return;
     try {
       await deleteDataset(datasetId);
       await loadData();
       setToastMessage(`Dataset "${datasetName}" deleted.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: any) {
-      alert(err.response?.data?.detail || err.message || "Failed to delete dataset");
+      setLoadError(err.response?.data?.detail || err.message || "Failed to delete dataset");
     }
   };
 
@@ -282,7 +289,7 @@ export const DatasetsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* DVC Status Pill Button */}
+          {isAdmin && (
           <button
             onClick={() => setShowDvcModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
@@ -292,6 +299,7 @@ export const DatasetsPage: React.FC = () => {
             <span>DVC Remote</span>
             <span className={`w-1.5 h-1.5 rounded-full ${dvcStatus ? "bg-emerald-500" : "bg-slate-300"}`} />
           </button>
+          )}
 
           <button
             onClick={loadData}
@@ -401,23 +409,24 @@ export const DatasetsPage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  DVC &amp; Object Store Remote
+                  {isAdmin ? "DVC & Object Store Remote" : "Dataset Storage"}
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">MinIO remote storage endpoint &amp; bucket</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{isAdmin ? "MinIO remote storage endpoint & bucket" : "Version and checksum summary"}</p>
               </div>
-              <span className="text-[11px] font-mono text-emerald-700">Online</span>
             </div>
 
+            {isAdmin && (
             <div className="space-y-2 mb-4 text-xs font-mono">
               <div className="p-2 bg-slate-50 rounded border border-slate-200">
                 <span className="text-slate-400 block text-[10px] uppercase">MinIO Bucket Target</span>
-                <span className="text-slate-800 font-semibold">s3://mlite-datasets/dvc-cache</span>
+                <span className="text-slate-800 font-semibold">{dvcStatus ? `s3://${dvcStatus.remote_bucket}/${dvcStatus.remote_prefix}` : "Unavailable"}</span>
               </div>
               <div className="p-2 bg-slate-50 rounded border border-slate-200">
                 <span className="text-slate-400 block text-[10px] uppercase">Endpoint URL</span>
                 <span className="text-slate-800">{dvcStatus?.minio_endpoint || "Unavailable"}</span>
               </div>
             </div>
+            )}
 
             <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
@@ -425,7 +434,7 @@ export const DatasetsPage: React.FC = () => {
                 <span className="font-mono text-slate-800 font-semibold">{totalVersions} versions</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">SHA-256 Verified Files</span>
+                <span className="text-slate-600">Files with SHA-256</span>
                 <span className="font-mono text-slate-800 font-semibold">
                   {datasets.filter((d) => d.hash_sha256).length}/{datasets.length}
                 </span>
@@ -434,8 +443,8 @@ export const DatasetsPage: React.FC = () => {
           </div>
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>DVC CLI: {!dvcStatus ? "Unavailable" : dvcStatus.is_installed ? "Ready" : "Standalone S3 Mode"}</span>
-            <span className="text-slate-700">{datasets.length} Objects Synced</span>
+            {isAdmin && <span>DVC CLI: {!dvcStatus ? "Unavailable" : dvcStatus.is_installed ? "Ready" : "Standalone S3 Mode"}</span>}
+            <span className="text-slate-700">{datasets.length} Datasets Registered</span>
           </div>
         </div>
       </div>
@@ -615,7 +624,7 @@ export const DatasetsPage: React.FC = () => {
 
                     {/* S3 Key / MinIO */}
                     <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-600">
-                      {d.s3_key ? (
+                      {isAdmin && d.s3_key ? (
                         <span className="truncate max-w-[200px] block" title={d.s3_key}>
                           {d.s3_key.replace("s3://", "")}
                         </span>
@@ -717,6 +726,7 @@ export const DatasetsPage: React.FC = () => {
                   <Layers className="w-3.5 h-3.5" />
                   Version Lineage ({datasetVersions.length})
                 </button>
+                {isAdmin && (
                 <button
                   onClick={() => setActiveInspectorTab("dvc")}
                   className={`py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${
@@ -728,6 +738,7 @@ export const DatasetsPage: React.FC = () => {
                   <Terminal className="w-3.5 h-3.5" />
                   DVC Push / Pull Commands
                 </button>
+                )}
               </div>
             </div>
 
@@ -776,11 +787,11 @@ export const DatasetsPage: React.FC = () => {
                 </div>
               )}
 
-              {activeInspectorTab === "dvc" && (
+              {isAdmin && activeInspectorTab === "dvc" && (
                 <div className="space-y-3">
                   <div className="p-3 bg-slate-900 text-slate-100 rounded-md font-mono text-xs space-y-2">
                     <div className="text-slate-400 text-[11px]"># 1. Initialize DVC with MinIO S3 Remote</div>
-                    <div className="text-emerald-400">mlite data dvc-init --remote minio</div>
+                    <div className="text-emerald-400">mlite data dvc-init</div>
                     <div className="text-slate-400 text-[11px] pt-1"># 2. Track dataset in DVC</div>
                     <div className="text-emerald-400">dvc add data/{inspectingDataset.name}.{inspectingDataset.format.toLowerCase()}</div>
                     <div className="text-slate-400 text-[11px] pt-1"># 3. Push data to MinIO remote storage</div>
@@ -788,7 +799,7 @@ export const DatasetsPage: React.FC = () => {
                   </div>
                   <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs text-slate-600 space-y-1">
                     <div className="font-semibold text-slate-800">MinIO Target Bucket:</div>
-                    <div className="font-mono text-[11px] text-slate-700">s3://mlite-datasets/dvc-cache/</div>
+                    <div className="font-mono text-[11px] text-slate-700">{dvcStatus ? `s3://${dvcStatus.remote_bucket}/${dvcStatus.remote_prefix}` : "Unavailable"}</div>
                   </div>
                 </div>
               )}
@@ -798,7 +809,7 @@ export const DatasetsPage: React.FC = () => {
       )}
 
       {/* ── MODAL 2: DVC REMOTE CONFIGURATION ── */}
-      {showDvcModal && (
+      {isAdmin && showDvcModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -834,7 +845,7 @@ export const DatasetsPage: React.FC = () => {
 
             <div className="p-3 bg-slate-900 text-slate-200 rounded font-mono text-xs">
               <div className="text-slate-400 text-[11px] mb-1">CLI Remote Setup:</div>
-              <div>mlite data dvc-init --remote minio</div>
+              <div>mlite data dvc-init</div>
             </div>
 
             <div className="flex justify-end pt-2">
@@ -880,7 +891,7 @@ export const DatasetsPage: React.FC = () => {
                   <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Storage Source</div>
                   <div className="font-semibold text-slate-900 text-xs mt-0.5">MinIO S3 Bucket</div>
                   <div className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
-                    {lineageDataset.s3_key || `s3://mlite-datasets/${lineageDataset.name}`}
+                    {isAdmin ? lineageDataset.s3_key || "Unavailable" : "Object storage"}
                   </div>
                 </div>
 

@@ -1,12 +1,13 @@
 """Deliver public contact form submissions to a configured maintainer inbox."""
 
+import asyncio
 import logging
 import smtplib
 import ssl
 from email.message import EmailMessage
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, StringConstraints
 
 from apps.api.config import Settings, get_settings
@@ -28,11 +29,21 @@ class ContactSubmission(BaseModel):
     message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)]
 
 
+def deliver_contact(message: EmailMessage, settings: Settings) -> None:
+    with smtplib.SMTP(settings.contact_smtp_host, settings.contact_smtp_port, timeout=5) as smtp:
+        if settings.contact_smtp_starttls:
+            smtp.starttls(context=ssl.create_default_context())
+        if settings.contact_smtp_user:
+            password = settings.contact_smtp_password
+            smtp.login(settings.contact_smtp_user, password.get_secret_value() if password else "")
+        smtp.send_message(message)
+
+
 @router.post("/contact", status_code=204)
-def submit_contact(
+async def submit_contact(
     submission: ContactSubmission,
-    settings: Annotated[Settings, Depends(get_settings)],
 ) -> Response:
+    settings = get_settings()
     if not (settings.contact_smtp_host and settings.contact_from_email and settings.contact_to_email):
         raise HTTPException(503, "Contact delivery is unavailable.")
 
@@ -47,13 +58,7 @@ def submit_contact(
     )
 
     try:
-        with smtplib.SMTP(settings.contact_smtp_host, settings.contact_smtp_port, timeout=5) as smtp:
-            if settings.contact_smtp_starttls:
-                smtp.starttls(context=ssl.create_default_context())
-            if settings.contact_smtp_user:
-                password = settings.contact_smtp_password
-                smtp.login(settings.contact_smtp_user, password.get_secret_value() if password else "")
-            smtp.send_message(message)
+        await asyncio.to_thread(deliver_contact, message, settings)
     except (OSError, smtplib.SMTPException) as exc:
         logger.warning("Contact delivery failed (%s)", type(exc).__name__)
         raise HTTPException(503, "Could not send your message. Please try again.") from exc

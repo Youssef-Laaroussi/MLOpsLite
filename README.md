@@ -114,11 +114,13 @@ docker compose up -d
 
 ### 2. Activate Python Virtual Environment
 ```bash
-# Activate existing dev environment
-source yzmenv/bin/activate
+# Create and activate an environment for a fresh checkout
+python3.12 -m venv .venv
+source .venv/bin/activate
 
 # Install development dependencies in editable mode
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
+mlite --help
 ```
 
 ### 3. Initialize a New ML Project

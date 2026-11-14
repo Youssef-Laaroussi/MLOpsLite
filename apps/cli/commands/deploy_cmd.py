@@ -6,6 +6,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
+
 console = Console()
 
 app = typer.Typer(no_args_is_help=True, help="Manage model deployments and inference containers")
@@ -31,9 +33,14 @@ def deploy_model_action(
 
     console.print(f"[bold blue]Deploying[/bold blue] {model_name} (v{version})...")
     try:
-        resp = httpx.post(f"{api_url}/api/v1/deployments/", json=payload, timeout=15.0)
+        resp = httpx.post(
+            f"{api_url}/api/v1/deployments/", headers=get_auth_headers(), json=payload, timeout=90.0
+        )
         if resp.status_code in (200, 201):
             data = resp.json()
+            if data.get("status") == "FAILED":
+                console.print(f"[red]Deployment failed:[/red] {data.get('error_message') or 'Container failed to start'}")
+                raise typer.Exit(code=1)
             console.print(
                 Panel.fit(
                     f"[green]✓ Deployment Successful![/green]\n\n"
@@ -50,6 +57,8 @@ def deploy_model_action(
         else:
             console.print(f"[red]Error {resp.status_code}:[/red] {resp.text}")
             raise typer.Exit(code=1)
+    except typer.Exit:
+        raise
     except Exception as exc:
         console.print(f"[red]Failed to connect to MLite API:[/red] {exc}")
         raise typer.Exit(code=1)
@@ -63,7 +72,7 @@ def list_deployments(
 ) -> None:
     """List all active and historical deployments."""
     try:
-        resp = httpx.get(f"{api_url}/api/v1/deployments/", timeout=5.0)
+        resp = httpx.get(f"{api_url}/api/v1/deployments/", headers=get_auth_headers(), timeout=5.0)
         if resp.status_code != 200:
             console.print(f"[red]Error {resp.status_code}:[/red] {resp.text}")
             raise typer.Exit(code=1)
@@ -115,7 +124,11 @@ def stop_deployment(
 ) -> None:
     """Stop and tear down a running deployment container."""
     try:
-        resp = httpx.post(f"{api_url}/api/v1/deployments/{deployment_id}/stop", timeout=10.0)
+        resp = httpx.post(
+            f"{api_url}/api/v1/deployments/{deployment_id}/stop",
+            headers=get_auth_headers(),
+            timeout=10.0,
+        )
         if resp.status_code == 200:
             console.print(f"[green]✓ Deployment {deployment_id} stopped and port released.[/green]")
         else:
@@ -136,21 +149,29 @@ def deployment_status(
     """Display real-time health and resource metrics for a deployment container."""
     try:
         # Get deployment info
-        d_resp = httpx.get(f"{api_url}/api/v1/deployments/{deployment_id}", timeout=5.0)
+        d_resp = httpx.get(
+            f"{api_url}/api/v1/deployments/{deployment_id}", headers=get_auth_headers(), timeout=5.0
+        )
         if d_resp.status_code != 200:
             console.print(f"[red]Error fetching deployment:[/red] {d_resp.text}")
             raise typer.Exit(code=1)
         d_info = d_resp.json()
 
         # Get health probe
-        h_resp = httpx.get(f"{api_url}/api/v1/deployments/{deployment_id}/health", timeout=5.0)
+        h_resp = httpx.get(
+            f"{api_url}/api/v1/deployments/{deployment_id}/health",
+            headers=get_auth_headers(),
+            timeout=5.0,
+        )
         health_info = (
             h_resp.json() if h_resp.status_code == 200 else {"healthy": False, "status": "error"}
         )
 
         # Get metrics
         m_resp = httpx.get(
-            f"{api_url}/api/v1/deployments/{deployment_id}/metrics?limit=1", timeout=5.0
+            f"{api_url}/api/v1/deployments/{deployment_id}/metrics?limit=1",
+            headers=get_auth_headers(),
+            timeout=5.0,
         )
         latest_metrics = m_resp.json()[0] if m_resp.status_code == 200 and m_resp.json() else None
 

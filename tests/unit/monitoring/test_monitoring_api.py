@@ -154,11 +154,6 @@ async def test_get_monitoring_summary_with_real_data(test_app, mock_db):
 @pytest.mark.asyncio
 async def test_trigger_drift_check_endpoint(test_app, mock_db):
     """Verify trigger drift check executes real DataDriftDetector and returns response."""
-    # Mock no registered dataset found in DB
-    any_ds_res = MagicMock()
-    any_ds_res.scalar_one_or_none.return_value = None
-    mock_db.execute.return_value = any_ds_res
-
     created_eval = DriftEvaluation(
         model_name="fraud-detection",
         drift_share=0.0,
@@ -169,18 +164,32 @@ async def test_trigger_drift_check_endpoint(test_app, mock_db):
     )
     created_eval.id = "eval-101"
 
-    with patch("apps.api.routers.monitoring.DataDriftDetector") as mock_detector_cls:
+    import pandas as pd
+
+    frame = pd.DataFrame({"sepal_length": [5.1, 5.4]})
+    with (
+        patch("apps.api.routers.monitoring.DataDriftDetector") as mock_detector_cls,
+        patch("apps.api.routers.monitoring._load_dataframe_from_dataset", return_value=frame) as load_dataset,
+    ):
         mock_instance = MagicMock()
         mock_instance.evaluate_drift = AsyncMock(return_value=created_eval)
         mock_detector_cls.return_value = mock_instance
 
         transport = ASGITransport(app=test_app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
+            invalid = await client.post(
+                "/api/v1/monitoring/drift/check", json={"model_name": "fraud-detection"}
+            )
+            assert invalid.status_code == 422
+            load_dataset.assert_not_awaited()
+            mock_instance.evaluate_drift.assert_not_awaited()
+
             resp = await client.post(
                 "/api/v1/monitoring/drift/check",
-                json={"model_name": "fraud-detection", "drift_threshold": 0.20},
+                json={"model_name": "fraud-detection", "reference_dataset_id": "iris", "current_dataset_id": "iris"},
             )
 
+        load_dataset.assert_awaited_once_with("iris", mock_db, limit=5000)
         assert resp.status_code == 201
         data = resp.json()
         assert data["model_name"] == "fraud-detection"

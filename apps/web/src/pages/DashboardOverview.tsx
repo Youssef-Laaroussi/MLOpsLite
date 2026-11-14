@@ -1,3 +1,4 @@
+import { StatCard } from "../components/StatCard";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   FolderGit2,
@@ -171,46 +172,31 @@ export const DashboardOverview: React.FC = () => {
     {
       name: "Projects",
       count: stats.projects_count,
-      trend: stats.projects_count > 0 ? "Active" : "None",
       icon: FolderGit2,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Datasets",
       count: stats.datasets_count ?? 0,
-      trend: (stats.datasets_count ?? 0) > 0 ? "Synced" : "None",
       icon: Database,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Experiments",
       count: stats.experiments_count ?? 0,
-      trend: (stats.experiments_count ?? 0) > 0 ? "Tracked" : "None",
       icon: FlaskConical,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Models",
       count: stats.models_count,
-      trend: stats.models_count > 0 ? "Registered" : "None",
       icon: Box,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Deployments",
       count: stats.active_deployments,
-      trend: stats.active_deployments > 0 ? "Running" : "None",
       icon: Server,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
   ];
@@ -439,30 +425,16 @@ export const DashboardOverview: React.FC = () => {
       {/* ── SECTION 2: THE 5 RESOURCE KPI CARDS ────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {resourcesData.map((res) => {
-          const Icon = res.icon;
-          const href = `/app/${res.name === "Models" ? "models" : res.name.toLowerCase()}`;
+          const href = `/app/${res.name.toLowerCase()}`;
           return (
-            <Link
+            <StatCard
               key={res.name}
-              to={href}
               id={`kpi-${res.name.toLowerCase()}`}
-              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group cursor-pointer block"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg border ${res.iconBg} ${res.iconColor}`}>
-                  <Icon className="w-4 h-4 stroke-[2]" />
-                </div>
-                <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{res.name}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
-              </div>
-              <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-                {res.count}
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                <span>{res.trend}</span>
-                <span className="text-slate-400 font-normal">in platform</span>
-              </div>
-            </Link>
+              href={href}
+              title={res.name}
+              value={res.count}
+              icon={res.icon}
+            />
           );
         })}
       </div>
@@ -523,13 +495,13 @@ export const DashboardOverview: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  End-to-end response latency (P50, P95, P99 SLA threshold)
+                  Model inference latency (P50 and P95)
                 </p>
               </div>
 
               {/* Filter Pills */}
               <div className="flex items-center bg-slate-100/80 p-0.5 rounded border border-slate-200/60">
-                {(["all", "p50", "p95", "p99"] as const).map((mode) => (
+                {(["all", "p50", "p95", "p99"] as const).filter((mode) => mode !== "p99" || latencyData.some((point) => point.p99 != null)).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
@@ -848,7 +820,7 @@ export const DashboardOverview: React.FC = () => {
                   Model Benchmark Matrix
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Validation ROC-AUC vs. F1-Score recorded on registered model versions
+                  Validation ROC-AUC, F1 and accuracy recorded on registered model versions
                 </p>
               </div>
               <span className="text-[11px] font-mono text-slate-500">
@@ -878,8 +850,9 @@ export const DashboardOverview: React.FC = () => {
                             label={d.full_name || label}
                             payload={[
                               { name: "Stage", value: d.stage, color: PALETTE.grayDark },
-                              { name: "ROC-AUC", value: d.auc > 0 ? d.auc.toFixed(3) : "N/A", color: PALETTE.brand },
-                              { name: "F1-Score / Accuracy", value: d.f1 > 0 ? d.f1.toFixed(3) : "N/A", color: PALETTE.grayDark },
+                              { name: "ROC-AUC", value: d.auc?.toFixed(3) ?? "N/A", color: PALETTE.brand },
+                              { name: "F1-Score", value: d.f1?.toFixed(3) ?? "N/A", color: PALETTE.grayDark },
+                              { name: "Accuracy", value: d.accuracy?.toFixed(3) ?? "N/A", color: PALETTE.brandDark },
                             ]}
                           />
                         );
@@ -887,6 +860,7 @@ export const DashboardOverview: React.FC = () => {
                     />
                     <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[2, 2, 0, 0]} />
                     <Bar dataKey="f1" name="F1-Score" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="accuracy" name="Accuracy" fill={PALETTE.brandDark} radius={[2, 2, 0, 0]} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
                   </BarChart>
                 </ResponsiveContainer>

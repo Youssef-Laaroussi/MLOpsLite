@@ -1,3 +1,5 @@
+import { api } from "../api/client";
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   FlaskConical,
@@ -42,6 +44,7 @@ import {
 import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
 
 export const ExperimentsPage: React.FC = () => {
+  const { confirmAction } = useActionFeedback();
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -61,6 +64,28 @@ export const ExperimentsPage: React.FC = () => {
   const [newExpTagVal, setNewExpTagVal] = useState<string>("");
   const [creating, setCreating] = useState<boolean>(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [registerName, setRegisterName] = useState("");
+  const [registeringRun, setRegisteringRun] = useState(false);
+  const [registerMessage, setRegisterMessage] = useState<{ text: string; error: boolean } | null>(null);
+
+  const registerRun = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedRun || !registerName.trim() || registeringRun) return;
+    setRegisteringRun(true);
+    setRegisterMessage(null);
+    try {
+      const { data } = await api.post<{ version: number }>("/models/register", {
+        name: registerName.trim(), run_id: selectedRun.run_id,
+      });
+      setRegisterMessage({ text: `Registered v${data.version}. Find it in Model Registry.`, error: false });
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      setRegisterMessage({ text: typeof detail === "string" ? detail : "Could not register this run.", error: true });
+    } finally {
+      setRegisteringRun(false);
+    }
+  };
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -137,7 +162,7 @@ export const ExperimentsPage: React.FC = () => {
   };
 
   const handleDelete = async (expId: string, expName: string) => {
-    if (!confirm(`Are you sure you want to delete experiment "${expName}" (ID: ${expId})?`)) return;
+    if (!(await confirmAction("Delete experiment?", `Delete “${expName}” (ID: ${expId})?`, "Delete experiment"))) return;
     try {
       await deleteExperiment(expId);
       await loadData();
@@ -147,7 +172,7 @@ export const ExperimentsPage: React.FC = () => {
         setSelectedExperiment(null);
       }
     } catch (err: any) {
-      alert(err?.response?.data?.detail || err?.message || "Failed to delete experiment.");
+      setLoadError(err?.response?.data?.detail || err?.message || "Failed to delete experiment.");
     }
   };
 
@@ -506,7 +531,7 @@ export const ExperimentsPage: React.FC = () => {
                   experimentRuns.map((run) => (
                     <div
                       key={run.run_id}
-                      onClick={() => setSelectedRun(run)}
+                      onClick={() => { setSelectedRun(run); setRegisterMessage(null); }}
                       className={`p-2.5 rounded border cursor-pointer transition text-left ${
                         selectedRun?.run_id === run.run_id
                           ? "bg-white border-[#3BB48C] shadow-2xs"
@@ -542,6 +567,24 @@ export const ExperimentsPage: React.FC = () => {
               <div className="p-5 md:col-span-2 space-y-4 max-h-[60vh] overflow-y-auto bg-white">
                 {selectedRun ? (
                   <>
+                    {selectedRun.status === "FINISHED" && (
+                      <form onSubmit={registerRun} className="rounded-md border border-slate-200 p-3">
+                        <label className="block text-xs font-medium text-slate-700">
+                          Model name
+                          <input value={registerName} onChange={(event) => { setRegisterName(event.target.value); setRegisterMessage(null); }}
+                            maxLength={200} className="mt-1 block w-full rounded border border-slate-200 px-2 py-1.5" />
+                        </label>
+                        <button type="submit" disabled={registeringRun || !registerName.trim()}
+                          className="mt-2 rounded bg-emerald-700 px-3 py-1.5 text-xs text-white disabled:opacity-50">
+                          {registeringRun ? "Registering…" : "Register Model"}
+                        </button>
+                        {registerMessage && (
+                          <p role={registerMessage.error ? "alert" : "status"} className={`mt-2 text-xs ${registerMessage.error ? "text-rose-700" : "text-emerald-700"}`}>
+                            {registerMessage.text}
+                          </p>
+                        )}
+                      </form>
+                    )}
                     {/* Run Header */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                       <div>

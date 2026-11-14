@@ -116,7 +116,7 @@ Example terminal output:
   - Decrease prediction batch size (e.g. max 256 rows per request).
   - Increase deployment memory limit in config:
     ```bash
-    mlite deploy fraud-detector --version 1 --config '{"memory_limit": "2g"}'
+    mlite deploy fraud-detector --version 1
     ```
 
 ### 2. 503 Service Unavailable on `/health`

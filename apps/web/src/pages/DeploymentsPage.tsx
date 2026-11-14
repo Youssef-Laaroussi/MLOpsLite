@@ -1,3 +1,4 @@
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Server,
@@ -41,6 +42,7 @@ import {
 import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
 
 export const DeploymentsPage: React.FC = () => {
+  const { confirmAction, showSuccess } = useActionFeedback();
   const { hasRole, user } = useAuth();
   const isAdmin = user?.role === "ADMIN" || hasRole("ADMIN");
   const canDeploy = hasRole("DEVELOPER");
@@ -107,6 +109,7 @@ export const DeploymentsPage: React.FC = () => {
     setDeployError(null);
     try {
       await deployModel(modelName, modelVersion, port);
+      showSuccess("Deployment created.");
       setShowModal(false);
       setModelName("");
       setModelVersion(1);
@@ -120,9 +123,10 @@ export const DeploymentsPage: React.FC = () => {
   };
 
   const handleStop = async (id: string) => {
-    if (!confirm("Are you sure you want to stop and remove this container?")) return;
+    if (!(await confirmAction("Stop deployment?", "The inference container will be stopped and removed.", "Stop deployment"))) return;
     try {
       await stopDeployment(id);
+      showSuccess("Deployment stopped.");
       await loadDeployments();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || "Failed to stop container");

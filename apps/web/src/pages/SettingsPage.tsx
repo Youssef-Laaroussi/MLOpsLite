@@ -1,3 +1,4 @@
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useState, useEffect } from "react";
 import {
   Settings,
@@ -50,6 +51,7 @@ import {
 import { ApiKey, User, UserRole } from "../api/types";
 
 export const SettingsPage: React.FC = () => {
+  const { confirmAction } = useActionFeedback();
   const { user, updateProfile } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
@@ -283,7 +285,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleRoleChange = async (targetUser: User, role: UserRole) => {
     if (targetUser.id === user?.id && role !== "ADMIN") {
-      if (!confirm("Caution: You are demoting your own account from Admin. Continue?")) {
+      if (!(await confirmAction("Change your role?", "Your account will lose administrator permissions.", "Change role"))) {
         return;
       }
     }
@@ -306,7 +308,7 @@ export const SettingsPage: React.FC = () => {
   const handleToggleActive = async (targetUser: User) => {
     const nextState = !targetUser.is_active;
     if (targetUser.id === user?.id && !nextState) {
-      alert("You cannot deactivate your own active session!");
+      setSettingsError("You cannot deactivate your own active session.");
       return;
     }
     setUpdatingUserId(targetUser.id);
@@ -663,10 +665,10 @@ export const SettingsPage: React.FC = () => {
                   </p>
                   <div className="space-y-2">
                     <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>mlite login --token &lt;YOUR_API_KEY&gt;</code>
+                      <code>export MLITE_API_KEY="&lt;YOUR_API_KEY&gt;"</code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard("mlite login --token <YOUR_API_KEY>")}
+                        onClick={() => copyToClipboard('export MLITE_API_KEY="<YOUR_API_KEY>"')}
                         className="text-slate-400 hover:text-white transition p-1"
                         title="Copy command"
                       >
@@ -674,10 +676,10 @@ export const SettingsPage: React.FC = () => {
                       </button>
                     </div>
                     <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>{`export MLITE_TRACKING_URI="${window.location.origin}"`}</code>
+                      <code>{`export MLITE_API_URL="${window.location.origin}"`}</code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(`export MLITE_TRACKING_URI="${window.location.origin}"`)}
+                        onClick={() => copyToClipboard(`export MLITE_API_URL="${window.location.origin}"`)}
                         className="text-slate-400 hover:text-white transition p-1"
                         title="Copy command"
                       >

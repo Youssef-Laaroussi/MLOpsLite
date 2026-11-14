@@ -922,100 +922,106 @@ export const ProjectsPage: React.FC = () => {
 
       {/* ── Modal: Create New Project ── */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200/90 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <FolderGit2 className="w-4 h-4 text-emerald-600" />
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div role="dialog" aria-modal="true" aria-labelledby="create-workspace-title" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-[10px] border border-slate-200 bg-white p-5 shadow-xl sm:p-6">
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <h3 id="create-workspace-title" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-slate-900">
+                <FolderGit2 className="h-4 w-4 shrink-0 text-emerald-600" />
                 Create New Project Workspace
               </h3>
               <button
+                type="button"
+                aria-label="Close create workspace dialog"
                 onClick={() => {
                   setShowModal(false);
                   setCreateError(null);
                 }}
                 className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {createError && (
-              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+              <div className="mt-4 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span>{createError}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreate} className="space-y-3.5">
+            <form onSubmit={handleCreate} className="mt-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                <label htmlFor="create-workspace-name" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
                   Project Name
                 </label>
                 <input
                   type="text"
                   required
+                  id="create-workspace-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Credit Risk Assessment"
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                <label htmlFor="create-workspace-slug" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
                   Slug (optional — auto-generated from name)
                 </label>
                 <input
                   type="text"
+                  id="create-workspace-slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="credit-risk"
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                <label htmlFor="create-workspace-gitUrl" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
                   Git Repository URL (optional)
                 </label>
                 <input
                   type="url"
+                  id="create-workspace-gitUrl"
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
                   placeholder="https://github.com/org/repo.git"
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 uppercase tracking-wide mb-1">
+                <label htmlFor="create-workspace-description" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
                   Description
                 </label>
                 <textarea
+                  id="create-workspace-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
                   placeholder="Describe your project goals, data sources, and target metrics..."
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3 !mt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setCreateError(null);
                   }}
-                  className="px-3 py-1.5 rounded bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition"
+                  className="rounded-md bg-slate-100 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !name.trim()}
-                  className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition disabled:opacity-50"
+                  className="rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {creating ? "Creating..." : "Create Workspace"}
                 </button>

@@ -1,7 +1,10 @@
 import React from "react";
-import { LucideIcon, ArrowUpRight } from "lucide-react";
+import { LucideIcon, ChevronRight } from "lucide-react";
+
+import { Link } from "react-router-dom";
 
 interface StatCardProps {
+  id?: string;
   title: string;
   value: string | number;
   subtitle?: string;
@@ -13,6 +16,7 @@ interface StatCardProps {
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
+  id,
   title,
   value,
   subtitle,
@@ -32,53 +36,35 @@ export const StatCard: React.FC<StatCardProps> = ({
     return "text-emerald-700";
   };
 
-  const CardWrapper = href ? "a" : "div";
-
-  return (
-    <CardWrapper
-      {...(href ? { href } : {})}
-      className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group flex flex-col justify-between"
-    >
-      <div>
-        <div className="flex items-center gap-2.5">
-          {Icon && (
-            <div className="p-1.5 rounded-lg border bg-slate-100 border-slate-200/60 text-slate-700 shrink-0">
-              <Icon className="w-4 h-4 stroke-[2]" />
-            </div>
-          )}
-          <span className="text-xs font-semibold text-slate-700 flex-1 truncate">
-            {title}
-          </span>
-          {isLive ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live
-            </span>
-          ) : (
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition shrink-0" />
-          )}
-        </div>
-
-        <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-          {value}
-        </div>
+  const tone = color === "rose" ? "text-rose-700"
+    : color === "amber" ? "text-amber-700"
+    : "text-emerald-700";
+  const classes = "group block rounded-2xl border border-slate-200 bg-white px-4 py-3.5";
+  const content = (
+    <>
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+        {Icon && <Icon aria-hidden="true" className={`h-5 w-5 shrink-0 ${tone}`} />}
+        <span className="min-w-0 flex-1">{title}</span>
+        {isLive && <span className="text-[10px] font-medium text-emerald-700">Live</span>}
       </div>
-
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-        {trend && (
-          <span className={getTrendStyle(trend)}>
-            {trend}
-          </span>
-        )}
-        {subtitle && (
-          <span className="text-slate-400 font-normal truncate">
-            {trend ? `• ${subtitle}` : subtitle}
-          </span>
-        )}
-        {!subtitle && trend && (
-          <span className="text-slate-400 font-normal">vs prev. period</span>
-        )}
+      <div className={`mt-2 flex items-center gap-1.5 text-2xl font-bold tabular-nums tracking-tight ${tone}`}>
+        {value}
+        {href && <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />}
       </div>
-    </CardWrapper>
+      {(trend || subtitle) && (
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-slate-500">
+          {trend && <span className={`font-semibold ${getTrendStyle(trend)}`}>{trend}</span>}
+          {subtitle && <span>{subtitle}</span>}
+        </div>
+      )}
+    </>
+  );
+
+  return href ? (
+    <Link id={id} to={href} className={`${classes} transition hover:border-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700`}>
+      {content}
+    </Link>
+  ) : (
+    <div id={id} className={classes}>{content}</div>
   );
 };

@@ -38,7 +38,7 @@ class InferencePayloadLogger:
         async with self._lock:
             self._buffer.append(record)
             if len(self._buffer) >= self.buffer_capacity:
-                await self.flush()
+                self._buffer.clear()
 
     async def flush(self) -> list[dict[str, Any]]:
         """Flush the current buffer and return stored records."""

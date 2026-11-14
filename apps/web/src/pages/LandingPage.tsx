@@ -102,7 +102,7 @@ export const LandingPage: React.FC = () => {
     },
     {
       q: "Can I integrate MLite into my existing CI/CD or Python pipelines?",
-      a: "Yes. MLite offers a unified Python client (import mlite), an intuitive terminal CLI (mlite deployments create ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
+      a: "Yes. MLite offers a terminal CLI (mlite deploy ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
     },
   ];
 
@@ -220,13 +220,13 @@ export const LandingPage: React.FC = () => {
     {
       step: "02",
       title: "Train & Catalog",
-      code: "python src/train.py && mlite models register --version 1",
+      code: "python src/train.py\nmlite model register fraud-detector --run-id <RUN_ID>",
       desc: "Log metrics, parameters, and model artifacts to local MLflow, then catalog the model in the centralized registry.",
     },
     {
       step: "03",
       title: "Deploy & Guard",
-      code: "mlite deployments create --model fraud-detection --port 8001",
+      code: "mlite deploy fraud-detector --version <VERSION> --port 8100",
       desc: "Spawn an isolated Docker container endpoint with live health checks and Evidently AI drift guardrails.",
     },
   ];

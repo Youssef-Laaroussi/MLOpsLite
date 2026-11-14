@@ -1,8 +1,10 @@
 """Deployment service — orchestrates container creation, port management, and database persistence."""
 
+import asyncio
 import logging
 from typing import Any
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,8 +13,9 @@ from packages.core.models.deployment import (
     DeploymentMetric,
     DeploymentStatus,
 )
-from packages.deployment.docker_manager import DockerManager
+from packages.deployment.docker_manager import DockerManager, serving_environment
 from packages.deployment.ports import PortAllocator
+from packages.registry.service import ModelRegistryService
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,10 @@ class DeploymentService:
         config: dict[str, Any] | None = None,
     ) -> Deployment:
         """Allocate port, start inference container, and record deployment in database."""
+        model = await ModelRegistryService(self.session).get_version(model_name, model_version)
+        if model is None:
+            raise ValueError(f"Model version {model_name} v{model_version} is not registered.")
+        environment = serving_environment(model)
         active_ports = await self._get_active_ports()
         allocated_port = self.port_allocator.allocate(
             requested_port=requested_port, active_db_ports=active_ports
@@ -72,14 +79,30 @@ class DeploymentService:
                 model_name=model_name,
                 model_version=model_version,
                 host_port=allocated_port,
+                environment=environment,
             )
             deployment.container_id = container_info.get("container_id")
+            container_name = container_info.get("name")
+            if container_name:
+                async with httpx.AsyncClient(timeout=2) as client:
+                    for _ in range(25):
+                        try:
+                            response = await client.get(f"http://{container_name}:8000/ready")
+                            if response.status_code == 200:
+                                break
+                        except httpx.HTTPError:
+                            pass
+                        await asyncio.sleep(1)
+                    else:
+                        raise RuntimeError("The inference container did not become ready. Check its logs.")
             deployment.status = DeploymentStatus.RUNNING
             await self.session.flush()
             await self.session.refresh(deployment)
             return deployment
         except Exception as e:
             logger.error("Deployment failed for %s v%s: %s", model_name, model_version, e)
+            if deployment.container_id:
+                self.docker_manager.stop_container(deployment.container_id)
             deployment.status = DeploymentStatus.FAILED
             deployment.error_message = str(e)
             self.port_allocator.release(allocated_port)

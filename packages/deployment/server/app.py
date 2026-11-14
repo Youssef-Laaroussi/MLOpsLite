@@ -6,8 +6,10 @@ strict Pydantic input validation, latency metrics, and audit logging.
 
 import os
 import time
+from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from statistics import median
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response, status
@@ -33,6 +35,8 @@ predictor = BasePredictor(
     artifact_path=ARTIFACT_PATH,
 )
 payload_logger = InferencePayloadLogger()
+latency_samples: deque[float] = deque(maxlen=10000)
+request_count = 0
 
 
 @asynccontextmanager
@@ -92,6 +96,10 @@ async def predict(request: PredictionRequest, response: Response) -> PredictionR
     t1 = time.perf_counter()
     latency_ms = round((t1 - t0) * 1000.0, 3)
 
+    global request_count
+    latency_samples.append(latency_ms)
+    request_count += 1
+
     # Set latency response header
     response.headers["X-Inference-Latency-Ms"] = str(latency_ms)
 
@@ -110,6 +118,18 @@ async def predict(request: PredictionRequest, response: Response) -> PredictionR
         version=predictor.model_version,
         latency_ms=latency_ms,
     )
+
+
+@app.get("/telemetry", include_in_schema=False)
+async def telemetry() -> dict[str, Any]:
+    """Return aggregate latency and request count since this process started."""
+    samples = sorted(latency_samples)
+    return {
+        "started_at": START_TIME,
+        "requests": request_count,
+        "p50": median(samples) if samples else None,
+        "p95": samples[(95 * len(samples) - 1) // 100] if samples else None,
+    }
 
 
 @app.get(

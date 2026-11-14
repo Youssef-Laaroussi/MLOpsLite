@@ -28,6 +28,11 @@ class DatasetService:
         self.session = session
         self.storage = storage_client or get_storage_client()
 
+    async def dataset_name_exists(self, name: str, project_id: str | None) -> bool:
+        """Check for a name in the same workspace or among unassigned datasets."""
+        query = select(Dataset.id).where(Dataset.name == name, Dataset.project_id == project_id)
+        return await self.session.scalar(query.limit(1)) is not None
+
     async def create_dataset(
         self,
         name: str,

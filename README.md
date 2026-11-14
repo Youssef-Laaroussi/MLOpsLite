@@ -6,11 +6,6 @@
 
 ### *Lightweight Self-Hosted MLOps Platform*
 
-<p align="center">
-  <strong>MLOps without the cloud lock-in. Without the Kubernetes complexity.</strong><br>
-  <em>Data • Versioning • Tracking • Registry • Deployment • Monitoring • Alerting • Rollback</em>
-</p>
-
 <!-- Badges Section -->
 <p align="center">
   <a href="LICENSE">
@@ -38,8 +33,7 @@
 </p>
 
 <p align="center">
-  <a href="#why-mlite">Why MLite?</a> •
-  <a href="#core-lifecycle-pipeline">Lifecycle</a> •
+  <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#tech-stack">Tech Stack</a> •
@@ -50,117 +44,47 @@
 
 ---
 
-## Vision
+MLite is an open-source, self-hosted MLOps platform for small teams and
+researchers. It provides a web dashboard, a REST API, and an optional CLI for
+working with datasets, experiments, model versions, and Docker inference services.
 
-**MLite** is an open-source, lightweight, and self-hosted MLOps platform engineered specifically for **AI startups, data labs, researchers, and small data science teams**.
+## Features
 
-Enterprise MLOps platforms often demand complex Kubernetes clusters, expensive cloud subscriptions (AWS/GCP/Azure), and dedicated infrastructure teams. **MLite eliminates that barrier**:
-
-```
-Data ──► Versioning ──► Experiment ──► Registry ──► Deployment ──► Monitoring ──► Alerting ──► Rollback
-```
-
-> [!TIP]
-> **The MLite Promise**: Run your entire machine learning lifecycle on your own VPS or local workstation with a single Docker Compose command and a unified CLI.
-
----
-
-## Why MLite?
-
-| Feature | Traditional Heavyweight MLOps | The MLite Approach |
-| :--- | :--- | :--- |
-| **Infrastructure** | Kubernetes, Helm, Cloud VPCs, IAM Roles | **Docker Compose v2** (`docker compose up -d`) |
-| **Cloud Dependency** | Vendor lock-in (AWS S3, SageMaker, Vertex AI) | **100% Self-Hosted** (Local disk, MinIO, PostgreSQL) |
-| **Tooling Sprawl** | 8+ disjointed tools with separate web consoles | **Single CLI** (`mlite`) & **Unified Dashboard** |
-| **Deployment** | Complex K8s Ingress, Istio, custom pods | **One-command container serving** (`mlite deploy`) |
-| **Model Observability**| Custom Prometheus + Grafana exporters | **Built-in Data Drift & Quality** (Evidently AI) |
-| **Production Rollback** | Manual pod restarts, complex GitOps loops | **Instant 1-Command Rollback** (`mlite rollback`) |
-| **Cost** | Hundreds to thousands of dollars/month | **Zero recurring license fees** (Open Source Apache 2.0) |
-
----
-
-## Core Lifecycle Pipeline
-
-<p align="center">
-  <img src="assets/core_lifecycle_pipeline.png" alt="MLite Core Lifecycle Pipeline" width="800" />
-</p>
-
-| Lifecycle Stage | Underlying Technology | Key Capabilities |
-| :--- | :---: | :--- |
-| **1. Data Versioning** | `DVC` + `MinIO` | SHA-256 data hashing, schema profiling, remote S3 sync |
-| **2. Experiment Tracking** | `MLflow` | Hyperparameters, metrics, Git commit SHA, training artifacts |
-| **3. Model Registry** | `PostgreSQL` | Formal stages: `Development` → `Candidate` → `Staging` → `Production` |
-| **4. Container Serving** | `Docker` + `FastAPI` | Instant REST serving container (`POST /predict`, health probes) |
-| **5. Quality & Drift** | `Evidently AI` | Automated data drift tests, concept drift, feature distribution |
-| **6. Multi-channel Alerts**| `Webhooks` | Slack, Discord, Email, and HTTP webhooks on anomalies |
-| **7. Controlled Rollback** | `MLite Engine` | Zero-downtime cutover back to the last verified stable model |
-
----
+| Area | What MLite provides |
+| --- | --- |
+| Datasets | CSV, Parquet, and JSON uploads, schema inspection, and SHA-256 version fingerprints. DVC commands are available for Git-based workflows. |
+| Experiments | Inspect MLflow runs and their metrics in the dashboard. Training runs in your own Python environment or pipeline. |
+| Model Registry | Register a model from a run, sync its metrics, inspect its lineage when available, and manage version stages. Production promotion checks the model artifact and input signature. |
+| Deployments | Run registered models in dedicated Docker containers with prediction and readiness endpoints. Rollback checks the target version before stopping the previous container. |
+| Monitoring | Compare selected reference and current datasets, download drift reports, and view inference latency when telemetry is available. |
+| Alerts | Configure rules and delivery channels. Periodic evaluation of alert rules and rollback policies is opt-in. |
 
 ## Quick Start
 
-### 1. Launch Platform Infrastructure
-On your server or local machine:
+From a machine with Docker and Docker Compose v2:
 
 ```bash
-# Clone the repository and switch to dev
 git clone https://github.com/Youssef-Laaroussi/MLOpsLite.git
 cd MLOpsLite
-git checkout dev
-
-# Start self-hosted services
-docker compose up -d
+docker compose up -d --build
+docker compose ps
 ```
 
-### 2. Activate Python Virtual Environment
+Open the [dashboard](http://localhost:3000) and sign in or create an account.
+To train and serve your first model, follow the [Iris walkthrough](examples/iris/README.md).
+It covers building the serving image, configuring artifact storage, and testing a
+prediction and a drift report.
+
+### CLI
+
+Use the CLI included in the running API container:
+
 ```bash
-# Create and activate an environment for a fresh checkout
-python3.12 -m venv .venv
-source .venv/bin/activate
-
-# Install development dependencies in editable mode
-python -m pip install -e ".[dev]"
-mlite --help
+docker compose exec mlite-api mlite --help
 ```
 
-### 3. Initialize a New ML Project
-```bash
-# Bootstrap an end-to-end ML project scaffold
-mlite init fraud-detection
-cd fraud-detection
-```
-
-This generates your project workspace:
-```text
-fraud-detection/
-├── mlite.yaml        # Configuration (tracking, storage, alerts, rollback)
-├── data/             # Datasets tracked with DVC
-├── src/              # Machine learning training scripts
-├── models/           # Exported models and artifacts
-├── tests/            # Test suites
-└── README.md
-```
-
-### 4. Train, Promote & Deploy
-```bash
-# 1. Run training with automatic MLflow metrics logging
-mlite experiment run --script src/train.py
-
-# 2. Promote candidate model to production
-mlite model promote fraud-detector --version 1 --stage production
-
-# 3. Deploy dedicated inference container
-mlite deploy fraud-detector --version 1
-```
-
-Test your live inference endpoint:
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"inputs": [[0.45, 120.5, 1.0, 0.0]]}'
-```
-
----
+For direct terminal access with `mlite`, see the
+[local CLI installation instructions](docs/getting-started/installation.md).
 
 ## Architecture
 

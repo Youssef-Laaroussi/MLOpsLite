@@ -38,9 +38,8 @@ This generates `data/daily_sales_train.csv` (140 days) and `data/daily_sales_tes
 ### 3. Register Data with MLite
 
 ```bash
-mlite data register \
+mlite data add data/daily_sales_train.csv \
   --name retail-sales-train \
-  --path data/daily_sales_train.csv \
   --description "140 days store-item daily demand"
 ```
 
@@ -56,18 +55,9 @@ python src/train.py
 ### 5. Register & Deploy Model
 
 ```bash
-mlite models register \
-  --name demand-forecaster \
-  --version 1 \
-  --artifact-uri "models/demand_forecaster.pkl" \
-  --framework scikit-learn \
-  --description "Store-item daily demand forecaster"
+mlite model register demand-forecaster --run-id <MLFLOW_RUN_ID>
 
-mlite deployments create \
-  --name demand-forecaster-prod \
-  --model demand-forecaster \
-  --version 1 \
-  --port 8200
+mlite deploy demand-forecaster --version 1 --port 8200
 ```
 
 ### 6. Simulate Daily Inferences & Delayed Feedback

@@ -5,6 +5,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
+
 console = Console()
 
 app = typer.Typer(no_args_is_help=True)
@@ -16,7 +18,9 @@ DEFAULT_API_URL = "http://localhost:8000"
 def list_models(
     project: str = typer.Option(None, "--project", "-p", help="Filter by project slug"),
     stage: str = typer.Option(None, "--stage", "-s", help="Filter by stage"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """📦 List registered models."""
     table = Table(title="📦 Model Registry", show_lines=True)
@@ -32,7 +36,9 @@ def list_models(
             params["project"] = project
         if stage:
             params["stage"] = stage
-        resp = httpx.get(f"{api_url}/api/v1/models/", params=params, timeout=5.0)
+        resp = httpx.get(
+            f"{api_url}/api/v1/models/", headers=get_auth_headers(), params=params, timeout=5.0
+        )
         data = resp.json()
         models = data.get("models", [])
 
@@ -68,12 +74,15 @@ def register(
     name: str = typer.Argument(..., help="Model name"),
     run_id: str = typer.Option(..., "--run-id", "-r", help="MLflow run ID"),
     project: str = typer.Option(None, "--project", "-p", help="Project slug"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """📝 Register a model from an MLflow run."""
     try:
         resp = httpx.post(
             f"{api_url}/api/v1/models/register",
+            headers=get_auth_headers(),
             json={"name": name, "run_id": run_id, "project_slug": project},
             timeout=10.0,
         )
@@ -101,12 +110,15 @@ def promote(
         "-s",
         help="Target stage: CANDIDATE, STAGING, PRODUCTION, ARCHIVED",
     ),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """⬆️  Promote a model version to a new stage."""
     try:
         resp = httpx.post(
             f"{api_url}/api/v1/models/{name}/versions/{version}/promote",
+            headers=get_auth_headers(),
             json={"stage": stage.upper()},
             timeout=10.0,
         )
@@ -128,12 +140,15 @@ def compare(
     name: str = typer.Argument(..., help="Model name"),
     v1: int = typer.Option(..., "--v1", help="First version to compare"),
     v2: int = typer.Option(..., "--v2", help="Second version to compare"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """⚖️  Compare two model versions side by side."""
     try:
         resp = httpx.get(
             f"{api_url}/api/v1/models/compare",
+            headers=get_auth_headers(),
             params={"name": name, "v1": v1, "v2": v2},
             timeout=10.0,
         )

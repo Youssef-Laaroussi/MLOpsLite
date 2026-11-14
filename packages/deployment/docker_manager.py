@@ -5,6 +5,7 @@ and collect live resource utilization metrics (CPU, Memory, I/O).
 """
 
 import logging
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,21 @@ except ImportError:
     NotFound = Exception  # type: ignore
     APIError = Exception  # type: ignore
     _DOCKER_AVAILABLE = False
+
+
+def serving_environment(model_version) -> dict[str, str]:
+    """Pass the registered artifact and storage configuration to a serving container."""
+    uri = model_version.mlflow_model_uri or model_version.artifact_path
+    if not uri:
+        raise ValueError("The registered version has no model artifact.")
+    env = {"MODEL_ARTIFACT_PATH": uri}
+    for key in ("MLFLOW_TRACKING_URI", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"):
+        if os.getenv(key):
+            env[key] = os.environ[key]
+    endpoint = os.getenv("MLFLOW_S3_ENDPOINT_URL") or os.getenv("MINIO_ENDPOINT")
+    if endpoint:
+        env["MLFLOW_S3_ENDPOINT_URL"] = endpoint
+    return env
 
 
 class DockerManager:
@@ -76,17 +92,10 @@ class DockerManager:
         )
 
         if not self.is_available:
-            # Simulated run for offline/testing environments
-            logger.info(
-                "Docker daemon unavailable; generating mock container info for %s", container_name
+            logger.error("Docker daemon is not available or reachable; cannot run container %s", container_name)
+            raise RuntimeError(
+                f"Docker daemon is not available or reachable. Cannot launch inference container for {model_name} v{model_version}."
             )
-            return {
-                "container_id": f"simulated-{container_name}",
-                "name": container_name,
-                "status": "RUNNING",
-                "port": host_port,
-                "simulated": True,
-            }
 
         try:
             # Clean up existing container with same name if any
@@ -132,8 +141,8 @@ class DockerManager:
     def stop_container(self, container_id: str) -> bool:
         """Stop and remove a running container."""
         if not self.is_available:
-            logger.info("Simulated stop of container %s", container_id)
-            return True
+            logger.error("Docker daemon unavailable; cannot stop container %s", container_id)
+            return False
 
         try:
             container = self.client.containers.get(container_id)
@@ -149,10 +158,10 @@ class DockerManager:
         if not self.is_available:
             return {
                 "container_id": container_id,
-                "status": "RUNNING",
-                "exit_code": 0,
-                "error": None,
-                "simulated": True,
+                "status": "STOPPED",
+                "exit_code": -1,
+                "error": "Docker daemon is not available",
+                "simulated": False,
             }
 
         try:
@@ -181,10 +190,10 @@ class DockerManager:
         """Collect live CPU % and Memory MB usage from Docker stats."""
         if not self.is_available:
             return {
-                "cpu_percent": 2.5,
-                "memory_mb": 128.0,
-                "memory_limit_mb": 1024.0,
-                "simulated": True,
+                "cpu_percent": 0.0,
+                "memory_mb": 0.0,
+                "memory_limit_mb": 0.0,
+                "simulated": False,
             }
 
         try:

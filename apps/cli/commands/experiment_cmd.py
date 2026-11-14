@@ -9,6 +9,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
+
 console = Console()
 
 app = typer.Typer(no_args_is_help=True)
@@ -21,7 +23,9 @@ def run(
     script: str = typer.Argument(..., help="Path to the training script to execute"),
     project: str = typer.Option(None, "--project", "-p", help="Project slug"),
     experiment_name: str = typer.Option(None, "--name", "-n", help="Experiment name"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
 ) -> None:
     """🚂 Execute a training script with automatic experiment tracking.
 
@@ -64,7 +68,9 @@ def run(
 @app.command("list")
 def list_experiments(
     project: str = typer.Option(None, "--project", "-p", help="Filter by project slug"),
-    api_url: str = typer.Option(DEFAULT_API_URL, "--api-url", help="MLite API URL"),
+    api_url: str = typer.Option(
+        DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
+    ),
     limit: int = typer.Option(20, "--limit", "-l", help="Number of experiments to show"),
 ) -> None:
     """📋 List recent experiments and training runs."""
@@ -79,7 +85,9 @@ def list_experiments(
         params: dict[str, Any] = {"page_size": limit}
         if project:
             params["project"] = project
-        resp = httpx.get(f"{api_url}/api/v1/experiments/", params=params, timeout=5.0)
+        resp = httpx.get(
+            f"{api_url}/api/v1/experiments/", headers=get_auth_headers(), params=params, timeout=5.0
+        )
         data = resp.json()
         experiments = data.get("experiments", [])
 

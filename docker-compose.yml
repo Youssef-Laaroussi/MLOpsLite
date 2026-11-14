@@ -1,6 +1,14 @@
 name: mlite
 
 services:
+  mlite-serving:
+    image: mlite/serving:latest
+    build:
+      context: .
+      dockerfile: docker/serving/Dockerfile
+    profiles: ["serving-build"]
+
+
   # ----------------------------------------------------------------------------
   # PostgreSQL Database (mlite_db and mlflow_db)
   # ----------------------------------------------------------------------------
@@ -138,6 +146,14 @@ services:
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@mlite.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123456}
+      MLITE_EVALUATION_INTERVAL_SECONDS: "${MLITE_EVALUATION_INTERVAL_SECONDS:-0}"
+      MLITE_CONTACT_SMTP_HOST: "${MLITE_CONTACT_SMTP_HOST:-}"
+      MLITE_CONTACT_SMTP_PORT: "${MLITE_CONTACT_SMTP_PORT:-587}"
+      MLITE_CONTACT_SMTP_USER: "${MLITE_CONTACT_SMTP_USER:-}"
+      MLITE_CONTACT_SMTP_PASSWORD: "${MLITE_CONTACT_SMTP_PASSWORD:-}"
+      MLITE_CONTACT_SMTP_STARTTLS: "${MLITE_CONTACT_SMTP_STARTTLS:-true}"
+      MLITE_CONTACT_FROM_EMAIL: "${MLITE_CONTACT_FROM_EMAIL:-}"
+      MLITE_CONTACT_TO_EMAIL: "${MLITE_CONTACT_TO_EMAIL:-}"
     volumes:
       - ./apps:/app/apps
       - ./packages:/app/packages

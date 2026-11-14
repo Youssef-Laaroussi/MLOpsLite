@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { StatCard } from "../components/StatCard";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   FolderGit2,
   Database,
@@ -16,7 +17,6 @@ import {
   RefreshCw,
   Search,
   AlertTriangle,
-  Info,
 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -42,9 +42,6 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
-  FunnelChart,
-  Funnel,
-  LabelList,
   Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
@@ -83,43 +80,59 @@ export const DashboardOverview: React.FC = () => {
   const [pingResult, setPingResult] = useState<{
     id: string;
     latency: number;
+    isHealthy: boolean;
     prediction: any;
   } | null>(null);
 
   // Latency Chart filter state: 'all' | 'p50' | 'p95' | 'p99'
   const [latencyMetricFilter, setLatencyMetricFilter] = useState<"all" | "p50" | "p95" | "p99">("all");
 
+  const latestRequest = useRef(0);
+
   const loadData = async (range?: string) => {
+    const request = ++latestRequest.current;
     setLoading(true);
     setApiError(null);
     const activeRange = range !== undefined ? range : timeRange;
-    try {
-      const [statsData, modelsData, deploymentsData, servicesData] = await Promise.all([
-        fetchSystemStats(activeRange),
-        fetchModels(),
-        fetchDeployments(),
-        fetchSystemServices(),
-      ]);
+    const [statsResult, modelsResult, deploymentsResult, servicesResult] = await Promise.allSettled([
+      fetchSystemStats(activeRange),
+      fetchModels(),
+      fetchDeployments(),
+      fetchSystemServices(),
+    ]);
 
-      if (statsData) {
-        if (!statsData.system_healthy && (statsData as any).error) {
-          setApiError(`Backend System Error: ${(statsData as any).error}`);
-        }
-        setStats(statsData);
-      }
+    if (request !== latestRequest.current) return;
 
-      setModels(modelsData || []);
-      setDeployments(deploymentsData || []);
-      setServices(servicesData || []);
-    } catch (err: any) {
-      setApiError(err?.response?.data?.detail || err?.message || "Failed to load dashboard metrics.");
-    } finally {
-      setLoading(false);
+    if (statsResult.status === "fulfilled") setStats(statsResult.value);
+    if (modelsResult.status === "fulfilled") setModels(modelsResult.value ?? []);
+    if (deploymentsResult.status === "fulfilled") setDeployments(deploymentsResult.value ?? []);
+    if (servicesResult.status === "fulfilled") setServices(servicesResult.value ?? []);
+
+    const unavailable = [
+      statsResult.status === "rejected" && "system metrics",
+      modelsResult.status === "rejected" && "models",
+      deploymentsResult.status === "rejected" && "deployments",
+      servicesResult.status === "rejected" && "service status",
+    ].filter(Boolean);
+    if (unavailable.length) {
+      setApiError(`Could not refresh: ${unavailable.join(", ")}.`);
+    } else if (statsResult.status === "fulfilled" && statsResult.value.error) {
+      setApiError(statsResult.value.error);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadData(timeRange);
+    void loadData(timeRange);
+    const savedInterval = Number(localStorage.getItem("mlite_pref_refresh"));
+    const interval = [5, 15, 30, 60].includes(savedInterval) ? savedInterval : 15;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void loadData(timeRange);
+    }, interval * 1000);
+    return () => {
+      window.clearInterval(timer);
+      latestRequest.current++;
+    };
   }, [timeRange]);
 
   const handleTestPing = async (dep: Deployment) => {
@@ -127,17 +140,28 @@ export const DashboardOverview: React.FC = () => {
     setPingResult(null);
     try {
       const res = await pingDeployment(dep.id);
+      const isHealthy = Boolean(
+        res.prediction?.healthy === true ||
+        res.prediction?.status === "healthy" ||
+        res.prediction?.status === "RUNNING"
+      );
       setPingResult({
         id: dep.id,
         latency: res.latency_ms,
+        isHealthy,
         prediction: res.prediction,
-      });
+      } as any);
     } catch (err: any) {
       setPingResult({
         id: dep.id,
         latency: 0,
-        prediction: { healthy: false, error: err?.response?.data?.detail || err?.message || "unreachable" },
-      });
+        isHealthy: false,
+        prediction: {
+          healthy: false,
+          status: "UNREACHABLE",
+          error: err?.response?.data?.detail || err?.message || "Container unreachable",
+        },
+      } as any);
     } finally {
       setPingingId(null);
     }
@@ -148,46 +172,31 @@ export const DashboardOverview: React.FC = () => {
     {
       name: "Projects",
       count: stats.projects_count,
-      trend: stats.projects_count > 0 ? "Active" : "None",
       icon: FolderGit2,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Datasets",
       count: stats.datasets_count ?? 0,
-      trend: (stats.datasets_count ?? 0) > 0 ? "Synced" : "None",
       icon: Database,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Experiments",
       count: stats.experiments_count ?? 0,
-      trend: (stats.experiments_count ?? 0) > 0 ? "Tracked" : "None",
       icon: FlaskConical,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Models",
       count: stats.models_count,
-      trend: stats.models_count > 0 ? "Registered" : "None",
       icon: Box,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
     {
       name: "Deployments",
       count: stats.active_deployments,
-      trend: stats.active_deployments > 0 ? "Running" : "None",
       icon: Server,
-      iconColor: "text-slate-700",
-      iconBg: "bg-slate-100 border-slate-200/60",
       barColor: PALETTE.brand,
     },
   ];
@@ -195,12 +204,14 @@ export const DashboardOverview: React.FC = () => {
   // ── Stage Breakdown for Donut Chart (Real values only) ─────────────
   const stageCounts = useMemo(() => {
     const prod = stats.stages?.production || 0;
+    const cand = stats.stages?.candidate || 0;
     const stag = stats.stages?.staging || 0;
     const dev = stats.stages?.development || 0;
     const arch = stats.stages?.archived || 0;
-    const total = prod + stag + dev + arch;
+    const total = prod + cand + stag + dev + arch;
     return {
       PRODUCTION: prod,
+      CANDIDATE: cand,
       STAGING: stag,
       DEVELOPMENT: dev,
       ARCHIVED: arch,
@@ -211,29 +222,15 @@ export const DashboardOverview: React.FC = () => {
   const pieStageData = useMemo(() => {
     return [
       { name: "Production", value: stageCounts.PRODUCTION, color: PALETTE.brand },
-      { name: "Staging", value: stageCounts.STAGING, color: PALETTE.brandLight },
+      { name: "Candidate", value: stageCounts.CANDIDATE, color: PALETTE.brandLight },
+      { name: "Staging", value: stageCounts.STAGING, color: PALETTE.brandPale },
       { name: "Development", value: stageCounts.DEVELOPMENT, color: PALETTE.grayLight },
       { name: "Archived", value: stageCounts.ARCHIVED, color: PALETTE.grayMid },
     ].filter((item) => item.value > 0);
   }, [stageCounts]);
 
-  // Real Funnel Data from backend
-  const funnelData = useMemo(() => {
-    if (stats.funnel && stats.funnel.length > 0) {
-      const colors = [
-        PALETTE.grayLight,
-        PALETTE.grayMid,
-        PALETTE.brandPale,
-        PALETTE.brandLight,
-        PALETTE.brandDark,
-      ];
-      return stats.funnel.map((item, idx) => ({
-        ...item,
-        fill: colors[idx % colors.length],
-      }));
-    }
-    return [];
-  }, [stats.funnel]);
+  const lifecycleStages = stats.funnel ?? [];
+  const largestStage = Math.max(1, ...lifecycleStages.map(({ value }) => value));
 
   // Real Latency Telemetry from backend
   const latencyData = stats.latency_telemetry || [];
@@ -258,6 +255,9 @@ export const DashboardOverview: React.FC = () => {
       d.model_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [deployments, searchQuery]);
+
+  const displayModels = searchQuery.trim() ? filteredModels : filteredModels.slice(0, 3);
+  const displayDeployments = searchQuery.trim() ? filteredDeployments : filteredDeployments.slice(0, 3);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-150">
@@ -425,30 +425,16 @@ export const DashboardOverview: React.FC = () => {
       {/* ── SECTION 2: THE 5 RESOURCE KPI CARDS ────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {resourcesData.map((res) => {
-          const Icon = res.icon;
-          const href = `/app/${res.name === "Models" ? "models" : res.name.toLowerCase()}`;
+          const href = `/app/${res.name.toLowerCase()}`;
           return (
-            <Link
+            <StatCard
               key={res.name}
-              to={href}
               id={`kpi-${res.name.toLowerCase()}`}
-              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all group cursor-pointer block"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg border ${res.iconBg} ${res.iconColor}`}>
-                  <Icon className="w-4 h-4 stroke-[2]" />
-                </div>
-                <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{res.name}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
-              </div>
-              <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-                {res.count}
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                <span>{res.trend}</span>
-                <span className="text-slate-400 font-normal">in platform</span>
-              </div>
-            </Link>
+              href={href}
+              title={res.name}
+              value={res.count}
+              icon={res.icon}
+            />
           );
         })}
       </div>
@@ -509,13 +495,13 @@ export const DashboardOverview: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  End-to-end response latency (P50, P95, P99 SLA threshold)
+                  Model inference latency (P50 and P95)
                 </p>
               </div>
 
               {/* Filter Pills */}
               <div className="flex items-center bg-slate-100/80 p-0.5 rounded border border-slate-200/60">
-                {(["all", "p50", "p95", "p99"] as const).map((mode) => (
+                {(["all", "p50", "p95", "p99"] as const).filter((mode) => mode !== "p99" || latencyData.some((point) => point.p99 != null)).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLatencyMetricFilter(mode)}
@@ -568,20 +554,24 @@ export const DashboardOverview: React.FC = () => {
                       cursor={{ stroke: "#E2E8F0", strokeDasharray: "3 3" }}
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
+                        const p50Item = payload.find((p) => p.dataKey === "p50");
+                        const p95Item = payload.find((p) => p.dataKey === "p95");
+                        const p99Item = payload.find((p) => p.dataKey === "p99");
+                        const tooltipItems = [
+                          ...(p99Item?.value != null ? [{ name: "P99 Spike", value: `${p99Item.value} ms`, color: PALETTE.rose }] : []),
+                          { name: "P95 Tail", value: p95Item?.value != null ? `${p95Item.value} ms` : "--", color: PALETTE.grayDark },
+                          { name: "P50 Median", value: p50Item?.value != null ? `${p50Item.value} ms` : "--", color: PALETTE.brand },
+                        ];
                         return (
                           <BiTooltip
                             active
                             label={label}
-                            payload={[
-                              { name: "P99 Spike", value: `${payload.find((p) => p.dataKey === "p99")?.value} ms`, color: PALETTE.rose },
-                              { name: "P95 Tail", value: `${payload.find((p) => p.dataKey === "p95")?.value} ms`, color: PALETTE.grayDark },
-                              { name: "P50 Median", value: `${payload.find((p) => p.dataKey === "p50")?.value} ms`, color: PALETTE.brand },
-                            ]}
+                            payload={tooltipItems}
                           />
                         );
                       }}
                     />
-                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && (
+                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && latencyData.some((d) => d.p99 != null) && (
                       <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={1.5} strokeDasharray="3 3" dot={false} activeDot={{ r: 3 }} />
                     )}
                     {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
@@ -598,7 +588,7 @@ export const DashboardOverview: React.FC = () => {
                 <Activity className="w-6 h-6 text-slate-300 mb-1.5" />
                 <p className="text-xs font-semibold text-slate-700">No inference telemetry recorded yet</p>
                 <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm">
-                  Deploy a container endpoint and perform test predictions to log real P50/P95/P99 latency curves.
+                  Deploy a container endpoint and perform test predictions to log real P50/P95 latency curves.
                 </p>
               </div>
             )}
@@ -686,10 +676,14 @@ export const DashboardOverview: React.FC = () => {
             )}
 
             {/* Legend Grid */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px]">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-500" />
                 <span className="text-slate-600">Production ({stageCounts.PRODUCTION})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-emerald-400" />
+                <span className="text-slate-600">Candidate ({stageCounts.CANDIDATE})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-xs bg-emerald-300" />
@@ -755,7 +749,7 @@ export const DashboardOverview: React.FC = () => {
                           : "bg-rose-50 text-rose-700 border border-rose-200"
                       }`}
                     >
-                      {s.status}
+                      {s.uptime || s.status}
                     </span>
                   </div>
                 </div>
@@ -774,38 +768,35 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Real Lifecycle Funnel */}
+        {/* Lifecycle activity */}
         <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
           <div>
             <div className="mb-2 pb-2 border-b border-slate-100">
               <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                Lifecycle Funnel
+                Lifecycle Activity
               </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Ingestion to production progression</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Counts from ingestion through production</p>
             </div>
 
-            {funnelData.some((f) => f.value > 0) ? (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <FunnelChart>
-                    <RechartsTooltip />
-                    <Funnel dataKey="value" data={funnelData} isAnimationActive>
-                      {funnelData.map((f, idx) => (
-                        <Cell key={`funnel-${idx}`} fill={f.fill} />
-                      ))}
-                      <LabelList position="right" fill="#475569" stroke="none" dataKey="name" fontSize={11} />
-                    </Funnel>
-                  </FunnelChart>
-                </ResponsiveContainer>
-              </div>
+            {lifecycleStages.length ? (
+              <ul className="space-y-3 py-2">
+                {lifecycleStages.map(({ name, value }) => (
+                  <li key={name}>
+                    <div className="mb-1 flex justify-between gap-3 text-xs text-slate-700">
+                      <span>{name}</span>
+                      <span className="font-mono tabular-nums">{value.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                      <div
+                        className="h-full rounded-full bg-emerald-600"
+                        style={{ width: `${(value / largestStage) * 100}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div className="h-48 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
-                <Info className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">Funnel pipeline is empty</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Ingest datasets, execute runs and register models to view progression.
-                </p>
-              </div>
+              <p className="py-8 text-center text-xs text-slate-500">No lifecycle activity available.</p>
             )}
           </div>
 
@@ -829,7 +820,7 @@ export const DashboardOverview: React.FC = () => {
                   Model Benchmark Matrix
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Validation ROC-AUC vs. F1-Score recorded on registered model versions
+                  Validation ROC-AUC, F1 and accuracy recorded on registered model versions
                 </p>
               </div>
               <span className="text-[11px] font-mono text-slate-500">
@@ -859,8 +850,9 @@ export const DashboardOverview: React.FC = () => {
                             label={d.full_name || label}
                             payload={[
                               { name: "Stage", value: d.stage, color: PALETTE.grayDark },
-                              { name: "ROC-AUC", value: d.auc > 0 ? d.auc.toFixed(3) : "N/A", color: PALETTE.brand },
-                              { name: "F1-Score / Accuracy", value: d.f1 > 0 ? d.f1.toFixed(3) : "N/A", color: PALETTE.grayDark },
+                              { name: "ROC-AUC", value: d.auc?.toFixed(3) ?? "N/A", color: PALETTE.brand },
+                              { name: "F1-Score", value: d.f1?.toFixed(3) ?? "N/A", color: PALETTE.grayDark },
+                              { name: "Accuracy", value: d.accuracy?.toFixed(3) ?? "N/A", color: PALETTE.brandDark },
                             ]}
                           />
                         );
@@ -868,6 +860,7 @@ export const DashboardOverview: React.FC = () => {
                     />
                     <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[2, 2, 0, 0]} />
                     <Bar dataKey="f1" name="F1-Score" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="accuracy" name="Accuracy" fill={PALETTE.brandDark} radius={[2, 2, 0, 0]} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -941,7 +934,7 @@ export const DashboardOverview: React.FC = () => {
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Total Drift Checks: {driftData.length}</span>
-            <span>Evidently PSI</span>
+            <span>Feature drift share</span>
           </div>
         </div>
       </div>
@@ -974,16 +967,16 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {filteredModels.length === 0 ? (
+            {displayModels.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 No cataloged models found.
               </div>
             ) : (
               <div className="space-y-2.5">
-                {filteredModels.slice(0, 3).map((m, idx) => (
+                {displayModels.map((m, idx) => (
                   <Link
                     key={idx}
-                    to="/app/models"
+                    to={`/app/models?search=${encodeURIComponent(m.name)}`}
                     className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition flex items-center justify-between group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -1056,13 +1049,13 @@ export const DashboardOverview: React.FC = () => {
               </Link>
             </div>
 
-            {filteredDeployments.length === 0 ? (
+            {displayDeployments.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 No running containers found.
               </div>
             ) : (
               <div className="space-y-2.5">
-                {filteredDeployments.slice(0, 3).map((d) => (
+                {displayDeployments.map((d) => (
                   <div
                     key={d.id}
                     className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition"
@@ -1102,13 +1095,30 @@ export const DashboardOverview: React.FC = () => {
 
                     {pingResult && pingResult.id === d.id && (
                       <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px] animate-in fade-in">
-                        <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>Probe OK • Latency {pingResult.latency}ms</span>
-                        </div>
-                        <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
-                          Status: {String(pingResult.prediction?.status || (pingResult.prediction?.healthy ? "HEALTHY" : "200 OK"))}
-                        </span>
+                        {pingResult.isHealthy ? (
+                          <>
+                            <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Probe OK • Latency {pingResult.latency}ms</span>
+                            </div>
+                            <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
+                              Status: {String(pingResult.prediction?.status || "HEALTHY")}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1.5 text-rose-700 font-semibold font-mono">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span>Probe Failed • {pingResult.latency > 0 ? `${pingResult.latency}ms` : "Unreachable"}</span>
+                            </div>
+                            <span
+                              className="font-mono text-[10px] bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-md font-semibold max-w-[220px] truncate"
+                              title={String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
+                            >
+                              Status: {String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
+                            </span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

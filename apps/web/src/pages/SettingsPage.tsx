@@ -1,3 +1,4 @@
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useState, useEffect } from "react";
 import {
   Settings,
@@ -50,6 +51,7 @@ import {
 import { ApiKey, User, UserRole } from "../api/types";
 
 export const SettingsPage: React.FC = () => {
+  const { confirmAction } = useActionFeedback();
   const { user, updateProfile } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
@@ -108,14 +110,8 @@ export const SettingsPage: React.FC = () => {
   };
 
   // Preferences state (stored in localStorage)
-  const [defaultEnv, setDefaultEnv] = useState<string>(
-    () => localStorage.getItem("mlite_pref_env") || "Production"
-  );
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(
     () => Number(localStorage.getItem("mlite_pref_refresh")) || 15
-  );
-  const [themeMode, setThemeMode] = useState<string>(
-    () => localStorage.getItem("mlite_pref_theme") || "system"
   );
   const [prefSaved, setPrefSaved] = useState(false);
 
@@ -216,9 +212,7 @@ export const SettingsPage: React.FC = () => {
 
   // Save Preferences
   const handleSavePreferences = () => {
-    localStorage.setItem("mlite_pref_env", defaultEnv);
     localStorage.setItem("mlite_pref_refresh", String(autoRefreshInterval));
-    localStorage.setItem("mlite_pref_theme", themeMode);
     setPrefSaved(true);
     setTimeout(() => setPrefSaved(false), 2500);
     showSuccessBanner("Preferences saved successfully!");
@@ -291,7 +285,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleRoleChange = async (targetUser: User, role: UserRole) => {
     if (targetUser.id === user?.id && role !== "ADMIN") {
-      if (!confirm("Caution: You are demoting your own account from Admin. Continue?")) {
+      if (!(await confirmAction("Change your role?", "Your account will lose administrator permissions.", "Change role"))) {
         return;
       }
     }
@@ -314,7 +308,7 @@ export const SettingsPage: React.FC = () => {
   const handleToggleActive = async (targetUser: User) => {
     const nextState = !targetUser.is_active;
     if (targetUser.id === user?.id && !nextState) {
-      alert("You cannot deactivate your own active session!");
+      setSettingsError("You cannot deactivate your own active session.");
       return;
     }
     setUpdatingUserId(targetUser.id);
@@ -459,7 +453,7 @@ export const SettingsPage: React.FC = () => {
           }`}
         >
           <Sliders className="w-4 h-4" />
-          Preferences &amp; Defaults
+          Preferences
         </button>
 
         {isAdmin && (
@@ -671,10 +665,10 @@ export const SettingsPage: React.FC = () => {
                   </p>
                   <div className="space-y-2">
                     <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>mlite login --token &lt;YOUR_API_KEY&gt;</code>
+                      <code>export MLITE_API_KEY="&lt;YOUR_API_KEY&gt;"</code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard("mlite login --token <YOUR_API_KEY>")}
+                        onClick={() => copyToClipboard('export MLITE_API_KEY="<YOUR_API_KEY>"')}
                         className="text-slate-400 hover:text-white transition p-1"
                         title="Copy command"
                       >
@@ -682,10 +676,10 @@ export const SettingsPage: React.FC = () => {
                       </button>
                     </div>
                     <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>export MLITE_TRACKING_URI="http://localhost:8000"</code>
+                      <code>{`export MLITE_API_URL="${window.location.origin}"`}</code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard('export MLITE_TRACKING_URI="http://localhost:8000"')}
+                        onClick={() => copyToClipboard(`export MLITE_API_URL="${window.location.origin}"`)}
                         className="text-slate-400 hover:text-white transition p-1"
                         title="Copy command"
                       >
@@ -1025,29 +1019,10 @@ export const SettingsPage: React.FC = () => {
               Platform Workspace Preferences
             </h3>
             <p className="text-xs text-slate-500 mb-6">
-              Customize dashboard behaviors, environment defaults, and polling intervals.
+              Set how often Overview refreshes its metrics.
             </p>
 
             <div className="space-y-6 max-w-2xl">
-              {/* Default Deployment Environment */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Default Target Environment</h4>
-                  <p className="text-[11px] text-slate-500">
-                    Selected environment filter when launching the monitoring and deployments dashboard.
-                  </p>
-                </div>
-                <select
-                  value={defaultEnv}
-                  onChange={(e) => setDefaultEnv(e.target.value)}
-                  className="px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
-                >
-                  <option value="Production">Production</option>
-                  <option value="Staging">Staging</option>
-                  <option value="Development">Development</option>
-                </select>
-              </div>
-
               {/* Auto-refresh interval */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
                 <div>
@@ -1065,25 +1040,6 @@ export const SettingsPage: React.FC = () => {
                   <option value={15}>Every 15 seconds (Recommended)</option>
                   <option value={30}>Every 30 seconds</option>
                   <option value={60}>Every 1 minute</option>
-                </select>
-              </div>
-
-              {/* Theme preference */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Appearance Theme</h4>
-                  <p className="text-[11px] text-slate-500">
-                    Interface style: clean enterprise light mode or system sync.
-                  </p>
-                </div>
-                <select
-                  value={themeMode}
-                  onChange={(e) => setThemeMode(e.target.value)}
-                  className="px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
-                >
-                  <option value="system">System Default</option>
-                  <option value="light">MLite Crisp Light</option>
-                  <option value="dark">Dark Theme (Preview)</option>
                 </select>
               </div>
 

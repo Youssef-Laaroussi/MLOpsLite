@@ -8,12 +8,12 @@ import {
   Layers,
   Server,
   AlertTriangle,
-  ExternalLink,
+  Download,
   Inbox,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
-import { fetchMonitoringSummary, triggerDriftCheck } from "../api/client";
-import { MonitoringSummary } from "../api/types";
+import { api, fetchDatasets, fetchMonitoringSummary, triggerDriftCheck } from "../api/client";
+import { Dataset, MonitoringSummary } from "../api/types";
 import {
   LineChart,
   Line,
@@ -22,7 +22,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  ReferenceLine,
   Legend,
 } from "recharts";
 import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
@@ -39,6 +38,8 @@ interface FeatureRow {
 
 export const MonitoringPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [evaluating, setEvaluating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +47,26 @@ export const MonitoringPage: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState<boolean>(false);
   const [selectedFeatureIndex, setSelectedFeatureIndex] = useState<number>(0);
+
+  const downloadReport = async (id: string) => {
+    setDownloadingReport(true);
+    setReportError(null);
+    try {
+      const { data } = await api.get<Blob>(`/monitoring/reports/${encodeURIComponent(id)}/html`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `drift-report-${id}.html`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setReportError("Could not download the drift report. Please try again.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
 
   const loadData = async (modelName?: string) => {
     try {
@@ -74,14 +95,31 @@ export const MonitoringPage: React.FC = () => {
     loadData(model);
   };
 
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [datasetLoadFailed, setDatasetLoadFailed] = useState(false);
+  const [datasetsLoading, setDatasetsLoading] = useState(true);
+  const [referenceDatasetId, setReferenceDatasetId] = useState("");
+  const [currentDatasetId, setCurrentDatasetId] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetchDatasets()
+      .then((items) => { if (active) setDatasets(items.filter((item) => Boolean(item.latest_version || item.version_num))); })
+      .catch(() => { if (active) setDatasetLoadFailed(true); })
+      .finally(() => { if (active) setDatasetsLoading(false); });
+    return () => { active = false; };
+  }, []);
+
   const handleRunEvaluation = async () => {
-    if (!selectedModel && !summary?.model_name) return;
+    const modelName = selectedModel || summary?.model_name;
+    if (!modelName || !referenceDatasetId || !currentDatasetId) return;
     setEvaluating(true);
     setError(null);
     try {
       await triggerDriftCheck({
-        model_name: selectedModel || summary!.model_name,
-        drift_threshold: 0.05,
+        model_name: modelName,
+        reference_dataset_id: referenceDatasetId,
+        current_dataset_id: currentDatasetId,
       });
       await loadData(selectedModel || summary?.model_name);
     } catch (err: any) {
@@ -113,21 +151,24 @@ export const MonitoringPage: React.FC = () => {
     });
   }, [summary]);
 
-  // Derive genuine PSI / drift timeline from drift_history
-  const psiTimeline = useMemo(() => {
+  // Derive drift share timeline from drift_history
+  const driftTimeline = useMemo(() => {
     if (!summary?.drift_history?.length) return [];
     return summary.drift_history
       .slice()
       .reverse()
       .map((d) => ({
         date: new Date(d.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        psi: d.drift_share,
+        driftShare: d.drift_share,
       }));
   }, [summary]);
 
   const activeFeature = features[selectedFeatureIndex] || features[0];
   const driftedCount = features.filter((f) => f.drift).length;
-  const currentPsi = summary?.latest_drift ? summary.latest_drift.drift_share : 0.0;
+  const currentDriftShare = summary?.latest_drift ? summary.latest_drift.drift_share : 0.0;
+  const reportId = summary?.latest_drift?.id;
+  const driftStatus = summary?.latest_drift?.drift_status;
+  const driftColor = driftStatus === "HIGH" ? "rose" : driftStatus === "MEDIUM" ? "amber" : driftStatus === "LOW" ? "emerald" : "blue";
   const activeDeploymentsCount = summary?.active_deployments ?? 0;
 
   return (
@@ -187,13 +228,39 @@ export const MonitoringPage: React.FC = () => {
           {/* Run Evaluation Trigger */}
           <button
             onClick={handleRunEvaluation}
-            disabled={evaluating || loading}
+            disabled={evaluating || loading || !referenceDatasetId || !currentDatasetId || !(selectedModel || summary?.model_name)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#3BB48C] hover:bg-[#329F7B] text-white font-semibold text-xs shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${evaluating ? "animate-spin" : ""}`} />
             {evaluating ? "Running Evaluation..." : "Run Drift Evaluation"}
           </button>
         </div>
+      </div>
+
+      <div className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+        {[
+          { label: "Reference dataset", value: referenceDatasetId, select: setReferenceDatasetId },
+          { label: "Current dataset", value: currentDatasetId, select: setCurrentDatasetId },
+        ].map(({ label, value, select }) => (
+          <label key={label} className="grid gap-1 text-xs font-medium text-slate-700">
+            {label}
+            <select
+              value={value}
+              onChange={(event) => select(event.target.value)}
+              disabled={evaluating || datasetsLoading || !datasets.length}
+              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm disabled:bg-slate-50"
+            >
+              <option value="">Select a dataset</option>
+              {datasets.map((dataset) => <option key={dataset.id} value={dataset.id}>{dataset.name}</option>)}
+            </select>
+          </label>
+        ))}
+        <p className="text-xs text-slate-500 sm:col-span-2">
+          {datasetLoadFailed ? "Could not load datasets. Refresh the page to try again."
+            : datasetsLoading ? "Loading datasets…"
+            : !datasets.length ? "Upload a dataset in Datasets to run an evaluation."
+            : "Each selection uses its latest uploaded version."}
+        </p>
       </div>
 
       {/* ── Error Banner ── */}
@@ -241,16 +308,12 @@ export const MonitoringPage: React.FC = () => {
           trend={activeDeploymentsCount > 0 ? "Online" : "Idle"}
         />
         <StatCard
-          title="Drift Share Score"
-          value={summary?.latest_drift ? `${(currentPsi * 100).toFixed(1)}%` : "--"}
-          subtitle={
-            summary?.latest_drift
-              ? `Status: ${summary.latest_drift.drift_status}`
-              : "Awaiting run"
-          }
+          title="Drift Share"
+          value={summary?.latest_drift ? `${(currentDriftShare * 100).toFixed(1)}%` : "--"}
+          subtitle="Share of features with detected drift"
           icon={Activity}
-          color={!summary?.latest_drift ? "blue" : currentPsi < 0.2 ? "emerald" : "amber"}
-          trend={!summary?.latest_drift ? "--" : currentPsi < 0.2 ? "Stable Dist." : "Shift Detected"}
+          color={driftColor}
+          trend={driftStatus ?? "Awaiting run"}
         />
         <StatCard
           title="Total Feedback Ingested"
@@ -282,9 +345,9 @@ export const MonitoringPage: React.FC = () => {
             </div>
 
             <div className="h-56 w-full mt-2">
-              {psiTimeline.length > 0 ? (
+              {driftTimeline.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={psiTimeline} margin={{ top: 15, right: 15, left: -15, bottom: 0 }}>
+                  <LineChart data={driftTimeline} margin={{ top: 15, right: 15, left: -15, bottom: 0 }}>
                     <CartesianGrid {...GRID_PROPS} />
                     <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                     <YAxis
@@ -294,12 +357,6 @@ export const MonitoringPage: React.FC = () => {
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                    />
-                    <ReferenceLine
-                      y={0.20}
-                      stroke="#D97706"
-                      strokeDasharray="3 3"
-                      label={{ value: "Warning threshold (20%)", position: "insideTopRight", fill: "#D97706", fontSize: 10 }}
                     />
                     <RechartsTooltip
                       content={({ active, payload, label }) => {
@@ -311,7 +368,6 @@ export const MonitoringPage: React.FC = () => {
                             label={`Evaluation Time: ${label}`}
                             payload={[
                               { name: "Drift Share", value: `${(val * 100).toFixed(1)}%`, color: "#3BB48C" },
-                              { name: "Threshold", value: "20.0%", color: "#64748B" },
                             ]}
                           />
                         );
@@ -319,7 +375,7 @@ export const MonitoringPage: React.FC = () => {
                     />
                     <Line
                       type="monotone"
-                      dataKey="psi"
+                      dataKey="driftShare"
                       stroke="#3BB48C"
                       strokeWidth={2}
                       dot={{ r: 4, fill: "#3BB48C" }}
@@ -340,9 +396,7 @@ export const MonitoringPage: React.FC = () => {
 
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
             <span>Engine: 2-sample KS-test &amp; MinIO S3</span>
-            <span className={currentPsi <= 0.2 ? "text-[#329F7B] font-semibold" : "text-amber-600 font-semibold"}>
-              {summary?.latest_drift ? (currentPsi <= 0.2 ? "Stable Distribution" : "Action Required") : "Pending Run"}
-            </span>
+            <span className="font-semibold">{driftStatus ?? "Pending Run"}</span>
           </div>
         </div>
 
@@ -397,6 +451,8 @@ export const MonitoringPage: React.FC = () => {
         </div>
       </div>
 
+      {reportError && <p role="alert" className="text-xs text-rose-700">{reportError}</p>}
+
       {/* ── Feature Distribution & Drift Scores Table ── */}
       <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -409,16 +465,16 @@ export const MonitoringPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {summary?.latest_drift?.id && (
-              <a
-                href={`/api/v1/monitoring/reports/${summary.latest_drift.id}/html`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1 text-xs font-medium text-[#329F7B] hover:text-[#257A5E] bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded transition"
+            {reportId && (
+              <button
+                type="button"
+                disabled={downloadingReport}
+                onClick={() => void downloadReport(reportId)}
+                className="flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-[#329F7B] hover:bg-slate-100 disabled:opacity-50"
               >
-                <span>View Full HTML Report</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+                <span>{downloadingReport ? "Downloading…" : "Download HTML Report"}</span>
+                <Download className="h-3.5 w-3.5" />
+              </button>
             )}
             <span className="text-xs text-slate-500 font-mono">
               Evaluated:{" "}

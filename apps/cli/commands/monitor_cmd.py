@@ -6,6 +6,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from apps.cli.credentials import get_auth_headers
+
 console = Console()
 app = typer.Typer(no_args_is_help=True, help="Monitor feature drift and model performance")
 
@@ -15,6 +17,8 @@ DEFAULT_API_URL = "http://localhost:8000"
 @app.command("drift")
 def check_drift(
     model_name: str = typer.Argument(..., help="Registered model name"),
+    reference: str = typer.Option(..., "--reference", help="Reference dataset ID"),
+    current: str = typer.Option(..., "--current", help="Current dataset ID"),
     threshold: float = typer.Option(
         0.20, "--threshold", "-t", help="Drift ratio threshold (default: 0.20)"
     ),
@@ -22,11 +26,21 @@ def check_drift(
         DEFAULT_API_URL, "--api-url", envvar="MLITE_API_URL", help="MLite API URL"
     ),
 ) -> None:
-    """Run data drift detection comparing baseline vs live inference payloads."""
+    """Run data drift detection comparing two uploaded datasets."""
     console.print(f"[bold cyan]Running drift analysis[/bold cyan] for model '{model_name}'...")
     try:
-        payload = {"model_name": model_name, "drift_threshold": threshold}
-        res = httpx.post(f"{api_url}/api/v1/monitoring/drift/check", json=payload, timeout=20.0)
+        payload = {
+            "model_name": model_name,
+            "drift_threshold": threshold,
+            "reference_dataset_id": reference,
+            "current_dataset_id": current,
+        }
+        res = httpx.post(
+            f"{api_url}/api/v1/monitoring/drift/check",
+            headers=get_auth_headers(),
+            json=payload,
+            timeout=20.0,
+        )
 
         if res.status_code not in (200, 201):
             console.print(f"[red]Error {res.status_code}:[/red] {res.text}")
@@ -62,7 +76,11 @@ def check_performance(
 ) -> None:
     """Inspect live production performance metrics and concept degradation."""
     try:
-        res = httpx.get(f"{api_url}/api/v1/monitoring/performance/{model_name}", timeout=10.0)
+        res = httpx.get(
+            f"{api_url}/api/v1/monitoring/performance/{model_name}",
+            headers=get_auth_headers(),
+            timeout=10.0,
+        )
         if res.status_code != 200:
             console.print(f"[red]Error {res.status_code}:[/red] {res.text}")
             raise typer.Exit(code=1)

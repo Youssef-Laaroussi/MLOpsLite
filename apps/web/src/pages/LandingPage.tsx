@@ -37,8 +37,37 @@ import {
   Minus,
 } from "lucide-react";
 
+import { sendContactMessage } from "../api/client";
+
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactTopic, setContactTopic] = useState("feedback");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactResult, setContactResult] = useState<"sent" | "failed" | null>(null);
+
+  const handleContactSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (contactLoading || !contactMessage.trim()) return;
+    setContactLoading(true);
+    setContactResult(null);
+    try {
+      await sendContactMessage({
+        name: contactName.trim(),
+        email: contactEmail.trim(),
+        topic: contactTopic,
+        message: contactMessage.trim(),
+      });
+      setContactResult("sent");
+      setContactMessage("");
+    } catch {
+      setContactResult("failed");
+    } finally {
+      setContactLoading(false);
+    }
+  };
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -47,12 +76,6 @@ export const LandingPage: React.FC = () => {
   const [mouseCoord, setMouseCoord] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Contact Us Form State
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactTopic, setContactTopic] = useState("feedback");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [contactLoading, setContactLoading] = useState(false);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -79,19 +102,9 @@ export const LandingPage: React.FC = () => {
     },
     {
       q: "Can I integrate MLite into my existing CI/CD or Python pipelines?",
-      a: "Yes. MLite offers a unified Python client (import mlite), an intuitive terminal CLI (mlite deployments create ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
+      a: "Yes. MLite offers a terminal CLI (mlite deploy ...), and fully documented REST OpenAPI endpoints to plug straight into GitHub Actions, Airflow, or Kubeflow.",
     },
   ];
-
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactEmail.trim() || !contactMessage.trim()) return;
-    setContactLoading(true);
-    setTimeout(() => {
-      setContactLoading(false);
-      setContactSubmitted(true);
-    }, 600);
-  };
 
   const handleCardMouseMove = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -207,13 +220,13 @@ export const LandingPage: React.FC = () => {
     {
       step: "02",
       title: "Train & Catalog",
-      code: "python src/train.py && mlite models register --version 1",
+      code: "python src/train.py\nmlite model register fraud-detector --run-id <RUN_ID>",
       desc: "Log metrics, parameters, and model artifacts to local MLflow, then catalog the model in the centralized registry.",
     },
     {
       step: "03",
       title: "Deploy & Guard",
-      code: "mlite deployments create --model fraud-detection --port 8001",
+      code: "mlite deploy fraud-detector --version <VERSION> --port 8100",
       desc: "Spawn an isolated Docker container endpoint with live health checks and Evidently AI drift guardrails.",
     },
   ];
@@ -855,28 +868,6 @@ export const LandingPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {contactSubmitted ? (
-                    <div className="p-8 rounded-2xl bg-slate-800/90 border border-[#3BB48C]/40 text-center space-y-4 animate-fadeIn">
-                      <div className="w-14 h-14 mx-auto rounded-full bg-[#3BB48C]/20 border border-[#3BB48C] flex items-center justify-center text-[#3BB48C]">
-                        <Check className="w-7 h-7 stroke-[3]" />
-                      </div>
-                      <h5 className="font-display text-xl font-bold text-white">Message Received!</h5>
-                      <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                        Thank you for reaching out to the MLite open-source maintainers. We appreciate your feedback and will reply to <span className="text-[#3BB48C] font-mono font-semibold">{contactEmail}</span> shortly.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setContactSubmitted(false);
-                          setContactName("");
-                          setContactEmail("");
-                          setContactMessage("");
-                        }}
-                        className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition cursor-pointer"
-                      >
-                        Send Another Message
-                      </button>
-                    </div>
-                  ) : (
                     <form onSubmit={handleContactSubmit} className="space-y-5">
                       <div>
                         <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -886,6 +877,7 @@ export const LandingPage: React.FC = () => {
                           type="text"
                           required
                           value={contactName}
+                          maxLength={120}
                           onChange={(e) => setContactName(e.target.value)}
                           placeholder="Your Name (or GitHub Handle)"
                           className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
@@ -900,6 +892,7 @@ export const LandingPage: React.FC = () => {
                           type="email"
                           required
                           value={contactEmail}
+                          maxLength={254}
                           onChange={(e) => setContactEmail(e.target.value)}
                           placeholder="name@organization.org"
                           className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition"
@@ -931,6 +924,7 @@ export const LandingPage: React.FC = () => {
                           required
                           rows={4}
                           value={contactMessage}
+                          maxLength={5000}
                           onChange={(e) => setContactMessage(e.target.value)}
                           placeholder="Tell us what you are working on, any questions about MLite, or details about your deployment setup..."
                           className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#3BB48C] focus:ring-2 focus:ring-[#3BB48C]/20 transition resize-none"
@@ -943,21 +937,12 @@ export const LandingPage: React.FC = () => {
                           disabled={contactLoading}
                           className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] active:bg-[#288365] text-white font-bold text-sm transition shadow-lg shadow-[#3BB48C]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                         >
-                          {contactLoading ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span>Sending...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Submit Message</span>
-                              <Send className="w-4 h-4" />
-                            </>
-                          )}
+                          {contactLoading ? "Sending…" : "Send Message"}
                         </button>
                       </div>
+                      {contactResult === "sent" && <p role="status" className="text-sm text-emerald-300">Your message was sent.</p>}
+                      {contactResult === "failed" && <p role="alert" className="text-sm text-rose-300">Could not send your message. Please try again or use GitHub Issues.</p>}
                     </form>
-                  )}
                 </div>
               </div>
             </div>

@@ -9,6 +9,7 @@ Orchestrates zero-downtime rollback:
 6. Writes permanent audit log entry.
 """
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 
@@ -23,7 +24,7 @@ from packages.core.models.rollback import (
     RollbackStatus,
     RollbackTrigger,
 )
-from packages.deployment.docker_manager import DockerManager
+from packages.deployment.docker_manager import DockerManager, serving_environment
 from packages.deployment.ports import PortAllocator
 
 logger = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ class RollbackCoordinator:
         try:
             # 5. Start the target version container
             target_deployment = await self._start_target_container(
-                model_name, target_version, current_deployment
+                model_name, target_version, current_deployment, target_model_version
             )
 
             # 6. Health check the target container (supports _health_check and _check_health overrides)
@@ -237,6 +238,7 @@ class RollbackCoordinator:
         model_name: str,
         target_version: int,
         current_deployment: Deployment,
+        target_model_version: ModelVersion,
     ) -> Deployment:
         """Launch the target version container with a new port allocation."""
         existing_deployment = None
@@ -293,6 +295,7 @@ class RollbackCoordinator:
                 model_name=model_name,
                 model_version=target_version,
                 host_port=new_port,
+                environment=serving_environment(target_model_version),
             )
             target_deployment.container_id = container_info.get("container_id")
             target_deployment.status = DeploymentStatus.RUNNING
@@ -310,21 +313,26 @@ class RollbackCoordinator:
 
     async def _health_check(self, deployment: Deployment) -> bool:
         """Probe the health endpoint of a deployment container."""
-        health_url = f"{deployment.endpoint_url}/health"
-        try:
-            async with httpx.AsyncClient(timeout=self.HEALTH_CHECK_TIMEOUT_SECONDS) as client:
-                resp = await client.get(health_url)
-                return resp.status_code == 200
-        except Exception as exc:
-            logger.warning(
-                "Health check failed for deployment %s: %s",
-                deployment.id,
-                exc,
-            )
-            # For simulated containers, treat as healthy
-            if deployment.container_id and deployment.container_id.startswith("simulated-"):
-                return True
-            return False
+        name = f"mlite-{deployment.model_name}-v{deployment.model_version}-{deployment.port}"
+        urls = (f"http://{name}:8000", deployment.endpoint_url)
+        async with httpx.AsyncClient(timeout=2) as client:
+            for attempt in range(15):
+                for url in urls:
+                    try:
+                        response = await client.get(f"{url}/metadata")
+                        if response.status_code != 200:
+                            continue
+                        metadata = response.json()
+                        if metadata.get("model") != deployment.model_name or str(metadata.get("version")) != str(deployment.model_version):
+                            continue
+                        ready = await client.get(f"{url}/ready")
+                        if ready.status_code == 200:
+                            return True
+                    except (httpx.HTTPError, ValueError):
+                        continue
+                if attempt < 14:
+                    await asyncio.sleep(1)
+        return False
 
     # Backward compatibility alias
     _check_health = _health_check

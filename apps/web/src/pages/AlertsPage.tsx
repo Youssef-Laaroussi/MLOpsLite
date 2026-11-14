@@ -1,3 +1,5 @@
+import { StatCard } from "../components/StatCard";
+import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useTransition } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -59,6 +61,7 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export const AlertsPage: React.FC = () => {
+  const { confirmAction, showSuccess } = useActionFeedback();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
@@ -139,15 +142,17 @@ export const AlertsPage: React.FC = () => {
     try {
       const updated = await toggleAlertRule(rule.id, !rule.enabled);
       setRules((prev) => prev.map((r) => (r.id === rule.id ? updated : r)));
+      showSuccess("Alert rule updated.");
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to update alert rule");
     }
   };
 
   const handleDeleteRule = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this alert rule?")) return;
+    if (!(await confirmAction("Delete alert rule?", "This rule will no longer be evaluated.", "Delete rule"))) return;
     try {
       await deleteAlertRule(id);
+      showSuccess("Alert rule deleted.");
       setRules((prev) => prev.filter((r) => r.id !== id));
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to delete alert rule");
@@ -168,6 +173,7 @@ export const AlertsPage: React.FC = () => {
         enabled: true,
       });
       setRules((prev) => [created, ...prev]);
+      showSuccess("Alert rule created.");
       setNewRuleName("");
       setNewRuleModel("");
       setIsRuleModalOpen(false);
@@ -186,6 +192,7 @@ export const AlertsPage: React.FC = () => {
         url: newChanUrl.trim(),
       });
       setChannels((prev) => [created, ...prev]);
+      showSuccess("Notification channel created.");
       setNewChanName("");
       setNewChanUrl("");
       setIsChannelModalOpen(false);
@@ -195,9 +202,10 @@ export const AlertsPage: React.FC = () => {
   };
 
   const handleDeleteChannel = async (id: string) => {
-    if (!window.confirm("Remove this notification webhook?")) return;
+    if (!(await confirmAction("Remove notification channel?", "Alerts will no longer be sent through this channel.", "Remove channel"))) return;
     try {
       await deleteNotificationChannel(id);
+      showSuccess("Notification channel removed.");
       setChannels((prev) => prev.filter((c) => c.id !== id));
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to delete notification channel");
@@ -382,77 +390,15 @@ export const AlertsPage: React.FC = () => {
 
       {/* ── Metrics Summary Cards (Real Backend Metrics) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Open Criticals */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg border bg-rose-50 border-rose-200/60 text-[#ef4444] shrink-0">
-                <AlertOctagon className="w-4 h-4 stroke-[2]" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 flex-1 truncate">Active Criticals</span>
-            </div>
-            <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-              {summary ? summary.open_critical : "--"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-            <span>PostgreSQL live state</span>
-          </div>
-        </div>
-
-        {/* Card 2: Open Warnings */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg border bg-amber-50 border-amber-200/60 text-[#f59e0b] shrink-0">
-                <AlertTriangle className="w-4 h-4 stroke-[2]" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 flex-1 truncate">Active Warnings</span>
-            </div>
-            <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-              {summary ? summary.open_warning : "--"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-            <span>PostgreSQL live state</span>
-          </div>
-        </div>
-
-        {/* Card 3: Resolved (7d) */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg border bg-emerald-50 border-emerald-200/60 text-[#10b981] shrink-0">
-                <CheckCircle2 className="w-4 h-4 stroke-[2]" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 flex-1 truncate">Resolved (7d)</span>
-            </div>
-            <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-              {summary ? summary.resolved_7d : "--"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-            <span>Past 7 days resolved</span>
-          </div>
-        </div>
-
-        {/* Card 4: Mean Time to Resolve */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg border bg-slate-100 border-slate-200/60 text-slate-700 shrink-0">
-                <BellRing className="w-4 h-4 stroke-[2]" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 flex-1 truncate">Mean Time to Resolve</span>
-            </div>
-            <div className="text-xl font-bold font-sans text-slate-900 mt-2.5 mb-1 tracking-tight">
-              {summary && summary.mttr_minutes !== null ? `${summary.mttr_minutes.toFixed(0)} min` : "No data"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-            <span>{summary && summary.mttr_minutes !== null ? "Calculated from resolved incidents" : "No resolved incidents yet"}</span>
-          </div>
-        </div>
+        <StatCard title="Active Criticals" value={summary?.open_critical ?? "—"} icon={AlertOctagon} color="rose" />
+        <StatCard title="Active Warnings" value={summary?.open_warning ?? "—"} icon={AlertTriangle} color="amber" />
+        <StatCard title="Resolved (7d)" value={summary?.resolved_7d ?? "—"} icon={CheckCircle2} />
+        <StatCard
+          title="Mean Time to Resolve"
+          value={summary?.mttr_minutes != null ? `${summary.mttr_minutes.toFixed(0)} min` : "No data"}
+          icon={BellRing}
+          subtitle={summary?.mttr_minutes != null ? "Calculated from resolved incidents" : "No resolved incidents yet"}
+        />
       </div>
 
       {/* ── Incidents & Channels ── */}

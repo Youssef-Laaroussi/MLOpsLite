@@ -75,6 +75,8 @@ data/processed/*
 artifacts/
 mlruns/
 mlflow.db
+*.db
+*.db-journal
 *.sqlite
 *.sqlite3
 postgres_data/

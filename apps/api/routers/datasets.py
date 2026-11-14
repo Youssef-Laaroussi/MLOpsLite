@@ -9,11 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from apps.api.dependencies import get_db
-from apps.api.errors import NotFoundError
+from apps.api.errors import ConflictError, NotFoundError
+from packages.core.models.user import User, UserRole
 from packages.core.schemas.dataset import (
     DatasetCreate,
     DatasetInspectionResponse,
@@ -23,6 +24,7 @@ from packages.core.schemas.dataset import (
     DatasetVersionResponse,
 )
 from packages.core.schemas.monitoring import DataQualityReportResponse
+from packages.core.security.dependencies import get_current_user, require_role
 from packages.data.parser import TabularDataParser
 from packages.data.service import DatasetService
 
@@ -33,30 +35,55 @@ def _get_service(session: AsyncSession = Depends(get_db)) -> DatasetService:
     return DatasetService(session)
 
 
+def _dataset_response(dataset: Any, user: User) -> DatasetResponse:
+    response = DatasetResponse.model_validate(dataset)
+    if user.role != UserRole.ADMIN:
+        response.s3_key = None
+        if response.latest_version is not None:
+            response.latest_version.s3_key = None
+    return response
+
+
+def _version_response(version: Any, user: User) -> DatasetVersionResponse:
+    response = DatasetVersionResponse.model_validate(version)
+    if user.role != UserRole.ADMIN:
+        response.s3_key = None
+    return response
+
+
 @router.post("/", response_model=DatasetResponse, status_code=status.HTTP_201_CREATED)
 async def create_dataset(
     payload: DatasetCreate,
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """Register a new logical dataset."""
-    dataset = await service.create_dataset(
-        name=payload.name,
-        project_id=payload.project_id,
-        format=payload.format,
-        description=payload.description,
-    )
-    return dataset
+    if await service.dataset_name_exists(payload.name, payload.project_id):
+        raise ConflictError(f'A dataset named "{payload.name}" already exists in this workspace.')
+    try:
+        dataset = await service.create_dataset(
+            name=payload.name,
+            project_id=payload.project_id,
+            format=payload.format,
+            description=payload.description,
+        )
+    except IntegrityError as exc:
+        if getattr(exc.orig, "sqlstate", None) != "23505":
+            raise
+        raise ConflictError(f'A dataset named "{payload.name}" already exists.') from exc
+    return _dataset_response(dataset, current_user)
 
 
 @router.get("/", response_model=DatasetListResponse)
 async def list_datasets(
     project_id: str | None = Query(None, description="Filter by project UUID"),
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """List registered datasets."""
     datasets = await service.list_datasets(project_id=project_id)
     return {
-        "datasets": datasets,
+        "datasets": [_dataset_response(dataset, current_user) for dataset in datasets],
         "total": len(datasets),
     }
 
@@ -84,13 +111,14 @@ async def inspect_dataset(
 @router.get("/{dataset_id}", response_model=DatasetResponse)
 async def get_dataset(
     dataset_id: str,
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """Get metadata for a specific dataset."""
     dataset = await service.get_dataset(dataset_id)
     if dataset is None:
         raise NotFoundError("Dataset", dataset_id)
-    return dataset
+    return _dataset_response(dataset, current_user)
 
 
 @router.post(
@@ -101,6 +129,7 @@ async def get_dataset(
 async def create_dataset_version(
     dataset_id: str,
     payload: DatasetVersionCreate,
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """Upload and register a new version for a dataset."""
@@ -111,7 +140,7 @@ async def create_dataset_version(
             s3_key=payload.s3_key,
             description=payload.description,
         )
-        return version
+        return _version_response(version, current_user)
     except ValueError:
         raise NotFoundError("Dataset", dataset_id)
     except Exception as exc:
@@ -124,6 +153,7 @@ async def create_dataset_version(
 @router.get("/{dataset_id}/versions", response_model=list[DatasetVersionResponse])
 async def list_dataset_versions(
     dataset_id: str,
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """List all versions for a given dataset."""
@@ -132,7 +162,7 @@ async def list_dataset_versions(
         raise NotFoundError("Dataset", dataset_id)
 
     versions = await service.get_versions(dataset_id)
-    return versions
+    return [_version_response(version, current_user) for version in versions]
 
 
 @router.post(
@@ -196,6 +226,7 @@ async def upload_dataset_file(
     dataset_id: str,
     file: UploadFile = File(..., description="CSV, Parquet, or JSON tabular data file"),
     description: str | None = Form(None),
+    current_user: User = Depends(get_current_user),
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """Upload a real data file, extract schema, hash SHA-256, store in MinIO S3, and create a version."""
@@ -215,15 +246,15 @@ async def upload_dataset_file(
             file_path=tmp_path,
             description=description or f"Uploaded {file.filename}",
         )
-        return version
+        return _version_response(version, current_user)
     finally:
         if tmp_path.exists():
             tmp_path.unlink()
 
 
-@router.get("/dvc/status")
+@router.get("/dvc/status", dependencies=[Depends(require_role(UserRole.ADMIN))])
 async def get_dvc_status() -> dict[str, Any]:
-    """Check live DVC configuration, MinIO remote target, and CLI availability."""
+    """Return DVC configuration and local CLI availability to administrators."""
     from packages.data.dvc_manager import DVCManager
     mgr = DVCManager()
     return {

@@ -26,6 +26,7 @@ RUN pip install --no-cache-dir \
     numpy \
     scikit-learn \
     mlflow \
+    boto3 \
     minio \
     httpx
 

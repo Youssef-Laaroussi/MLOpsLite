@@ -62,7 +62,7 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
     reverse proxy / API gateway (or swap this store for Redis).
     """
 
-    PATHS = ("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/refresh")
+    PATHS = ("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/refresh", "/api/v1/contact")
 
     def __init__(self, app, limit: int = 10, window_s: float = 60.0) -> None:
         super().__init__(app)

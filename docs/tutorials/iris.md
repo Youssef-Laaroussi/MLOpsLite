@@ -84,7 +84,7 @@ Or send an ad-hoc `curl` request:
 ```bash
 curl -X POST http://localhost:8100/predict \
   -H "Content-Type: application/json" \
-  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+  -d '{"inputs": [[5.1, 3.5, 1.4, 0.2]]}'
 ```
 
 **Expected Response (Species 0 = Setosa):**

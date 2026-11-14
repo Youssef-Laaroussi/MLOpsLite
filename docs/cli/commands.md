@@ -174,7 +174,7 @@ mlite deployment stop <deployment-id>
 ### `mlite monitor drift`
 Evaluate Kolmogorov-Smirnov / Wasserstein drift between baseline and current dataset:
 ```bash
-mlite monitor drift --model <model-name> --reference <ref-dataset-id> --current <cur-dataset-id>
+mlite monitor drift <model-name> --reference <reference-dataset-id> --current <current-dataset-id>
 ```
 
 ### `mlite alert list`

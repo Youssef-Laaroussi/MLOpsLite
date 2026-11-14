@@ -18,21 +18,36 @@ This starter example walks you through the entire MLite lifecycle using the clas
 
 ---
 
-## Prerequisites
+## Start from a clean checkout
 
-Ensure MLite services are running:
+From the repository root:
+
 ```bash
-docker compose up -d
+docker compose build mlite-serving
+docker compose up -d --build
+docker compose up minio-create-buckets
+python3.12 -m venv examples/iris/.venv
+source examples/iris/.venv/bin/activate
+python -m pip install -r examples/iris/requirements.txt
 ```
 
-Install example Python dependencies:
+For the default local Compose credentials, run the same acceptance test as CI:
+
 ```bash
-pip install -r requirements.txt
+MLFLOW_S3_ENDPOINT_URL=http://localhost:9000 \
+AWS_ACCESS_KEY_ID=mlite_minio_admin \
+AWS_SECRET_ACCESS_KEY=mlite_minio_password \
+python scripts/test_iris_lifecycle.py
 ```
 
----
+With custom credentials or ports, supply the matching local MinIO endpoint and
+credentials, plus `ADMIN_USER`, `ADMIN_PASSWORD`, and `MLITE_API_URL` as needed.
+The test creates uniquely named resources and stops the inference container after
+verification. The run and catalog records remain available for inspection.
 
 ## Step-by-Step Walkthrough
+
+Use the [CLI installation guide](../../docs/getting-started/installation.md) for the manual commands below. Run the training command from this example directory with the same MinIO settings as above.
 
 ### 1. Initialize Project & Register Dataset
 ```bash
@@ -83,21 +98,25 @@ Or send an ad-hoc `curl` request:
 ```bash
 curl -X POST http://localhost:8100/predict \
   -H "Content-Type: application/json" \
-  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+  -d '{"inputs": [[5.1, 3.5, 1.4, 0.2]]}'
 ```
 
-**Expected Response (Species 0 = Setosa):**
-```json
-{
-  "prediction": [0],
-  "probabilities": [0.985, 0.012, 0.003],
-  "model_name": "iris-classifier",
-  "model_version": 1,
-  "latency_ms": 3.2
-}
-```
+For this input, confirm `predictions` is `[0]` (Setosa), `model` is
+`iris-classifier` and `version` matches the deployed version.
 
 ---
+
+## Retrain on a new labeled snapshot
+
+From this example directory, with the same tracking and storage settings:
+
+```bash
+IRIS_DATA_PATH=/path/to/new-iris.csv python src/train.py --min-accuracy 0.90
+```
+
+Choose a threshold appropriate to your dataset. A run below the threshold is
+logged as failed and its model artifact is not published. A passing run can be
+registered as a new version using its run ID. Promotion is a separate action.
 
 ## Cleanup
 

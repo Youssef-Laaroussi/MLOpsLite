@@ -1,5 +1,6 @@
 """Monitoring and observability REST endpoints (Issues #18, #19, #20)."""
 
+import asyncio
 import io
 import logging
 from datetime import UTC, datetime
@@ -13,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
-from packages.core.models.dataset import Dataset, DatasetVersion
+from packages.core.models.dataset import DatasetVersion
 from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
 from packages.core.models.model_registry import RegisteredModel
 from packages.core.models.monitoring import (
@@ -54,24 +55,31 @@ async def _load_dataframe_from_dataset(dataset_id: str, db: AsyncSession, limit:
             detail=f"No dataset file found in storage for dataset_id: {dataset_id}",
         )
 
-    storage = get_storage_client()
-    try:
-        # Download bytes via S3 client
-        obj = storage._s3.get_object(Bucket=storage._resolve_bucket(None), Key=version.s3_key)
-        content = obj["Body"].read()
-        if version.s3_key.endswith(".parquet") or version.s3_key.endswith(".pq"):
-            df = pd.read_parquet(io.BytesIO(content))
-        elif version.s3_key.endswith(".json") or version.s3_key.endswith(".jsonl"):
-            df = pd.read_json(io.BytesIO(content))
+    def read_dataset() -> pd.DataFrame:
+        storage = get_storage_client()
+        location = version.s3_key
+        if location.startswith("s3://"):
+            bucket, _, key = location[5:].partition("/")
         else:
-            df = pd.read_csv(io.BytesIO(content))
+            bucket, key = storage.default_bucket, location
+        body = storage._s3.get_object(Bucket=bucket, Key=key)["Body"]
+        try:
+            content = io.BytesIO(body.read())
+        finally:
+            body.close()
+        if key.lower().endswith((".parquet", ".pq")):
+            return pd.read_parquet(content).head(limit)
+        if key.lower().endswith((".json", ".jsonl")):
+            return pd.read_json(content, lines=key.lower().endswith(".jsonl")).head(limit)
+        return pd.read_csv(content, nrows=limit)
 
-        return df.head(limit)
+    try:
+        return await asyncio.to_thread(read_dataset)
     except Exception as exc:
-        logger.error(f"Failed to read dataset from storage key {version.s3_key}: {exc}")
+        logger.warning("Could not read dataset %s: %s", dataset_id, type(exc).__name__)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Failed to parse stored dataset {version.s3_key}: {exc}",
+            detail=f"Could not read dataset {dataset_id} from storage.",
         ) from exc
 
 
@@ -135,7 +143,7 @@ async def get_monitoring_summary(
     telemetry_q = (
         select(DeploymentMetric)
         .join(Deployment, DeploymentMetric.deployment_id == Deployment.id)
-        .where(Deployment.model_name == active_model)
+        .where(Deployment.model_name == active_model, DeploymentMetric.requests_count > 0)
         .order_by(DeploymentMetric.timestamp.desc())
         .limit(15)
     )
@@ -144,9 +152,9 @@ async def get_monitoring_summary(
     telemetry_points = [
         TelemetryMetricPoint(
             time=m.timestamp.strftime("%H:%M") if m.timestamp else "--",
-            p50=round(m.latency_p50_ms or 0.0, 2),
-            p95=round(m.latency_p95_ms or 0.0, 2),
-            p99=round((m.latency_p95_ms or 0.0) * 1.25, 2) if m.latency_p95_ms else 0.0,
+            p50=round(m.latency_p50_ms or 0.0, 3),
+            p95=round(m.latency_p95_ms or 0.0, 3),
+            p99=None,
             requests=m.requests_count or 0,
             errors=m.error_count or 0,
         )
@@ -186,46 +194,17 @@ async def trigger_drift_check(
     payload: DriftCheckRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Run on-demand feature data drift evaluation using real MinIO datasets or live logged requests."""
+    """Compare the latest versions of two explicitly selected datasets."""
+    ref_df = await _load_dataframe_from_dataset(payload.reference_dataset_id, db, limit=payload.sample_limit)
+    curr_df = (
+        ref_df.copy()
+        if payload.current_dataset_id == payload.reference_dataset_id
+        else await _load_dataframe_from_dataset(payload.current_dataset_id, db, limit=payload.sample_limit)
+    )
+    if ref_df.empty or curr_df.empty or not set(ref_df.columns).intersection(curr_df.columns):
+        raise HTTPException(422, "Both datasets must contain rows and share at least one column.")
+
     detector = DataDriftDetector(session=db, default_drift_threshold=payload.drift_threshold)
-
-    # 1. Resolve Reference Data
-    ref_df: pd.DataFrame | None = None
-    if payload.reference_dataset_id:
-        ref_df = await _load_dataframe_from_dataset(payload.reference_dataset_id, db, limit=payload.sample_limit)
-    else:
-        # Check if there is any dataset in DB
-        any_ds_q = select(Dataset.id).order_by(Dataset.created_at.desc()).limit(1)
-        any_ds_res = await db.execute(any_ds_q)
-        first_ds_id = any_ds_res.scalar_one_or_none()
-        if first_ds_id:
-            try:
-                ref_df = await _load_dataframe_from_dataset(first_ds_id, db, limit=payload.sample_limit)
-            except Exception:
-                ref_df = None
-
-    # 2. Resolve Current Data
-    curr_df: pd.DataFrame | None = None
-    if payload.current_dataset_id:
-        curr_df = await _load_dataframe_from_dataset(payload.current_dataset_id, db, limit=payload.sample_limit)
-
-    # If no datasets are registered in MinIO yet, construct an explicit minimal sample
-    if ref_df is None or curr_df is None:
-        if ref_df is None:
-            ref_df = pd.DataFrame(
-                {
-                    "feature_1": [1.0, 2.0, 3.0, 4.0, 5.0] * 50,
-                    "feature_2": [10.0, 20.0, 30.0, 40.0, 50.0] * 50,
-                }
-            )
-        if curr_df is None:
-            curr_df = pd.DataFrame(
-                {
-                    "feature_1": [1.2, 2.1, 3.1, 4.0, 5.2] * 50,
-                    "feature_2": [10.5, 19.8, 30.2, 39.5, 50.1] * 50,
-                }
-            )
-
     eval_record = await detector.evaluate_drift(
         model_name=payload.model_name,
         reference_df=ref_df,

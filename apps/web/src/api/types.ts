@@ -71,6 +71,7 @@ export interface ModelVersion {
 }
 
 export interface RegisteredModel {
+  framework?: string;
   name: string;
   version: number;
   stage: string;
@@ -138,6 +139,7 @@ export interface Dataset {
 }
 
 export interface SystemStats {
+  error?: string;
   projects_count: number;
   models_count: number;
   datasets_count?: number;
@@ -147,6 +149,7 @@ export interface SystemStats {
   system_healthy: boolean;
   stages?: {
     production: number;
+    candidate?: number;
     staging: number;
     development: number;
     archived: number;
@@ -156,15 +159,16 @@ export interface SystemStats {
     model: string;
     full_name: string;
     stage: string;
-    auc: number;
-    f1: number;
+    auc: number | null;
+    f1: number | null;
+    accuracy?: number | null;
     has_metrics: boolean;
   }[];
   latency_telemetry?: {
     time: string;
     p50: number;
     p95: number;
-    p99: number;
+    p99?: number | null;
     reqs: number;
   }[];
   drift_trajectory?: {
@@ -220,7 +224,7 @@ export interface TelemetryPoint {
   time: string;
   p50: number;
   p95: number;
-  p99: number;
+  p99: number | null;
   requests: number;
   errors: number;
 }

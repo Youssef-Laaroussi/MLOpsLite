@@ -70,8 +70,8 @@ python src/generate_data.py
 Register both datasets in the MLite data registry:
 
 ```bash
-mlite data register --name fraud-baseline --path data/baseline_transactions.csv --description "Q1 Baseline Transactions"
-mlite data register --name fraud-shifted --path data/shifted_transactions.csv --description "Drifted holiday traffic"
+mlite data add data/baseline_transactions.csv --name fraud-baseline --description "Q1 Baseline Transactions"
+mlite data add data/shifted_transactions.csv --name fraud-shifted --description "Drifted holiday traffic"
 ```
 
 ### Step 3.3: Train and Log the Classifier
@@ -91,12 +91,7 @@ The script performs:
 Register the resulting model in MLite:
 
 ```bash
-mlite models register \
-  --name fraud-detector \
-  --version 1 \
-  --artifact-uri "s3://mlite-models/fraud-detector/v1/model.pkl" \
-  --framework scikit-learn \
-  --description "Baseline Fraud Random Forest Classifier"
+mlite model register fraud-detector --run-id <MLFLOW_RUN_ID>
 ```
 
 ### Step 3.4: Deploy Version 1 to Production
@@ -104,18 +99,13 @@ mlite models register \
 Create a deployment for `fraud-detector` version 1:
 
 ```bash
-mlite deployments create \
-  --name fraud-detector-prod \
-  --model fraud-detector \
-  --version 1 \
-  --port 8100 \
-  --env "THRESHOLD=0.75"
+mlite deploy fraud-detector --version 1 --port 8100
 ```
 
 Verify deployment health:
 
 ```bash
-mlite deployments list
+mlite deployment list
 curl -s http://localhost:8100/health
 ```
 
@@ -134,14 +124,9 @@ Output:
 Suppose an engineer trains and deploys a candidate version 2 with experimental aggressive features:
 
 ```bash
-mlite models register \
-  --name fraud-detector \
-  --version 2 \
-  --artifact-uri "s3://mlite-models/fraud-detector/v2/model.pkl" \
-  --framework scikit-learn \
-  --description "Experimental aggressive fraud model"
+mlite model register fraud-detector --run-id <MLFLOW_RUN_ID>
 
-mlite deployments update fraud-detector-prod --version 2
+mlite deploy fraud-detector --version 2 --port 8101
 ```
 
 ### Step 3.6: Simulate Traffic & Drift Injection

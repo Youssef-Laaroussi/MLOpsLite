@@ -170,13 +170,14 @@ export const deleteProject = async (slugOrId: string): Promise<void> => {
 
 // ── Models & Registry ──────────────────────────────────────────────
 
-export const fetchModels = async (): Promise<RegisteredModel[]> => {
-  const res = await api.get("/models/");
+export const fetchModels = async (project?: string): Promise<RegisteredModel[]> => {
+  const res = await api.get("/models/", { params: { project } });
   return res.data.models || [];
 };
 
 export const promoteModelVersion = async (name: string, version: number, stage: string): Promise<any> => {
-  const res = await api.post(`/models/${name}/versions/${version}/promote`, { stage });
+  const res = await api.post(`/models/${encodeURIComponent(name)}/versions/${version}/promote`, { stage });
+  if (res.data.promoted !== true) throw new Error(res.data.error || "The model stage could not be changed.");
   return res.data;
 };
 
@@ -192,7 +193,10 @@ export const deployModel = async (modelName: string, version: number, port?: num
     model_name: modelName,
     model_version: version,
     port,
-  });
+  }, { timeout: 90000 });
+  if (res.data.status === "FAILED") {
+    throw new Error(res.data.error_message || "The inference container failed to start.");
+  }
   return res.data;
 };
 
@@ -333,8 +337,8 @@ export const fetchMonitoringSummary = async (modelName?: string): Promise<Monito
 export const triggerDriftCheck = async (data: {
   model_name: string;
   drift_threshold?: number;
-  reference_dataset_id?: string;
-  current_dataset_id?: string;
+  reference_dataset_id: string;
+  current_dataset_id: string;
 }): Promise<any> => {
   const res = await api.post("/monitoring/drift/check", data);
   return res.data;
@@ -431,3 +435,17 @@ export const testNotificationChannel = async (
   return res.data;
 };
 
+
+
+export const sendContactMessage = async (submission: {
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+}): Promise<void> => {
+  await api.post("/contact", submission, { timeout: 30000 });
+};
+
+export async function syncModelMetrics(name: string, version: number): Promise<void> {
+  await api.post(`/models/${encodeURIComponent(name)}/versions/${version}/sync-metrics`);
+}

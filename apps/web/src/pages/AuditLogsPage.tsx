@@ -15,63 +15,19 @@ import { fetchAuditLogs } from "../api/client";
 
 export const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
 
   const loadLogs = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await fetchAuditLogs(100);
       setLogs(data);
     } catch {
-      // Fallback realistic audit log data if backend offline
-      setLogs([
-        {
-          id: "aud-001",
-          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-          action: "user.login",
-          resource_type: "user",
-          resource_name: "admin",
-          user_email: "admin@mlite.local",
-          ip_address: "127.0.0.1",
-          status: "SUCCESS",
-          details: { method: "oauth2_password" },
-        },
-        {
-          id: "aud-002",
-          timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-          action: "model.promote",
-          resource_type: "model",
-          resource_name: "fraud-detector:v1",
-          user_email: "sarah@mlite.local",
-          ip_address: "192.168.1.45",
-          status: "SUCCESS",
-          details: { from_stage: "STAGING", to_stage: "PRODUCTION" },
-        },
-        {
-          id: "aud-003",
-          timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
-          action: "deployment.create",
-          resource_type: "deployment",
-          resource_name: "fraud-detector-prod",
-          user_email: "sarah@mlite.local",
-          ip_address: "192.168.1.45",
-          status: "SUCCESS",
-          details: { port: 8100, container: "mlite-serve-fraud-detector" },
-        },
-        {
-          id: "aud-004",
-          timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-          action: "dataset.sync",
-          resource_type: "dataset",
-          resource_name: "transactions-2024.parquet",
-          user_email: "alex@mlite.local",
-          ip_address: "192.168.1.80",
-          status: "SUCCESS",
-          details: { rows: 250000, hash: "sha256:7f4a...b21" },
-        },
-      ]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -174,10 +130,10 @@ export const AuditLogsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredLogs.length === 0 ? (
+              {loading || loadError || filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    No matching audit log entries found.
+                    {loading ? "Loading audit logs…" : loadError ? "Could not load audit logs. Use Refresh to try again." : "No matching audit log entries found."}
                   </td>
                 </tr>
               ) : (

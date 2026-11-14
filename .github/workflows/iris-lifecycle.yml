@@ -1,0 +1,35 @@
+name: Iris lifecycle
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+jobs:
+  iris-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r examples/iris/requirements.txt
+      - name: Start the local stack
+        run: |
+          docker compose build mlite-serving
+          docker compose up -d --build mlite-api
+          docker compose up minio-create-buckets
+      - name: Exercise Iris from upload to report
+        env:
+          MLFLOW_TRACKING_URI: http://localhost:5000
+          MLFLOW_S3_ENDPOINT_URL: http://localhost:9000
+          AWS_ACCESS_KEY_ID: mlite_minio_admin
+          AWS_SECRET_ACCESS_KEY: mlite_minio_password
+        run: python scripts/test_iris_lifecycle.py
+      - name: Service diagnostics
+        if: failure()
+        run: docker compose logs --tail=60
+      - name: Clean up the CI stack
+        if: always()
+        run: docker compose down -v

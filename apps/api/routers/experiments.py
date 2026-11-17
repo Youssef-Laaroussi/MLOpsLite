@@ -37,16 +37,14 @@ async def list_experiments(
             # Query real runs count for each experiment
             try:
                 runs = client.search_runs(experiment_ids=[exp.experiment_id], max_results=100)
-                runs_count = len(runs)
+                runs_count = len(runs) if not runs.token else None
             except Exception:
-                runs_count = 0
+                runs_count = None
 
             # Convert creation_time (ms timestamp) to ISO date
             created_iso = None
             if getattr(exp, "creation_time", None):
                 created_iso = datetime.fromtimestamp(exp.creation_time / 1000.0, tz=UTC).isoformat()
-            else:
-                created_iso = datetime.now(UTC).isoformat()
 
             result.append(
                 {

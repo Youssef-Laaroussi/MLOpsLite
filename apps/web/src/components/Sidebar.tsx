@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  ArrowRight,
   LayoutDashboard,
   FolderGit2,
   Database,
@@ -9,17 +10,15 @@ import {
   Server,
   LineChart,
   Bell,
-  Activity,
   Home,
   ShieldCheck,
-  User as UserIcon,
   Settings,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { user, isAuthenticated, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const navigation = [
     { name: "Overview", href: "/app", icon: LayoutDashboard },
@@ -36,113 +35,36 @@ export const Sidebar: React.FC = () => {
     { name: "Settings", href: "/app/settings", icon: Settings },
   ];
 
-  const getRoleColor = (role?: string) => {
-    if (role === "ADMIN") {
-      return "text-rose-700 bg-rose-50 border-rose-200";
-    }
-    return "text-white bg-[#475569] border-[#334155] shadow-2xs";
-  };
-
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 shadow-sm z-20">
-      <div className="overflow-y-auto">
-        {/* Brand Logo Header */}
-        <div className="h-16 flex items-center px-6 gap-3 border-b border-slate-100">
-          <Link
-            to="/"
-            title="Go to Landing Page"
-            className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border border-slate-200/90 p-2 shadow-2xs hover:border-[#3BB48C]/60 hover:shadow-sm transition-all"
-          >
-            <img src="/logo.png" alt="MLite Logo" className="w-full h-full object-contain" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/app" className="font-extrabold text-slate-900 text-lg tracking-tight hover:text-[#3BB48C] transition">
-              MLite
-            </Link>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
-              v1.0.0
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation Links */}
-        <nav className="p-4 space-y-1.5">
+    <aside className="w-full min-w-0 shrink-0 self-start lg:w-[200px]">
+      <div className="rounded-2xl border border-[#dce5dd] bg-white shadow-sm">
+        <p className="hidden px-4 pt-3 text-[10px] font-bold tracking-wide text-slate-400 lg:block">MLITE WORKSPACE</p>
+        <nav className="flex items-center gap-1 overflow-x-auto p-2.5 lg:block lg:space-y-0.5 lg:overflow-visible">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href || (item.href === "/app" && location.pathname === "/");
+            const isActive = location.pathname === item.href || (item.href === "/app" && ["/", "/app/overview", "/dashboard"].includes(location.pathname));
             const Icon = item.icon;
             return (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
-                  ? "bg-[#3BB48C] text-white shadow-md shadow-[#3BB48C]/25"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-[#F0FDF9]"
+                className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full px-3 py-[7px] text-sm font-semibold transition-colors ${isActive
+                  ? "bg-[#e7f5e7] text-[#096235]"
+                  : "text-slate-700 hover:bg-[#f0f6f1] hover:text-[#096235]"
                   }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500"}`} />
+                <Icon className={`w-4 h-4 ${isActive ? "text-[#096235]" : "text-slate-400"}`} />
                 {item.name}
               </Link>
             );
           })}
 
-          <div className="pt-3 border-t border-slate-100">
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50/60 transition border border-transparent hover:border-emerald-200"
-            >
-              <Home className="w-3.5 h-3.5 text-[#3BB48C]" />
-              Return to Landing Page
-            </Link>
-          </div>
         </nav>
       </div>
 
-      {/* User Status & Settings Footer */}
-      <div className="p-4 border-t border-slate-100">
-        {isAuthenticated && user ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between shadow-xs hover:border-slate-300 transition">
-            <div className="flex items-center gap-2 min-w-0">
-              <div
-                className={`w-8 h-8 rounded-xl text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs overflow-hidden ${user.role === "ADMIN"
-                  ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-500/20"
-                  : "bg-[#3BB48C]"
-                  }`}
-              >
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  user.username.charAt(0).toUpperCase()
-                )}
-              </div>
-              <div className="truncate text-left">
-                <div className="text-xs font-bold text-slate-800 truncate leading-none">
-                  {user.username}
-                </div>
-                <span className={`inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded mt-1 border ${getRoleColor(user.role)}`}>
-                  {user.role === "ADMIN" ? "ADMIN" : "USER"}
-                </span>
-              </div>
-            </div>
-
-            <Link
-              to="/app/settings"
-              title="Application Settings"
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-            >
-              <Settings className="w-4 h-4" />
-            </Link>
-          </div>
-        ) : (
-          <Link
-            to="/app/settings"
-            className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
-          >
-            <span className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-slate-400" />
-              Settings
-            </span>
-          </Link>
-        )}
+      <div className="sidebar-promo mt-4 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white lg:block">
+        <div className="px-4 pt-4"><h2 className="font-serif text-xl font-bold text-[#005b30]">MLite</h2><h3 className="font-serif font-bold text-[#006a32]">Self-Hosted MLOps</h3><p className="mt-2 text-xs leading-relaxed text-slate-500">Build, manage, and operate ML models end-to-end<br />in your own infrastructure.</p></div>
+        <div className="promo-art"><div className="iso-cube"><i /><b /><em /></div></div>
+        <a href="https://github.com/Youssef-Laaroussi/MLOpsLite/tree/main/docs" target="_blank" rel="noreferrer" className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-lg bg-[#007c37] py-2.5 text-xs font-semibold text-white hover:bg-[#00632c]">Documentation <ArrowRight size={14} /></a>
       </div>
     </aside>
   );

@@ -5,17 +5,22 @@ Issue #7 — Full project lifecycle: create, list, get, update, archive.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
+from packages.core.models.audit import AuditAction
+from packages.core.models.project import Project
+from packages.core.models.user import User
 from packages.core.schemas.project import (
     ProjectCreate,
     ProjectListResponse,
     ProjectResponse,
     ProjectUpdate,
 )
+from packages.core.security.audit import AuditService
+from packages.core.security.dependencies import get_current_user
 from packages.core.services.project_service import ProjectService
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
@@ -25,13 +30,34 @@ def _get_service(session: AsyncSession = Depends(get_db)) -> ProjectService:
     return ProjectService(session)
 
 
+async def _audit_project(
+    service: ProjectService,
+    project: Project,
+    action: AuditAction,
+    user: User,
+    request: Request,
+) -> None:
+    await AuditService(service.session).log(
+        action=action,
+        resource_type="project",
+        resource_id=project.id,
+        resource_name=project.slug,
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+    )
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=ProjectResponse)
 async def create_project(
+    request: Request,
     data: ProjectCreate,
     service: ProjectService = Depends(_get_service),
+    user: User = Depends(get_current_user),
 ) -> Any:
     """Create a new ML project with a unique slug."""
     project = await service.create(data)
+    await _audit_project(service, project, AuditAction.PROJECT_CREATE, user, request)
     return ProjectResponse.model_validate(project)
 
 
@@ -68,31 +94,38 @@ async def get_project(
 
 @router.patch("/{slug_or_id}", response_model=ProjectResponse)
 async def update_project(
+    request: Request,
     slug_or_id: str,
     data: ProjectUpdate,
     service: ProjectService = Depends(_get_service),
+    user: User = Depends(get_current_user),
 ) -> Any:
     """Partially update a project's metadata."""
     project = await service.update(slug_or_id, data)
     if project is None:
         raise NotFoundError("Project", slug_or_id)
+    await _audit_project(service, project, AuditAction.PROJECT_UPDATE, user, request)
     return ProjectResponse.model_validate(project)
 
 
 @router.delete("/{slug_or_id}")
 async def delete_project(
+    request: Request,
     slug_or_id: str,
     permanent: bool = Query(False, description="If true, permanently delete from database"),
     service: ProjectService = Depends(_get_service),
+    user: User = Depends(get_current_user),
 ) -> Any:
     """Archive (soft-delete) or permanently delete a project."""
     if permanent:
-        deleted = await service.hard_delete(slug_or_id)
-        if not deleted:
+        project = await service.get_by_slug_or_id(slug_or_id)
+        if project is None or not await service.hard_delete(project.id):
             raise NotFoundError("Project", slug_or_id)
+        await _audit_project(service, project, AuditAction.PROJECT_DELETE, user, request)
         return {"deleted": True, "id": slug_or_id}
 
     project = await service.archive(slug_or_id)
     if project is None:
         raise NotFoundError("Project", slug_or_id)
+    await _audit_project(service, project, AuditAction.PROJECT_DELETE, user, request)
     return ProjectResponse.model_validate(project)

@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import { api } from "../api/client";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useState, useEffect, useMemo } from "react";
@@ -215,7 +216,7 @@ export const ExperimentsPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             Experiment Tracking
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -298,7 +299,7 @@ export const ExperimentsPage: React.FC = () => {
       {/* ── Top Stat Cards (Real live counts from MLflow) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <StatCard
-          title="Active Experiments"
+          title="Experiments Loaded"
           value={loading ? "..." : `${experiments.length} Experiments`}
           subtitle="Registered in MLflow server"
           icon={FlaskConical}
@@ -307,11 +308,10 @@ export const ExperimentsPage: React.FC = () => {
         />
         <StatCard
           title="Recorded Runs"
-          value={loading ? "..." : `${totalRuns} Runs`}
-          subtitle="Logged across all experiments"
+          value={loading || loadError || experiments.some(exp => exp.runs_count == null) ? "—" : `${totalRuns} Runs`}
+          subtitle="Total for the loaded experiments when all counts are available"
           icon={Layers}
           color="brand"
-          trend={totalRuns > 0 ? "Active" : "None"}
         />
       </div>
 
@@ -395,7 +395,7 @@ export const ExperimentsPage: React.FC = () => {
                     {/* Runs */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <span className="font-mono text-[11px] font-medium text-slate-800">
-                        {exp.runs_count ?? 0} run{exp.runs_count === 1 ? "" : "s"}
+                        {exp.runs_count == null ? "Run count unavailable" : `${exp.runs_count} run${exp.runs_count === 1 ? "" : "s"}`}
                       </span>
                     </td>
 
@@ -503,6 +503,16 @@ export const ExperimentsPage: React.FC = () => {
             )}
 
             {/* Modal Body: Left Runs List & Right Details */}
+            <div className="max-h-52 shrink-0 overflow-y-auto border-b border-slate-200 p-3">
+              <MetricDistribution
+                title="Runs by status"
+                description="Runs returned for this MLflow experiment"
+                rows={countBy(experimentRuns, run => run.status)}
+                loading={loadingRuns}
+                unavailable={Boolean(runsError)}
+              />
+            </div>
+
             <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
               {/* Left Column: Runs List */}
               <div className="p-3 space-y-1.5 max-h-[60vh] overflow-y-auto bg-slate-50/40">

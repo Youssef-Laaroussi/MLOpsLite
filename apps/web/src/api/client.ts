@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { InternalAxiosRequestConfig } from "axios";
 import {
   Project,
   RegisteredModel,
@@ -30,8 +30,11 @@ export const api = axios.create({
   timeout: 10000,
 });
 
+type RetryConfig = InternalAxiosRequestConfig & { sessionRetried?: boolean; sessionToken?: string | null };
+
 // Interceptor: inject Bearer JWT token if available
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: RetryConfig) => {
+  config.sessionToken = localStorage.getItem("mlite_refresh_token");
   const token = localStorage.getItem("mlite_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -39,16 +42,64 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: on 401, clear the stale session and redirect to sign-in
+let lastRefresh: { previous: string; current: string } | undefined;
+let refreshInFlight: { token: string; promise: Promise<AuthTokens> } | undefined;
+
+function refreshSession(token: string): Promise<AuthTokens> {
+  if (refreshInFlight?.token === token) return refreshInFlight.promise;
+
+  const promise = axios.post<AuthTokens>(
+    `${API_BASE.replace(/\/$/, "")}/auth/refresh`,
+    { refresh_token: token },
+    { timeout: 10000 }
+  ).then(({ data }) => {
+    if (localStorage.getItem("mlite_refresh_token") === token) {
+      localStorage.setItem("mlite_token", data.access_token);
+      localStorage.setItem("mlite_refresh_token", data.refresh_token);
+      lastRefresh = { previous: token, current: data.refresh_token };
+    }
+    return data;
+  }).finally(() => {
+    if (refreshInFlight?.promise === promise) refreshInFlight = undefined;
+  });
+  refreshInFlight = { token, promise };
+  return promise;
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const url: string = error.config?.url || "";
-    if (error.response?.status === 401 && !url.startsWith("/auth/")) {
-      ["mlite_token", "mlite_refresh_token", "mlite_user"].forEach((k) => localStorage.removeItem(k));
-      if (window.location.pathname.startsWith("/app")) window.location.assign("/signin");
+  async (error) => {
+    const config: RetryConfig | undefined = error.config;
+    if (error.response?.status !== 401 || !config || config.sessionRetried ||
+        /^\/auth\/(login|register|refresh)$/.test(config.url || "")) {
+      throw error;
     }
-    return Promise.reject(error);
+
+    const token = localStorage.getItem("mlite_refresh_token");
+    if (!token) throw error;
+
+    config.sessionRetried = true;
+    if (config.sessionToken !== token) {
+      if (lastRefresh?.previous === config.sessionToken && lastRefresh?.current === token) {
+        return api.request(config);
+      }
+      throw error;
+    }
+
+    try {
+      const tokens = await refreshSession(token);
+      if (localStorage.getItem("mlite_token") === tokens.access_token) {
+        return api.request(config);
+      }
+    } catch (refreshError) {
+      const status = axios.isAxiosError(refreshError) ? refreshError.response?.status : undefined;
+      if ((status === 401 || status === 403) && localStorage.getItem("mlite_refresh_token") === token) {
+        ["mlite_token", "mlite_refresh_token", "mlite_user"].forEach((key) => localStorage.removeItem(key));
+        window.location.assign("/signin");
+      }
+      throw refreshError;
+    }
+    throw error;
   }
 );
 
@@ -130,8 +181,14 @@ export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> =>
 // ── Projects ───────────────────────────────────────────────────────
 
 export const fetchProjects = async (): Promise<Project[]> => {
-  const res = await api.get("/projects/");
-  return res.data.projects || [];
+  const projects: Project[] = [];
+  for (let page = 1; ; page += 1) {
+    const { data } = await api.get<{ projects: Project[]; total: number }>("/projects/", {
+      params: { page, page_size: 100 },
+    });
+    projects.push(...data.projects);
+    if (projects.length >= data.total || data.projects.length < 100) return projects;
+  }
 };
 
 export const createProject = async (data: {
@@ -293,17 +350,8 @@ export const fetchSystemStats = async (timeRange?: string): Promise<SystemStats>
 };
 
 export const fetchSystemServices = async (): Promise<SubsystemService[]> => {
-  try {
-    const res = await api.get("/health/services");
-    return res.data;
-  } catch (err) {
-    return [
-      { name: "Database (PostgreSQL/SQLite)", status: "offline", latency: "--", uptime: "0%" },
-      { name: "MLflow Tracking Server", status: "offline", latency: "--", uptime: "0%" },
-      { name: "MinIO S3 Artifact Store", status: "offline", latency: "--", uptime: "0%" },
-      { name: "Model Serving (Docker Engine)", status: "offline", latency: "--", uptime: "0%" },
-    ];
-  }
+  const res = await api.get<SubsystemService[]>("/health/services");
+  return res.data;
 };
 
 // ── Experiments & Runs (MLflow Proxy) ──────────────────────────────

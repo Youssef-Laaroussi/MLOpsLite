@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import React, { useEffect, useState, useMemo } from "react";
 import {
   FolderGit2,
@@ -409,7 +410,7 @@ export const ProjectsPage: React.FC = () => {
                 </div>
 
                 {monthlyActivity.map((ma, i) => {
-                  const barHeight = Math.max((ma.value / maxMonthlyVal) * 100, ma.value > 0 ? 12 : 4);
+                  const barHeight = (ma.value / maxMonthlyVal) * 100;
                   return (
                     <div
                       key={i}
@@ -554,6 +555,14 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <MetricDistribution
+        title="Projects by status"
+        description="Projects matching the explorer filters"
+        rows={countBy(filteredProjects, project => project.status.toLowerCase())}
+        loading={loading}
+        unavailable={Boolean(error)}
+      />
 
       {/* ── Explorer Toolbar: Search, Status Filter, Sort, View Mode ── */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-md p-3">

@@ -108,8 +108,8 @@ class ModelPerformanceResponse(BaseModel):
 
 class TelemetryMetricPoint(BaseModel):
     time: str
-    p50: float
-    p95: float
+    p50: float | None
+    p95: float | None
     p99: float | None
     requests: int
     errors: int

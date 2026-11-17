@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
-  api,
+  fetchSystemServices,
   fetchApiKeys,
   createApiKey,
   revokeApiKey,
@@ -48,7 +48,7 @@ import {
   createUser,
   updateUser,
 } from "../api/client";
-import { ApiKey, User, UserRole } from "../api/types";
+import { ApiKey, SubsystemService, User, UserRole } from "../api/types";
 
 export const SettingsPage: React.FC = () => {
   const { confirmAction } = useActionFeedback();
@@ -139,8 +139,8 @@ export const SettingsPage: React.FC = () => {
 
   // Stack Integrity state (Admin)
   const [checkingInfra, setCheckingInfra] = useState(false);
-  const [lastCheckTime, setLastCheckTime] = useState<string>("Just now");
-  const [latencyMs, setLatencyMs] = useState<number>(3);
+  const [lastCheckTime, setLastCheckTime] = useState<string | null>(null);
+  const [serviceChecks, setServiceChecks] = useState<SubsystemService[] | null>(null);
 
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -328,17 +328,15 @@ export const SettingsPage: React.FC = () => {
 
   const handleRefreshInfra = async () => {
     setCheckingInfra(true);
-    const start = performance.now();
+    setSettingsError(null);
     try {
-      await api.get("/health");
-      setLatencyMs(Math.round(performance.now() - start));
-      setSettingsError(null);
-      showSuccessBanner("Health check completed: all services OK.");
+      setServiceChecks(await fetchSystemServices());
+      setLastCheckTime(new Date().toLocaleTimeString());
     } catch (err) {
-      setSettingsError(errMsg(err, "API health check failed."));
+      setServiceChecks(null);
+      setSettingsError(errMsg(err, "Service connectivity checks unavailable."));
     } finally {
       setCheckingInfra(false);
-      setLastCheckTime(new Date().toLocaleTimeString());
     }
   };
 
@@ -1071,7 +1069,7 @@ export const SettingsPage: React.FC = () => {
                   Internal Microservices Health
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Orchestrated components monitor (Verified: {lastCheckTime} • Latency: {latencyMs} ms)
+                  {serviceChecks && lastCheckTime ? `Last checked at ${lastCheckTime}` : "Run a connectivity check to get service status."}
                 </p>
               </div>
 
@@ -1085,75 +1083,29 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* FastAPI */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">FastAPI REST Engine</span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Operational
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium">REST orchestration, RBAC &amp; JWT security</p>
-                  <p className="text-[11px] text-slate-400">Protected endpoints • Strict Bearer token authentication</p>
-                </div>
-                <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-
-              {/* PostgreSQL */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">PostgreSQL Database</span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Connected
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium">Persistent metadata &amp; audit storage</p>
-                  <p className="text-[11px] text-slate-400">Active connection pool • Verified relational integrity</p>
-                </div>
-                <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-
-              {/* MinIO S3 */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">MinIO S3 Object Storage</span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Synchronized
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium">Immutable dataset &amp; artifact storage</p>
-                  <p className="text-[11px] text-slate-400">SHA-256 deduplication • Encrypted at rest</p>
-                </div>
-                <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-
-              {/* MLflow */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">MLflow Tracking Server</span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Operational
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium">Metrics, hyperparameters &amp; experiment run registry</p>
-                  <p className="text-[11px] text-slate-400">Artifact persistence backed by MinIO S3 object storage</p>
-                </div>
-                <div className="p-2 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
+            {checkingInfra ? (
+              <p role="status" className="text-sm text-slate-600">Checking service connectivity…</p>
+            ) : serviceChecks?.length ? (
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {serviceChecks.map((service) => (
+                  <li key={service.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-900">{service.name}</span>
+                      <span className={service.status === "online" ? "text-xs text-emerald-700" : "text-xs text-rose-700"}>
+                        {service.status === "online" ? "Reachable" : "Unreachable"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-600">
+                      {service.status === "online" ? `Probe duration: ${service.latency}` : "The latest probe failed."}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p role="status" className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                {lastCheckTime ? "No current service status available." : "No service check results yet."}
+              </p>
+            )}
           </div>
         </div>
       )}

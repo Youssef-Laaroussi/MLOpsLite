@@ -71,15 +71,20 @@ services:
         condition: service_healthy
     networks:
       - mlite-network
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set localminio http://mlite-storage:9000 ${MINIO_ROOT_USER:-mlite_minio_admin} ${MINIO_ROOT_PASSWORD:-mlite_minio_password};
-      /usr/bin/mc mb --ignore-existing localminio/${MINIO_DATASETS_BUCKET:-mlite-datasets};
-      /usr/bin/mc mb --ignore-existing localminio/${MINIO_MLFLOW_BUCKET:-mlflow-artifacts};
-      /usr/bin/mc mb --ignore-existing localminio/${MINIO_EVALUATIONS_BUCKET:-mlite-evaluations};
-      echo 'MinIO buckets initialized successfully.';
-      exit 0;
-      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlite_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlite_minio_password}
+      MINIO_DATASETS_BUCKET: ${MINIO_DATASETS_BUCKET:-mlite-datasets}
+      MINIO_MLFLOW_BUCKET: ${MINIO_MLFLOW_BUCKET:-mlflow-artifacts}
+      MINIO_EVALUATIONS_BUCKET: ${MINIO_EVALUATIONS_BUCKET:-mlite-evaluations}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        /usr/bin/mc alias set localminio http://mlite-storage:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        /usr/bin/mc mb --ignore-existing "localminio/$${MINIO_DATASETS_BUCKET}"
+        /usr/bin/mc mb --ignore-existing "localminio/$${MINIO_MLFLOW_BUCKET}"
+        /usr/bin/mc mb --ignore-existing "localminio/$${MINIO_EVALUATIONS_BUCKET}"
 
   # ----------------------------------------------------------------------------
   # MLflow Tracking Server
@@ -93,8 +98,8 @@ services:
     depends_on:
       mlite-db:
         condition: service_healthy
-      mlite-storage:
-        condition: service_healthy
+      minio-create-buckets:
+        condition: service_completed_successfully
     environment:
       MLFLOW_S3_ENDPOINT_URL: http://mlite-storage:9000
       MLFLOW_S3_IGNORE_TLS: "true"
@@ -139,6 +144,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mlite_user}:${POSTGRES_PASSWORD:-mlite_secure_password}@mlite-db:5432/${POSTGRES_DB:-mlite_db}
       MINIO_ENDPOINT: http://mlite-storage:9000
+      MINIO_DATASETS_BUCKET: ${MINIO_DATASETS_BUCKET:-mlite-datasets}
+      MINIO_EVALUATIONS_BUCKET: ${MINIO_EVALUATIONS_BUCKET:-mlite-evaluations}
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlite_minio_admin}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlite_minio_password}
       MLFLOW_TRACKING_URI: http://mlflow:5000
@@ -159,8 +166,7 @@ services:
       - ./packages:/app/packages
       - /var/run/docker.sock:/var/run/docker.sock
     group_add:
-      - "982"
-      - "root"
+      - "${DOCKER_SOCKET_GID:-982}"
     command: ["uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "${API_PORT:-8000}:8000"
@@ -183,11 +189,13 @@ services:
     container_name: mlite-ui
     restart: unless-stopped
     depends_on:
-      - mlite-api
+      mlite-api:
+        condition: service_healthy
     volumes:
       - ./apps/web:/app
       - /app/node_modules
     environment:
+      - MLITE_API_PROXY_TARGET=http://mlite-api:8000
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     ports:

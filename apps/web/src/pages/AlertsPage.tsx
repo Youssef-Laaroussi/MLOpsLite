@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import { StatCard } from "../components/StatCard";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useTransition } from "react";
@@ -387,6 +388,14 @@ export const AlertsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <MetricDistribution
+        title="Alerts by severity"
+        description="Alerts in the current list filter"
+        rows={countBy(filteredAlerts, alert => alert.severity)}
+        loading={loading}
+        unavailable={Boolean(error) && alerts.length === 0}
+      />
 
       {/* ── Metrics Summary Cards (Real Backend Metrics) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

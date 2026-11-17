@@ -148,98 +148,28 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
 
   return (
     <>
-      <header className="h-16 border-b border-slate-200 bg-white/90 backdrop-blur px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
-        {/* Breadcrumbs */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm min-w-0">
-          <Link to="/app" className="font-semibold text-slate-400 hover:text-slate-700 transition">
-            MLite
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-          <span className="font-medium text-slate-400 hidden md:inline">{meta.group}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 hidden md:inline" />
-          <h1 className="font-bold text-slate-900 truncate">{meta.label}</h1>
-        </nav>
+      <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-2 border-b border-[#dce5dd] bg-white/95 px-3 backdrop-blur sm:gap-4 sm:px-8">
+        <div className="flex min-w-0 items-center gap-10">
+          <Link to="/app" className="flex shrink-0 items-center gap-2 text-xl font-bold"><img src="/logo.png" alt="" className="h-7 w-7 object-contain" />MLite</Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-2 xl:flex">
+            {NAV_TARGETS.slice(0, 7).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Registry" : item.label}</Link>)}
+          </nav>
+        </div>
 
         <div ref={barRef} className="flex items-center gap-2">
           {/* Search trigger */}
           <button
             id="header-search"
+            aria-label="Search or jump to a page"
             onClick={() => setPaletteOpen(true)}
-            className="hidden lg:flex items-center gap-2 w-64 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 text-xs hover:border-slate-300 hover:bg-white transition"
+            className="flex items-center gap-2 rounded-full border border-[#dce5dd] bg-white p-2 text-xs text-slate-600 transition hover:border-emerald-300 lg:w-64 lg:px-3 2xl:w-80"
           >
             <Search className="w-4 h-4" />
-            <span className="flex-1 text-left">Search or jump to…</span>
-            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-500">
+            <span className="hidden flex-1 text-left lg:block">Search projects, datasets, models…</span>
+            <kbd className="hidden rounded border border-[#dce5dd] bg-[#f4f7f5] px-1.5 py-0.5 font-mono text-[10px] text-slate-500 lg:inline">
               Ctrl K
             </kbd>
           </button>
-
-          {/* Environment switcher */}
-          <div className="relative">
-            <button
-              id="header-env"
-              onClick={() => toggle("env")}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 transition"
-            >
-              <span className="relative flex w-2 h-2">
-                <span className={`absolute inset-0 rounded-full ${envDot} opacity-60 animate-ping`} />
-                <span className={`relative w-2 h-2 rounded-full ${envDot}`} />
-              </span>
-              <span className="hidden sm:inline">{env}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-            {openMenu === "env" && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl p-1.5 z-50">
-                <p className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Environment
-                </p>
-                {(["Production", "Staging", "Development"] as const).map((e) => (
-                  <button
-                    key={e}
-                    onClick={() => {
-                      setEnv(e);
-                      setOpenMenu(null);
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition ${env === e ? "bg-emerald-50 text-emerald-800" : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    {e}
-                    {env === e && <CheckCircle2 className="w-3.5 h-3.5" />}
-                  </button>
-                ))}
-                <div className="mt-1 px-2.5 py-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>All services operational</span>
-                  <span className="font-mono text-emerald-600 font-bold">99.98%</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Quick create */}
-          <div className="relative">
-            <button
-              id="header-create"
-              onClick={() => toggle("create")}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold shadow-sm shadow-[#3BB48C]/30 transition"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New</span>
-            </button>
-            {openMenu === "create" && (
-              <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl p-1.5 z-50">
-                {QUICK_CREATE.map((q) => (
-                  <button
-                    key={q.label}
-                    onClick={() => go(q.href)}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    <q.icon className="w-4 h-4 text-slate-400" />
-                    {q.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Notifications */}
           <div className="relative">
@@ -260,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
               )}
             </button>
             {openMenu === "notif" && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-[min(17rem,calc(100vw-4rem))] sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                   <span className="text-sm font-bold text-slate-900">Active Alerts</span>
                   <Link to="/app/alerts" onClick={() => setOpenMenu(null)} className="text-[11px] font-semibold text-[#3BB48C] hover:underline">
@@ -307,9 +237,9 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                 className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition"
               >
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs overflow-hidden ${user.role === "ADMIN"
-                    ? "bg-gradient-to-tr from-rose-500 to-pink-600"
-                    : "bg-gradient-to-tr from-[#3BB48C] to-teal-400"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden ${user.role === "ADMIN"
+                    ? "bg-[#00823d]"
+                    : "bg-[#117b40]"
                     }`}
                 >
                   {user.avatar_url ? (
@@ -318,6 +248,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     user.username.charAt(0).toUpperCase()
                   )}
                 </div>
+                <span className="hidden text-left sm:block"><span className="block text-xs font-semibold">{user.full_name || user.username}</span><span className="block text-[10px] capitalize text-slate-400">{user.role.toLowerCase()}</span></span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
@@ -380,7 +311,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
           ) : (
             <Link
               to="/login"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0b6636] hover:bg-[#084d2a] text-white font-bold text-xs"
             >
               <LogIn className="w-3.5 h-3.5" />
               Sign In

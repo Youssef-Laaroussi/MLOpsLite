@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedRefreshToken = localStorage.getItem("mlite_refresh_token");
       const savedUserStr = localStorage.getItem("mlite_user");
 
-      if (savedUserStr) {
+      if (savedToken && savedUserStr) {
         try {
           setUser(JSON.parse(savedUserStr));
         } catch {
@@ -74,19 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } else {
-        // If no token in local dev, provide default demo admin session so user is never locked out
-        const defaultUser: User = {
-          id: "usr-admin-demo",
-          email: "admin@mlite.local",
-          username: "admin",
-          full_name: "MLOps Platform Admin",
-          role: "ADMIN",
-          is_active: true,
-          created_at: new Date().toISOString(),
-          permissions: ["*"],
-        };
-        setUser(defaultUser);
-        localStorage.setItem("mlite_user", JSON.stringify(defaultUser));
+        localStorage.removeItem("mlite_user");
       }
       setIsLoading(false);
     };
@@ -173,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         tokens,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!tokens,
         isLoading,
         login,
         register,

@@ -1,50 +1,38 @@
-import { StatCard } from "../components/StatCard";
+import { LifecycleArtwork } from "../components/LifecycleArtwork";
+import { TimelineChart, EmptyChart } from "../components/charts/LifecycleCharts";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
+  Network, Layers, Rocket, LineChart, ChevronRight, Info, CheckCircle2, TrendingUp, TrendingDown,
   FolderGit2,
   Database,
   FlaskConical,
   Box,
   Server,
-  Calendar,
   ChevronDown,
-  ArrowUpRight,
   ShieldCheck,
-  Activity,
-  Zap,
-  CheckCircle2,
-  Cpu,
   RefreshCw,
   Search,
-  AlertTriangle,
+  BellRing,
 } from "lucide-react";
-import { StatusBadge } from "../components/StatusBadge";
 import {
+  fetchExperiments,
   fetchSystemStats,
   fetchSystemServices,
   fetchModels,
   fetchDeployments,
   pingDeployment,
 } from "../api/client";
-import { RegisteredModel, Deployment, SubsystemService, SystemStats } from "../api/types";
+import { Experiment, RegisteredModel, Deployment, SubsystemService, SystemStats } from "../api/types";
 import { Link } from "react-router-dom";
 import {
+  BarChart, Bar, LabelList, CartesianGrid, XAxis, YAxis,
   PieChart,
   Pie,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
-  Legend,
 } from "recharts";
-import { AXIS_TICK, GRID_PROPS, BiTooltip, PALETTE } from "../components/charts/ChartKit";
+import { PALETTE } from "../components/charts/ChartKit";
 
 export const DashboardOverview: React.FC = () => {
   const [stats, setStats] = useState<SystemStats>({
@@ -65,6 +53,7 @@ export const DashboardOverview: React.FC = () => {
   const [models, setModels] = useState<RegisteredModel[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [services, setServices] = useState<SubsystemService[]>([]);
+  const [hasStats, setHasStats] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -82,15 +71,32 @@ export const DashboardOverview: React.FC = () => {
     latency: number;
     isHealthy: boolean;
     prediction: any;
+    checkedAt: number;
   } | null>(null);
 
-  // Latency Chart filter state: 'all' | 'p50' | 'p95' | 'p99'
-  const [latencyMetricFilter, setLatencyMetricFilter] = useState<"all" | "p50" | "p95" | "p99">("all");
-
+  type Source = "metrics" | "models" | "deployments" | "services";
+  const [updatedAt, setUpdatedAt] = useState<Partial<Record<Source, number>>>({});
+  const [failedSources, setFailedSources] = useState<Source[]>([]);
+  const [now, setNow] = useState(Date.now());
   const latestRequest = useRef(0);
+  const inFlight = useRef(false);
+
+  const freshness = (source: Source) => {
+    const last = updatedAt[source];
+    if (!last) return loading ? "Loading…" : "Unavailable";
+    const age = Math.max(0, Math.floor((now - last) / 1000));
+    const stale = failedSources.includes(source) || age > 120;
+    return `${stale ? "Stale · " : ""}Updated ${age < 60 ? `${age}s` : `${Math.floor(age / 60)}m`} ago`;
+  };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadData = async (range?: string) => {
     const request = ++latestRequest.current;
+    inFlight.current = true;
     setLoading(true);
     setApiError(null);
     const activeRange = range !== undefined ? range : timeRange;
@@ -103,11 +109,23 @@ export const DashboardOverview: React.FC = () => {
 
     if (request !== latestRequest.current) return;
 
-    if (statsResult.status === "fulfilled") setStats(statsResult.value);
-    if (modelsResult.status === "fulfilled") setModels(modelsResult.value ?? []);
-    if (deploymentsResult.status === "fulfilled") setDeployments(deploymentsResult.value ?? []);
-    if (servicesResult.status === "fulfilled") setServices(servicesResult.value ?? []);
+    inFlight.current = false;
+    const statsAvailable = statsResult.status === "fulfilled" && !statsResult.value.error;
+    setHasStats(statsAvailable);
+    if (statsAvailable) setStats(statsResult.value);
+    setModels(modelsResult.status === "fulfilled" ? modelsResult.value ?? [] : []);
+    setDeployments(deploymentsResult.status === "fulfilled" ? deploymentsResult.value ?? [] : []);
+    setServices(servicesResult.status === "fulfilled" ? servicesResult.value : []);
 
+    const succeeded: Source[] = [];
+    if (statsAvailable) succeeded.push("metrics");
+    if (modelsResult.status === "fulfilled") succeeded.push("models");
+    if (deploymentsResult.status === "fulfilled") succeeded.push("deployments");
+    if (servicesResult.status === "fulfilled") succeeded.push("services");
+    const completedAt = Date.now();
+    setNow(completedAt);
+    setUpdatedAt((previous) => ({ ...previous, ...Object.fromEntries(succeeded.map((source) => [source, completedAt])) }));
+    setFailedSources((["metrics", "models", "deployments", "services"] as Source[]).filter((source) => !succeeded.includes(source)));
     const unavailable = [
       statsResult.status === "rejected" && "system metrics",
       modelsResult.status === "rejected" && "models",
@@ -123,11 +141,12 @@ export const DashboardOverview: React.FC = () => {
   };
 
   useEffect(() => {
+    setHasStats(false);
     void loadData(timeRange);
     const savedInterval = Number(localStorage.getItem("mlite_pref_refresh"));
     const interval = [5, 15, 30, 60].includes(savedInterval) ? savedInterval : 15;
     const timer = window.setInterval(() => {
-      if (!document.hidden) void loadData(timeRange);
+      if (!document.hidden && !inFlight.current) void loadData(timeRange);
     }, interval * 1000);
     return () => {
       window.clearInterval(timer);
@@ -141,12 +160,11 @@ export const DashboardOverview: React.FC = () => {
     try {
       const res = await pingDeployment(dep.id);
       const isHealthy = Boolean(
-        res.prediction?.healthy === true ||
-        res.prediction?.status === "healthy" ||
-        res.prediction?.status === "RUNNING"
+        res.prediction?.healthy === true
       );
       setPingResult({
         id: dep.id,
+        checkedAt: Date.now(),
         latency: res.latency_ms,
         isHealthy,
         prediction: res.prediction,
@@ -154,6 +172,7 @@ export const DashboardOverview: React.FC = () => {
     } catch (err: any) {
       setPingResult({
         id: dep.id,
+        checkedAt: Date.now(),
         latency: 0,
         isHealthy: false,
         prediction: {
@@ -167,37 +186,56 @@ export const DashboardOverview: React.FC = () => {
     }
   };
 
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [experimentsError, setExperimentsError] = useState(false);
+  const [experimentsLoaded, setExperimentsLoaded] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetchExperiments().then(items => { if (active) { setExperiments([...items].sort((a,b) => (b.created_at || "").localeCompare(a.created_at || ""))); setExperimentsError(false); setExperimentsLoaded(true); } }).catch(() => { if (active) setExperimentsError(true); });
+    return () => { active = false; };
+  }, [updatedAt.metrics]);
+  const groupDates = (dates: (string | undefined | null)[]) => {
+    const counts = new Map<string, number>();
+    dates.forEach(date => { if (date && !Number.isNaN(Date.parse(date))) { const key = new Date(date).toISOString().slice(0, 10); counts.set(key, (counts.get(key) || 0) + 1); } });
+    return [...counts].sort(([a], [b]) => a.localeCompare(b)).map(([date,count]) => ({ date, count }));
+  };
+  const activeExperiments = experiments.filter(item => item.lifecycle_stage === "active");
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const datedActive = activeExperiments.filter(item => item.created_at && Number.isFinite(Date.parse(item.created_at)));
+  const recentExperiments = datedActive.filter(item => { const age = now - Date.parse(item.created_at!); return age >= 0 && age < weekMs; }).length;
+  const priorExperiments = datedActive.filter(item => { const age = now - Date.parse(item.created_at!); return age >= weekMs && age < 2 * weekMs; }).length;
+  const experimentGrowth = experimentsLoaded && !experimentsError && datedActive.length === activeExperiments.length && priorExperiments > 0
+    ? Math.round((recentExperiments - priorExperiments) / priorExperiments * 100) : null;
+  const [experimentPeriod, setExperimentPeriod] = useState("14");
+  const experimentHistory = groupDates(experiments.filter(item => experimentPeriod === "all" || (item.created_at && Date.parse(item.created_at) >= now - Number(experimentPeriod) * 86400000)).map(item => item.created_at));
+  const deploymentHistory = groupDates(deployments.map(item => item.created_at));
+
   // ── Resource Counts (Real DB counts) ───────────────────────────────
   const resourcesData = [
     {
       name: "Projects",
       count: stats.projects_count,
       icon: FolderGit2,
-      barColor: PALETTE.brand,
     },
     {
       name: "Datasets",
       count: stats.datasets_count ?? 0,
       icon: Database,
-      barColor: PALETTE.brand,
-    },
-    {
-      name: "Experiments",
-      count: stats.experiments_count ?? 0,
-      icon: FlaskConical,
-      barColor: PALETTE.brand,
     },
     {
       name: "Models",
       count: stats.models_count,
       icon: Box,
-      barColor: PALETTE.brand,
     },
     {
       name: "Deployments",
       count: stats.active_deployments,
       icon: Server,
-      barColor: PALETTE.brand,
+    },
+    {
+      name: "Alerts",
+      count: stats.alerts_count,
+      icon: BellRing,
     },
   ];
 
@@ -221,25 +259,21 @@ export const DashboardOverview: React.FC = () => {
 
   const pieStageData = useMemo(() => {
     return [
-      { name: "Production", value: stageCounts.PRODUCTION, color: PALETTE.brand },
+      { name: "Production", value: stageCounts.PRODUCTION, color: "#b4e99b" },
       { name: "Candidate", value: stageCounts.CANDIDATE, color: PALETTE.brandLight },
-      { name: "Staging", value: stageCounts.STAGING, color: PALETTE.brandPale },
+      { name: "Staging", value: stageCounts.STAGING, color: "#00823b" },
       { name: "Development", value: stageCounts.DEVELOPMENT, color: PALETTE.grayLight },
       { name: "Archived", value: stageCounts.ARCHIVED, color: PALETTE.grayMid },
-    ].filter((item) => item.value > 0);
+    ].filter((item) => item.value > 0 || ["Staging", "Production", "Archived"].includes(item.name));
   }, [stageCounts]);
 
-  const lifecycleStages = stats.funnel ?? [];
-  const largestStage = Math.max(1, ...lifecycleStages.map(({ value }) => value));
-
-  // Real Latency Telemetry from backend
-  const latencyData = stats.latency_telemetry || [];
-
-  // Real Model Benchmarks from backend
-  const benchmarkData = stats.benchmarks || [];
-
-  // Real Drift Trajectory from backend
   const driftData = stats.drift_trajectory || [];
+  const scoredVersions = (stats.benchmarks ?? []).filter(({ has_metrics }) => has_metrics);
+  const driftModels = Array.from(new Set(driftData.map(({ model_name }) => model_name)));
+  const [driftModel, setDriftModel] = useState("");
+  const selectedDriftModel = driftModels.includes(driftModel) ? driftModel : driftModels[driftModels.length - 1] ?? "";
+  const modelDrift = driftData.filter(({ model_name }) => model_name === selectedDriftModel);
+  const selectedRange = timeRange === "All time" ? "all time" : timeRange.toLowerCase();
 
   // Filtered models and deployments for search
   const filteredModels = useMemo(() => {
@@ -250,8 +284,9 @@ export const DashboardOverview: React.FC = () => {
   }, [models, searchQuery]);
 
   const filteredDeployments = useMemo(() => {
-    if (!searchQuery.trim()) return deployments;
-    return deployments.filter((d) =>
+    const running = deployments.filter((d) => d.status === "RUNNING");
+    if (!searchQuery.trim()) return running;
+    return running.filter((d) =>
       d.model_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [deployments, searchQuery]);
@@ -260,874 +295,141 @@ export const DashboardOverview: React.FC = () => {
   const displayDeployments = searchQuery.trim() ? filteredDeployments : filteredDeployments.slice(0, 3);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-150">
-      {/* ── Backend Error Banner ───────────────────────────────────── */}
-      {apiError && (
-        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span className="font-semibold">{apiError}</span>
-          </div>
-          <button
-            onClick={() => loadData()}
-            className="px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold text-[11px] transition"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Search Bar ─────────────────────────────────────────────── */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input
-          id="mlite-global-search"
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Filter models or running endpoints on this dashboard..."
-          className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:border-[#3BB48C] focus:ring-1 focus:ring-[#3BB48C] transition"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
-          >
-            Clear
-          </button>
-        )}
+    <div className="lifecycle-dashboard">
+      {apiError && <div role="alert" className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{apiError}<button onClick={() => loadData()} className="font-bold">Retry</button></div>}
+      <div className="overview-hero">
+        <div><h1>Lifecycle &amp; Registry Overview</h1><p>An end-to-end view of your ML lifecycle — from data and experiments to model registry,<br className="hidden 2xl:block" /> deployment, and monitoring — all within your self-hosted MLite platform.</p></div>
+        <LifecycleArtwork />
       </div>
-
-      {/* ── Quick Actions ──────────────────────────────────────────── */}
-      <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-          Quick actions
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Link
-            to="/app/datasets"
-            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
-              <Database className="w-3.5 h-3.5" />
-            </div>
-            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
-              Upload Dataset
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Sync CSV/Parquet files to MinIO S3
-            </div>
+      <nav className="lifecycle-strip" aria-label="ML Lifecycle">
+        <span className="lifecycle-label"><Network size={23} />ML Lifecycle</span>
+        {[
+          { label: "Data", detail: "Ingest & prepare", icon: Database, href: "datasets" },
+          { label: "Validation", detail: "Check quality & rules", icon: ShieldCheck, href: "monitoring" },
+          { label: "Experiments", detail: "Train & evaluate", icon: FlaskConical, href: "experiments" },
+          { label: "Registry", detail: "Version & govern", icon: Layers, href: "models" },
+          { label: "Deploy", detail: "Serve to production", icon: Rocket, href: "deployments" },
+          { label: "Monitor", detail: "Track performance & drift", icon: LineChart, href: "monitoring" },
+        ].map(({ label, detail, icon: Icon, href }, index) => <Link to={`/app/${href}`} key={label}><Icon size={25} /><span><strong>{label}</strong><small>{detail}</small></span>{index < 5 && <ChevronRight size={16} className="step-chevron" />}</Link>)}
+      </nav>
+      <div className="overview-kpis">
+        {resourcesData.filter(item => item.name !== "Alerts").map(({ name, count, icon: Icon }) => (
+          <Link className="overview-card kpi" to={`/app/${name.toLowerCase()}`} key={name}>
+            <span><Icon size={22} /><strong>{name}</strong></span>
+            <b>{hasStats ? count : "—"}<ChevronRight size={17} /></b>
           </Link>
-
-          <Link
-            to="/app/deployments"
-            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
-              <Server className="w-3.5 h-3.5" />
-            </div>
-            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
-              Deploy Container
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Launch isolated FastAPI Docker endpoint
-            </div>
-          </Link>
-
-          <Link
-            to="/app/experiments"
-            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
-              <FlaskConical className="w-3.5 h-3.5" />
-            </div>
-            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
-              New Experiment
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Track runs, params &amp; metrics with MLflow
-            </div>
-          </Link>
-
-          <Link
-            to="/app/projects"
-            className="p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-xs transition block group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mb-2.5 group-hover:border-[#3BB48C]/40 group-hover:text-[#3BB48C] transition">
-              <FolderGit2 className="w-3.5 h-3.5" />
-            </div>
-            <div className="text-xs font-semibold text-slate-900 group-hover:text-[#3BB48C] transition">
-              Manage Workspaces
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Configure Git remotes and project metadata
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── SECTION 1: HEADER & REFRESH ────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
-            Overview
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Live telemetry &amp; machine learning registry status calculated directly from SQL databases &amp; MLflow
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Time Range Selector */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-xs">
-                {["All time", "Last 30 days", "Last 7 days"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
-                        ? "bg-slate-100 text-slate-900 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => loadData()}
-            disabled={loading}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-[#3BB48C] hover:border-[#3BB48C]/40 transition shadow-2xs cursor-pointer"
-            title="Refresh metrics"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── SECTION 2: THE 5 RESOURCE KPI CARDS ────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {resourcesData.map((res) => {
-          const href = `/app/${res.name.toLowerCase()}`;
-          return (
-            <StatCard
-              key={res.name}
-              id={`kpi-${res.name.toLowerCase()}`}
-              href={href}
-              title={res.name}
-              value={res.count}
-              icon={res.icon}
-            />
-          );
-        })}
-      </div>
-
-      {/* ── SECTION 3: "RESOURCES OVERVIEW" BAR CHART ──────────────── */}
-      <div className="bg-white border border-slate-200/80 rounded-md p-4">
-        <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-          <div>
-            <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-              Resources Overview
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Inventory distribution across platform entities (real DB queries)</p>
-          </div>
-          <span className="text-[11px] font-mono text-slate-500">Live Database Sync</span>
-        </div>
-
-        <div className="h-48 w-full mt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={resourcesData}
-              margin={{ top: 12, right: 10, left: -20, bottom: 0 }}
-            >
-              <CartesianGrid {...GRID_PROPS} />
-              <XAxis dataKey="name" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <RechartsTooltip
-                cursor={{ fill: "#F8FAFC" }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  return (
-                    <BiTooltip
-                      active
-                      label={label}
-                      payload={[{ name: "Count", value: payload[0].value, color: PALETTE.brand }]}
-                    />
-                  );
-                }}
-              />
-              <Bar dataKey="count" fill={PALETTE.brand} radius={[2, 2, 0, 0]} maxBarSize={36} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ── SECTION 4: INFERENCE LATENCY & MODEL REGISTRY DONUT ────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Latency Percentiles Curve */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                    Inference &amp; Telemetry Latency
-                  </h3>
-                  <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                    {latencyData.length > 0 ? `P95: ${latencyData[latencyData.length - 1].p95}ms` : "No telemetry"}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Model inference latency (P50 and P95)
-                </p>
-              </div>
-
-              {/* Filter Pills */}
-              <div className="flex items-center bg-slate-100/80 p-0.5 rounded border border-slate-200/60">
-                {(["all", "p50", "p95", "p99"] as const).filter((mode) => mode !== "p99" || latencyData.some((point) => point.p99 != null)).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setLatencyMetricFilter(mode)}
-                    className={`px-2 py-0.5 text-[10px] font-medium rounded transition uppercase cursor-pointer ${
-                      latencyMetricFilter === mode
-                        ? "bg-white text-slate-900 border border-slate-200/60 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Metric Strip */}
-            <div className="grid grid-cols-3 gap-2 mb-3 p-2 bg-slate-50/70 border border-slate-200/60 rounded text-center">
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">Median (P50)</span>
-                <span className="text-xs font-semibold text-slate-900 font-mono">
-                  {latencyData.length > 0 ? `${latencyData[latencyData.length - 1].p50} ms` : "--"}
-                </span>
-              </div>
-              <div className="border-x border-slate-200/70">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">Tail (P95)</span>
-                <span className="text-xs font-semibold text-slate-900 font-mono">
-                  {latencyData.length > 0 ? `${latencyData[latencyData.length - 1].p95} ms` : "--"}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide block">Recorded Requests</span>
-                <span className="text-xs font-semibold text-slate-900 font-mono">
-                  {latencyData.reduce((acc, curr) => acc + curr.reqs, 0)}
-                </span>
-              </div>
-            </div>
-
-            {/* Recharts LineChart or Empty State */}
-            {latencyData.length > 0 ? (
-              <div className="h-44 w-full mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={latencyData}
-                    margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
-                  >
-                    <CartesianGrid {...GRID_PROPS} />
-                    <XAxis dataKey="time" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
-                    <RechartsTooltip
-                      cursor={{ stroke: "#E2E8F0", strokeDasharray: "3 3" }}
-                      content={({ active, payload, label }) => {
-                        if (!active || !payload?.length) return null;
-                        const p50Item = payload.find((p) => p.dataKey === "p50");
-                        const p95Item = payload.find((p) => p.dataKey === "p95");
-                        const p99Item = payload.find((p) => p.dataKey === "p99");
-                        const tooltipItems = [
-                          ...(p99Item?.value != null ? [{ name: "P99 Spike", value: `${p99Item.value} ms`, color: PALETTE.rose }] : []),
-                          { name: "P95 Tail", value: p95Item?.value != null ? `${p95Item.value} ms` : "--", color: PALETTE.grayDark },
-                          { name: "P50 Median", value: p50Item?.value != null ? `${p50Item.value} ms` : "--", color: PALETTE.brand },
-                        ];
-                        return (
-                          <BiTooltip
-                            active
-                            label={label}
-                            payload={tooltipItems}
-                          />
-                        );
-                      }}
-                    />
-                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p99") && latencyData.some((d) => d.p99 != null) && (
-                      <Line type="monotone" dataKey="p99" stroke={PALETTE.rose} strokeWidth={1.5} strokeDasharray="3 3" dot={false} activeDot={{ r: 3 }} />
-                    )}
-                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p95") && (
-                      <Line type="monotone" dataKey="p95" stroke={PALETTE.grayDark} strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
-                    )}
-                    {(latencyMetricFilter === "all" || latencyMetricFilter === "p50") && (
-                      <Line type="monotone" dataKey="p50" stroke={PALETTE.brand} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-44 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
-                <Activity className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">No inference telemetry recorded yet</p>
-                <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm">
-                  Deploy a container endpoint and perform test predictions to log real P50/P95 latency curves.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Target SLA: &lt;15ms</span>
-            <span>Source: deployment_metrics table</span>
-          </div>
-        </div>
-
-        {/* Model Registry Lifecycle Donut Chart */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Model Distribution
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Breakdown by lifecycle promotion stage
-                </p>
-              </div>
-              <Link
-                to="/app/models"
-                className="text-xs font-medium text-slate-500 hover:text-slate-900 flex items-center gap-0.5 transition"
-              >
-                <span>Catalog</span>
-                <ArrowUpRight className="w-3 h-3" />
-              </Link>
-            </div>
-
-            {/* Recharts Donut PieChart or Empty State */}
-            {stageCounts.total > 0 ? (
-              <div className="relative h-44 w-full my-1 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieStageData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {pieStageData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const p = payload[0];
-                        return (
-                          <BiTooltip
-                            active
-                            label={p.name}
-                            payload={[
-                              { name: "Model Count", value: p.value, color: p.payload.color },
-                            ]}
-                          />
-                        );
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xl font-semibold font-mono text-slate-900">
-                    {stageCounts.total}
-                  </span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                    Versions
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="h-44 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50 my-1">
-                <Box className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">No model versions registered</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Register models in the catalog to see stage breakdown.
-                </p>
-              </div>
-            )}
-
-            {/* Legend Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-emerald-500" />
-                <span className="text-slate-600">Production ({stageCounts.PRODUCTION})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-emerald-400" />
-                <span className="text-slate-600">Candidate ({stageCounts.CANDIDATE})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-emerald-300" />
-                <span className="text-slate-600">Staging ({stageCounts.STAGING})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-slate-300" />
-                <span className="text-slate-600">Development ({stageCounts.DEVELOPMENT})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-xs bg-slate-400" />
-                <span className="text-slate-600">Archived ({stageCounts.ARCHIVED})</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Catalog Total: {stats.models_count} Models</span>
-            <span>Real SQL Aggregation</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── SECTION 5: INFRASTRUCTURE & LIFECYCLE FUNNEL ────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Core Subsystem Availability (Real Network Probes) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Platform Subsystems Status
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Live connectivity &amp; network latency probes across MLOps services
-                </p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">
-                /health/services
-              </span>
-            </div>
-
-            <div className="space-y-2.5 my-3">
-              {services.map((s) => (
-                <div
-                  key={s.name}
-                  className="p-2.5 rounded-lg border border-slate-200/80 bg-slate-50/50 flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        s.status === "online" ? "bg-emerald-500" : "bg-rose-500"
-                      }`}
-                    />
-                    <span className="font-semibold text-slate-800">{s.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3 font-mono text-[11px]">
-                    <span className="text-slate-500">RTT: {s.latency}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                        s.status === "online"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-rose-50 text-rose-700 border border-rose-200"
-                      }`}
-                    >
-                      {s.uptime || s.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>
-              Status:{" "}
-              {services.every((s) => s.status === "online")
-                ? "All Subsystems Connected"
-                : "Partial Service Degradation"}
+        ))}
+        <Link className="overview-card kpi" to="/app/experiments">
+          <span><FlaskConical size={22} /><strong>Active Experiments</strong></span>
+          <div className="kpi-experiment-value">
+            <b>{experimentsLoaded && !experimentsError ? activeExperiments.length : "—"}<ChevronRight size={17} /></b>
+            <span className={`growth-badge ${experimentGrowth === null ? "growth-unavailable" : experimentGrowth < 0 ? "growth-negative" : ""}`} title="Newly created active experiments in the last 7 days compared with the preceding 7 days">
+              {experimentGrowth !== null && (experimentGrowth < 0 ? <TrendingDown size={13} /> : <TrendingUp size={13} />)}
+              {experimentGrowth === null ? "—" : `${experimentGrowth >= 0 ? "+" : ""}${experimentGrowth}%`}
             </span>
-            <span>Real HTTP/TCP Probes</span>
+            <small>vs. prior 7d</small>
           </div>
-        </div>
-
-        {/* Lifecycle activity */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="mb-2 pb-2 border-b border-slate-100">
-              <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                Lifecycle Activity
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Counts from ingestion through production</p>
-            </div>
-
-            {lifecycleStages.length ? (
-              <ul className="space-y-3 py-2">
-                {lifecycleStages.map(({ name, value }) => (
-                  <li key={name}>
-                    <div className="mb-1 flex justify-between gap-3 text-xs text-slate-700">
-                      <span>{name}</span>
-                      <span className="font-mono tabular-nums">{value.toLocaleString()}</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                      <div
-                        className="h-full rounded-full bg-emerald-600"
-                        style={{ width: `${(value / largestStage) * 100}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="py-8 text-center text-xs text-slate-500">No lifecycle activity available.</p>
-            )}
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>In Production</span>
-            <span className="font-semibold text-slate-700">
-              {stageCounts.PRODUCTION} Models Active
-            </span>
-          </div>
-        </div>
+        </Link>
+        <Link to="/app/models" className="overview-card kpi">
+          <span><ShieldCheck size={22} /><strong>Registry Health</strong><Info size={15} className="kpi-info" /></span>
+          <span title="Platform connectivity" className={`health-pill ${!hasStats ? "health-unknown" : !stats.system_healthy ? "health-warning" : ""}`}>
+            {hasStats && stats.system_healthy ? <span className="health-check">✓</span> : <Info size={15} />}
+            {!hasStats ? "Unknown" : stats.system_healthy ? "Healthy" : "Needs attention"}
+          </span>
+        </Link>
       </div>
-
-      {/* ── SECTION 6: MODEL BENCHMARKS & DRIFT TRAJECTORY ─────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Model Benchmark Matrix */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Model Benchmark Matrix
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Validation ROC-AUC, F1 and accuracy recorded on registered model versions
-                </p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">
-                MLflow Metrics
-              </span>
-            </div>
-
-            {benchmarkData.length > 0 && benchmarkData.some((b) => b.has_metrics) ? (
-              <div className="h-50 w-full my-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={benchmarkData}
-                    margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
-                    barSize={12}
-                  >
-                    <CartesianGrid {...GRID_PROPS} />
-                    <XAxis dataKey="model" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 1.0]} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => v.toFixed(2)} />
-                    <ReferenceLine y={0.80} stroke={PALETTE.grayMid} strokeDasharray="3 3" label={{ value: "Gate: 0.80", fill: PALETTE.grayDark, fontSize: 10, position: "insideBottomLeft" }} />
-                    <RechartsTooltip
-                      content={({ active, payload, label }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <BiTooltip
-                            active
-                            label={d.full_name || label}
-                            payload={[
-                              { name: "Stage", value: d.stage, color: PALETTE.grayDark },
-                              { name: "ROC-AUC", value: d.auc?.toFixed(3) ?? "N/A", color: PALETTE.brand },
-                              { name: "F1-Score", value: d.f1?.toFixed(3) ?? "N/A", color: PALETTE.grayDark },
-                              { name: "Accuracy", value: d.accuracy?.toFixed(3) ?? "N/A", color: PALETTE.brandDark },
-                            ]}
-                          />
-                        );
-                      }}
-                    />
-                    <Bar dataKey="auc" name="ROC-AUC" fill={PALETTE.brand} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="f1" name="F1-Score" fill={PALETTE.grayDark} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="accuracy" name="Accuracy" fill={PALETTE.brandDark} radius={[2, 2, 0, 0]} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-50 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50 my-1">
-                <Box className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">No benchmark metrics recorded</p>
-                <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm">
-                  Register models with validation metrics (ROC-AUC, F1, accuracy) from MLflow runs to plot benchmarks.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Source: ModelVersion.metrics</span>
-            <span>Real Evaluation Scores</span>
-          </div>
-        </div>
-
-        {/* Drift Evaluations Trajectory */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Drift Evaluations
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Historical feature drift checks</p>
-              </div>
-              <Link
-                to="/app/monitoring"
-                className="text-xs font-medium text-slate-500 hover:text-slate-900 flex items-center gap-0.5 transition"
-              >
-                <span>Monitoring</span>
-                <ArrowUpRight className="w-3 h-3" />
-              </Link>
-            </div>
-
-            {driftData.length > 0 ? (
-              <div className="space-y-2 my-2">
-                {driftData.map((d, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between text-xs"
-                  >
-                    <div>
-                      <div className="font-semibold text-slate-900">{d.model_name}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{d.date}</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-semibold text-slate-700">
-                        Drift: {(d.drift_share * 100).toFixed(1)}%
-                      </span>
-                      <div className="text-[10px] text-slate-400 uppercase">{d.drift_status}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-44 flex flex-col items-center justify-center p-4 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50 my-1">
-                <ShieldCheck className="w-6 h-6 text-slate-300 mb-1.5" />
-                <p className="text-xs font-semibold text-slate-700">No drift evaluations recorded</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Run drift checks on datasets or models in Monitoring to track drift.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Total Drift Checks: {driftData.length}</span>
-            <span>Feature drift share</span>
-          </div>
-        </div>
+      <div className="overview-toolbar"><p role="status">Inventory: current totals · Scores and drift: {selectedRange} · {freshness("metrics")}</p><div className="flex items-center gap-2"><div className="relative"><button className="range-button" onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}>{timeRange}<ChevronDown size={12} /></button>{isTimeRangeOpen && <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border bg-white p-1 shadow-lg">{["All time", "Last 30 days", "Last 7 days"].map(range => <button key={range} className="block w-full rounded p-2 text-left text-xs hover:bg-emerald-50" onClick={() => { setTimeRange(range); setIsTimeRangeOpen(false); }}>{range}</button>)}</div>}</div><button title="Refresh metrics" onClick={() => loadData()} disabled={loading}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /></button></div></div>
+      <div className="overview-charts">
+        <section className="overview-card chart-card"><h3><FlaskConical />Experiments Over Time<select className="chart-period" aria-label="Experiment history period" value={experimentPeriod} onChange={event => setExperimentPeriod(event.target.value)}><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option><option value="all">All time</option></select></h3>{experimentHistory.length ? <TimelineChart data={experimentHistory} dataKey="count" /> : <EmptyChart text={experimentsError ? "Experiments unavailable" : "No experiment history yet"} />}</section>
+        <section className="overview-card chart-card"><h3><Network />Model Score Comparison</h3>{hasStats && scoredVersions.length ? <><div className="chart-legend"><span><i style={{background: '#00823b'}} />Accuracy</span><span><i style={{background: '#b4e99b'}} />F1 Score</span></div><div className="score-plot" role="img" aria-label="Model scores, scale 0 to 1"><ResponsiveContainer width="100%" height="100%"><BarChart data={scoredVersions.slice(0, 4)} layout="vertical" margin={{left: 0, right: 34, bottom: 0}}><CartesianGrid horizontal={false} stroke="#edf0f2" /><XAxis type="number" domain={[0, 1]} tick={{fontSize: 9}} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="model" width={100} tick={{fontSize: 9, fill: '#172035'}} axisLine={false} tickLine={false} /><RechartsTooltip /><Bar dataKey="accuracy" name="Accuracy" fill="#00823b" radius={[0,3,3,0]} isAnimationActive={false}><LabelList dataKey="accuracy" position="right" formatter={(value: number | null) => value == null ? "" : value.toFixed(3)} style={{fontSize:9,fill:'#263249',fontWeight:600}} /></Bar><Bar dataKey="f1" name="F1 Score" fill="#b4e99b" radius={[0,3,3,0]} isAnimationActive={false}><LabelList dataKey="f1" position="right" formatter={(value: number | null) => value == null ? "" : value.toFixed(3)} style={{fontSize:9,fill:'#263249',fontWeight:600}} /></Bar></BarChart></ResponsiveContainer></div><div className="sr-only">{scoredVersions.map(v => <span key={v.model}>{v.f1?.toFixed(3)}</span>)}</div></> : <EmptyChart text={loading ? "Loading scores…" : "No scores recorded for these versions"} />}</section>
+        <section className="overview-card chart-card"><h3><Layers />Registry Distribution</h3>{hasStats && stageCounts.total > 0 ? <div className="registry-chart"><div className="relative h-[150px] min-w-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie isAnimationActive={false} data={pieStageData} dataKey="value" innerRadius="65%" outerRadius="90%" stroke="none">{pieStageData.map(entry => <Cell key={entry.name} fill={entry.color} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer><div className="donut-label"><b>{stageCounts.total}</b><small>Versions</small></div></div><div className="stage-legend">{pieStageData.map(entry => <span key={entry.name}><i style={{background: entry.color}} />{entry.name} ({entry.value}) <b>{stageCounts.total ? Math.round(entry.value / stageCounts.total * 100) : 0}%</b></span>)}</div></div> : <EmptyChart text={hasStats ? "No registered model versions" : loading ? "Loading model versions…" : "Model versions unavailable"} />}</section>
+        <section className="overview-card chart-card"><h3><LineChart />Model Drift<select className="chart-period" aria-label="Scores and drift observation period" value={timeRange} onChange={event => setTimeRange(event.target.value)}><option>All time</option><option>Last 7 days</option><option>Last 30 days</option></select></h3>{hasStats && modelDrift.length ? <><label className="chart-caption flex items-center gap-2">Model<select aria-label="Model" className="min-w-0 max-w-[180px] rounded border border-slate-100 bg-white text-[10px]" value={selectedDriftModel} onChange={event => setDriftModel(event.target.value)}>{driftModels.map(name => <option key={name}>{name}</option>)}</select></label><TimelineChart data={modelDrift.map(item => ({ ...item, value: item.drift_share }))} dataKey="value" percent /><div className="sr-only">{modelDrift.map((item, i) => <span key={i}>{(item.drift_share * 100).toFixed(1)}%</span>)}</div></> : <EmptyChart text={loading ? "Loading drift evaluations…" : "No drift evaluations in this period"} />}</section>
       </div>
-
-      {/* ── SECTION 7: PRODUCTION MODELS & ACTIVE TEST PING ENDPOINTS ─ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Model Registry Card */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200/70 flex items-center justify-center text-slate-700">
-                  <Box className="w-4 h-4 text-slate-700" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                    Model Registry
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    Governed artifacts &amp; validation stages
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/app/models"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
-              >
-                <span>View All</span>
-                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </Link>
-            </div>
-
-            {displayModels.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                No cataloged models found.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {displayModels.map((m, idx) => (
-                  <Link
-                    key={idx}
-                    to={`/app/models?search=${encodeURIComponent(m.name)}`}
-                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:border-[#3BB48C]/60 group-hover:text-[#3BB48C] transition shrink-0 shadow-2xs">
-                        <Cpu className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900 text-xs truncate group-hover:text-[#3BB48C] transition">
-                            {m.name}
-                          </span>
-                          <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                            v{m.version}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate flex items-center gap-1.5">
-                          <span>
-                            {m.metrics?.f1_score
-                              ? `F1: ${(m.metrics.f1_score * 100).toFixed(1)}%`
-                              : m.metrics?.accuracy
-                              ? `Acc: ${(m.metrics.accuracy * 100).toFixed(1)}%`
-                              : "MLflow Tracked"}
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-slate-400">
-                            Run #{m.mlflow_run_id ? m.mlflow_run_id.slice(0, 7) : `v${m.version}`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="shrink-0 ml-2">
-                      <StatusBadge status={m.stage || "DEVELOPMENT"} />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Active Inference Endpoints Card */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-700">
-                  <Server className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                      Active Inference Endpoints
-                    </h3>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Live
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    FastAPI Docker microservices with live health probes
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/app/deployments"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 group transition"
-              >
-                <span>Manage</span>
-                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </Link>
-            </div>
-
-            {displayDeployments.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                No running containers found.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {displayDeployments.map((d) => (
-                  <div
-                    key={d.id}
-                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-xs transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
-                          <Server className="w-4 h-4 text-slate-600" />
-                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-900 text-xs truncate">
-                              {d.model_name}
-                            </span>
-                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                              v{d.model_version}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate flex items-center gap-1.5">
-                            <span className="text-emerald-700 font-medium font-mono">Port :{d.port}</span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-slate-400">FastAPI Container</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleTestPing(d)}
-                        disabled={pingingId === d.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-900 hover:text-white text-slate-700 border border-slate-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer group shrink-0 active:scale-95"
-                      >
-                        <Zap className={`w-3.5 h-3.5 text-emerald-600 group-hover:text-emerald-400 transition ${pingingId === d.id ? "animate-bounce" : ""}`} />
-                        <span>{pingingId === d.id ? "Pinging..." : "Test Ping"}</span>
-                      </button>
-                    </div>
-
-                    {pingResult && pingResult.id === d.id && (
-                      <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px] animate-in fade-in">
-                        {pingResult.isHealthy ? (
-                          <>
-                            <div className="flex items-center gap-1.5 text-emerald-700 font-semibold font-mono">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              <span>Probe OK • Latency {pingResult.latency}ms</span>
-                            </div>
-                            <span className="font-mono text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
-                              Status: {String(pingResult.prediction?.status || "HEALTHY")}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-1.5 text-rose-700 font-semibold font-mono">
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                              <span>Probe Failed • {pingResult.latency > 0 ? `${pingResult.latency}ms` : "Unreachable"}</span>
-                            </div>
-                            <span
-                              className="font-mono text-[10px] bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-md font-semibold max-w-[220px] truncate"
-                              title={String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
-                            >
-                              Status: {String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "UNREACHABLE")}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="overview-activity">
+        <section className="overview-card chart-card"><h3><Rocket />Deployment History</h3><p className="chart-caption">Recorded deployments by creation date · all time</p>{deploymentHistory.length ? <div className="h-[130px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={deploymentHistory}><CartesianGrid vertical={false} stroke="#edf0f2" /><XAxis dataKey="date" tick={{fontSize: 9}} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} width={25} tick={{fontSize: 9}} axisLine={false} tickLine={false} /><RechartsTooltip /><Bar dataKey="count" name="Deployments" fill="#159459" radius={[2,2,0,0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <EmptyChart text={failedSources.includes("deployments") ? "Deployment history unavailable" : "No deployments recorded yet"} />}</section>
+        <section className="overview-card"><h3><FlaskConical />Recent Experiments<Link to="/app/experiments">View All →</Link></h3>{experiments.length ? <div className="overflow-x-auto"><table className="overview-table"><thead><tr><th>Experiment</th><th>Stage</th><th>Runs</th><th>Created</th></tr></thead><tbody>{experiments.slice(0, 4).map(exp => <tr key={exp.experiment_id}><td><Link to="/app/experiments">{exp.name}</Link></td><td><span className="health-pill">{exp.lifecycle_stage || "—"}</span></td><td>{exp.runs_count ?? "—"}</td><td>{exp.created_at ? new Date(exp.created_at).toLocaleDateString() : "—"}</td></tr>)}</tbody></table></div> : <EmptyChart text={experimentsError ? "Experiments unavailable" : "No experiments recorded yet"} />}</section>
+        <section className="overview-card"><h3><ShieldCheck />Registry Versions<Link to="/app/models">View All →</Link></h3><p className="chart-caption">Current version stages</p>{displayModels.length ? <table className="overview-table"><thead><tr><th>Model</th><th>Version</th><th>Stage</th></tr></thead><tbody>{displayModels.map(model => <tr key={`${model.name}-${model.version}`}><td><Link to={`/app/models?search=${encodeURIComponent(model.name)}`}>{model.name}</Link></td><td>v{model.version}</td><td><span className="health-pill">{model.stage}</span></td></tr>)}</tbody></table> : <EmptyChart text={failedSources.includes("models") ? "Registry unavailable" : "No registered models yet"} />}</section>
       </div>
+      <section className="overview-card next-steps"><div className="empty-cube" aria-hidden="true"><div className="iso-cube"><i /><b /><em /></div></div><div><h2>{failedSources.includes("deployments") ? "Deployment Status Unavailable" : !updatedAt.deployments ? "Loading Deployments…" : filteredDeployments.length ? `${filteredDeployments.length} Running Deployment${filteredDeployments.length > 1 ? "s" : ""}` : "No Active Deployments"}</h2><p>{filteredDeployments.length ? "Manage your inference endpoints and check their readiness below." : "Deploy a registered model to start serving predictions and track it in real time."}</p><div className="mt-3 flex flex-wrap gap-3"><Link className="primary-action" to="/app/deployments"><Rocket size={15} />Create Deployment</Link><Link className="secondary-action" to="/app/models"><Layers size={15} />Go to Registry</Link></div></div><div className="steps-list"><h3>Next Steps</h3>{["Promote a model to Production from the Registry.", "Create a deployment for the promoted model.", "Monitor performance, latency, and drift once it’s live."].map((step,index) => <p key={step}><b>{index+1}</b>{step}</p>)}</div></section>
+      <details className="overview-details"><summary>Inventory &amp; endpoint readiness</summary><div className="relative my-4"><Search size={15} className="absolute left-3 top-3 text-slate-400" /><input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Filter models or running endpoints on this dashboard..." className="w-full rounded-lg border border-slate-200 py-2 pl-9 text-sm" /></div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <section className="min-w-0 rounded-[20px] border border-[#dce5dd] bg-white p-4 shadow-sm">
+          <header className="mb-3 flex items-start justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Model Registry</h3>
+              <p className="mt-1 text-xs text-slate-500">{freshness("models")}</p>
+            </div>
+            <Link to="/app/models" className="text-xs font-medium text-slate-600 hover:text-slate-900">View all →</Link>
+          </header>
+          {displayModels.length === 0 ? (
+            <p className="py-8 text-center text-xs text-slate-500">
+              {failedSources.includes("models") ? "Model catalog unavailable. Retry the refresh." : !updatedAt.models && loading ? "Loading model catalog…" : "No cataloged models found."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400">
+                  <tr><th className="pb-2 font-medium">Model / run</th><th className="px-3 pb-2 font-medium">Version</th><th className="px-3 pb-2 font-medium">Score</th><th className="pb-2 text-right font-medium">Stage</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayModels.map((m) => (
+                    <tr key={`${m.name}-${m.version}`} className="hover:bg-slate-50/60">
+                      <td className="py-3 pr-3">
+                        <Link to={`/app/models?search=${encodeURIComponent(m.name)}`} className="font-medium text-slate-900 hover:underline">{m.name}</Link>
+                        <div className="mt-1 font-mono text-[10px] text-slate-400">{m.mlflow_run_id ? `Run #${m.mlflow_run_id.slice(0, 7)}` : "No linked run"}</div>
+                      </td>
+                      <td className="px-3 py-3 font-mono text-slate-500">v{m.version}</td>
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-slate-600">{m.metrics?.f1_score != null ? `F1: ${(m.metrics.f1_score * 100).toFixed(1)}%` : m.metrics?.accuracy != null ? `Acc: ${(m.metrics.accuracy * 100).toFixed(1)}%` : "No score recorded"}</td>
+                      <td className="py-3 text-right text-[10px] font-medium text-slate-600">{m.stage || "DEVELOPMENT"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        <section className="min-w-0 rounded-[20px] border border-[#dce5dd] bg-white p-4 shadow-sm">
+          <header className="mb-3 flex items-start justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Running Inference Endpoints</h3>
+              <p className="mt-1 text-xs text-slate-500">{freshness("deployments")}</p>
+            </div>
+            <Link to="/app/deployments" className="text-xs font-medium text-slate-600 hover:text-slate-900">Manage →</Link>
+          </header>
+          {displayDeployments.length === 0 ? (
+            <p className="py-8 text-center text-xs text-slate-500">
+              {failedSources.includes("deployments") ? "Deployments unavailable. Retry the refresh." : !updatedAt.deployments && loading ? "Loading deployments…" : searchQuery ? "No running endpoints match this search." : "No running containers found."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400">
+                  <tr><th className="pb-2 font-medium">Model / version</th><th className="px-3 pb-2 font-medium">Port</th><th className="pb-2 font-medium">Readiness</th><th className="pb-2 text-right font-medium">Check</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayDeployments.map((d) => (
+                    <React.Fragment key={d.id}>
+                      <tr className="hover:bg-slate-50/60">
+                        <td className="py-3 pr-3"><span className="font-medium text-slate-900">{d.model_name}</span><div className="mt-1 font-mono text-[10px] text-slate-400">v{d.model_version}</div></td>
+                        <td className="px-3 py-3 font-mono text-slate-500">{d.port}</td>
+                        <td className="py-3 text-slate-600">{pingResult?.id === d.id && now - pingResult.checkedAt <= 120000 ? pingResult.isHealthy ? "Last check: ready" : "Last check: not ready" : "Readiness unverified"}</td>
+                        <td className="py-3 pl-3 text-right"><button onClick={() => handleTestPing(d)} disabled={pingingId !== null} className="whitespace-nowrap text-xs font-medium text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 disabled:opacity-50">{pingingId === d.id ? "Checking…" : "Check readiness"}</button></td>
+                      </tr>
+                      {pingResult?.id === d.id && (
+                        <tr><td colSpan={4} className="pb-3 text-[11px] text-slate-500">
+                          <p>{pingResult.isHealthy ? `Probe OK · Check round-trip ${pingResult.latency}ms` : `Probe failed · ${String(pingResult.prediction?.error || pingResult.prediction?.detail || pingResult.prediction?.status || "Unreachable")}`}</p>
+                          <p className="mt-1">Checked {Math.max(0, Math.floor((now - pingResult.checkedAt) / 1000))}s ago · Not inference latency</p>
+                        </td></tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+      </details>
     </div>
   );
 };

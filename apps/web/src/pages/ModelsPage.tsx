@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -245,7 +246,7 @@ export const ModelsPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             Model Registry &amp; Governance
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -286,7 +287,6 @@ export const ModelsPage: React.FC = () => {
           subtitle="Pre-release shadow validation"
           icon={Sparkles}
           color="brand"
-          trend="Ready to Promote"
         />
         <StatCard
           title="Cataloged Versions"
@@ -567,6 +567,14 @@ export const ModelsPage: React.FC = () => {
           )}
         </section>
       )}
+
+      <MetricDistribution
+        title="Model versions linked to training"
+        description="Versions matching the registry filters, grouped by MLflow run availability"
+        rows={countBy(filteredModels, model => model.mlflow_run_id ? "Linked to a run" : "No run ID")}
+        loading={loading}
+        unavailable={Boolean(loadError)}
+      />
 
       {/* ── Explorer Toolbar: Search & Stage Filter (Snowflake Clean Style) ── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">

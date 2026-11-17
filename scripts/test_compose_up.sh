@@ -67,5 +67,6 @@ if [ "$all_healthy" = true ]; then
     echo "   - MinIO Web:   http://localhost:9001"
     echo "======================================================================"
 else
-    echo "⚠️  Some services took longer to report healthy. Check 'docker compose logs'."
+    echo "⚠️  Some services took longer to report healthy. Check 'docker compose logs'." >&2
+    exit 1
 fi

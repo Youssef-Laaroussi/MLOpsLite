@@ -53,7 +53,7 @@ async def get_system_stats(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Return aggregated live system statistics calculated directly from SQL databases & MLflow."""
+    """Return current inventory; time_range applies only to scores and observations."""
     if time_range not in ("all", "30d", "7d"):
         time_range = "all"
 
@@ -66,44 +66,32 @@ async def get_system_stats(
     try:
         # 1. Projects count
         proj_q = select(func.count(Project.id))
-        if cutoff:
-            proj_q = proj_q.where(Project.created_at >= cutoff)
         proj_res = await db.execute(proj_q)
         projects_count = proj_res.scalar() or 0
 
         # 2. Registered models count
         model_q = select(func.count(RegisteredModel.id))
-        if cutoff:
-            model_q = model_q.where(RegisteredModel.created_at >= cutoff)
         model_res = await db.execute(model_q)
         models_count = model_res.scalar() or 0
 
         # 3. Model stages breakdown
         stage_q = select(ModelVersion.stage, func.count(ModelVersion.id))
-        if cutoff:
-            stage_q = stage_q.where(ModelVersion.created_at >= cutoff)
         stage_q = stage_q.group_by(ModelVersion.stage)
         stage_res = await db.execute(stage_q)
         stage_counts = {str(stage.value if hasattr(stage, "value") else stage): count for stage, count in stage_res.all()}
 
         # 4. Active deployments count
         dep_q = select(func.count(Deployment.id)).where(Deployment.status == DeploymentStatus.RUNNING)
-        if cutoff:
-            dep_q = dep_q.where(Deployment.created_at >= cutoff)
         dep_res = await db.execute(dep_q)
         active_deployments = dep_res.scalar() or 0
 
         # 5. Datasets count
         ds_q = select(func.count(Dataset.id))
-        if cutoff:
-            ds_q = ds_q.where(Dataset.created_at >= cutoff)
         ds_res = await db.execute(ds_q)
         datasets_count = ds_res.scalar() or 0
 
         # 6. Active alerts count
         alert_q = select(func.count(Alert.id)).where(Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]))
-        if cutoff:
-            alert_q = alert_q.where(Alert.created_at >= cutoff)
         alert_res = await db.execute(alert_q)
         alerts_count = alert_res.scalar() or 0
 
@@ -162,8 +150,8 @@ async def get_system_stats(
         latency_telemetry = [
             {
                 "time": m.timestamp.strftime("%H:%M") if m.timestamp else "--",
-                "p50": round(m.latency_p50_ms, 3) if m.latency_p50_ms is not None else 0.0,
-                "p95": round(m.latency_p95_ms, 3) if m.latency_p95_ms is not None else 0.0,
+                "p50": round(m.latency_p50_ms, 3) if m.latency_p50_ms is not None else None,
+                "p95": round(m.latency_p95_ms, 3) if m.latency_p95_ms is not None else None,
                 "p99": None,
                 "reqs": m.requests_count or 0,
             }
@@ -179,7 +167,8 @@ async def get_system_stats(
         raw_drift = list(drift_res.scalars().all())
         drift_trajectory = [
             {
-                "date": d.created_at.strftime("%b %d") if d.created_at else "--",
+                "id": d.id,
+                "date": d.created_at.strftime("%b %d, %H:%M UTC") if d.created_at else "--",
                 "model_name": d.model_name,
                 "drift_share": round(d.drift_share, 3),
                 "drift_status": d.drift_status.value if hasattr(d.drift_status, "value") else str(d.drift_status),
@@ -259,7 +248,7 @@ async def check_services(
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.get(f"{settings.mlflow_tracking_uri.rstrip('/')}/health")
-            if resp.status_code < 500:
+            if resp.status_code == 200:
                 mlflow_ok = True
     except Exception:
         pass
@@ -278,7 +267,7 @@ async def check_services(
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.get(f"{minio_url.rstrip('/')}/minio/health/live")
-            if resp.status_code < 500:
+            if resp.status_code == 200:
                 minio_ok = True
     except Exception:
         pass
@@ -333,7 +322,7 @@ async def readiness_check(
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:
             resp = await client.get(f"{minio_url.rstrip('/')}/minio/health/live")
-            if resp.status_code < 500:
+            if resp.status_code == 200:
                 checks["storage"] = "ok"
     except Exception as exc:
         logger.warning("Storage probe failed during readiness check: %s", exc)
@@ -342,7 +331,7 @@ async def readiness_check(
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:
             resp = await client.get(f"{settings.mlflow_tracking_uri.rstrip('/')}/health")
-            if resp.status_code < 500:
+            if resp.status_code == 200:
                 checks["tracking"] = "ok"
     except Exception as exc:
         logger.warning("Tracking probe failed during readiness check: %s", exc)

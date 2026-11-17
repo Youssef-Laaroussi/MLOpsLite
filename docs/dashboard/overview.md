@@ -46,7 +46,8 @@ apps/web/
 
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_API_BASE_URL` | `/api/v1` | URL of the MLite FastAPI backend. When developing locally with Vite, requests to `/api` are automatically proxied to `http://localhost:8000`. |
+| `VITE_API_BASE_URL` | `/api/v1` | API base path or URL used by the browser. |
+| `MLITE_API_PROXY_TARGET` | `http://localhost:8000` | Backend targeted by the Vite development proxy. Compose sets it to `http://mlite-api:8000`. |
 
 ---
 
@@ -80,3 +81,11 @@ The dashboard is packaged via a multi-stage Docker build:
 docker build -f apps/web/Dockerfile -t mlite/web:latest .
 docker run -p 3000:3000 mlite/web:latest
 ```
+
+## Overview data semantics
+
+- Resource counts and stage distribution are current inventory, independent of the observation period. Running means recorded container state, not verified readiness.
+- The period selector applies to recorded model scores and drift observations. Unresolved alerts remain counted regardless of age.
+- Each source displays its latest successful refresh age. A failed refresh or an age over two minutes marks it stale; unavailable data is not presented as an empty inventory.
+- Running endpoints exclude stopped, pending and failed deployments. Readiness checks are manual, timestamped and expire after two minutes. Their round-trip time is not inference latency.
+- Drift bars use the reported severity. Missing metrics remain unavailable; measured zero scores remain visible.

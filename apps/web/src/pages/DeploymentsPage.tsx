@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import {
@@ -297,7 +298,7 @@ export const DeploymentsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Active Serving Fleet"
-          value={deployments.length === 0 ? "0 Containers" : `${runningCount} Running`}
+          value={loading || error ? "—" : `${runningCount} Running`}
           subtitle={`${deployments.length} total registered deployments`}
           icon={Server}
           color={runningCount > 0 ? "emerald" : "blue"}
@@ -305,29 +306,34 @@ export const DeploymentsPage: React.FC = () => {
         />
         <StatCard
           title="Allocated Ports"
-          value={`${deployments.filter((d) => d.status === "RUNNING").length} Ports`}
+          value={loading || error ? "—" : `${runningCount} Ports`}
           subtitle="Dynamic port allocator (8100-8200)"
           icon={Zap}
           color="brand"
-          trend="Docker daemon active"
         />
         <StatCard
           title="Stopped / Inactive"
-          value={`${stoppedCount} Stopped`}
+          value={loading || error ? "—" : `${stoppedCount} Stopped`}
           subtitle="Released port & container resources"
           icon={Activity}
           color="blue"
-          trend={`${failedCount} Failed`}
         />
         <StatCard
-          title="Rollback Readiness"
-          value="Zero Downtime"
-          subtitle="symlink & container cutover"
+          title="Failed Deployments"
+          value={loading || error ? "—" : failedCount}
+          subtitle="Deployments recorded with failed status"
           icon={RotateCcw}
           color="brand"
-          trend="Ready"
         />
       </div>
+
+      <MetricDistribution
+        title="Deployments by status"
+        description="Current status of deployment records returned by the API"
+        rows={countBy(deployments, deployment => deployment.status)}
+        loading={loading}
+        unavailable={Boolean(error)}
+      />
 
       {/* ── Real Deployments Overview Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

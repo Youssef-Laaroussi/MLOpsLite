@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import React, { useEffect, useState, useMemo } from "react";
 import {
   CheckCircle2,
@@ -29,9 +30,9 @@ import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit"
 interface FeatureRow {
   feature: string;
   stat_test: string;
-  p_val: number;
-  score: number;
-  drift: boolean;
+  p_val: number | null;
+  threshold: number | null;
+  drift: boolean | null;
   ref_mean: string;
   curr_mean: string;
 }
@@ -136,15 +137,12 @@ export const MonitoringPage: React.FC = () => {
     }
     const cols = summary.latest_drift.metrics.metrics[0].result.drift_by_columns;
     return Object.entries(cols).map(([name, col]: [string, any]) => {
-      const pVal = col.p_value ?? 1.0;
-      const isDrift = Boolean(col.drift_detected);
-      const score = Math.round(Math.max(0, Math.min(100, (1 - (isDrift ? 0.7 : 0.05)) * 100 * pVal)));
       return {
         feature: name,
-        stat_test: col.stat_test || "KS-test (2-sample)",
-        p_val: pVal,
-        score: score > 0 ? score : (isDrift ? 15 : 95),
-        drift: isDrift,
+        stat_test: col.stat_test ?? col.stattest_name ?? "—",
+        p_val: col.p_value ?? col.drift_score ?? null,
+        threshold: col.stattest_threshold ?? null,
+        drift: typeof col.drift_detected === "boolean" ? col.drift_detected : null,
         ref_mean: col.reference_mean !== undefined ? String(col.reference_mean) : "--",
         curr_mean: col.current_mean !== undefined ? String(col.current_mean) : "--",
       };
@@ -177,7 +175,7 @@ export const MonitoringPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
               Model Monitoring &amp; Observability
             </h2>
             <span className="relative flex h-2 w-2">
@@ -406,27 +404,24 @@ export const MonitoringPage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Live Latency Telemetry
+                  Inference latency samples
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  p50 &amp; p95 percentiles from Docker Serving containers
+                  P50 and P95 per recorded sample for the selected model
                 </p>
               </div>
-              <span className="font-mono text-xs text-slate-600 font-semibold">
-                SLA: &lt; 20ms
-              </span>
             </div>
 
             <div className="h-56 w-full mt-2">
-              {summary?.telemetry && summary.telemetry.length > 0 ? (
+              {summary?.telemetry && summary.telemetry.some(point => point.p50 != null || point.p95 != null) ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={summary.telemetry} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
                     <CartesianGrid {...GRID_PROPS} />
                     <XAxis dataKey="time" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                     <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} />
                     <RechartsTooltip content={<BiTooltip valueFormatter={(v) => `${v} ms`} />} />
-                    <Line type="monotone" dataKey="p50" name="p50" stroke="#3BB48C" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="p95" name="p95" stroke="#64748B" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="p50" name="p50" stroke="#3BB48C" strokeWidth={0} dot={{ r: 3, fill: "#3BB48C", strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="p95" name="p95" stroke="#64748B" strokeWidth={0} dot={{ r: 3, fill: "#64748B", strokeWidth: 0 }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -443,15 +438,23 @@ export const MonitoringPage: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs font-mono text-slate-500">
-            <span>Fleet Target: &lt; 20 ms</span>
+            <span>Latest samples</span>
             <span className="text-slate-600 font-medium">
-              {summary?.telemetry?.length ?? 0} Points Recorded
+              {summary?.telemetry?.length ?? "—"} samples returned
             </span>
           </div>
         </div>
       </div>
 
       {reportError && <p role="alert" className="text-xs text-rose-700">{reportError}</p>}
+
+      <MetricDistribution
+        title="Drift evaluations by severity"
+        description="Evaluations returned for the current monitoring scope"
+        rows={countBy(summary?.drift_history ?? [], evaluation => evaluation.drift_status)}
+        loading={loading}
+        unavailable={Boolean(error || !summary)}
+      />
 
       {/* ── Feature Distribution & Drift Scores Table ── */}
       <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
@@ -492,10 +495,10 @@ export const MonitoringPage: React.FC = () => {
                 <tr>
                   <th className="px-4 py-2.5">Feature Column</th>
                   <th className="px-4 py-2.5">Statistical Test</th>
-                  <th className="px-4 py-2.5">p-value</th>
+                  <th className="px-4 py-2.5">Test value</th>
                   <th className="px-4 py-2.5">Baseline Ref Mean</th>
                   <th className="px-4 py-2.5">Current Serving Mean</th>
-                  <th className="px-4 py-2.5 min-w-[120px]">Distribution Stability</th>
+                  <th className="px-4 py-2.5 min-w-[120px]">Recorded threshold</th>
                   <th className="px-4 py-2.5 text-right">Drift Status</th>
                 </tr>
               </thead>
@@ -517,28 +520,13 @@ export const MonitoringPage: React.FC = () => {
                         {item.stat_test}
                       </td>
                       <td className="px-4 py-2">
-                        <span className="font-semibold text-slate-900">{item.p_val}</span>
-                        <span className="text-slate-400 text-[11px] ml-1">
-                          ({item.drift ? "< 0.05" : ">= 0.05"})
-                        </span>
+                        <span className="font-semibold text-slate-900">{item.p_val ?? "—"}</span>
                       </td>
                       <td className="px-4 py-2 text-slate-600">{item.ref_mean}</td>
                       <td className="px-4 py-2 text-slate-900">{item.curr_mean}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
-                            <div
-                              className={`h-full rounded-full ${item.drift ? "bg-rose-500" : "bg-[#3BB48C]"}`}
-                              style={{ width: `${item.score}%` }}
-                            />
-                          </div>
-                          <span className="text-[11px] text-slate-600 shrink-0">
-                            {item.score}%
-                          </span>
-                        </div>
-                      </td>
+                      <td className="px-4 py-2">{item.threshold ?? "—"}</td>
                       <td className="px-4 py-2 text-right whitespace-nowrap">
-                        {item.drift ? (
+                        {item.drift === null ? "Unavailable" : item.drift ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                             Drift Detected
@@ -560,7 +548,7 @@ export const MonitoringPage: React.FC = () => {
               <Inbox className="w-10 h-10 mb-2 stroke-1 text-slate-300" />
               <p className="font-semibold text-slate-600">No Feature Drift Data Available</p>
               <p className="text-[11px] text-slate-400 mt-1 max-w-sm text-center">
-                Trigger a drift evaluation on this model to compute 2-sample KS tests and inspect column distributions.
+                Run a drift evaluation to inspect the test results for each column.
               </p>
             </div>
           )}

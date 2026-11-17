@@ -151,9 +151,9 @@ async def get_monitoring_summary(
     raw_telemetry = list(tel_res.scalars().all())
     telemetry_points = [
         TelemetryMetricPoint(
-            time=m.timestamp.strftime("%H:%M") if m.timestamp else "--",
-            p50=round(m.latency_p50_ms or 0.0, 3),
-            p95=round(m.latency_p95_ms or 0.0, 3),
+            time=m.timestamp.strftime("%b %d, %H:%M UTC") if m.timestamp else "--",
+            p50=round(m.latency_p50_ms, 3) if m.latency_p50_ms is not None else None,
+            p95=round(m.latency_p95_ms, 3) if m.latency_p95_ms is not None else None,
             p99=None,
             requests=m.requests_count or 0,
             errors=m.error_count or 0,

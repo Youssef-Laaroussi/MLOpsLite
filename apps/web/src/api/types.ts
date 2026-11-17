@@ -166,12 +166,13 @@ export interface SystemStats {
   }[];
   latency_telemetry?: {
     time: string;
-    p50: number;
-    p95: number;
+    p50: number | null;
+    p95: number | null;
     p99?: number | null;
     reqs: number;
   }[];
   drift_trajectory?: {
+    id?: string;
     date: string;
     model_name: string;
     drift_share: number;
@@ -203,8 +204,8 @@ export interface Experiment {
   artifact_location?: string;
   lifecycle_stage?: string;
   tags?: Record<string, string>;
-  created_at?: string;
-  runs_count?: number;
+  created_at?: string | null;
+  runs_count?: number | null;
   runs?: ExperimentRun[];
 }
 
@@ -222,8 +223,8 @@ export interface DriftEvaluationItem {
 
 export interface TelemetryPoint {
   time: string;
-  p50: number;
-  p95: number;
+  p50: number | null;
+  p95: number | null;
   p99: number | null;
   requests: number;
   errors: number;

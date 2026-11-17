@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import React, { useEffect, useState } from "react";
 import {
   ShieldCheck,
@@ -67,7 +68,7 @@ export const AuditLogsPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             Audit Logs &amp; Governance
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -114,6 +115,14 @@ export const AuditLogsPage: React.FC = () => {
           </select>
         </div>
       </div>
+
+      <MetricDistribution
+        title="Audit events by resource"
+        description="Matching events among the latest 100 journal entries"
+        rows={countBy(filteredLogs, log => log.resource_type)}
+        loading={loading}
+        unavailable={Boolean(loadError)}
+      />
 
       {/* Table */}
       <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">

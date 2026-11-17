@@ -1,3 +1,4 @@
+import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useEffect, useState, useMemo } from "react";
 import {
@@ -280,7 +281,7 @@ export const DatasetsPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight font-sans">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             Datasets &amp; Data Versioning
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -334,7 +335,7 @@ export const DatasetsPage: React.FC = () => {
         <StatCard
           title="Tabular Rows"
           value={loading ? "..." : totalRows > 0 ? totalRows.toLocaleString() : "0"}
-          subtitle="Actual verified records"
+          subtitle="Rows reported by the latest versions"
           icon={TableIcon}
           color="brand"
         />
@@ -347,9 +348,9 @@ export const DatasetsPage: React.FC = () => {
           isLive={totalVersions > 0}
         />
         <StatCard
-          title="MinIO S3 Volume"
+          title="Latest Version Size"
           value={loading ? "..." : formatBytes(totalSizeBytes)}
-          subtitle="Stored in mlite-datasets bucket"
+          subtitle="Sum of reported sizes for the latest versions"
           icon={Server}
           color="brand"
         />
@@ -385,7 +386,7 @@ export const DatasetsPage: React.FC = () => {
                       </span>
                       <div
                         className={`w-full max-w-[56px] ${st.color} rounded-t transition-all`}
-                        style={{ height: `${Math.max((st.count / Math.max(...formatStats.map((f) => f.count), 1)) * 100, 15)}%` }}
+                        style={{ height: `${(st.count / Math.max(...formatStats.map((f) => f.count), 1)) * 100}%` }}
                       />
                       <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
                         {st.format}
@@ -399,7 +400,7 @@ export const DatasetsPage: React.FC = () => {
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
             <span>Storage: MinIO S3 cluster</span>
-            <span className="text-emerald-700 font-medium">100% SHA-256 Content-Addressed</span>
+            <span className="text-emerald-700 font-medium">{datasets.filter(dataset => dataset.hash_sha256).length} latest versions with SHA-256</span>
           </div>
         </div>
 
@@ -448,6 +449,14 @@ export const DatasetsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <MetricDistribution
+        title="Datasets by version history"
+        description="Status of the latest version for datasets matching the explorer filters"
+        rows={countBy(filteredDatasets, dataset => dataset.version_num ? "Has an uploaded version" : "No uploaded version")}
+        loading={loading}
+        unavailable={Boolean(loadError)}
+      />
 
       {/* Explorer Toolbar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">

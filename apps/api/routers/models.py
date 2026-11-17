@@ -204,20 +204,37 @@ async def get_model_lineage(
     if record is None:
         raise NotFoundError("Model version", f"{name} v{version}")
 
-    def read_run() -> tuple[dict, list[str]]:
+    def read_run() -> tuple[dict, str]:
         client = MLiteMLflowManager().client
         run = client.get_run(record.mlflow_run_id)
-        files = [entry.path.rsplit("/", 1)[-1] for entry in client.list_artifacts(run.info.run_id, "model")]
-        return dict(run.data.tags), files
+        return dict(run.data.tags), run.info.artifact_uri
 
-    tags, files = {}, []
+    def read_artifacts(uri: str) -> list[str]:
+        from mlflow.artifacts import list_artifacts
+
+        return [
+            entry.path.rsplit("/", 1)[-1]
+            for entry in list_artifacts(artifact_uri=uri)
+        ]
+
+    tags, files, artifact_root = {}, None, None
     tracking_available = True
     if record.mlflow_run_id:
         try:
-            tags, files = await asyncio.to_thread(read_run)
+            tags, artifact_root = await asyncio.to_thread(read_run)
         except Exception:
             tracking_available = False
-            logger.warning("Could not read lineage for run %s", record.mlflow_run_id)
+            logger.warning("Could not read tags for run %s", record.mlflow_run_id, exc_info=True)
+    if tracking_available and record.mlflow_model_uri:
+        try:
+            uri = record.mlflow_model_uri
+            run_prefix = f"runs:/{record.mlflow_run_id}/"
+            if artifact_root and uri.startswith(run_prefix):
+                uri = f"{artifact_root.rstrip('/')}/{uri.removeprefix(run_prefix)}"
+            files = await asyncio.to_thread(read_artifacts, uri)
+        except Exception:
+            logger.warning("Could not list artifacts for %s v%s", name, version, exc_info=True)
+
     checksum = tags.get("mlite.dataset.sha256")
     matches = []
     if checksum:
@@ -233,8 +250,8 @@ async def get_model_lineage(
         "git_commit": tags.get("mlite.source.git_commit") or tags.get("mlflow.source.git.commit"),
         "dataset_sha256": checksum,
         "matching_datasets": matches,
-        "model_artifact_present": "MLmodel" in files if tracking_available and record.mlflow_run_id else None,
-        "dependency_files": [file for file in files if file in {"requirements.txt", "conda.yaml", "python_env.yaml"}],
+        "model_artifact_present": "MLmodel" in files if files is not None else None,
+        "dependency_files": [file for file in (files or []) if file in {"requirements.txt", "conda.yaml", "python_env.yaml"}],
         "tracking_available": tracking_available,
     }
 

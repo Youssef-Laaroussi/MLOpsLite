@@ -1,10 +1,9 @@
-import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
+import { DatasetDashboard } from "../components/DatasetDashboard";
+import "./DatasetsPage.css";
 import { useActionFeedback } from "../components/ActionFeedback";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Database,
-  Search,
-  Eye,
   GitBranch,
   Copy,
   Check,
@@ -22,18 +21,17 @@ import {
   Plus,
   Upload,
   Terminal,
-  Trash2,
 } from "lucide-react";
-import { StatCard } from "../components/StatCard";
 import {
   fetchDatasets,
+  fetchProjects,
   createDataset,
   uploadDatasetFile,
   fetchDatasetVersions,
   fetchDvcStatus,
   deleteDataset,
 } from "../api/client";
-import { Dataset, DatasetVersion } from "../api/types";
+import { Dataset, DatasetVersion, Project } from "../api/types";
 
 import { useAuth } from "../context/AuthContext";
 
@@ -46,11 +44,8 @@ export const DatasetsPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Search & Filtering
-  const [searchQuery, setSearchQuery] = useState("");
-  const [formatFilter, setFormatFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<"date" | "rows" | "size">("date");
-
-  // Inspection Modal state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const inspectorRequest = useRef(0);
   const [inspectingDataset, setInspectingDataset] = useState<Dataset | null>(null);
   const [activeInspectorTab, setActiveInspectorTab] = useState<"versions" | "profiling" | "dvc">("versions");
   const [datasetVersions, setDatasetVersions] = useState<DatasetVersion[]>([]);
@@ -83,6 +78,9 @@ export const DatasetsPage: React.FC = () => {
   const [newDatasetName, setNewDatasetName] = useState("");
   const [newDatasetFormat, setNewDatasetFormat] = useState("CSV");
   const [newDatasetDescription, setNewDatasetDescription] = useState("");
+  const [uploadMode, setUploadMode] = useState(false);
+  const [createdForUpload, setCreatedForUpload] = useState<Dataset | null>(null);
+  const [newProject, setNewProject] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // File selection helper
@@ -124,20 +122,40 @@ export const DatasetsPage: React.FC = () => {
     loadData();
   }, [isAdmin]);
 
+  useEffect(() => {
+    let active = true;
+    fetchProjects().then(items => { if (active) setProjects(items); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  function openCreate(upload: boolean) {
+    setUploadMode(upload);
+    setCreatedForUpload(null);
+    setCreateError(null);
+    setNewDatasetName("");
+    setNewDatasetFormat("CSV");
+    setNewDatasetDescription("");
+    setNewProject("");
+    setSelectedFile(null);
+    setShowCreateModal(true);
+  }
+
   const handleCreateDataset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDatasetName.trim()) return;
+    if (!newDatasetName.trim() || ((uploadMode || createdForUpload) && !selectedFile)) return;
     setCreating(true);
     setCreateError(null);
     try {
-      const created = await createDataset({
+      const created = createdForUpload ?? await createDataset({
         name: newDatasetName.trim(),
+        project_id: newProject || undefined,
         format: newDatasetFormat.toUpperCase(),
         description: newDatasetDescription.trim() || undefined,
       });
 
       // If a real file was selected, immediately upload it to register v1 with real SHA-256 and MinIO key
       if (selectedFile) {
+        setCreatedForUpload(created);
         await uploadDatasetFile(created.id, selectedFile, newDatasetDescription.trim() || undefined);
       }
 
@@ -146,7 +164,7 @@ export const DatasetsPage: React.FC = () => {
       setNewDatasetName("");
       setNewDatasetDescription("");
       setSelectedFile(null);
-      setToastMessage(`Dataset "${created.name}" created and synced to MinIO!`);
+      setToastMessage(`Dataset "${created.name}" ${selectedFile ? "uploaded" : "created"}.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: any) {
       const detail = err.response?.data?.detail ?? err.response?.data?.error;
@@ -161,6 +179,7 @@ export const DatasetsPage: React.FC = () => {
     if (!(await confirmAction("Delete dataset?", `Delete “${datasetName}”?`, "Delete dataset"))) return;
     try {
       await deleteDataset(datasetId);
+      setInspectingDataset(null);
       await loadData();
       setToastMessage(`Dataset "${datasetName}" deleted.`);
       setTimeout(() => setToastMessage(null), 3000);
@@ -169,17 +188,19 @@ export const DatasetsPage: React.FC = () => {
     }
   };
 
-  const openInspector = async (d: Dataset) => {
+  const openInspector = async (d: Dataset, tab: "versions" | "profiling" | "dvc" = "versions") => {
+    const request = ++inspectorRequest.current;
+    setDatasetVersions([]);
     setInspectingDataset(d);
-    setActiveInspectorTab("versions");
+    setActiveInspectorTab(tab);
     setLoadingVersions(true);
     try {
       const versions = await fetchDatasetVersions(d.id);
-      setDatasetVersions(versions);
+      if (request === inspectorRequest.current) setDatasetVersions(versions);
     } catch (err) {
-      setDatasetVersions([]);
+      if (request === inspectorRequest.current) setDatasetVersions([]);
     } finally {
-      setLoadingVersions(false);
+      if (request === inspectorRequest.current) setLoadingVersions(false);
     }
   };
 
@@ -199,61 +220,8 @@ export const DatasetsPage: React.FC = () => {
   };
 
   // Filter & Sort
-  const filteredDatasets = useMemo(() => {
-    return datasets
-      .filter((d) => {
-        const matchesQuery =
-          d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (d.description && d.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (d.hash_sha256 && d.hash_sha256.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesFormat = formatFilter === "ALL" || (d.format || "").toUpperCase() === formatFilter.toUpperCase();
-        return matchesQuery && matchesFormat;
-      })
-      .sort((a, b) => {
-        if (sortBy === "rows") return (b.row_count || 0) - (a.row_count || 0);
-        if (sortBy === "size") return (b.size_bytes || 0) - (a.size_bytes || 0);
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-  }, [datasets, searchQuery, formatFilter, sortBy]);
-
-  // Real aggregate KPIs
-  const totalRows = useMemo(() => datasets.reduce((sum, d) => sum + (d.row_count || 0), 0), [datasets]);
-  const totalSizeBytes = useMemo(() => datasets.reduce((sum, d) => sum + (d.size_bytes || 0), 0), [datasets]);
-  const totalVersions = useMemo(() => datasets.reduce((sum, d) => sum + (d.version_num || 0), 0), [datasets]);
-
-  // Real format distribution
-  const formatStats = useMemo(() => {
-    if (!datasets.length) return [];
-    const map = new Map<string, { bytes: number; count: number }>();
-    let totalBytes = 0;
-    datasets.forEach((d) => {
-      const fmt = (d.format || "CSV").toUpperCase();
-      const current = map.get(fmt) || { bytes: 0, count: 0 };
-      const b = d.size_bytes || 0;
-      current.bytes += b;
-      current.count += 1;
-      totalBytes += b;
-      map.set(fmt, current);
-    });
-
-    const colors = ["bg-[#3BB48C]", "bg-slate-500", "bg-slate-400", "bg-slate-600"];
-    let i = 0;
-    const result: Array<{ format: string; bytes: number; pct: number; count: number; color: string }> = [];
-    map.forEach((val, key) => {
-      result.push({
-        format: key,
-        bytes: val.bytes,
-        count: val.count,
-        pct: totalBytes > 0 ? Math.round((val.bytes / totalBytes) * 100) : 0,
-        color: colors[i % colors.length],
-      });
-      i++;
-    });
-    return result;
-  }, [datasets]);
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="lifecycle-dashboard projects-dashboard datasets-dashboard">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-md shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
@@ -278,412 +246,10 @@ export const DatasetsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-            Datasets &amp; Data Versioning
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            DVC reproducible data lineage, SHA-256 versioning, and MinIO S3 object store
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-          <button
-            onClick={() => setShowDvcModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            title="Inspect DVC MinIO Remote Config"
-          >
-            <Terminal className="w-3.5 h-3.5 text-slate-500" />
-            <span>DVC Remote</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${dvcStatus ? "bg-emerald-500" : "bg-slate-300"}`} />
-          </button>
-          )}
-
-          <button
-            onClick={loadData}
-            className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
-            title="Refresh datasets"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => {
-              setShowCreateModal(true);
-              setCreateError(null);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3BB48C] hover:bg-[#329F7B] text-white rounded-lg text-xs font-semibold shadow-2xs transition active:translate-y-0.5 cursor-pointer border border-[#329F7B]"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>New Dataset</span>
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Cards (StatCards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Indexed Datasets"
-          value={loading ? "..." : `${datasets.length}`}
-          subtitle="Cataloged in PostgreSQL"
-          icon={Database}
-          color="brand"
-        />
-        <StatCard
-          title="Tabular Rows"
-          value={loading ? "..." : totalRows > 0 ? totalRows.toLocaleString() : "0"}
-          subtitle="Rows reported by the latest versions"
-          icon={TableIcon}
-          color="brand"
-        />
-        <StatCard
-          title="Versioned Fingerprints"
-          value={loading ? "..." : `${totalVersions}`}
-          subtitle="Immutable SHA-256 versions"
-          icon={ShieldCheck}
-          color="emerald"
-          isLive={totalVersions > 0}
-        />
-        <StatCard
-          title="Latest Version Size"
-          value={loading ? "..." : formatBytes(totalSizeBytes)}
-          subtitle="Sum of reported sizes for the latest versions"
-          icon={Server}
-          color="brand"
-        />
-      </div>
-
-      {/* ── Visual Analytics Row: Formats & Storage Breakdown ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* CARD 1: Datasets by Format */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Datasets by Storage Format
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Distribution across registered formats</p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">{datasets.length} cataloged</span>
-            </div>
-
-            {datasets.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
-                <Database className="w-6 h-6 mb-1 text-slate-300" />
-                <span>No datasets indexed yet</span>
-              </div>
-            ) : (
-              <div className="relative h-44 w-full flex flex-col justify-between pt-2 pb-6">
-                <div className="relative z-10 flex-1 ml-4 mr-4 flex items-end justify-around gap-6 pb-6">
-                  {formatStats.map((st) => (
-                    <div key={st.format} className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
-                      <span className="text-[11px] font-mono font-bold text-slate-700 mb-1 group-hover:text-emerald-700">
-                        {st.count}
-                      </span>
-                      <div
-                        className={`w-full max-w-[56px] ${st.color} rounded-t transition-all`}
-                        style={{ height: `${(st.count / Math.max(...formatStats.map((f) => f.count), 1)) * 100}%` }}
-                      />
-                      <span className="absolute -bottom-1 text-[11px] font-medium text-slate-600">
-                        {st.format}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Storage: MinIO S3 cluster</span>
-            <span className="text-emerald-700 font-medium">{datasets.filter(dataset => dataset.hash_sha256).length} latest versions with SHA-256</span>
-          </div>
-        </div>
-
-        {/* CARD 2: DVC Remote Target & Data Health */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  {isAdmin ? "DVC & Object Store Remote" : "Dataset Storage"}
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">{isAdmin ? "MinIO remote storage endpoint & bucket" : "Version and checksum summary"}</p>
-              </div>
-            </div>
-
-            {isAdmin && (
-            <div className="space-y-2 mb-4 text-xs font-mono">
-              <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                <span className="text-slate-400 block text-[10px] uppercase">MinIO Bucket Target</span>
-                <span className="text-slate-800 font-semibold">{dvcStatus ? `s3://${dvcStatus.remote_bucket}/${dvcStatus.remote_prefix}` : "Unavailable"}</span>
-              </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                <span className="text-slate-400 block text-[10px] uppercase">Endpoint URL</span>
-                <span className="text-slate-800">{dvcStatus?.minio_endpoint || "Unavailable"}</span>
-              </div>
-            </div>
-            )}
-
-            <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Total Versions Tracked</span>
-                <span className="font-mono text-slate-800 font-semibold">{totalVersions} versions</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Files with SHA-256</span>
-                <span className="font-mono text-slate-800 font-semibold">
-                  {datasets.filter((d) => d.hash_sha256).length}/{datasets.length}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            {isAdmin && <span>DVC CLI: {!dvcStatus ? "Unavailable" : dvcStatus.is_installed ? "Ready" : "Standalone S3 Mode"}</span>}
-            <span className="text-slate-700">{datasets.length} Datasets Registered</span>
-          </div>
-        </div>
-      </div>
-
-      <MetricDistribution
-        title="Datasets by version history"
-        description="Status of the latest version for datasets matching the explorer filters"
-        rows={countBy(filteredDatasets, dataset => dataset.version_num ? "Has an uploaded version" : "No uploaded version")}
-        loading={loading}
-        unavailable={Boolean(loadError)}
-      />
-
-      {/* Explorer Toolbar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search datasets by name, description or SHA-256..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] focus:border-[#3BB48C] transition font-sans"
-          />
-        </div>
-
-        {/* Format Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {["ALL", "CSV", "PARQUET", "JSON"].map((fmt) => (
-            <button
-              key={fmt}
-              onClick={() => setFormatFilter(fmt)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition whitespace-nowrap border ${
-                formatFilter === fmt
-                  ? "bg-[#3BB48C] text-white border-[#329F7B]"
-                  : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
-              }`}
-            >
-              {fmt === "ALL" ? "All formats" : fmt}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort dropdown */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-xs text-slate-400">Sort:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs font-medium bg-white border border-slate-200 text-slate-700 py-1 px-2.5 rounded focus:outline-none focus:ring-1 focus:ring-[#3BB48C]"
-          >
-            <option value="date">Registration date</option>
-            <option value="rows">Row count</option>
-            <option value="size">File size</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Main Datasets Table */}
-      <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-2xs">
-        <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Datasets Catalog
-            </span>
-            <span className="text-xs text-slate-500 font-mono">
-              ({filteredDatasets.length})
-            </span>
-          </div>
-          <span className="text-xs text-slate-500 font-mono">
-            {totalRows.toLocaleString()} total verified records
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-700 border-collapse">
-            <thead className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              <tr>
-                <th className="px-4 py-2">Dataset &amp; Version Hash</th>
-                <th className="px-3 py-2">Format</th>
-                <th className="px-3 py-2">Records &amp; Size</th>
-                <th className="px-3 py-2">DVC Storage Key</th>
-                <th className="px-3 py-2">Registered</th>
-                <th className="px-4 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
-                    <RefreshCw className="w-5 h-5 text-emerald-600 animate-spin mx-auto mb-2" />
-                    <span>Loading datasets from database...</span>
-                  </td>
-                </tr>
-              ) : filteredDatasets.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                    <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <div className="font-semibold text-slate-700 text-xs">No Datasets Found</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      {datasets.length === 0
-                        ? "Register a dataset to start tracking data versions and MinIO lineage."
-                        : "No dataset matches your search criteria."}
-                    </div>
-                    {datasets.length === 0 && (
-                      <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3BB48C] hover:bg-[#329F7B] text-white rounded text-xs font-semibold"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Register Dataset</span>
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredDatasets.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
-                    {/* Name & SHA-256 */}
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-start gap-2.5">
-                        <div className="p-1 rounded bg-slate-100 text-slate-600 shrink-0 mt-0.5">
-                          <FileSpreadsheet className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                            <span>{d.name}</span>
-                            {d.version_num ? (
-                              <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px]">
-                                v{d.version_num}
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200 font-mono text-[10px]">
-                                v0 (unversioned)
-                              </span>
-                            )}
-                          </div>
-                          {d.description && (
-                            <p className="text-[11px] text-slate-500 line-clamp-1 max-w-sm mt-0.5">
-                              {d.description}
-                            </p>
-                          )}
-                          {d.hash_sha256 ? (
-                            <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 mt-0.5">
-                              <span className="truncate max-w-[150px] sm:max-w-[220px]">
-                                sha256:{d.hash_sha256.slice(0, 16)}...
-                              </span>
-                              <button
-                                onClick={() => handleCopyHash(d.hash_sha256)}
-                                title="Copy SHA-256 hash"
-                                className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition"
-                              >
-                                {copiedHash === d.hash_sha256 ? (
-                                  <Check className="w-3 h-3 text-[#3BB48C]" />
-                                ) : (
-                                  <Copy className="w-3 h-3" />
-                                )}
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                              Pending file upload
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Format */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-[11px] text-slate-700 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">
-                        {d.format}
-                      </span>
-                    </td>
-
-                    {/* Volume (Rows & Size) */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div className="font-mono text-slate-800 text-[11px] font-medium">
-                        {d.row_count ? `${d.row_count.toLocaleString()} rows` : "0 rows"}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        {d.column_count ? `${d.column_count} cols • ` : ""}
-                        {formatBytes(d.size_bytes)}
-                      </div>
-                    </td>
-
-                    {/* S3 Key / MinIO */}
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-600">
-                      {isAdmin && d.s3_key ? (
-                        <span className="truncate max-w-[200px] block" title={d.s3_key}>
-                          {d.s3_key.replace("s3://", "")}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-
-                    {/* Date */}
-                    <td className="px-3 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                      {d.created_at ? new Date(d.created_at).toLocaleDateString() : "—"}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => openInspector(d)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition shadow-2xs hover:border-[#3BB48C]"
-                          title="View version history and DVC commands"
-                        >
-                          <Eye className="w-3 h-3 text-[#3BB48C]" />
-                          Versions
-                        </button>
-
-                        <button
-                          onClick={() => setLineageDataset(d)}
-                          className="flex items-center gap-1 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-medium transition"
-                          title="View data lineage graph"
-                        >
-                          <GitBranch className="w-3 h-3 text-slate-500" />
-                          Lineage
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteDataset(d.id, d.name)}
-                          className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-200 text-[11px] transition"
-                          title="Delete dataset and versions"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DatasetDashboard datasets={datasets} projects={projects} loading={loading}
+        formatBytes={formatBytes} onOpen={(dataset, tab) => openInspector(dataset, tab === "dvc" && !isAdmin ? "versions" : tab)} onCreate={openCreate}
+        onDvc={isAdmin ? () => setShowDvcModal(true) : undefined}
+        onCopy={handleCopyHash} copiedHash={copiedHash} />
 
       {/* ── MODAL 1: VERSIONS & DVC INSPECTOR ── */}
       {inspectingDataset && (
@@ -713,6 +279,12 @@ export const DatasetsPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="dataset-inspector-actions">
+                <button className="secondary-action" onClick={() => setLineageDataset(inspectingDataset)}>Lineage</button>
+                {isAdmin && <button className="secondary-action" onClick={async () => {
+                  await handleDeleteDataset(inspectingDataset.id, inspectingDataset.name);
+                }}>Delete</button>}
+              </div>
               <button
                 onClick={() => setInspectingDataset(null)}
                 className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
@@ -946,7 +518,7 @@ export const DatasetsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
-                    Register New Dataset
+                    {uploadMode ? "Upload Dataset" : "New Dataset"}
                   </h3>
                   <p className="text-[11px] text-slate-500">
                     Upload raw data to MinIO with SHA-256 deduplication and schema extraction
@@ -969,6 +541,14 @@ export const DatasetsPage: React.FC = () => {
             )}
 
             <form onSubmit={handleCreateDataset} className="space-y-3.5 mt-4">
+              <label className="block text-xs font-semibold text-slate-700">
+                Project
+                <select className="mt-1 block w-full rounded border border-slate-200 px-2.5 py-1.5"
+                  value={newProject} disabled={!!createdForUpload} onChange={event => setNewProject(event.target.value)}>
+                  <option value="">No project</option>
+                  {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
+                </select>
+              </label>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Source File (CSV, Parquet, JSON)
@@ -980,6 +560,7 @@ export const DatasetsPage: React.FC = () => {
                     <input
                       type="file"
                       accept=".csv,.parquet,.json"
+                      required={uploadMode && !selectedFile}
                       onChange={handleFileChange}
                       className="hidden"
                     />
@@ -1013,6 +594,7 @@ export const DatasetsPage: React.FC = () => {
                   type="text"
                   required
                   value={newDatasetName}
+                  disabled={!!createdForUpload}
                   onChange={(e) => setNewDatasetName(e.target.value)}
                   placeholder="e.g. churn_features_v2, customer_transactions"
                   className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] focus:border-[#3BB48C] font-mono"
@@ -1025,6 +607,7 @@ export const DatasetsPage: React.FC = () => {
                 </label>
                 <select
                   value={newDatasetFormat}
+                  disabled={!!createdForUpload}
                   onChange={(e) => setNewDatasetFormat(e.target.value)}
                   className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3BB48C]"
                 >
@@ -1057,11 +640,11 @@ export const DatasetsPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={creating || !newDatasetName.trim()}
+                  disabled={creating || !newDatasetName.trim() || ((uploadMode || !!createdForUpload) && !selectedFile)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#3BB48C] hover:bg-[#329F7B] disabled:opacity-50 rounded border border-[#329F7B] transition cursor-pointer shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>{creating ? "Registering & Uploading..." : "Create Dataset"}</span>
+                  <span>{creating ? "Saving…" : uploadMode ? "Upload Dataset" : "Create Dataset"}</span>
                 </button>
               </div>
             </form>

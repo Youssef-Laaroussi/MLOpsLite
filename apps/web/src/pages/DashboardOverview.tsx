@@ -1,3 +1,5 @@
+import { Cpu, HardDrive } from "lucide-react";
+import { OverviewActivity } from "../components/OverviewActivity";
 import { LifecycleArtwork } from "../components/LifecycleArtwork";
 import { TimelineChart, EmptyChart } from "../components/charts/LifecycleCharts";
 import React, { useEffect, useState, useMemo, useRef } from "react";
@@ -208,7 +210,6 @@ export const DashboardOverview: React.FC = () => {
     ? Math.round((recentExperiments - priorExperiments) / priorExperiments * 100) : null;
   const [experimentPeriod, setExperimentPeriod] = useState("14");
   const experimentHistory = groupDates(experiments.filter(item => experimentPeriod === "all" || (item.created_at && Date.parse(item.created_at) >= now - Number(experimentPeriod) * 86400000)).map(item => item.created_at));
-  const deploymentHistory = groupDates(deployments.map(item => item.created_at));
 
   // ── Resource Counts (Real DB counts) ───────────────────────────────
   const resourcesData = [
@@ -345,11 +346,32 @@ export const DashboardOverview: React.FC = () => {
         <section className="overview-card chart-card"><h3><Layers />Registry Distribution</h3>{hasStats && stageCounts.total > 0 ? <div className="registry-chart"><div className="relative h-[150px] min-w-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie isAnimationActive={false} data={pieStageData} dataKey="value" innerRadius="65%" outerRadius="90%" stroke="none">{pieStageData.map(entry => <Cell key={entry.name} fill={entry.color} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer><div className="donut-label"><b>{stageCounts.total}</b><small>Versions</small></div></div><div className="stage-legend">{pieStageData.map(entry => <span key={entry.name}><i style={{background: entry.color}} />{entry.name} ({entry.value}) <b>{stageCounts.total ? Math.round(entry.value / stageCounts.total * 100) : 0}%</b></span>)}</div></div> : <EmptyChart text={hasStats ? "No registered model versions" : loading ? "Loading model versions…" : "Model versions unavailable"} />}</section>
         <section className="overview-card chart-card"><h3><LineChart />Model Drift<select className="chart-period" aria-label="Scores and drift observation period" value={timeRange} onChange={event => setTimeRange(event.target.value)}><option>All time</option><option>Last 7 days</option><option>Last 30 days</option></select></h3>{hasStats && modelDrift.length ? <><label className="chart-caption flex items-center gap-2">Model<select aria-label="Model" className="min-w-0 max-w-[180px] rounded border border-slate-100 bg-white text-[10px]" value={selectedDriftModel} onChange={event => setDriftModel(event.target.value)}>{driftModels.map(name => <option key={name}>{name}</option>)}</select></label><TimelineChart data={modelDrift.map(item => ({ ...item, value: item.drift_share }))} dataKey="value" percent /><div className="sr-only">{modelDrift.map((item, i) => <span key={i}>{(item.drift_share * 100).toFixed(1)}%</span>)}</div></> : <EmptyChart text={loading ? "Loading drift evaluations…" : "No drift evaluations in this period"} />}</section>
       </div>
-      <div className="overview-activity">
-        <section className="overview-card chart-card"><h3><Rocket />Deployment History</h3><p className="chart-caption">Recorded deployments by creation date · all time</p>{deploymentHistory.length ? <div className="h-[130px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={deploymentHistory}><CartesianGrid vertical={false} stroke="#edf0f2" /><XAxis dataKey="date" tick={{fontSize: 9}} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} width={25} tick={{fontSize: 9}} axisLine={false} tickLine={false} /><RechartsTooltip /><Bar dataKey="count" name="Deployments" fill="#159459" radius={[2,2,0,0]} maxBarSize={28} /></BarChart></ResponsiveContainer></div> : <EmptyChart text={failedSources.includes("deployments") ? "Deployment history unavailable" : "No deployments recorded yet"} />}</section>
-        <section className="overview-card"><h3><FlaskConical />Recent Experiments<Link to="/app/experiments">View All →</Link></h3>{experiments.length ? <div className="overflow-x-auto"><table className="overview-table"><thead><tr><th>Experiment</th><th>Stage</th><th>Runs</th><th>Created</th></tr></thead><tbody>{experiments.slice(0, 4).map(exp => <tr key={exp.experiment_id}><td><Link to="/app/experiments">{exp.name}</Link></td><td><span className="health-pill">{exp.lifecycle_stage || "—"}</span></td><td>{exp.runs_count ?? "—"}</td><td>{exp.created_at ? new Date(exp.created_at).toLocaleDateString() : "—"}</td></tr>)}</tbody></table></div> : <EmptyChart text={experimentsError ? "Experiments unavailable" : "No experiments recorded yet"} />}</section>
-        <section className="overview-card"><h3><ShieldCheck />Registry Versions<Link to="/app/models">View All →</Link></h3><p className="chart-caption">Current version stages</p>{displayModels.length ? <table className="overview-table"><thead><tr><th>Model</th><th>Version</th><th>Stage</th></tr></thead><tbody>{displayModels.map(model => <tr key={`${model.name}-${model.version}`}><td><Link to={`/app/models?search=${encodeURIComponent(model.name)}`}>{model.name}</Link></td><td>v{model.version}</td><td><span className="health-pill">{model.stage}</span></td></tr>)}</tbody></table> : <EmptyChart text={failedSources.includes("models") ? "Registry unavailable" : "No registered models yet"} />}</section>
-      </div>
+      <OverviewActivity deployments={deployments} experiments={experiments} models={models}
+        deploymentsUnavailable={failedSources.includes("deployments")} experimentsUnavailable={experimentsError} infrastructure={
+      <section className="overview-card infrastructure-card" aria-labelledby="infrastructure-title">
+        <h3 id="infrastructure-title"><Cpu />Infrastructure Utilization</h3>
+        <div className="infrastructure-grid">
+          {([
+            ["cpu", "CPU", Cpu],
+            ["memory", "Memory", Layers],
+            ["storage", "Storage", HardDrive],
+          ] as const).map(([key, label, Icon]) => {
+            const value = hasStats ? stats.infrastructure?.[key] : null;
+            const usage = value == null ? null : Math.max(0, Math.min(100, Math.round(value)));
+            return <div className="infrastructure-metric" key={key}>
+              <h4><Icon size={19} />{label}</h4>
+              <strong>{usage == null ? "—" : `${usage}%`}</strong>
+              <div className="infrastructure-meter" role={usage == null ? undefined : "meter"}
+                aria-label={usage == null ? undefined : label} aria-valuemin={0} aria-valuemax={100}
+                aria-valuenow={usage ?? undefined}>
+                <span style={{ width: `${usage ?? 0}%` }} />
+              </div>
+            </div>;
+          })}
+        </div>
+        <p className="infrastructure-scope">CPU and memory visible to the API · API root filesystem storage</p>
+      </section>
+      } />
       <section className="overview-card next-steps"><div className="empty-cube" aria-hidden="true"><div className="iso-cube"><i /><b /><em /></div></div><div><h2>{failedSources.includes("deployments") ? "Deployment Status Unavailable" : !updatedAt.deployments ? "Loading Deployments…" : filteredDeployments.length ? `${filteredDeployments.length} Running Deployment${filteredDeployments.length > 1 ? "s" : ""}` : "No Active Deployments"}</h2><p>{filteredDeployments.length ? "Manage your inference endpoints and check their readiness below." : "Deploy a registered model to start serving predictions and track it in real time."}</p><div className="mt-3 flex flex-wrap gap-3"><Link className="primary-action" to="/app/deployments"><Rocket size={15} />Create Deployment</Link><Link className="secondary-action" to="/app/models"><Layers size={15} />Go to Registry</Link></div></div><div className="steps-list"><h3>Next Steps</h3>{["Promote a model to Production from the Registry.", "Create a deployment for the promoted model.", "Monitor performance, latency, and drift once it’s live."].map((step,index) => <p key={step}><b>{index+1}</b>{step}</p>)}</div></section>
       <details className="overview-details"><summary>Inventory &amp; endpoint readiness</summary><div className="relative my-4"><Search size={15} className="absolute left-3 top-3 text-slate-400" /><input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Filter models or running endpoints on this dashboard..." className="w-full rounded-lg border border-slate-200 py-2 pl-9 text-sm" /></div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

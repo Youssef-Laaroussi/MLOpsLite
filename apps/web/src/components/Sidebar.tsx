@@ -36,7 +36,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full min-w-0 shrink-0 self-start lg:w-[200px]">
+    <aside className="w-full min-w-0 shrink-0 self-start lg:sticky lg:top-[80px] lg:w-[200px]">
       <div className="rounded-2xl border border-[#dce5dd] bg-white shadow-sm">
         <p className="hidden px-4 pt-3 text-[10px] font-bold tracking-wide text-slate-400 lg:block">MLITE WORKSPACE</p>
         <nav className="flex items-center gap-1 overflow-x-auto p-2.5 lg:block lg:space-y-0.5 lg:overflow-visible">

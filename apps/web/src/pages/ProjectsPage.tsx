@@ -1,7 +1,11 @@
+import githubMark from "../assets/github-invertocat-black.svg";
+import { ArrowRight, Building2, ChevronDown, ChevronRight, Clock, Code2, Layers, Rocket } from "lucide-react";
+import { Bar, CartesianGrid, ComposedChart, Line as ChartLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ProjectResources } from "../components/ProjectResources";
 import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  FolderGit2,
+  FolderGit2, Info,
   Plus,
   GitBranch,
   Search,
@@ -11,7 +15,7 @@ import {
   Database,
   Server,
   Activity,
-  ArrowUpRight,
+  ArrowUpRight, Users,
   X,
   LayoutGrid,
   List,
@@ -25,14 +29,22 @@ import {
 import { StatusBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
 import {
-  fetchProjects,
+  fetchProjects, fetchExperiments, fetchDatasets,
   createProject,
   archiveProject,
   updateProject,
   deleteProject,
 } from "../api/client";
-import { Project } from "../api/types";
-import { Link } from "react-router-dom";
+import { Project, Experiment, Dataset } from "../api/types";
+import { Link, useSearchParams } from "react-router-dom";
+
+function projectUpdatedLabel(timestamp: string) {
+  const elapsed = Date.now() - Date.parse(timestamp);
+  if (!Number.isFinite(elapsed)) return "Update time unavailable";
+  const units = [[86400000, "d"], [3600000, "h"], [60000, "min"]] as const;
+  const unit = units.find(([duration]) => elapsed >= duration);
+  return unit ? `Last updated ${Math.floor(elapsed / unit[0])} ${unit[1]} ago` : "Updated just now";
+}
 
 export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -40,10 +52,10 @@ export const ProjectsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
-  const [sortBy, setSortBy] = useState<"activity" | "name" | "models">("activity");
+  const [workspace, setWorkspace] = useState("");
 
-  // View Mode: Table (default as preferred by user) or Grid
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  // Portfolio layout
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   // Create modal state
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -84,7 +96,7 @@ export const ProjectsPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || (importRepo && !gitUrl.trim())) return;
     setCreating(true);
     setCreateError(null);
     try {
@@ -214,15 +226,14 @@ export const ProjectsPage: React.FC = () => {
           (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
         const statusNormalized = (p.status || "").toUpperCase();
         const matchesStatus = statusFilter === "ALL" || statusNormalized === statusFilter;
-        return matchesQuery && matchesStatus;
+        return matchesQuery && matchesStatus && (!workspace || p.slug === workspace);
       })
       .sort((a, b) => {
-        if (sortBy === "name") return a.name.localeCompare(b.name);
-        if (sortBy === "models") return (b.models_count || 0) - (a.models_count || 0);
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-  }, [projects, searchQuery, statusFilter, sortBy]);
+  }, [projects, searchQuery, statusFilter, workspace]);
 
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
   // Aggregate Real Counts
   const totalModels = useMemo(() => projects.reduce((sum, p) => sum + (p.models_count || 0), 0), [projects]);
   const totalDatasets = useMemo(() => projects.reduce((sum, p) => sum + (p.datasets_count || 0), 0), [projects]);
@@ -245,690 +256,252 @@ export const ProjectsPage: React.FC = () => {
     };
   }, [projects]);
 
-  // Creation Velocity across the last 6 months (Real dates)
-  const monthlyActivity = useMemo(() => {
-    const now = new Date();
-    const months: { month: string; value: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = d.toLocaleString("en-US", { month: "short" });
-      const year = d.getFullYear();
-      const monthIdx = d.getMonth();
+  const [datasets, setDatasets] = useState<Dataset[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    fetchDatasets().then(items => { if (active) setDatasets(items); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
-      const count = projects.filter((p) => {
-        const created = new Date(p.created_at);
-        return created.getFullYear() === year && created.getMonth() === monthIdx;
-      }).length;
+  const projectEvents = filteredProjects.flatMap(project => [
+    { key: project.id, project, label: "Project created", date: project.created_at, icon: FolderGit2 },
+    ...experiments.filter(item => item.tags?.["mlite.project"] === project.slug && item.created_at)
+      .map(item => ({ key: `experiment-${item.experiment_id}`, project, label: "Experiment created", date: item.created_at!, icon: FlaskConical })),
+    ...(datasets ?? []).filter(item => item.project_id === project.id && item.updated_at && item.updated_at !== item.created_at)
+      .map(item => ({ key: `dataset-${item.id}`, project, label: "Dataset updated", date: item.updated_at!, icon: Database })),
+  ]).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+  const monthlyActivity = Array.from({ length: 30 }, (_, index) => {
+    const day = new Date();
+    day.setDate(day.getDate() - 29 + index);
+    const events = projectEvents.filter(event => new Date(event.date).toDateString() === day.toDateString());
+    return {
+      date: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      experiments: events.filter(event => event.label === "Experiment created").length,
+      datasets: datasets ? events.filter(event => event.label === "Dataset updated").length : null,
+    };
+  });
 
-      months.push({ month: monthName, value: count });
-    }
-    return months;
-  }, [projects]);
+  const [params] = useSearchParams();
+  const selected = projects.find(project => project.slug === params.get("project"));
 
-  const maxMonthlyVal = Math.max(...monthlyActivity.map((m) => m.value), 1);
+  useEffect(() => {
+    let active = true;
+    fetchExperiments().then(items => { if (active) setExperiments(items); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  const experimentCount = (project: Project) => experiments.filter(item => item.tags?.["mlite.project"] === project.slug).length;
+  const distribution = filteredProjects.map(project => ({
+    name: project.name, datasets: project.datasets_count ?? 0, models: project.models_count ?? 0, experiments: experimentCount(project),
+  }));
+  const maxResourceTotal = Math.max(1, ...distribution.map(item => item.datasets + item.models + item.experiments));
+  const totals = [
+    ["Total Projects", projects.length, FolderGit2],
+    ["Connected Datasets", totalDatasets, Database],
+    ["Linked Models", totalModels, Box],
+    ["Active Experiments", experiments.filter(item => item.lifecycle_stage === "active" && projects.some(project => project.slug === item.tags?.["mlite.project"])).length, FlaskConical],
+    ["Deployments", totalDeployments, Layers],
+    ["Team Owners", "—", Users],
+  ] as const;
+  const [importRepo, setImportRepo] = useState(false);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 tracking-tight font-sans">
-            Workspaces &amp; Projects
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Organize ML repositories, pipelines, model registries, and datasets
-          </p>
+    <div className="lifecycle-dashboard projects-dashboard">
+      {selected ? <>
+        <ProjectResources key={selected.id} project={selected} />
+        <div className="project-card-actions">
+          <button className="secondary-action" onClick={() => openEditModal(selected)}>Edit Project</button>
+          {selected.status.toLowerCase() === "archived" ? <>
+            <button className="secondary-action" disabled={actionLoading === selected.id} onClick={() => handleRestore(selected)}>Restore Project</button>
+            <button className="secondary-action" onClick={() => setProjectToDelete(selected)}>Delete Project</button>
+          </> : <button className="secondary-action" disabled={actionLoading === selected.id} onClick={() => handleArchive(selected)}>Archive Project</button>}
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={loadProjects}
-            className="p-1.5 bg-white border border-slate-200/90 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
-            title="Refresh projects"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Project
-          </button>
-        </div>
-      </div>
-
-      {/* ── Toast Action Notification Banner ── */}
-      {toastMessage && (
-        <div
-          className={`p-3 rounded-md flex items-center justify-between text-xs animate-in fade-in duration-200 ${
-            toastMessage.type === "success"
-              ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
-              : "bg-rose-50 border border-rose-200 text-rose-800"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {toastMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span className="font-medium">{toastMessage.text}</span>
-          </div>
-          <button
-            onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-slate-600 p-0.5"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* ── Backend Error Banner ── */}
-      {error && (
-        <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-start gap-2.5 text-xs text-rose-800">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold">Failed to fetch projects:</span> {error}
-          </div>
-          <button
-            onClick={loadProjects}
-            className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-900 rounded font-medium text-[11px] transition shrink-0"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Top 4 KPI StatCards (Real Database Metrics) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          title="Active Workspaces"
-          value={loading ? "..." : `${projects.length}`}
-          subtitle="Managed ML workspaces"
-          icon={FolderGit2}
-          color="brand"
-        />
-        <StatCard
-          title="Cataloged Models"
-          value={loading ? "..." : `${totalModels}`}
-          subtitle="Linked to workspaces"
-          icon={Box}
-          color="brand"
-        />
-        <StatCard
-          title="Managed Datasets"
-          value={loading ? "..." : `${totalDatasets}`}
-          subtitle="Linked datasets"
-          icon={Database}
-          color="emerald"
-        />
-        <StatCard
-          title="Active Deployments"
-          value={loading ? "..." : `${totalDeployments}`}
-          subtitle="Inference containers"
-          icon={Server}
-          color="emerald"
-          isLive={totalDeployments > 0}
-        />
-      </div>
-
-      {/* ── Visual Analytics Row: Real Activity Trend & Status Distribution ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* CHART 1: Project Creation Timeline (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Project Workspace Creation
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Real workspace creation activity over the last 6 months
-                </p>
+        {toastMessage && <p role="status">{toastMessage.text}</p>}
+      </> : <>
+        <div className="overview-hero projects-hero">
+          <div><h1>Projects</h1><p>Organize repositories, datasets, experiments, models, and deployments across your ML workloads.</p></div>
+          <div className="projects-art" aria-hidden="true">
+            {[Database, Code2, Box, Rocket].map((Icon, index) => (
+              <div className="projects-art-step" key={index}>
+                <span className="projects-art-base" />
+                <Icon className="projects-art-icon" size={49} strokeWidth={1.35} />
+                {index < 3 && <ArrowRight className="projects-art-arrow" size={23} />}
               </div>
-
-              <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
-                <span className="flex items-center gap-1.5 font-mono">
-                  <span className="w-2 h-2 rounded-xs bg-emerald-500" /> New Workspaces
-                </span>
-              </div>
-            </div>
-
-            {projects.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
-                <Activity className="w-6 h-6 mb-1 text-slate-300" />
-                <span>No workspace activity recorded yet</span>
-              </div>
-            ) : (
-              <div className="relative h-44 w-full flex items-end justify-between gap-3 px-2 pb-2">
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7 border-b border-slate-100">
-                  <div className="w-full border-t border-slate-100" />
-                  <div className="w-full border-t border-slate-100" />
-                  <div className="w-full border-t border-slate-100" />
-                </div>
-
-                {monthlyActivity.map((ma, i) => {
-                  const barHeight = (ma.value / maxMonthlyVal) * 100;
-                  return (
-                    <div
-                      key={i}
-                      className="relative z-10 w-full group h-full flex flex-col justify-end items-center cursor-pointer"
-                      onMouseEnter={() => setHoveredWeek({ week: ma.month, count: ma.value })}
-                      onMouseLeave={() => setHoveredWeek(null)}
-                    >
-                      <div className="w-full max-w-[36px] flex items-end justify-center h-full">
-                        <div
-                          className={`w-full rounded-t-xs transition-colors ${
-                            ma.value > 0
-                              ? "bg-emerald-500 group-hover:bg-emerald-600"
-                              : "bg-slate-200 group-hover:bg-slate-300"
-                          }`}
-                          style={{ height: `${barHeight}%` }}
-                        />
-                      </div>
-
-                      <div className="text-[10px] font-mono text-slate-400 mt-2 group-hover:text-slate-800 transition-colors">
-                        {ma.month}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {hoveredWeek && (
-                  <div className="absolute top-1 right-2 bg-white text-slate-800 text-[11px] font-mono px-3 py-1.5 rounded-md shadow-md border border-slate-200 pointer-events-none">
-                    <span className="text-slate-500">{hoveredWeek.week}: </span>
-                    <span className="text-emerald-700 font-semibold">{hoveredWeek.count} workspace(s)</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Workspace Total: {projects.length}</span>
-            <span className="text-emerald-700 font-medium">Database Synchronized</span>
+            ))}
           </div>
         </div>
-
-        {/* CHART 2: Real Projects by Status (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between">
-          <div>
-            <div className="mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                  Workspaces by Status
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Lifecycle state governance</p>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500">{projects.length} Total</span>
-            </div>
-
-            {projects.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
-                <FolderGit2 className="w-6 h-6 mb-1 text-slate-300" />
-                <span>No projects recorded</span>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-                {/* Donut Chart with Centered Number */}
-                <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="54"
-                      fill="none"
-                      stroke="#F1F5F9"
-                      strokeWidth="12"
-                    />
-
-                    {/* Active Slice */}
-                    {statusBreakdown.active.pct > 0 && (
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="54"
-                        fill="none"
-                        stroke="#10B981"
-                        strokeWidth="12"
-                        strokeDasharray={`${(statusBreakdown.active.pct / 100) * 339.29} 339.29`}
-                        strokeDashoffset="0"
-                      />
-                    )}
-
-                    {/* Archived Slice */}
-                    {statusBreakdown.archived.pct > 0 && (
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="54"
-                        fill="none"
-                        stroke="#94A3B8"
-                        strokeWidth="12"
-                        strokeDasharray={`${(statusBreakdown.archived.pct / 100) * 339.29} 339.29`}
-                        strokeDashoffset={`${-((statusBreakdown.active.pct / 100) * 339.29)}`}
-                      />
-                    )}
-                  </svg>
-
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-xl font-semibold font-mono text-slate-900">
-                      {projects.length}
-                    </span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                      Total
-                    </span>
-                  </div>
-                </div>
-
-                {/* Legend List */}
-                <div className="flex-1 w-full space-y-2 text-xs">
-                  <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-xs bg-emerald-500" />
-                      <span className="text-slate-700">Active</span>
-                    </div>
-                    <span className="font-mono text-slate-900 font-semibold">
-                      {statusBreakdown.active.count} ({statusBreakdown.active.pct}%)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-xs bg-slate-400" />
-                      <span className="text-slate-700">Archived</span>
-                    </div>
-                    <span className="font-mono text-slate-500 font-semibold">
-                      {statusBreakdown.archived.count} ({statusBreakdown.archived.pct}%)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+        <div className="projects-toolbar">
+          <label><Search size={16} /><input value={searchQuery} placeholder="Search projects…" aria-label="Search projects" onChange={event => setSearchQuery(event.target.value)} /></label>
+          <div className="project-filter">
+            <Building2 size={16} aria-hidden="true" />
+            <select aria-label="Filter by workspace" value={workspace} onChange={event => setWorkspace(event.target.value)}>
+              <option value="">All Workspaces</option>
+              {projects.map(project => <option key={project.id} value={project.slug}>{project.name}</option>)}
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
           </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Governance</span>
-            <span className="text-emerald-700 font-medium">PostgreSQL Live</span>
+          <div className="project-filter">
+            <Activity size={17} aria-hidden="true" />
+            <select aria-label="Project status" value={statusFilter} onChange={event => setStatusFilter(event.target.value as typeof statusFilter)}>
+              <option value="ALL">All Statuses</option><option value="ACTIVE">Active</option><option value="ARCHIVED">Archived</option>
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
+          </div>
+          <div className="projects-actions">
+            <button className="secondary-action" onClick={() => { setImportRepo(true); setShowModal(true); }}><img src={githubMark} width={16} height={16} alt="" />Import Git Repo</button>
+            <button className="primary-action" onClick={() => { setImportRepo(false); setShowModal(true); }}><Plus size={16} />New Project</button>
           </div>
         </div>
-      </div>
-
-      <MetricDistribution
-        title="Projects by status"
-        description="Projects matching the explorer filters"
-        rows={countBy(filteredProjects, project => project.status.toLowerCase())}
-        loading={loading}
-        unavailable={Boolean(error)}
-      />
-
-      {/* ── Explorer Toolbar: Search, Status Filter, Sort, View Mode ── */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-md p-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search workspaces by name, slug, description..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50/60 border border-slate-200/80 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition text-slate-900 placeholder:text-slate-400"
-          />
+        {error && <p role="alert">{error} <button onClick={loadProjects}>Retry</button></p>}
+        {toastMessage && <p role="status" className="health-pill">{toastMessage.text}</p>}
+        <div className="overview-kpis">
+          {totals.map(([label, count, Icon], index) => {
+            const targets = ["#project-portfolio", "datasets", "models", "experiments", "deployments", "#project-ownership"];
+            const flourish = [
+              "M1 19 C9 9 14 28 23 17 S30 21 38 12 S48 9 55 15 S66 7 77 6",
+              "M1 21 C15 22 17 8 30 15 S48 19 56 10 S69 9 77 6",
+              "M1 17 C9 9 14 24 25 15 S37 20 49 11 S63 20 77 12",
+            ][index % 3];
+            return <a className="overview-card kpi" key={label} href={index === 0 || index === 5 ? targets[index] : `/app/${targets[index]}`}>
+              <span><Icon size={19} /><strong>{label}</strong></span>
+              <b>{loading || error ? "—" : count}<ChevronRight size={16} /></b>
+              <svg className="project-kpi-accent" viewBox="0 0 78 28" aria-hidden="true">
+                <path d={count === 0 ? "M1 22 H77" : flourish} fill="none" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </a>;
+          })}
         </div>
-
-        {/* Status Filter Pills */}
-        <div className="flex items-center gap-1">
-          {(["ALL", "ACTIVE", "ARCHIVED"] as const).map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                statusFilter === st
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100/70 hover:bg-slate-200/70 text-slate-600"
-              }`}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort dropdown */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] text-slate-400">Sort:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs bg-slate-50/60 border border-slate-200/80 text-slate-700 py-1 px-2.5 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            <option value="activity">Recent Activity</option>
-            <option value="name">Name (A-Z)</option>
-            <option value="models">Model Count</option>
-          </select>
-        </div>
-
-        {/* View Mode Toggle: Table (default) vs Grid Cards */}
-        <div className="flex items-center p-0.5 bg-slate-100/80 rounded shrink-0">
-          <button
-            onClick={() => setViewMode("table")}
-            className={`p-1 rounded transition ${
-              viewMode === "table"
-                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-            title="Table View (Recommended)"
-          >
-            <List className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`p-1 rounded transition ${
-              viewMode === "grid"
-                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-            title="Grid Cards View"
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Projects Display ── */}
-      {loading ? (
-        <div className="py-16 text-center bg-white border border-slate-200/80 rounded-md">
-          <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin mx-auto mb-2" />
-          <p className="text-xs text-slate-500 font-medium">Loading project workspaces...</p>
-        </div>
-      ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-12 bg-white border border-slate-200/80 rounded-md">
-          <FolderGit2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-xs font-semibold text-slate-800">
-            {projects.length === 0 ? "No Project Workspaces Yet" : "No Matching Workspaces Found"}
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5 max-w-sm mx-auto">
-            {projects.length === 0
-              ? "Create your first ML project workspace to organize models, experiments, and datasets."
-              : "No projects match the current search or status filter."}
-          </p>
-          {projects.length === 0 ? (
-            <button
-              onClick={() => setShowModal(true)}
-              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create Project
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setStatusFilter("ALL");
-              }}
-              className="mt-3 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition"
-            >
-              Reset Filters
-            </button>
-          )}
-        </div>
-      ) : viewMode === "table" ? (
-        /* ── TABLE VIEW (Default) ── */
-        <div className="bg-white border border-slate-200/80 rounded-md overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-              Workspaces ({filteredProjects.length})
+        <section className="overview-card" id="project-portfolio">
+          <h3>Project Portfolio <Info size={14} />
+            <span className="portfolio-view" role="group" aria-label="Portfolio layout">
+              <button type="button" aria-label="Grid view" title="Grid view" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}><LayoutGrid size={15} /></button>
+              <button type="button" aria-label="List view" title="List view" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List size={16} /></button>
             </span>
-            <span className="text-[11px] text-slate-400 font-mono">
-              {totalModels} models • {totalDatasets} datasets • {totalDeployments} deployments
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-[#F8FAFC] border-b border-slate-200/80 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-2.5">Workspace</th>
-                  <th className="px-3 py-2.5">Branch</th>
-                  <th className="px-3 py-2.5">Resources</th>
-                  <th className="px-3 py-2.5">Created</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-4 py-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredProjects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-slate-50/80 transition group">
-                    {/* Project Name, Slug & Description */}
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <FolderGit2 className="w-4 h-4 text-slate-400 shrink-0" />
-                        <div>
-                          <div className="font-medium text-slate-900 flex items-center gap-2">
-                            <span>{proj.name}</span>
-                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200/60">
-                              {proj.slug}
-                            </span>
-                          </div>
-                          {proj.description && (
-                            <p className="text-[11px] text-slate-400 truncate max-w-sm mt-0.5">
-                              {proj.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Git Branch / URL */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600">
-                        <GitBranch className="w-3 h-3 text-slate-400" />
-                        <span>{proj.default_branch || "main"}</span>
-                      </div>
-                    </td>
-
-                    {/* MLOps Resources (Real DB counts) */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div className="flex items-center gap-2 font-mono text-[11px] text-slate-600">
-                        <span title="Models" className="text-slate-800 font-semibold">{proj.models_count || 0}m</span>
-                        <span className="text-slate-300">•</span>
-                        <span title="Datasets">{proj.datasets_count || 0}d</span>
-                        <span className="text-slate-300">•</span>
-                        <span title="Deployments">{proj.deployments_count || 0}dep</span>
-                      </div>
-                    </td>
-
-                    {/* Created Date */}
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-500">
-                      {new Date(proj.created_at).toLocaleDateString()}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {proj.git_url && (
-                          <a
-                            href={proj.git_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                            title="Git Repository"
-                          >
-                            <GitBranch className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-
-                        <button
-                          onClick={() => openEditModal(proj)}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
-                          title="Edit Project"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-
-                        {(proj.status || "").toLowerCase() === "active" ? (
-                          <button
-                            onClick={() => handleArchive(proj)}
-                            disabled={actionLoading === proj.id}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
-                            title="Archive Workspace"
-                          >
-                            <Archive className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRestore(proj)}
-                            disabled={actionLoading === proj.id}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
-                            title="Restore to Active"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => setProjectToDelete(proj)}
-                          disabled={actionLoading === proj.id}
-                          className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
-                          title="Delete Project Permanently"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <Link
-                          to="/app/experiments"
-                          className="flex items-center gap-1 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
-                        >
-                          Workspace
-                          <ArrowUpRight className="w-3 h-3 text-slate-400" />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        /* ── GRID CARDS VIEW ── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProjects.map((proj) => (
-            <div
-              key={proj.id}
-              className="bg-white border border-slate-200/80 rounded-md p-4 flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs group"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
-                  <span className="font-mono text-[11px] text-slate-500 truncate">
-                    {proj.slug}
-                  </span>
-                  <StatusBadge status={(proj.status || "ACTIVE").toUpperCase()} />
-                </div>
-
-                <h3 className="text-sm font-semibold text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors line-clamp-1">
-                  {proj.name}
-                </h3>
-                <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                  {proj.description || "Workspace for models, experiments, and datasets."}
-                </p>
-
-                <div className="grid grid-cols-3 gap-2 p-2 bg-slate-50/70 border border-slate-100 rounded text-center mb-3">
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Models</span>
-                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
-                      {proj.models_count || 0}
-                    </span>
+            <button className="portfolio-reset" onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); setWorkspace(""); }}>View All Projects ›</button></h3>
+          {loading && <p role="status">Loading projects…</p>}
+          {!loading && !error && !filteredProjects.length && <p className="activity-empty">No projects match the current filters.</p>}
+          <div className={`project-portfolio portfolio-${viewMode}`}>
+            {filteredProjects.map(project => {
+              const archived = project.status.toLowerCase() === "archived";
+              const stats = [
+                [Database, project.datasets_count, "Dataset"],
+                [FlaskConical, experimentCount(project), "Experiment"],
+                [Box, project.models_count, "Model"],
+                [Layers, project.deployments_count, "Deployment"],
+              ] as const;
+              return <article className="overview-card project-tile" key={project.id}>
+                <div className="project-tile-body">
+                  <div className="project-tile-copy">
+                    <div className="project-tile-heading">
+                      <Box size={19} aria-hidden="true" />
+                      <h2>{project.name}</h2>
+                      <span className={archived ? "project-status is-archived" : "project-status"}>
+                        {archived ? "Archived" : "Active"}
+                      </span>
+                    </div>
+                    <p>{project.description || "No description"}</p>
+                    <div className="project-meta project-repository">
+                      <span><img src={githubMark} width={13} height={13} alt="" />{project.git_url?.replace(/^https?:\/\//, "").replace(/\.git$/, "") || "No Git repository"}</span>
+                      <span><GitBranch size={13} aria-hidden="true" />{project.default_branch || "—"}</span>
+                    </div>
                   </div>
-                  <div className="border-x border-slate-200/70">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Datasets</span>
-                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
-                      {proj.datasets_count || 0}
-                    </span>
+                  <div className="project-owner" title="Project owner unavailable">
+                    <span className="project-owner-avatar"><Users size={15} aria-hidden="true" /></span>
+                    <span><strong>—</strong><small>Owner</small></span>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Deploys</span>
-                    <span className="text-xs font-mono font-semibold text-slate-800 mt-0.5 block">
-                      {proj.deployments_count || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-slate-500">
-                  {new Date(proj.created_at).toLocaleDateString()}
-                </span>
-
-                <div className="flex items-center gap-1.5">
-                  {proj.git_url && (
-                    <a
-                      href={proj.git_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                      title="Git Repository"
-                    >
-                      <GitBranch className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-
-                  <button
-                    onClick={() => openEditModal(proj)}
-                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
-                    title="Edit Project"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-
-                  {(proj.status || "").toLowerCase() === "active" ? (
-                    <button
-                      onClick={() => handleArchive(proj)}
-                      disabled={actionLoading === proj.id}
-                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition"
-                      title="Archive Workspace"
-                    >
-                      <Archive className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleRestore(proj)}
-                      disabled={actionLoading === proj.id}
-                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition"
-                      title="Restore to Active"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => setProjectToDelete(proj)}
-                    disabled={actionLoading === proj.id}
-                    className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
-                    title="Delete Project Permanently"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  <Link
-                    to="/app/experiments"
-                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-medium transition"
-                  >
-                    Workspace
-                    <ArrowUpRight className="w-3 h-3 text-slate-400" />
+                  <Link className="secondary-action" to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>
+                    {archived ? <>View Details <ChevronRight size={13} /></> : <>Open Project <ArrowUpRight size={13} /></>}
                   </Link>
                 </div>
-              </div>
+                <div className="project-meta project-totals">
+                  {stats.map(([Icon, count, label]) => (
+                    <span key={label}><Icon size={15} aria-hidden="true" /><span><strong>{count ?? "—"}</strong> {label}{count === 1 ? "" : "s"}</span></span>
+                  ))}
+                  <time title={new Date(project.updated_at).toLocaleString()} dateTime={project.updated_at}>
+                    <Clock size={12} aria-hidden="true" />{projectUpdatedLabel(project.updated_at)}
+                  </time>
+                </div>
+              </article>;
+            })}
+          </div>
+        </section>
+        <div className="project-portfolio project-charts">
+          <section className="overview-card">
+            <h3>Project Activity (30 days) <Info /></h3>
+            <div className="project-legend">
+              <span style={{ "--legend-color": "#087d3b" } as React.CSSProperties}>New Experiments</span>
+              <span style={{ "--legend-color": "#60c771" } as React.CSSProperties}>Dataset Updates{datasets ? "" : " (—)"}</span>
+              <span className="unavailable-series" title="Repository history unavailable">Repository Activity (—)</span>
             </div>
-          ))}
+            <div className="project-activity-plot">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={monthlyActivity} margin={{ top: 6, right: 6, bottom: 0, left: -24 }}>
+                  <CartesianGrid vertical={false} stroke="#edf0f2" />
+                  <XAxis dataKey="date" minTickGap={16} tick={{ fontSize: 9 }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9 }} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="datasets" name="Dataset Updates" fill="#60c771" />
+                  <ChartLine dataKey="experiments" name="New Experiments" stroke="#087d3b" strokeWidth={2} dot={{ r: 2, fill: "white" }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+          <section className="overview-card">
+            <h3>Resource Distribution by Project <Info /></h3>
+            <div className="project-legend">
+              <span style={{ "--legend-color": "#087d3b" } as React.CSSProperties}>Datasets</span>
+              <span style={{ "--legend-color": "#60c771" } as React.CSSProperties}>Experiments</span>
+              <span style={{ "--legend-color": "#c4edcf" } as React.CSSProperties}>Models</span>
+            </div>
+            {distribution.length ? <div className="project-distribution">
+              {distribution.map(({ name, datasets, models, experiments }, index) => {
+                const total = datasets + models + experiments;
+                return <div className="project-distribution-row" key={filteredProjects[index].id}>
+                  <strong>{name}</strong>
+                  <div className="project-distribution-bar" aria-label={`${datasets} datasets, ${experiments} experiments, ${models} models`}>
+                    {[datasets, experiments, models].map((count, segment) => count > 0 && (
+                      <span key={segment} className={`distribution-segment segment-${segment}`} style={{ width: `${count / maxResourceTotal * 100}%` }} title={`${count} ${["datasets", "experiments", "models"][segment]}`}>{count}</span>
+                    ))}
+                  </div>
+                  <strong>Total: {total}</strong>
+                </div>;
+              })}
+            </div> : <p className="activity-empty">No project resources to display.</p>}
+          </section>
         </div>
-      )}
-
+        <div className="project-bottom-panels">
+          <section className="overview-card">
+            <h3>Recent Project Activity <Info /><Link to="/app/audit">View All Activity ›</Link></h3>
+            <table className="overview-table"><thead><tr><th>Event</th><th>Project</th><th>Owner</th><th>Time</th><th>Status</th></tr></thead><tbody>
+              {projectEvents.slice(0, 5).map(({ key, project, label, date, icon: Icon }) => (
+                <tr key={key}><td><span className="project-event"><Icon size={13} />{label}</span></td>
+                  <td><Link to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>{project.name}</Link></td>
+                  <td>—</td><td title={new Date(date).toLocaleString()}>{projectUpdatedLabel(date).replace(/^Last updated /, "").replace("Updated just now", "Just now")}</td>
+                  <td><span className="health-pill">✓ Recorded</span></td>
+                </tr>
+              ))}
+            </tbody></table>
+          </section>
+          <section className="overview-card">
+            <h3>Repository &amp; Integration Health <Info /></h3>
+            <table className="overview-table project-integrations"><thead><tr><th>Project</th><th>Git Remote</th><th>DVC Remote</th><th>MLflow</th><th>CI Checks</th></tr></thead><tbody>
+              {filteredProjects.map(project => <tr key={project.id}>
+                <td><Link to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>{project.name}</Link></td>
+                <td>{project.git_url ? <span className="project-check" title="Git URL configured">✓</span> : "—"}</td>
+                <td title="DVC status unavailable">—</td>
+                <td>{experimentCount(project) > 0 ? <span className="project-check" title="MLflow experiments linked">✓</span> : "—"}</td>
+                <td title="CI status unavailable">—</td>
+              </tr>)}
+            </tbody></table>
+          </section>
+          <section className="overview-card" id="project-ownership">
+            <h3>Project Ownership &amp; Access <Info /></h3>
+            <table className="overview-table"><thead><tr><th>Project</th><th>Owner</th><th>Collaborators</th></tr></thead><tbody>
+              {filteredProjects.map(project => <tr key={project.id}><td><Link to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>{project.name}</Link></td><td>—</td><td>—</td></tr>)}
+            </tbody></table>
+            <p className="chart-caption ownership-note">Ownership information is not available.</p>
+          </section>
+        </div>
+      </>}
       {/* ── Modal: Create New Project ── */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
@@ -936,7 +509,7 @@ export const ProjectsPage: React.FC = () => {
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <h3 id="create-workspace-title" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-slate-900">
                 <FolderGit2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                Create New Project Workspace
+                {importRepo ? "Import Git Repository" : "Create New Project"}
               </h3>
               <button
                 type="button"
@@ -995,6 +568,7 @@ export const ProjectsPage: React.FC = () => {
                 <input
                   type="url"
                   id="create-workspace-gitUrl"
+                  required={importRepo}
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
                   placeholder="https://github.com/org/repo.git"
@@ -1032,7 +606,7 @@ export const ProjectsPage: React.FC = () => {
                   disabled={creating || !name.trim()}
                   className="rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {creating ? "Creating..." : "Create Workspace"}
+                  {creating ? "Creating..." : importRepo ? "Import Repository" : "Create Project"}
                 </button>
               </div>
             </form>

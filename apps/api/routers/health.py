@@ -1,8 +1,11 @@
 """Health-check and system status endpoints."""
 
+import asyncio
 import logging
+import shutil
 import time
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -24,6 +27,39 @@ from packages.core.security.dependencies import get_current_user
 router = APIRouter(prefix="/api/v1", tags=["System"])
 
 logger = logging.getLogger("mlite.api")
+
+
+def _cpu_times() -> tuple[int, int]:
+    with Path("/proc/stat").open() as stream:
+        fields = list(map(int, stream.readline().split()[1:9]))
+    return sum(fields), sum(fields[3:5])
+
+
+async def _infrastructure_utilization() -> dict[str, float | None]:
+    values: dict[str, float | None] = dict.fromkeys(("cpu", "memory", "storage"))
+    try:
+        start_total, start_idle = _cpu_times()
+        await asyncio.sleep(0.1)
+        total, idle = _cpu_times()
+        if total > start_total:
+            values["cpu"] = round(100 * (1 - (idle - start_idle) / (total - start_total)), 1)
+    except (OSError, ValueError):
+        pass
+    try:
+        memory = {}
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            key, _, value = line.partition(":")
+            if key in ("MemTotal", "MemAvailable"):
+                memory[key] = int(value.split()[0])
+        values["memory"] = round(100 * (1 - memory["MemAvailable"] / memory["MemTotal"]), 1)
+    except (OSError, ValueError, KeyError, ZeroDivisionError):
+        pass
+    try:
+        disk = shutil.disk_usage("/")
+        values["storage"] = round(100 * disk.used / disk.total, 1)
+    except (OSError, ZeroDivisionError):
+        pass
+    return values
 
 
 def _score(metrics: dict, *names: str) -> float | None:
@@ -195,6 +231,7 @@ async def get_system_stats(
             "latency_telemetry": latency_telemetry,
             "drift_trajectory": drift_trajectory,
             "system_healthy": True,
+            "infrastructure": await _infrastructure_utilization(),
             "time_range": time_range,
             "timestamp": datetime.now(UTC).isoformat(),
         }

@@ -314,6 +314,8 @@ async def promote_version(
         validation = await validate_registered_model(name, version, service)
         if not validation["signature"]:
             raise HTTPException(422, "Log the model with an input signature before promoting to Production.")
+    previous = await service.get_version(name, version)
+    previous_stage = previous.stage.value if previous else None
     result = await service.promote(name, version, target_stage)
     if result is None:
         raise NotFoundError("Model version", f"{name} v{version}")
@@ -328,7 +330,7 @@ async def promote_version(
         user_id=current_user.id,
         user_email=current_user.email,
         ip_address=request.client.host if request.client else None,
-        changes={"target_stage": target_stage.value, "version": version},
+        changes={"previous_stage": previous_stage, "target_stage": target_stage.value, "version": version},
     )
 
     return {
@@ -377,6 +379,8 @@ async def promote_model_by_id(
         validation = await validate_registered_model(model.name, target_version_num, service)
         if not validation["signature"]:
             raise HTTPException(422, "Log the model with an input signature before promoting to Production.")
+    previous = await service.get_version(model.name, target_version_num)
+    previous_stage = previous.stage.value if previous else None
     result = await service.promote(model.name, target_version_num, target_stage)
     if result is None:
         raise NotFoundError("Model version", f"{model.name} v{target_version_num}")
@@ -390,7 +394,7 @@ async def promote_model_by_id(
         user_id=current_user.id,
         user_email=current_user.email,
         ip_address=request.client.host if request.client else None,
-        changes={"target_stage": target_stage.value, "version": target_version_num},
+        changes={"previous_stage": previous_stage, "target_stage": target_stage.value, "version": target_version_num},
     )
 
     return {

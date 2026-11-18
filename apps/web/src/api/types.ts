@@ -42,6 +42,7 @@ export interface AuditLog {
   user_email?: string | null;
   ip_address?: string | null;
   status: string;
+  changes_json?: Record<string, string | number | boolean | null> | null;
   details?: Record<string, any>;
 }
 
@@ -126,6 +127,7 @@ export interface Dataset {
   created_at: string;
   updated_at?: string;
   version_num?: number;
+  versions_count?: number;
   row_count?: number;
   column_count?: number;
   size_bytes?: number;
@@ -147,6 +149,7 @@ export interface SystemStats {
   active_deployments: number;
   alerts_count: number;
   system_healthy: boolean;
+  infrastructure?: Record<"cpu" | "memory" | "storage", number | null>;
   stages?: {
     production: number;
     candidate?: number;

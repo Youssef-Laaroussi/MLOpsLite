@@ -8,6 +8,7 @@ import {
   FlaskConical,
   Box,
   Server,
+  Layers,
   LineChart,
   Bell,
   Home,
@@ -29,6 +30,7 @@ export const Sidebar: React.FC = () => {
     { name: "Deployments", href: "/app/deployments", icon: Server },
     { name: "Monitoring", href: "/app/monitoring", icon: LineChart },
     { name: "Alerts", href: "/app/alerts", icon: Bell },
+    { name: "Services", href: "/app/services", icon: Layers },
     ...(hasPermission("audit:view")
       ? [{ name: "Audit Logs", href: "/app/audit", icon: ShieldCheck }]
       : []),

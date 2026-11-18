@@ -13,6 +13,7 @@ const DeploymentsPage = lazy(() => import("./pages/DeploymentsPage").then((page)
 const DatasetsPage = lazy(() => import("./pages/DatasetsPage").then((page) => ({ default: page.DatasetsPage })));
 const MonitoringPage = lazy(() => import("./pages/MonitoringPage").then((page) => ({ default: page.MonitoringPage })));
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((page) => ({ default: page.AlertsPage })));
+const ServicesPage = lazy(() => import("./pages/ServicesPage").then((page) => ({ default: page.ServicesPage })));
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage").then((page) => ({ default: page.AuditLogsPage })));
 const LandingPage = lazy(() => import("./pages/LandingPage").then((page) => ({ default: page.LandingPage })));
 const SignInPage = lazy(() => import("./pages/SignInPage").then((page) => ({ default: page.SignInPage })));
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
                   <Route path="deployments" element={<DeploymentsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
+                  <Route path="services" element={<ServicesPage />} />
                   <Route path="audit" element={<AuditLogsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
@@ -86,6 +88,7 @@ export const App: React.FC = () => {
                   <Route path="deployments" element={<DeploymentsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
+                  <Route path="services" element={<ServicesPage />} />
                   <Route path="audit" element={<AuditLogsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>

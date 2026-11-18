@@ -1,10 +1,10 @@
 import { useActionFeedback } from "../components/ActionFeedback";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
-  Activity, AlertCircle, AlertTriangle, ArrowRight, Bell, Box, Boxes, CalendarDays, CheckCircle2,
-  ChevronRight, Database, FolderGit2, Gauge, Hash, Info, Layers, Mail, Play, Plus, RefreshCw,
-  Rocket, Search, ServerCrash, Settings, ShieldAlert, Trash2, Webhook, X,
+  AlertCircle, AlertTriangle, ArrowRight, ArrowDown, ArrowUp, BadgeCheck, Bell, Box, Boxes, CalendarDays, CheckCircle2,
+  ChevronRight, Database, EllipsisVertical, FolderGit2, Hash, Info, Layers, Mail, Play, Plus, RefreshCw,
+  Rocket, Search, Settings, ShieldAlert, Slack, Trash2, Webhook, X,
 } from "lucide-react";
 import {
   Alert,
@@ -65,11 +65,15 @@ function AlertsPanel({title, action, children}: {title: string; action?: React.R
   </section>;
 }
 
-function AlertPill({label, tone}: {label: string; tone: string}) {
-  return <span className={`alerts-pill alerts-pill-${tone}`}><i aria-hidden="true" />{label}</span>;
+function AlertPill({label, tone, severity = false}: {label: string; tone: string; severity?: boolean}) {
+  return <span className={`alerts-pill alerts-pill-${tone}`}>
+    {severity ? <span aria-hidden="true" className="alerts-severity-mark">!</span> : <i aria-hidden="true" />}{label}
+  </span>;
 }
 
-function AlertBreakdown({title, rows}: {title: string; rows: {label: string; count: number; color: string}[]}) {
+function AlertBreakdown({title, rows, percentageWithLabel = false}: {
+  title: string; rows: {label: string; count: number; color: string}[]; percentageWithLabel?: boolean;
+}) {
   const total = rows.reduce((sum, row) => sum + row.count, 0);
   let offset = 0;
   const slices = rows.filter(row => row.count).map(row => {
@@ -82,10 +86,13 @@ function AlertBreakdown({title, rows}: {title: string; rows: {label: string; cou
       <div className="alerts-ring" style={{backgroundImage: total ? `conic-gradient(${slices.join(", ")})` : undefined}}>
         <span><strong>{total}</strong>Alerts</span>
       </div>
-      <dl>{rows.map(row => <div key={row.label}>
-        <dt><i style={{backgroundColor: row.color}} aria-hidden="true" />{row.label}</dt>
-        <dd>{row.count}{total > 0 && ` (${(row.count / total * 100).toFixed(1)}%)`}</dd>
-      </div>)}</dl>
+      <dl>{rows.map(row => {
+        const percentage = total > 0 ? ` (${(row.count / total * 100).toFixed(percentageWithLabel ? 0 : 1)}%)` : "";
+        return <div key={row.label}>
+          <dt><i style={{backgroundColor: row.color}} aria-hidden="true" />{row.label}{percentageWithLabel ? percentage : ""}</dt>
+          <dd>{row.count}{percentageWithLabel ? "" : percentage}</dd>
+        </div>;
+      })}</dl>
     </div>
   </AlertsPanel>;
 }
@@ -106,12 +113,15 @@ function localDay(date: Date) {
 
 export const AlertsPage: React.FC = () => {
   const { confirmAction, showSuccess } = useActionFeedback();
+  const barGradient = useId();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [alertsLoaded, setAlertsLoaded] = useState(false);
+  const [channelsLoaded, setChannelsLoaded] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [evalResult, setEvalResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +132,7 @@ export const AlertsPage: React.FC = () => {
   const [severity, setSeverity] = useState("");
   const [days, setDays] = useState(7);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(() => new Set());
   const [showAllRules, setShowAllRules] = useState(false);
   const [showChannels, setShowChannels] = useState(false);
   const [selectedAlertId, setSelectedAlertId] = useState<string>();
@@ -148,18 +159,25 @@ export const AlertsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [alertsData, rulesData, channelsData, projectsData] = await Promise.all([
+      const [alertsResult, rulesResult, channelsResult, projectsResult] = await Promise.allSettled([
         fetchAlerts({limit: 200}),
         fetchAlertRules(),
         fetchNotificationChannels(),
-        fetchProjects().catch(() => []),
+        fetchProjects(),
       ]);
-      setAlerts(alertsData);
-      setProjects(projectsData);
-      setRules(rulesData);
-      setChannels(channelsData);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || "Failed to load alerts & alerting configuration.");
+      if (alertsResult.status === "fulfilled") {
+        setAlerts(alertsResult.value);
+        setAlertsLoaded(true);
+      }
+      if (rulesResult.status === "fulfilled") setRules(rulesResult.value);
+      if (channelsResult.status === "fulfilled") {
+        setChannels(channelsResult.value);
+        setChannelsLoaded(true);
+      }
+      if (projectsResult.status === "fulfilled") setProjects(projectsResult.value);
+      const failures = [[alertsResult, "alerts"], [rulesResult, "rules"], [channelsResult, "channels"], [projectsResult, "projects"]] as const;
+      const unavailable = failures.flatMap(([result, label]) => result.status === "rejected" ? [label] : []);
+      if (unavailable.length) setError(`Could not load ${unavailable.join(", ")}.`);
     } finally {
       setLoading(false);
     }
@@ -170,6 +188,7 @@ export const AlertsPage: React.FC = () => {
   }, []);
 
   const handleAcknowledge = async (id: string) => {
+    setError(null);
     try {
       const updated = await acknowledgeAlert(id);
       setAlerts((prev) => prev.map((a) => (a.id === id ? updated : a)));
@@ -179,6 +198,7 @@ export const AlertsPage: React.FC = () => {
   };
 
   const handleResolve = async (id: string) => {
+    setError(null);
     try {
       const updated = await resolveAlert(id);
       setAlerts((prev) => prev.map((a) => (a.id === id ? updated : a)));
@@ -294,6 +314,7 @@ export const AlertsPage: React.FC = () => {
       const res = await evaluateAlertRules();
       setEvalResult(`Evaluated ${res.evaluated} rule(s) — ${res.triggered.length} alert(s) triggered.`);
       setAlerts(await fetchAlerts({limit: 200}));
+      setAlertsLoaded(true);
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Rule evaluation failed");
     } finally {
@@ -317,27 +338,60 @@ export const AlertsPage: React.FC = () => {
     const key = localDay(date);
     return {
       key, date: date.toLocaleDateString("en-US", {month: "short", day: "numeric"}),
-      ...(Object.fromEntries(Object.keys(severities).map(level => [
-        level, matching.filter(alert => alert.severity === level && localDay(new Date(alert.created_at)) === key).length,
-      ])) as Record<AlertSeverity, number>),
-      resolved: matching.filter(alert => alert.resolved_at && localDay(new Date(alert.resolved_at)) === key).length,
+      CRITICAL: 0, HIGH: 0, WARNING: 0, INFO: 0, resolved: 0,
     };
   });
+  const byDay = new Map(timeline.map(day => [day.key, day]));
+  for (const alert of matching) {
+    const triggered = byDay.get(localDay(new Date(alert.created_at)));
+    if (triggered) triggered[alert.severity] += 1;
+    const resolved = alert.resolved_at && byDay.get(localDay(new Date(alert.resolved_at)));
+    if (resolved) resolved.resolved += 1;
+  }
   const period = timeline.slice(days);
-  const filteredAlerts = matching.filter(alert => Date.parse(alert.created_at) >= period[0].key)
+  const filteredAlerts = matching.filter(alert => {
+    const timestamp = Date.parse(alert.created_at);
+    return timestamp >= period[0].key && timestamp <= today.getTime();
+  })
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
   const selectedAlert = alerts.find(alert => alert.id === selectedAlertId);
+  const visibleAlerts = showAllAlerts ? filteredAlerts : filteredAlerts.slice(0, 5);
+  const selectedVisible = visibleAlerts.filter(alert => selectedAlerts.has(alert.id));
+  const allVisibleSelected = visibleAlerts.length > 0 && selectedVisible.length === visibleAlerts.length;
+  const selectedOpen = selectedVisible.filter(alert => alert.status === "OPEN");
+
+  function selectAlerts(ids: string[], checked: boolean) {
+    setSelectedAlerts(previous => {
+      const next = new Set(previous);
+      ids.forEach(id => checked ? next.add(id) : next.delete(id));
+      return next;
+    });
+  }
+
+  async function acknowledgeSelected() {
+    setPendingAlertAction(true);
+    setError(null);
+    try {
+      const results = await Promise.allSettled(selectedOpen.map(alert => acknowledgeAlert(alert.id)));
+      const updated = new Map(results.flatMap(result => result.status === "fulfilled" ? [[result.value.id, result.value] as const] : []));
+      setAlerts(previous => previous.map(alert => updated.get(alert.id) ?? alert));
+      selectAlerts([...updated.keys()], false);
+      if (updated.size < selectedOpen.length) setError(`Could not acknowledge ${selectedOpen.length - updated.size} selected alert(s).`);
+    } finally {
+      setPendingAlertAction(false);
+    }
+  }
   const severityRows = (Object.keys(severities) as AlertSeverity[]).filter(level => level !== "HIGH" || filteredAlerts.some(alert => alert.severity === level));
   const selectedPeriod = new Intl.DateTimeFormat("en-US", {dateStyle: "medium", timeStyle: "short"});
   const cards = [
     {title: "Total Alerts", Icon: Bell, color: "#008713", value: (day: typeof period[number]) => day.CRITICAL + day.HIGH + day.WARNING + day.INFO},
-    {title: "Critical / High", Icon: AlertTriangle, color: "#d32925", value: (day: typeof period[number]) => day.CRITICAL + day.HIGH},
+    {title: "Critical", Icon: AlertTriangle, color: "#d32925", value: (day: typeof period[number]) => day.CRITICAL},
     {title: "Warning", Icon: AlertTriangle, color: "#b76502", value: (day: typeof period[number]) => day.WARNING},
     {title: "Info", Icon: Info, color: "#008713", value: (day: typeof period[number]) => day.INFO},
     {title: "Resolved", Icon: CheckCircle2, color: "#008713", value: (day: typeof period[number]) => day.resolved},
   ];
   const integrations = [
-    {kind: "SLACK", label: "Slack", Icon: Hash},
+    {kind: "SLACK", label: "Slack", Icon: Slack},
     {kind: "EMAIL", label: "Email", Icon: Mail},
     {kind: "WEBHOOK", label: "Webhook", Icon: Webhook},
     ...(channels.some(channel => channel.kind === "DISCORD") ? [{kind: "DISCORD", label: "Discord", Icon: Hash}] : []),
@@ -353,7 +407,7 @@ export const AlertsPage: React.FC = () => {
       <header className="overview-hero alerts-hero">
         <div><h1>Alerts</h1><p>Detect, track, and respond to issues across your models, deployments, and data pipelines.</p></div>
         <div className="alerts-lifecycle" aria-hidden="true">
-          {([[Boxes, "Detect"], [ShieldAlert, "Alert"], [Settings, "Investigate"], [CheckCircle2, "Resolve"]] as const).map(([Icon, label], index) => (
+          {([[Boxes, "Detect"], [ShieldAlert, "Alert"], [Settings, "Investigate"], [BadgeCheck, "Resolve"]] as const).map(([Icon, label], index) => (
             <div key={label}><span><Icon size={38} strokeWidth={1.55} /></span><strong>{label}</strong>
               {index < 3 && <ArrowRight className="alerts-stage-arrow" size={22} />}
             </div>
@@ -388,8 +442,12 @@ export const AlertsPage: React.FC = () => {
           const previous = timeline.slice(0, days).reduce((sum, day) => sum + value(day), 0);
           const change = previous && alerts.length < 200 ? Math.round((total - previous) / previous * 100) : null;
           return <div className="overview-card alerts-kpi" key={title} style={{color}}>
-            <Icon size={23} aria-hidden="true" /><div><strong>{title}</strong><b>{loading && !alerts.length ? "—" : total}
-              {change !== null && <small title="Change from the previous period">{change > 0 ? "+" : ""}{change}%</small>}</b></div>
+            <Icon size={24} className={title === "Warning" ? "alerts-warning-icon" : undefined} aria-hidden="true" />
+            <div><strong>{title}</strong><b>{alertsLoaded ? total : "—"}
+              {change !== null && <small className={change > 0 ? "alerts-delta-up" : undefined} title="Change from the previous period">
+                {change > 0 ? <ArrowUp size={11} aria-hidden="true" /> : change < 0 ? <ArrowDown size={11} aria-hidden="true" /> : null}
+                {change > 0 ? "+" : ""}{change}%
+              </small>}</b></div>
             {total > 0 && <AlertTrend values={values} />}
           </div>;
         })}
@@ -398,95 +456,149 @@ export const AlertsPage: React.FC = () => {
       <div className="alerts-charts">
         <AlertsPanel title="Alerts Over Time">
           <div className="alerts-chart-key">{severityRows.map(level => <span key={level}><i style={{backgroundColor: severities[level].color}} />{severities[level].label}</span>)}</div>
-          <div className="alerts-bar-chart"><ResponsiveContainer width="100%" height="100%">
+          {alertsLoaded ? <div className="alerts-bar-chart"><ResponsiveContainer width="100%" height="100%">
             <BarChart data={period} margin={{top: 4, left: 0, right: 8, bottom: 0}}>
+              <defs>{severityRows.map(level => <linearGradient key={level} id={`${barGradient}-${level}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={severities[level].color} stopOpacity={0.72} />
+                <stop offset="100%" stopColor={severities[level].color} />
+              </linearGradient>)}</defs>
               <CartesianGrid vertical={false} stroke="#edf0f3" />
               <XAxis dataKey="date" height={23} tickLine={false} axisLine={{stroke: "#e2e8f0"}} tick={{fontSize: 10}} minTickGap={6} />
               <YAxis width={30} allowDecimals={false} tickLine={false} axisLine={false} tick={{fontSize: 10}} />
-              <Tooltip cursor={{fill: "#f0f7f1"}} />
-              {severityRows.map(level => <Bar key={level} dataKey={level} name={severities[level].label} stackId="alerts" fill={severities[level].color} maxBarSize={34} isAnimationActive={false} />)}
+              <Tooltip cursor={{fill: "#f0f7f1"}} itemStyle={{color: "#17213a"}} />
+              {severityRows.map(level => <Bar key={level} dataKey={level} name={severities[level].label}
+                stackId="alerts" fill={`url(#${barGradient}-${level})`} maxBarSize={43} isAnimationActive={false} />)}
             </BarChart>
-          </ResponsiveContainer></div>
+          </ResponsiveContainer></div> : <p className="alerts-chart-empty">{loading ? "Loading alerts…" : "Alert history unavailable."}</p>}
         </AlertsPanel>
-        <AlertBreakdown title="Alerts by Source" rows={(Object.keys(sources) as AlertSource[]).map(label => ({
-          label, color: sources[label].color, count: filteredAlerts.filter(alert => alertSource(alert) === label).length,
-        }))} />
-        <AlertBreakdown title="Alerts by Severity" rows={severityRows.map(level => ({
+        {alertsLoaded ? <AlertBreakdown title="Alerts by Source" percentageWithLabel rows={(Object.keys(sources) as AlertSource[]).map(label => ({
+          label: `${label}s`, color: sources[label].color, count: filteredAlerts.filter(alert => alertSource(alert) === label).length,
+        }))} /> : <AlertsPanel title="Alerts by Source"><p className="alerts-chart-empty">{loading ? "Loading alerts…" : "Alert history unavailable."}</p></AlertsPanel>}
+        {alertsLoaded ? <AlertBreakdown title="Alerts by Severity" rows={severityRows.map(level => ({
           label: severities[level].label, color: severities[level].color, count: filteredAlerts.filter(alert => alert.severity === level).length,
-        }))} />
+        }))} /> : <AlertsPanel title="Alerts by Severity"><p className="alerts-chart-empty">{loading ? "Loading alerts…" : "Alert history unavailable."}</p></AlertsPanel>}
       </div>
 
       <AlertsPanel title="Recent Alerts" action={<>
-        <button className="alerts-refresh" id="alerts-refresh" onClick={loadData} disabled={loading} aria-label="Refresh alerts"><RefreshCw size={14} /></button>
+        <button className="alerts-refresh" id="alerts-refresh" onClick={loadData} disabled={loading || pendingAlertAction} aria-label="Refresh alerts"><RefreshCw size={14} /></button>
         {filteredAlerts.length > 5 && <button onClick={() => setShowAllAlerts(!showAllAlerts)} aria-expanded={showAllAlerts}>
           {showAllAlerts ? "Show Less" : "View All Alerts"}<ChevronRight size={14} />
         </button>}
       </>}>
-        <div className="alerts-scroll"><table className="overview-table alerts-table">
-          <thead><tr>{["Alert", "Source", "Project", "Severity", "Status", "Triggered At", "Description", "Action"].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
-          <tbody>{(showAllAlerts ? filteredAlerts : filteredAlerts.slice(0, 5)).map(alert => {
+        {selectedVisible.length > 0 && <div className="alerts-selection" aria-live="polite">
+          <span>{selectedVisible.length} selected</span>
+          {selectedOpen.length > 0 && <button className="secondary-action" disabled={pendingAlertAction} onClick={acknowledgeSelected}>Acknowledge Selected</button>}
+          <button className="secondary-action" onClick={() => selectAlerts(selectedVisible.map(alert => alert.id), false)}>Clear Selection</button>
+        </div>}
+        <div className="alerts-scroll"><table className="overview-table alerts-table alerts-recent-table">
+          <thead><tr>
+            <th scope="col"><input type="checkbox" aria-label="Select all visible alerts" checked={allVisibleSelected} disabled={!visibleAlerts.length}
+              ref={node => { if (node) node.indeterminate = selectedVisible.length > 0 && !allVisibleSelected; }}
+              onChange={event => selectAlerts(visibleAlerts.map(alert => alert.id), event.target.checked)} /></th>
+            {["Alert", "Source", "Project", "Severity", "Status", "Triggered At", "Description", "Action"].map(title => <th scope="col" key={title}>{title}</th>)}
+          </tr></thead>
+          <tbody>{visibleAlerts.map(alert => {
             const level = severities[alert.severity];
             const status = statuses[alert.status];
             const source = alertSource(alert);
             const SourceIcon = sources[source].Icon;
-            return <tr key={alert.id}>
-              <td><span className={`alerts-inline alerts-level-${level.tone}`}><level.Icon size={16} aria-hidden="true" /><strong>{alert.title}</strong></span></td>
+            return <tr key={alert.id} data-selected={selectedAlerts.has(alert.id)}>
+              <td><input type="checkbox" aria-label={`Select ${alert.title}`} checked={selectedAlerts.has(alert.id)}
+                onChange={event => selectAlerts([alert.id], event.target.checked)} /></td>
+              <td><span className={`alerts-inline alerts-level-${level.tone}`}><level.Icon size={17} className={alert.severity === "WARNING" ? "alerts-warning-icon" : undefined} aria-hidden="true" /><strong>{alert.title}</strong></span></td>
               <td><span className="alerts-inline"><SourceIcon size={15} aria-hidden="true" />{source}</span></td>
               <td>{alert.project_id ? projectNames.get(alert.project_id) ?? alert.project_id : "—"}</td>
-              <td><AlertPill {...level} /></td><td><AlertPill {...status} /></td>
+              <td><AlertPill {...level} severity /></td><td><AlertPill {...status} /></td>
               <td><time dateTime={alert.created_at}>{selectedPeriod.format(new Date(alert.created_at))}</time></td>
               <td className="alerts-description" title={alert.message}>{alert.message}</td>
-              <td><button className="alerts-row-action" onClick={() => setSelectedAlertId(alert.id)}>{alert.status === "RESOLVED" ? "View Details" : "Investigate"}<ArrowRight size={13} /></button></td>
+              <td><div className="alerts-actions">
+                <button className="alerts-row-action" onClick={() => setSelectedAlertId(alert.id)}>{alert.status === "RESOLVED" ? "View Details" : "Investigate"}<ArrowRight size={13} aria-hidden="true" /></button>
+                <details className="alerts-row-menu">
+                  <summary aria-label={`More actions for ${alert.title}`}><EllipsisVertical size={16} aria-hidden="true" /></summary>
+                  <div>
+                    <button onClick={event => {
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                      setSelectedAlertId(alert.id);
+                    }}>View Details</button>
+                    {alert.status === "OPEN" && <button disabled={pendingAlertAction} onClick={async event => {
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                      setPendingAlertAction(true);
+                      try { await handleAcknowledge(alert.id); } finally { setPendingAlertAction(false); }
+                    }}>Acknowledge</button>}
+                  </div>
+                </details>
+              </div></td>
             </tr>;
-          })}{!filteredAlerts.length && <tr><td colSpan={8} className="alerts-empty">{loading ? "Loading alerts…" : "No alerts match these filters."}</td></tr>}</tbody>
+          })}{!filteredAlerts.length && <tr><td colSpan={9} className="alerts-empty">{loading ? "Loading alerts…" : alertsLoaded ? "No alerts match these filters." : "Alert history unavailable."}</td></tr>}</tbody>
         </table></div>
         {alerts.length === 200 && <p className="alerts-data-note">Based on the 200 most recent alerts.</p>}
       </AlertsPanel>
 
       <div className="alerts-bottom">
-        <AlertsPanel title={`Alert Rules (${rules.length})`} action={<>
-          <button id="alerts-evaluate-rules" disabled={evaluating} onClick={handleEvaluateRules}><Play size={13} />{evaluating ? "Evaluating…" : "Evaluate Rules"}</button>
-          {rules.length > 5 && <button onClick={() => setShowAllRules(!showAllRules)} aria-expanded={showAllRules}>{showAllRules ? "Show Less" : "View All Rules"}<ChevronRight size={14} /></button>}
-        </>}>
-          <div className="alerts-scroll"><table className="overview-table alerts-table">
-            <thead><tr>{["Rule Name", "Source", "Condition", "Severity", "Status", "Actions"].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
+        <AlertsPanel title={`Alert Rules (${rules.length})`} action={rules.length > 0 &&
+          <button type="button" onClick={() => setShowAllRules(expanded => !expanded)} aria-expanded={showAllRules} aria-controls="alerts-rules-table">
+            {showAllRules ? "Show Less" : "View All Rules"}<ChevronRight size={14} aria-hidden="true" />
+          </button>}>
+          <div className="alerts-scroll" id="alerts-rules-table"><table className="overview-table alerts-table alerts-rules-table">
+            <thead><tr>{["Rule Name", "Source", "Condition", "Severity", "Status"].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
             <tbody>{(showAllRules ? rules : rules.slice(0, 5)).map(rule => {
-              const RuleIcon = rule.metric === "drift_share" ? Box : rule.metric === "latency_p95_ms" ? Gauge : ServerCrash;
+              const source = rule.metric === "drift_share" ? "Model" : "Deployment";
+              const RuleIcon = sources[source].Icon;
               return <tr key={rule.id}>
-                <td><strong>{rule.name}</strong></td><td><span className="alerts-inline"><RuleIcon size={15} aria-hidden="true" />{rule.metric === "drift_share" ? "Model" : "Deployment"}</span></td>
+                <td><strong>{rule.name}</strong></td><td><span className="alerts-inline"><RuleIcon size={15} aria-hidden="true" />{source}</span></td>
                 <td>{formatCondition(rule)}{rule.model_name && <small className="alerts-rule-target">{rule.model_name}</small>}</td>
                 <td><AlertPill {...severities[rule.severity]} /></td>
-                <td><button type="button" role="switch" aria-checked={rule.enabled} aria-label={`Enable ${rule.name}`} id={`rule-toggle-${rule.id}`} className="alerts-switch" onClick={() => handleToggleRule(rule)}><span /></button></td>
-                <td><button type="button" className="alerts-icon-button" onClick={() => handleDeleteRule(rule.id)} aria-label={`Delete ${rule.name}`}><Trash2 size={14} /></button></td>
+                <td><div className="alerts-rule-actions">
+                  <button type="button" role="switch" aria-checked={rule.enabled} aria-label={`Enable ${rule.name}`} id={`rule-toggle-${rule.id}`} className="alerts-switch" onClick={() => handleToggleRule(rule)}><span /></button>
+                  {showAllRules && <button type="button" className="alerts-icon-button" onClick={() => handleDeleteRule(rule.id)} aria-label={`Delete ${rule.name}`}><Trash2 size={14} /></button>}
+                </div></td>
               </tr>;
-            })}{!rules.length && <tr><td colSpan={6} className="alerts-empty">{loading ? "Loading rules…" : "No alert rules configured."}</td></tr>}</tbody>
+            })}{!rules.length && <tr><td colSpan={5} className="alerts-empty">{loading ? "Loading rules…" : "No alert rules configured."}</td></tr>}</tbody>
           </table></div>
+          {showAllRules && <div className="alerts-rule-tools">
+            <button type="button" className="secondary-action" id="alerts-evaluate-rules" disabled={evaluating} onClick={handleEvaluateRules}>
+              <Play size={13} aria-hidden="true" />{evaluating ? "Evaluating…" : "Evaluate Rules"}
+            </button>
+          </div>}
         </AlertsPanel>
 
-        <AlertsPanel title="Notifications & Integrations" action={<button onClick={() => setShowChannels(!showChannels)} aria-expanded={showChannels}>Configure<ChevronRight size={14} /></button>}>
+        <AlertsPanel title="Notifications & Integrations" action={<button type="button" onClick={() => setShowChannels(expanded => !expanded)} aria-expanded={showChannels} aria-controls="alerts-channel-settings">
+          Configure<ChevronRight size={14} aria-hidden="true" />
+        </button>}>
           <div className="alerts-integrations">
             {integrations.map(({kind, label, Icon}) => {
               const matchingChannels = channels.filter(channel => channel.kind === kind);
               const enabled = matchingChannels.some(channel => channel.enabled);
-              return <div key={kind}><Icon size={26} aria-hidden="true" /><span><strong>{label}</strong><small>{enabled ? "Enabled" : kind === "EMAIL" ? "Unavailable" : matchingChannels.length ? "Disabled" : "Not configured"}</small></span>{enabled && <CheckCircle2 size={16} aria-hidden="true" />}</div>;
+              const status = enabled ? "Enabled" : kind === "EMAIL" ? "Unavailable"
+                : !channelsLoaded ? (loading ? "Loading…" : "Unavailable") : matchingChannels.length ? "Disabled" : "Not configured";
+              return <div className="alerts-integration" data-enabled={enabled} key={kind}>
+                <Icon className={`alerts-integration-logo alerts-integration-${kind.toLowerCase()}`} size={34} strokeWidth={1.7} aria-hidden="true" />
+                <span><strong>{label}</strong><small>{status}</small></span>
+                {enabled && <span className="alerts-integration-check"><CheckCircle2 size={14} aria-hidden="true" /></span>}
+              </div>;
             })}
           </div>
-          <p className="alerts-notice"><Info size={18} />Route alerts to configured channels when a rule triggers.</p>
-          {showChannels && <div className="alerts-channels">
+          <div className="alerts-notice alerts-integration-note">
+            <Info size={23} aria-hidden="true" />
+            <p><strong>Get alerted when a monitoring rule triggers.</strong><br />Set severity levels and choose where to send notifications.</p>
+          </div>
+          <div className="alerts-channels" id="alerts-channel-settings" hidden={!showChannels}>
             <button className="secondary-action" onClick={() => setIsChannelModalOpen(true)}><Plus size={14} />Add Channel</button>
             {channels.map(channel => <div key={channel.id} className="alerts-channel">
               <strong>{channel.name}</strong>
               <span>{channel.last_test_ok === true ? "Passed last test" : channel.last_test_ok === false ? "Last test failed" : ""}</span>
               <button className="secondary-action" disabled={channelTesting === channel.id} onClick={() => handleTestChannel(channel)}>{channelTesting === channel.id ? "Testing…" : "Send Test Event"}</button>
               <button className="alerts-icon-button" onClick={() => handleDeleteChannel(channel.id)} aria-label={`Delete ${channel.name}`}><Trash2 size={15} /></button>
+              <code>{channel.url}</code>
               {channelTestResult?.id === channel.id && <p role="status">{channelTestResult.msg}</p>}
             </div>)}
-          </div>}
+          </div>
         </AlertsPanel>
       </div>
 
-      {selectedAlert && <div className="alerts-overlay"><section className="overview-card alerts-detail" role="dialog" aria-modal="true" aria-labelledby="alert-detail-title">
-        <header><h2 id="alert-detail-title">{selectedAlert.title}</h2><button onClick={() => setSelectedAlertId(undefined)} aria-label="Close alert details"><X size={18} /></button></header>
+      {selectedAlert && <div className="alerts-overlay"><section className="overview-card alerts-detail" role="dialog" aria-modal="true" aria-labelledby="alert-detail-title"
+        onKeyDown={event => { if (event.key === "Escape") setSelectedAlertId(undefined); }}>
+        <header><h2 id="alert-detail-title">{selectedAlert.title}</h2><button autoFocus onClick={() => setSelectedAlertId(undefined)} aria-label="Close alert details"><X size={18} /></button></header>
         <div className="alerts-inline"><AlertPill {...severities[selectedAlert.severity]} /><AlertPill {...statuses[selectedAlert.status]} /></div>
         <p>{selectedAlert.message}</p>
         {selectedAlert.model_name && <p>Model · {selectedAlert.model_name}</p>}

@@ -12,6 +12,7 @@ const ROUTES: Record<string, Omit<RouteMeta, "href">> = {
   deployments: { group: "Operate", label: "Deployments" },
   monitoring: { group: "Operate", label: "Monitoring & Drift" },
   alerts: { group: "Operate", label: "Alerts" },
+  services: { group: "Operate", label: "Services" },
   audit: { group: "Governance", label: "Audit Logs" },
   settings: { group: "Account", label: "Settings" },
 };

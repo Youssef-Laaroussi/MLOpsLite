@@ -15,6 +15,7 @@ import {
   FlaskConical,
   Box,
   Server,
+  Layers,
   LineChart,
   ShieldCheck,
   LayoutDashboard,
@@ -47,6 +48,7 @@ const NAV_TARGETS = [
   { label: "Deployments", href: "/app/deployments", icon: Server, hint: "Inference endpoints" },
   { label: "Monitoring", href: "/app/monitoring", icon: LineChart, hint: "Drift & latency" },
   { label: "Alerts", href: "/app/alerts", icon: Bell, hint: "Rules & incidents" },
+  { label: "Services", href: "/app/services", icon: Layers, hint: "Platform and deployment health" },
   { label: "Audit Logs", href: "/app/audit", icon: ShieldCheck, hint: "Governance trail" },
   { label: "Settings", href: "/app/settings", icon: Settings, hint: "Profile & API keys" },
 ];
@@ -149,10 +151,10 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
   return (
     <>
       <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-2 border-b border-[#dce5dd] bg-white/95 px-3 backdrop-blur sm:gap-4 sm:px-8">
-        <div className="flex min-w-0 items-center gap-10">
+        <div className="flex min-w-0 items-center gap-5">
           <Link to="/app" className="flex shrink-0 items-center gap-2 text-xl font-bold"><img src="/logo.png" alt="" className="h-7 w-7 object-contain" />MLite</Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-2 xl:flex">
-            {NAV_TARGETS.slice(0, 7).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Registry" : item.label}</Link>)}
+            {NAV_TARGETS.filter(item => !["Experiments", "Audit Logs"].includes(item.label)).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Models" : item.label}</Link>)}
           </nav>
         </div>
 

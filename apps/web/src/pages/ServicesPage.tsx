@@ -1,17 +1,28 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
-  Activity, AlertTriangle, ArrowRight, Box, Boxes, CheckCircle2, ChevronRight, CircleX, Code2, Cpu,
-  Database, FolderGit2, Info, Layers, LayoutGrid, MemoryStick, Monitor, Plus, RefreshCw,
+  Activity, AlertTriangle, ArrowDown, ArrowLeftRight, ArrowRight, ArrowUp, ArrowUpRight, Box, Boxes, CheckCircle2, ChevronRight, CircleX, Code2, Cpu,
+  Database, EllipsisVertical, FolderGit2, Info, Layers, LayoutGrid, MapPin, MemoryStick, Monitor, Network, Plus, RefreshCw, RotateCcw,
   Rocket, Search, Server, Settings, ShieldCheck, Timer, X,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, fetchDeployments, fetchProjects, fetchSystemServices, fetchSystemStats, pingDeployment } from "../api/client";
 import "./ServicesPage.css";
 
-const statuses = { Healthy: "#13a52e", Degraded: "#f6a613", Down: "#e33336", Stopped: "#6a788d", Unknown: "#aab5c3" };
+const statuses = { Healthy: "#13a52e", Degraded: "var(--services-degraded-accent)", Down: "#e33336", Stopped: "#6a788d", Unknown: "#aab5c3" };
+const chartColors = { ...statuses, Healthy: "#1ba20c", Degraded: "#ffb515", Down: "#ff3023" };
 type ServiceStatus = keyof typeof statuses;
+const eventKinds = {
+  Healthy: { Icon: CheckCircle2, label: "Health check passed" },
+  Degraded: { Icon: AlertTriangle, label: "Degraded service detected" },
+  Down: { Icon: CircleX, label: "Unavailable service detected" },
+  Stopped: { Icon: Info, label: "Stopped service detected" },
+  Unknown: { Icon: Info, label: "Health check recorded" },
+} satisfies Record<ServiceStatus, { Icon: typeof Info; label: string }>;
+const infrastructureItems = [
+  [Server, "Deployment Environment"], [Boxes, "Orchestration"], [Monitor, "Host"], [MapPin, "Region"], [Network, "Network"],
+] as const;
 const serviceKinds = {
   API: { category: "Infrastructure", Icon: Code2 },
   Experiment: { category: "ML & Experiment", Icon: Activity },
@@ -32,14 +43,27 @@ const platformServices: Record<string, [string, ServiceType]> = {
   MinIO: ["MinIO", "Storage"], Model: ["Docker", "Runtime"],
 };
 const breakdownColors = {
-  "ML & Experiment": "#16a832", Infrastructure: "#9ade97", Storage: "#ffc044", Utility: "#bbc4d1",
-};
+  "ML & Experiment": ["#57c345", "#149c0d"],
+  Infrastructure: ["#a9eeaa", "#7cd87c"],
+  Storage: ["#ffb711", "#ffd773"],
+  Utility: ["#c4cbd4", "#e6eaee"],
+} as const;
 const clock = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const chartDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const eventAge = new Intl.RelativeTimeFormat("en-US", { style: "short" });
 const formatValue = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : null;
 
-function Panel({ title, children, action, id }: { title: string; children: ReactNode; action?: ReactNode; id?: string }) {
-  return <section className="overview-card services-panel" id={id}>
-    <h2>{title}<Info size={14} aria-hidden="true" />{action}</h2>{children}
+function formatEventAge(observedAt: number, now: number) {
+  const minutes = Math.floor((now - observedAt) / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return eventAge.format(-minutes, "minute");
+  if (minutes < 1_440) return eventAge.format(-Math.floor(minutes / 60), "hour");
+  return eventAge.format(-Math.floor(minutes / 1_440), "day");
+}
+
+function Panel({ title, children, action, showInfo = true }: { title: string; children: ReactNode; action?: ReactNode; showInfo?: boolean }) {
+  return <section className="overview-card services-panel">
+    <h2>{title}{showInfo && <Info size={14} aria-hidden="true" />}{action}</h2>{children}
   </section>;
 }
 
@@ -58,14 +82,22 @@ function ServiceTrend({ values, color }: { values: number[]; color: string }) {
 }
 
 export function ServicesPage() {
+  const chartGradientId = useId();
   const [search, setSearch] = useState("");
   const [project, setProject] = useState("");
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [showEvents, setShowEvents] = useState(false);
+  const [now, setNow] = useState(Date.now);
   const [selectedId, setSelectedId] = useState<string>();
+  const [checkedServices, setCheckedServices] = useState<Set<string>>(() => new Set());
   const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const subsystems = useQuery({ queryKey: ["services-subsystems"], queryFn: fetchSystemServices });
   const platform = useQuery({
@@ -125,8 +157,22 @@ export function ServicesPage() {
     && (!status || service.status === status) && (!type || service.type === type)
     && (!query || [service.name, service.type, projectLabel(service), service.probeName].some(value => value?.toLowerCase().includes(query)));
   const services = inventory.filter(matches);
-  const timeline = history.slice(-8).map((snapshot, index) => ({
-    sample: index + 1, time: clock.format(snapshot.observedAt),
+  const visibleCheckedCount = services.filter(service => checkedServices.has(service.id)).length;
+  const allVisibleChecked = services.length > 0 && visibleCheckedCount === services.length;
+
+  function setServicesChecked(ids: string[], checked: boolean) {
+    setCheckedServices(previous => {
+      const next = new Set(previous);
+      for (const id of ids) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+  const dailySnapshots = new Map(history.map(snapshot => [new Date(snapshot.observedAt).toDateString(), snapshot]));
+  const timeline = Array.from(dailySnapshots.values()).slice(-8).map(snapshot => ({
+    observedAt: snapshot.observedAt,
     ...Object.fromEntries(Object.keys(statuses).map(label => [
       label, snapshot.services.filter(service => service.status === label && matches(service)).length,
     ])),
@@ -142,14 +188,14 @@ export function ServicesPage() {
   ] as const).map(([label, key, Icon]) => ({
     label, Icon, value: formatValue(stats.data?.infrastructure?.[key]),
   }));
-  const categories = Object.entries(breakdownColors).map(([label, color]) => ({
-    label, color, count: services.filter(service => serviceKinds[service.type].category === label).length,
+  const categories = Object.entries(breakdownColors).map(([label, [startColor, endColor]]) => ({
+    label, startColor, endColor, count: services.filter(service => serviceKinds[service.type].category === label).length,
   }));
   let offset = 0;
   const slices = categories.filter(item => item.count).map(item => {
     const start = offset;
     offset += item.count / services.length * 100;
-    return `${item.color} ${start}% ${offset}%`;
+    return `${item.startColor} ${start}%, ${item.endColor} ${offset}%`;
   });
 
   async function sync() {
@@ -164,10 +210,13 @@ export function ServicesPage() {
 
   return <div className="services-dashboard">
     <header className="overview-hero services-hero">
-      <div><h1>Services</h1><p>Manage and monitor the core services of your MLOps platform.</p></div>
+      <div><h1>Services</h1><p>Manage and monitor the core services of your MLOps platform, including the API, MLflow, storage, and databases.</p></div>
       <div className="services-lifecycle" aria-hidden="true">
         {([[Boxes, "Build"], [Box, "Run"], [Monitor, "Monitor"], [ShieldCheck, "Keep Healthy"]] as const).map(([Icon, label], index) =>
-          <div key={label}><Icon size={39} strokeWidth={1.5} /><strong>{label}</strong>{index < 3 && <ArrowRight className="services-stage-arrow" size={21} />}</div>)}
+          <div key={label}><span className="services-stage-icon">
+            <Icon size={42} strokeWidth={1.5} />
+            {label === "Monitor" && <Activity className="services-screen-trend" size={23} strokeWidth={1.8} />}
+          </span><strong>{label}</strong>{index < 3 && <ArrowRight className="services-stage-arrow" size={23} />}</div>)}
       </div>
     </header>
 
@@ -192,42 +241,57 @@ export function ServicesPage() {
       {([
         ["Total Services", "total", Layers, "#087c27"],
         ["Healthy", "Healthy", CheckCircle2, statuses.Healthy],
-        ["Degraded", "Degraded", AlertTriangle, "#ae6400"],
+        ["Degraded", "Degraded", AlertTriangle, statuses.Degraded],
         ["Down", "Down", CircleX, statuses.Down],
         ["Platform Uptime", null, Timer, "#087c27"],
       ] as const).map(([label, key, Icon, color]) => {
         const count = (items: Service[]) => key === "total" ? items.length : items.filter(service => service.status === key).length;
+        const readings = key === null ? [] : history.slice(-8).map(snapshot => count(snapshot.services.filter(matches)));
+        const previous = readings[readings.length - 2];
+        const latest = readings[readings.length - 1];
+        const delta = previous > 0 ? Math.round((latest - previous) / previous * 100) : null;
         return <div className="overview-card services-kpi" key={label}>
-          <Icon size={24} style={{ color }} aria-hidden="true" /><div><strong>{label}</strong>
-            <b style={{ color }} title={key === null ? "Historical uptime unavailable" : undefined}>{hasInventory && key !== null ? count(services) : "—"}</b></div>
-          {key !== null && <ServiceTrend color={color} values={history.slice(-8).map(snapshot => count(snapshot.services.filter(matches)))} />}
+          <Icon size={28} style={{ color }} aria-hidden="true" /><div><strong>{label}</strong>
+            <b style={{ color: key === "Degraded" ? "var(--services-degraded-value)" : color }} title={key === null ? "Historical uptime unavailable" : undefined}>{hasInventory && key !== null ? count(services) : "—"}
+              {delta !== null && <small data-direction={delta < 0 ? "down" : "up"} title="Change since the previous check">
+                {delta < 0 ? <ArrowDown size={11} aria-hidden="true" /> : delta > 0 ? <ArrowUp size={11} aria-hidden="true" /> : null}
+                {delta > 0 ? "+" : ""}{delta}%
+              </small>}
+            </b></div>
+          <ServiceTrend color={color} values={readings} />
         </div>;
       })}
     </div>
 
     <div className="services-charts">
       <Panel title="Service Health Over Time">
-        <div className="services-chart-key">{Object.entries(statuses).filter(([label]) =>
+        <div className="services-chart-key">{Object.entries(chartColors).filter(([label]) =>
           ["Healthy", "Degraded", "Down"].includes(label) || history.some(snapshot => snapshot.services.some(service => service.status === label && matches(service))))
           .map(([label, color]) => <span key={label}><i style={{ background: color }} />{label}</span>)}</div>
-        {timeline.length > 0 ? <>
-          <div className="services-chart"><ResponsiveContainer width="100%" height="100%">
-            <BarChart data={timeline} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid vertical={false} stroke="#edf0f3" /><XAxis dataKey="sample" tickFormatter={sample => timeline[Number(sample) - 1]?.time ?? ""} minTickGap={12} tick={{ fontSize: 10 }} tickLine={false} height={20} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} width={30} />
-              <Tooltip labelFormatter={(_, items) => items[0]?.payload?.time ?? ""} cursor={{ fill: "#edf7ef" }} />
-              {Object.entries(statuses).map(([label, color]) => <Bar key={label} dataKey={label} stackId="services" fill={color} maxBarSize={40} isAnimationActive={false} />)}
+        {timeline.length > 0 ?
+          <div className="services-chart" role="group" aria-label="Latest health check per day, collected while this page is open"><ResponsiveContainer width="100%" height="100%">
+            <BarChart data={timeline} barCategoryGap="15%" margin={{ top: 7, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id={chartGradientId} x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#4bbb3c" />
+                  <stop offset="100%" stopColor={chartColors.Healthy} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="#edf0f3" />
+              <XAxis dataKey="observedAt" tickFormatter={timestamp => chartDate.format(timestamp)} minTickGap={8} tick={{ fill: "#182031", fontSize: 12, fontWeight: 600 }} tickLine={false} axisLine={false} height={23} />
+              <YAxis allowDecimals={false} domain={[0, (max: number) => max + 1]} tickCount={7} tick={{ fill: "#182031", fontSize: 12, fontWeight: 600 }} tickLine={false} axisLine={false} interval={0} width={33} />
+              <Tooltip labelFormatter={(_, items) => items[0] ? clock.format(items[0].payload.observedAt) : ""} itemStyle={{ color: "#121b31" }} cursor={{ fill: "#edf7ef" }} />
+              {Object.entries(chartColors).map(([label, color]) => <Bar key={label} dataKey={label} stackId="services" fill={label === "Healthy" ? `url(#${chartGradientId})` : color} maxBarSize={50} isAnimationActive={false} />)}
             </BarChart>
           </ResponsiveContainer></div>
-          <p className="services-caption">Checks collected while this page is open.</p>
-        </> : <p className="services-empty">{loading ? "Checking service health…" : "No health checks available."}</p>}
+        : <p className="services-empty">{loading ? "Checking service health…" : "No health checks available."}</p>}
       </Panel>
 
       <Panel title="Resource Utilization (All Services)">
-        <div className="services-gauges">{resourceItems.map(({ label, value, Icon }) => <Ring key={label} background={value === null ? undefined : `conic-gradient(#12a62b ${value}%, #e5e9ed 0)`}>
-          <Icon size={20} aria-hidden="true" /><strong>{value === null ? "—" : `${Math.round(value)}%`}</strong><span>{label}</span>
+        <div className="services-gauges">{resourceItems.map(({ label, value }) => <Ring key={label} background={value === null ? undefined : `conic-gradient(#36b833, #078c0a ${value}%, #e6e9ec 0)`}>
+          {label === "Storage" ? <Database size={25} aria-hidden="true" /> : <Cpu size={25} aria-hidden="true" />}
+          <strong>{value === null ? "—" : `${Math.round(value)}%`}</strong><span>{label}</span>
         </Ring>)}</div>
-        <p className="services-caption">Platform resource readings.</p>
       </Panel>
 
       <Panel title="Service Distribution">
@@ -236,7 +300,7 @@ export function ServicesPage() {
             <strong>{hasInventory ? services.length : "—"}</strong><span>Services</span>
           </Ring>
           <dl>{categories.map(item => <div key={item.label}>
-            <dt><i style={{ background: item.color }} />{item.label}{services.length > 0 && ` (${Math.round(item.count / services.length * 100)}%)`}</dt>
+            <dt><i aria-hidden="true" style={{ background: `linear-gradient(${item.startColor}, ${item.endColor})` }} /><span>{item.label}{services.length > 0 && ` (${Math.round(item.count / services.length * 100)}%)`}</span></dt>
             <dd>{hasInventory ? item.count : "—"}</dd>
           </div>)}</dl>
         </div>
@@ -244,58 +308,76 @@ export function ServicesPage() {
     </div>
 
     <div className="services-management">
-      <Panel title="Registered Services">
+      <Panel title="Registered Services" showInfo={false} action={visibleCheckedCount > 0 && <small className="services-selected-count" role="status">{visibleCheckedCount} selected</small>}>
         <div className="services-scroll"><table className="overview-table services-table">
-          <thead><tr>{["Service", "Type", "Project", "Version", "Status", "Uptime", "Probe", "Action"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+          <thead><tr><th scope="col"><input type="checkbox" aria-label="Select all visible services" checked={allVisibleChecked}
+            disabled={!hasInventory || services.length === 0} ref={input => { if (input) input.indeterminate = visibleCheckedCount > 0 && !allVisibleChecked; }}
+            onChange={event => setServicesChecked(services.map(service => service.id), event.target.checked)} /></th>
+            {["Service", "Type", "Project", "Version", "Status", "Uptime", "Resources", "Action"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
           <tbody>{hasInventory && services.map(service => {
             const Icon = serviceKinds[service.type].Icon;
-            return <tr key={service.id}>
-              <td><span className="services-inline"><Icon size={16} aria-hidden="true" /><strong>{service.name}</strong></span></td>
+            const checked = checkedServices.has(service.id);
+            return <tr key={service.id} data-checked={checked}>
+              <td><input type="checkbox" aria-label={`Select ${service.name}`} checked={checked} onChange={event => setServicesChecked([service.id], event.target.checked)} /></td>
+              <td><span className="services-inline" data-type={service.type}><Icon size={19} aria-hidden="true" /><strong>{service.name}</strong></span></td>
               <td><span className="services-tag">{service.type}</span></td><td>{projectLabel(service)}</td>
               <td>{service.version ?? "—"}</td><td><span className="services-status" data-status={service.status}>{service.status}</span></td>
-              <td>—</td><td>{service.latency ?? "—"}</td>
-              <td><button className="services-open" type="button" onClick={() => setSelectedId(service.id)}>Open <ArrowRight size={12} /></button></td>
+              <td title="Historical uptime unavailable">—</td><td title="Per-service resource metrics unavailable">—</td>
+              <td><div className="services-row-actions">
+                <button className="services-open" type="button" aria-label={`Open ${service.name}`} onClick={() => setSelectedId(service.id)}>Open <ArrowUpRight size={12} aria-hidden="true" /></button>
+                <details><summary aria-label={`More actions for ${service.name}`}><EllipsisVertical size={16} aria-hidden="true" /></summary>
+                  {service.type === "Inference" ? <Link to="/app/deployments">Manage deployment</Link> : <Link to="/app/settings">Service settings</Link>}
+                </details>
+              </div></td>
             </tr>;
-          })}{(!hasInventory || !services.length) && <tr><td colSpan={8} className="services-empty">{loading ? "Loading services…" : hasInventory ? "No services match these filters." : "Service inventory unavailable."}</td></tr>}</tbody>
+          })}{(!hasInventory || !services.length) && <tr><td colSpan={9} className="services-empty">{loading ? "Loading services…" : hasInventory ? "No services match these filters." : "Service inventory unavailable."}</td></tr>}</tbody>
         </table></div>
       </Panel>
 
-      <Panel title="Quick Actions">
-        <div className="services-quick">{([
-          [Box, "Add Service", "Deploy an inference service", "/app/deployments"],
-          [RefreshCw, "Manage Deployments", "Open deployment controls", "/app/deployments"],
-          [Boxes, "Model Versions", "Open the model registry", "/app/models"],
-          [Settings, "Service Settings", "Open platform settings", "/app/settings"],
-        ] as const).map(([Icon, title, detail, href]) => <Link key={title} to={href}>
-          <Icon size={23} aria-hidden="true" /><span><strong>{title}</strong><small>{detail}</small></span>
-        </Link>)}</div>
+      <Panel title="Quick Actions" showInfo={false}>
+        <div className="services-quick">
+          <Link to="/app/deployments"><Box size={32} aria-hidden="true" /><span><strong>Add Service</strong><small>Register a new service</small></span></Link>
+          <button type="button" disabled><RotateCcw size={32} aria-hidden="true" /><span><strong>Restart Service</strong><small>Restart unavailable</small></span></button>
+          <Link to="/app/models"><Boxes size={32} aria-hidden="true" /><span><strong>Update Service</strong><small>Deploy a new model version</small></span></Link>
+          <Link to="/app/settings"><Settings size={32} aria-hidden="true" /><span><strong>Service Settings</strong><small>Open platform settings</small></span></Link>
+        </div>
       </Panel>
     </div>
 
     <div className="services-lower">
       <Panel title="Infrastructure Overview">
         <div className="services-infrastructure">
-          <dl>
-            <div><dt>API Version</dt><dd>{platform.data?.version ?? "—"}</dd></div>
-            <div><dt>Active Deployments</dt><dd>{stats.data && !stats.data.error ? stats.data.active_deployments : "—"}</dd></div>
-            <div><dt>Workspace Projects</dt><dd>{stats.data && !stats.data.error ? stats.data.projects_count : "—"}</dd></div>
+          <dl className="services-infrastructure-details">
+            {infrastructureItems.map(([Icon, label]) => <div key={label}>
+              <dt className="services-inline"><Icon size={15} aria-hidden="true" />{label}</dt>
+              <dd title={`${label} unavailable`}>—</dd>
+            </div>)}
           </dl>
-          <div><h3>Platform Resources</h3>{resourceItems.map(({ label, value, Icon }) => <div className="services-resource" key={label}>
+          <div className="services-cluster"><h3>Resources (Cluster)</h3>{resourceItems.map(({ label, value, Icon }) => <div className="services-resource" key={label}>
             <span className="services-inline"><Icon size={14} aria-hidden="true" />{label}</span>
             <span className="services-track" aria-hidden="true">{value !== null && <i style={{ width: `${value}%` }} />}</span>
             <b>{value === null ? "—" : `${Math.round(value)}%`}</b>
-          </div>)}</div>
+          </div>)}
+            <div className="services-resource services-network-io">
+              <span className="services-inline"><ArrowLeftRight size={14} aria-hidden="true" />Network (I/O)</span>
+              <b title="Network throughput unavailable">—</b>
+            </div>
+          </div>
         </div>
       </Panel>
 
       <Panel title="Recent Service Events" action={events.length > 5 && <button type="button" aria-expanded={showEvents} onClick={() => setShowEvents(expanded => !expanded)}>
         {showEvents ? "Show Less" : "View All Events"}<ChevronRight size={14} aria-hidden="true" />
       </button>}>
-        {events.length ? <ul className="services-events">{(showEvents ? events : events.slice(0, 5)).map(event => <li key={`${event.service.id}-${event.observedAt}`}>
-          <i style={{ background: statuses[event.service.status] }} aria-hidden="true" />
-          <span><strong>{event.previous ? "Service status changed" : "Health check recorded"}</strong> — {event.service.name} ({event.service.status})</span>
-          <time dateTime={new Date(event.observedAt).toISOString()}>{clock.format(event.observedAt)}</time>
-        </li>)}</ul> : <p className="services-empty">No service events observed yet.</p>}
+        {events.length ? <ul className="services-events">{(showEvents ? events : events.slice(0, 5)).map(event => {
+          const { service, observedAt, previous } = event;
+          const { Icon, label } = eventKinds[service.status];
+          return <li key={`${service.id}-${observedAt}`} data-status={service.status}>
+            <Icon size={16} aria-hidden="true" />
+            <span><strong>{previous ? `Service status changed to ${service.status.toLowerCase()}` : label}</strong> — {service.name}{service.version && ` (${service.version})`}</span>
+            <time dateTime={new Date(observedAt).toISOString()} title={clock.format(observedAt)}>{formatEventAge(observedAt, now)}</time>
+          </li>;
+        })}</ul> : <p className="services-empty">No service events observed yet.</p>}
       </Panel>
     </div>
 

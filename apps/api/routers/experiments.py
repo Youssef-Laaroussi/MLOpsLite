@@ -4,6 +4,7 @@ Proxies and indexes MLflow experiment metadata for the MLite platform.
 """
 
 from datetime import UTC, datetime
+from math import isfinite
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -112,6 +113,64 @@ async def list_runs(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch runs from MLflow: {e}",
         )
+
+
+@router.get("/{experiment_id}/runs/{run_id}/metric-history")
+def get_run_metric_history(
+    experiment_id: str,
+    run_id: str,
+    metric: str = Query(min_length=1),
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    """Return the latest recorded value at each step for one run metric."""
+    from fastapi import HTTPException
+    from mlflow.exceptions import MlflowException
+    from packages.tracking.mlflow_client import MLiteMLflowManager
+
+    try:
+        client = MLiteMLflowManager(tracking_uri=settings.mlflow_tracking_uri).client
+        run = client.get_run(run_id)
+        if run.info.experiment_id != experiment_id:
+            raise HTTPException(status_code=404, detail="Run not found in this experiment.")
+        records = client.get_metric_history(run_id, metric)
+    except MlflowException as exc:
+        if exc.error_code == "RESOURCE_DOES_NOT_EXIST":
+            raise HTTPException(status_code=404, detail="Run or metric not found.") from exc
+        raise HTTPException(status_code=502, detail="Could not load metric history from MLflow.") from exc
+
+    values = {}
+    for record in sorted(records, key=lambda item: item.timestamp):
+        if isfinite(record.value):
+            values[record.step] = record.value
+    return {"points": [{"step": step, "value": values[step]} for step in sorted(values)]}
+
+
+@router.get("/{experiment_id}/runs/{run_id}/artifacts")
+async def list_run_artifacts(
+    experiment_id: str,
+    run_id: str,
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    """List the root artifacts for a run in the requested experiment."""
+    from fastapi import HTTPException
+    from mlflow.exceptions import MlflowException
+    from packages.tracking.mlflow_client import MLiteMLflowManager
+
+    try:
+        client = MLiteMLflowManager(tracking_uri=settings.mlflow_tracking_uri).client
+        run = client.get_run(run_id)
+        if run.info.experiment_id != experiment_id:
+            raise HTTPException(status_code=404, detail="Run not found in this experiment.")
+        artifacts = client.list_artifacts(run.info.run_id)
+    except MlflowException as exc:
+        if exc.error_code == "RESOURCE_DOES_NOT_EXIST":
+            raise HTTPException(status_code=404, detail="Run not found.") from exc
+        raise HTTPException(status_code=502, detail="Could not load run artifacts from MLflow.") from exc
+
+    return {"artifacts": [
+        {"path": item.path, "is_dir": item.is_dir, "size": item.file_size}
+        for item in artifacts
+    ]}
 
 
 @router.post("/", status_code=201)

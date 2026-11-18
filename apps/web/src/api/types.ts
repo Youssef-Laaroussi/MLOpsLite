@@ -215,6 +215,12 @@ export interface ExperimentRun {
   tags?: Record<string, string>;
 }
 
+export interface ExperimentArtifact {
+  path: string;
+  is_dir: boolean;
+  size: number | null;
+}
+
 export interface Experiment {
   experiment_id: string;
   name: string;

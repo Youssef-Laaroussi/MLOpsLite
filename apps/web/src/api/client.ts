@@ -13,6 +13,7 @@ import {
   ApiKey,
   AuditLog,
   Experiment,
+  ExperimentArtifact,
   ExperimentRun,
   MonitoringSummary,
   Alert,
@@ -364,6 +365,18 @@ export const fetchExperiments = async (project?: string): Promise<Experiment[]> 
 export const fetchExperimentRuns = async (experimentId: string): Promise<ExperimentRun[]> => {
   const res = await api.get(`/experiments/${experimentId}/runs`);
   return res.data.runs || [];
+};
+
+export const fetchRunMetricHistory = async (experimentId: string, runId: string, metric: string, signal: AbortSignal) => {
+  const path = `/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}/metric-history`;
+  const { data } = await api.get<{ points: { step: number; value: number }[] }>(path, { params: { metric }, signal });
+  return data.points;
+};
+
+export const fetchExperimentArtifacts = async (experimentId: string, runId: string): Promise<ExperimentArtifact[]> => {
+  const path = `/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}/artifacts`;
+  const { data } = await api.get<{ artifacts: ExperimentArtifact[] }>(path);
+  return data.artifacts;
 };
 
 export const createExperiment = async (data: { name: string; tags?: Record<string, string> }): Promise<any> => {

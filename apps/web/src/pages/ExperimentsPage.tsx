@@ -1,797 +1,601 @@
-import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
-import { api } from "../api/client";
-import { useActionFeedback } from "../components/ActionFeedback";
-import React, { useState, useEffect, useMemo } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
-  FlaskConical,
-  Search,
-  Plus,
-  RefreshCw,
-  Clock,
-  Play,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ChevronRight,
-  Sliders,
-  Layers,
-  Copy,
-  Check,
-  X,
-  Calendar,
-  ChevronDown,
-  Trash2,
-  Tag,
+  Activity, ArrowDown, ArrowDownUp, ArrowRight, ArrowUp, ArrowUpRight, BarChart3, Box, Calendar, Check, CheckCircle2,
+  ChevronLeft, ChevronRight, ChevronsLeft, Clock, Copy, Database, EllipsisVertical, Eye, File, FlaskConical,
+  Folder, FolderGit2, Info, Layers, Play, Plus, RefreshCw, Rocket, Search, Settings, Tag, Trophy, X,
 } from "lucide-react";
-import { StatCard } from "../components/StatCard";
-import { Experiment, ExperimentRun } from "../api/types";
-import {
-  fetchExperiments,
-  fetchExperimentRuns,
-  createExperiment,
-  deleteExperiment,
-} from "../api/client";
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
-import { AXIS_TICK, GRID_PROPS, BiTooltip } from "../components/charts/ChartKit";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { api, createExperiment, deleteExperiment, fetchExperimentArtifacts, fetchExperimentRuns, fetchExperiments, fetchProjects, fetchRunMetricHistory } from "../api/client";
+import type { Experiment, ExperimentRun } from "../api/types";
+import { useActionFeedback } from "../components/ActionFeedback";
+import "./ExperimentsPage.css";
 
-export const ExperimentsPage: React.FC = () => {
-  const { confirmAction } = useActionFeedback();
-  const [experiments, setExperiments] = useState<Experiment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+const metrics = [
+  { key: "accuracy", label: "Accuracy", aliases: ["accuracy", "test_accuracy", "val_accuracy"] },
+  { key: "f1", label: "F1 Score", aliases: ["f1", "f1_score", "test_f1", "test_f1_score"] },
+  { key: "precision", label: "Precision", aliases: ["precision", "test_precision"] },
+  { key: "recall", label: "Recall", aliases: ["recall", "test_recall"] },
+] as const;
+type Metric = (typeof metrics)[number];
+type MetricKey = Metric["key"];
+const views = [[Play, "Runs"], [Activity, "Metrics"], [Settings, "Parameters"], [Folder, "Artifacts"], [Layers, "Models (Registry)"]] as const;
+type View = (typeof views)[number][1];
+const timeRanges = { "All time": null, "Last 30 days": 30, "Last 6 months": 183, "Last 1 year": 365 } as const;
+type TimeRange = keyof typeof timeRanges;
+const lifecycle = [[Database, "Data"], [Settings, "Train"], [BarChart3, "Evaluate"], [Layers, "Register"], [Rocket, "Deploy"]] as const;
+const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
+const runTableDate = new Intl.DateTimeFormat("en-US", {
+  month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+});
+const axisTick = { fill: "#35425a", fontSize: 11 };
+const comparisonColors = ["#168b23", "#064d32", "#69798b"];
+type CountSnapshot = { observedAt: number; experiments: number; runs: number | null };
 
-  // Inspection modal state
-  const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null);
-  const [experimentRuns, setExperimentRuns] = useState<ExperimentRun[]>([]);
-  const [loadingRuns, setLoadingRuns] = useState<boolean>(false);
-  const [runsError, setRunsError] = useState<string | null>(null);
-  const [selectedRun, setSelectedRun] = useState<ExperimentRun | null>(null);
+function KpiTrend({ values, showLine = true, lowerIsBetter = false }: { values: readonly number[]; showLine?: boolean; lowerIsBetter?: boolean }) {
+  const readings = values.slice(-8);
+  if (readings.length < 2) return null;
+  const first = readings[0];
+  const last = readings[readings.length - 1];
+  const delta = first === 0 ? null : (last - first) / Math.abs(first) * 100;
+  const min = Math.min(...readings);
+  const spread = Math.max(...readings) - min;
+  const points = readings.map((value, index) => `${2 + index * 76 / (readings.length - 1)},${spread ? 22 - 20 * (value - min) / spread : 12}`).join(" ");
+  const Direction = last < first ? ArrowDown : ArrowUp;
+  return <>
+    {delta !== null && Math.abs(delta) >= .05 && <small className="experiments-kpi-change"
+      data-improved={lowerIsBetter ? delta < 0 : delta > 0} title="Change since the oldest point in this trend">
+      <Direction size={13} aria-hidden="true" />{delta > 0 ? "+" : ""}{Number(delta.toFixed(1))}%
+    </small>}
+    {showLine && <svg className="experiments-sparkline" viewBox="0 0 80 24" role="img" aria-label="Recent trend">
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>}
+  </>;
+}
 
-  // New experiment modal
-  const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
-  const [newExpName, setNewExpName] = useState<string>("");
-  const [newExpTagKey, setNewExpTagKey] = useState<string>("");
-  const [newExpTagVal, setNewExpTagVal] = useState<string>("");
-  const [creating, setCreating] = useState<boolean>(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [registerName, setRegisterName] = useState("");
-  const [registeringRun, setRegisteringRun] = useState(false);
-  const [registerMessage, setRegisterMessage] = useState<{ text: string; error: boolean } | null>(null);
+function projectTag(experiment: Experiment) {
+  return experiment.tags?.["mlite.project"] ?? experiment.tags?.project_slug ?? experiment.tags?.project;
+}
 
-  const registerRun = async (event: React.FormEvent) => {
+function metricValue(run: ExperimentRun, metric: Metric) {
+  for (const key of metric.aliases) {
+    const value = run.metrics?.[key];
+    if (Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function runDuration(run: ExperimentRun) {
+  return run.start_time != null && run.end_time != null && run.end_time >= run.start_time
+    ? run.end_time - run.start_time : null;
+}
+
+function formatDuration(duration: number | null) {
+  if (duration === null) return "—";
+  const seconds = Math.round(duration / 1000);
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes} min ${String(seconds % 60).padStart(2, "0")} s` : `${seconds} s`;
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const detail = (error.response as { data?: { detail?: unknown } } | undefined)?.data?.detail;
+    if (typeof detail === "string") return detail;
+  }
+  return fallback;
+}
+
+function Panel({ title, action, children }: { title: ReactNode; action?: ReactNode; children: ReactNode }) {
+  return <section className="overview-card experiments-panel">
+    <h2>{title}<Info size={14} aria-hidden="true" />{action}</h2>{children}
+  </section>;
+}
+
+function RunStatus({ status }: { status: string }) {
+  return <span className="experiments-status" data-status={status}>
+    {status === "FINISHED" && <CheckCircle2 size={13} aria-hidden="true" />}
+    {status === "FINISHED" ? "Completed" : status.replace(/_/g, " ").toLowerCase()}
+  </span>;
+}
+
+function Values({ entries }: { entries: [string, string | number][] }) {
+  return entries.length ? <dl className="experiments-values">{entries.map(([key, value]) =>
+    <div key={key}><dt>{key}</dt><dd>{value}</dd></div>
+  )}</dl> : <p className="experiments-empty">No values recorded.</p>;
+}
+
+function ExperimentForm({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const [name, setName] = useState("");
+  const [tagKey, setTagKey] = useState("");
+  const [tagValue, setTagValue] = useState("");
+  const create = useMutation({
+    mutationFn: () => createExperiment({
+      name: name.trim(),
+      tags: tagKey.trim() && tagValue.trim() ? { [tagKey.trim()]: tagValue.trim() } : {},
+    }),
+    onSuccess: experiment => onCreated(String(experiment.experiment_id)),
+  });
+
+  useEffect(() => { if (dialog.current && !dialog.current.open) dialog.current.showModal(); }, []);
+
+  return <dialog ref={dialog} className="overview-card experiments-dialog" aria-labelledby={titleId}
+    onCancel={event => { event.preventDefault(); if (!create.isPending) onClose(); }}>
+    <form onSubmit={event => { event.preventDefault(); if (name.trim() && !create.isPending) create.mutate(); }}>
+      <header><h2 id={titleId}>New Experiment</h2><button type="button" aria-label="Close" disabled={create.isPending} onClick={onClose}><X size={18} /></button></header>
+      <label>Experiment Name<input value={name} onChange={event => setName(event.target.value)} required autoFocus /></label>
+      <div className="experiments-dialog-tags">
+        <label>Tag key<input value={tagKey} onChange={event => setTagKey(event.target.value)} required={Boolean(tagValue.trim())} /></label>
+        <label>Tag value<input value={tagValue} onChange={event => setTagValue(event.target.value)} required={Boolean(tagKey.trim())} /></label>
+      </div>
+      {create.isError && <p role="alert">{errorMessage(create.error, "Could not create this experiment.")}</p>}
+      <footer><button type="button" className="secondary-action" disabled={create.isPending} onClick={onClose}>Cancel</button>
+        <button type="submit" className="primary-action" disabled={create.isPending || !name.trim()}>{create.isPending ? "Creating…" : "Create Experiment"}</button></footer>
+    </form>
+  </dialog>;
+}
+
+function RegisterModel({ run }: { run: ExperimentRun }) {
+  const queryClient = useQueryClient();
+  const [modelName, setModelName] = useState("");
+  const register = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ version: number }>("/models/register", { name: modelName.trim(), run_id: run.run_id });
+      return data;
+    },
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["models"] }); },
+  });
+  function submit(event: FormEvent) {
     event.preventDefault();
-    if (!selectedRun || !registerName.trim() || registeringRun) return;
-    setRegisteringRun(true);
-    setRegisterMessage(null);
-    try {
-      const { data } = await api.post<{ version: number }>("/models/register", {
-        name: registerName.trim(), run_id: selectedRun.run_id,
-      });
-      setRegisterMessage({ text: `Registered v${data.version}. Find it in Model Registry.`, error: false });
-    } catch (error: any) {
-      const detail = error?.response?.data?.detail;
-      setRegisterMessage({ text: typeof detail === "string" ? detail : "Could not register this run.", error: true });
-    } finally {
-      setRegisteringRun(false);
-    }
-  };
+    if (modelName.trim() && !register.isPending) register.mutate();
+  }
+  return <form className="experiments-register" onSubmit={submit}>
+    <label>Model name<input value={modelName} maxLength={200} disabled={register.isPending} onChange={event => {
+      setModelName(event.target.value);
+      register.reset();
+    }} required /></label>
+    <button type="submit" className="primary-action" disabled={!modelName.trim() || register.isPending || register.isSuccess}>
+      {register.isPending ? "Registering…" : "Register Model"}
+    </button>
+    {register.isSuccess && <p role="status">Registered v{register.data.version}.</p>}
+    {register.isError && <p role="alert">{errorMessage(register.error, "Could not register this run.")}</p>}
+  </form>;
+}
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+export function ExperimentsPage() {
+  const { confirmAction, showSuccess } = useActionFeedback();
+  const client = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [project, setProject] = useState("");
+  const [tag, setTag] = useState("");
+  const [experimentFilter, setExperimentFilter] = useState("");
+  const [timeRange, setTimeRange] = useState<TimeRange>("Last 30 days");
+  const [countHistory, setCountHistory] = useState<CountSnapshot[]>([]);
+  const [activeExperimentId, setActiveExperimentId] = useState("");
+  const [activeRunId, setActiveRunId] = useState("");
+  const [metricKey, setMetricKey] = useState<MetricKey>("accuracy");
+  const [chartLimit, setChartLimit] = useState(20);
+  const [view, setView] = useState<View>("Runs");
+  const [expanded, setExpanded] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<{ key: MetricKey; ascending: boolean }>();
+  const [comparison, setComparison] = useState<{ experimentId: string; ids: Set<string> }>();
+  const [copyStatus, setCopyStatus] = useState("");
+  const runPanel = useRef<HTMLElement>(null);
+  const detailsPanel = useRef<HTMLElement>(null);
 
-  // Time range filter
-  const [timeRange, setTimeRange] = useState<string>("All time");
-  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState<boolean>(false);
-
-  const loadData = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await fetchExperiments();
-      setExperiments(data || []);
-    } catch (err: any) {
-      setExperiments([]);
-      setLoadError(
-        err?.response?.data?.detail || err?.message || "Failed to load experiments from MLflow server."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const experimentQuery = useQuery({ queryKey: ["experiments-dashboard"], queryFn: () => fetchExperiments() });
+  const projects = useQuery({ queryKey: ["experiments-projects"], queryFn: fetchProjects });
+  const experiments = experimentQuery.data ?? [];
+  const totalRuns = experimentQuery.data && experiments.every(experiment => experiment.runs_count != null)
+    ? experiments.reduce((sum, experiment) => sum + (experiment.runs_count ?? 0), 0) : null;
+  const experimentCount = experimentQuery.data?.length;
+  const observedAt = experimentQuery.dataUpdatedAt;
   useEffect(() => {
-    loadData();
-  }, []);
+    if (experimentCount === undefined || !observedAt) return;
+    setCountHistory(previous => previous[previous.length - 1]?.observedAt === observedAt ? previous : [
+      ...previous.slice(-7), { observedAt, experiments: experimentCount, runs: totalRuns },
+    ]);
+  }, [experimentCount, observedAt, totalRuns]);
+  const projectLabels = new Map(projects.data?.flatMap(item => [[item.slug, item.name], [item.id, item.name]]));
+  const projectName = (experiment: Experiment) => {
+    const key = projectTag(experiment);
+    return key ? projectLabels.get(key) ?? key : "—";
+  };
+  const experimentProjects = Array.from(new Set(experiments.map(projectTag).filter((item): item is string => Boolean(item))));
+  const tags = Array.from(new Set(experiments.flatMap(experiment => Object.entries(experiment.tags ?? {})
+    .filter(([key]) => !key.startsWith("mlflow.")).map(([key, value]) => `${key}: ${value}`)))).sort();
+  const query = search.trim().toLowerCase();
+  const eligibleExperiments = experiments.filter(experiment =>
+    (!project || projectTag(experiment) === project) && (!tag || Object.entries(experiment.tags ?? {}).some(([key, value]) => `${key}: ${value}` === tag)));
+  const matchingExperiments = eligibleExperiments.filter(experiment =>
+    (!experimentFilter || experiment.experiment_id === experimentFilter) &&
+    (!query || [experiment.name, experiment.experiment_id, projectName(experiment), ...Object.values(experiment.tags ?? {})]
+      .some(value => value.toLowerCase().includes(query))));
+  const selectedExperiment = matchingExperiments.find(experiment => experiment.experiment_id === activeExperimentId)
+    ?? matchingExperiments[0]
+    ?? (query ? eligibleExperiments.find(experiment => experiment.experiment_id === (experimentFilter || activeExperimentId))
+      ?? (!experimentFilter && !activeExperimentId ? eligibleExperiments[0] : undefined) : undefined);
+  const experimentId = selectedExperiment?.experiment_id ?? "";
 
-  const handleOpenRuns = async (exp: Experiment) => {
-    setSelectedExperiment(exp);
-    setSelectedRun(null);
-    setLoadingRuns(true);
-    setRunsError(null);
-    try {
-      const runs = await fetchExperimentRuns(exp.experiment_id);
-      setExperimentRuns(runs || []);
-      if (runs && runs.length > 0) {
-        setSelectedRun(runs[0]);
-      }
-    } catch (err: any) {
-      setExperimentRuns([]);
-      setRunsError(
-        err?.response?.data?.detail || err?.message || "Failed to load runs from MLflow."
-      );
-    } finally {
-      setLoadingRuns(false);
+  const runQuery = useQuery({
+    queryKey: ["experiment-runs", experimentId],
+    queryFn: () => fetchExperimentRuns(experimentId),
+    enabled: Boolean(selectedExperiment),
+  });
+  const allRuns = runQuery.data ?? [];
+  const days = timeRanges[timeRange];
+  const cutoff = days === null ? 0 : Date.now() - days * 86_400_000;
+  const timeFilteredRuns = allRuns.filter(run => days === null || (run.start_time ?? 0) >= cutoff);
+  const searchRuns = Boolean(query && matchingExperiments.length === 0);
+  const runs = searchRuns ? timeFilteredRuns.filter(run => [run.run_id, run.run_name].some(value => value?.toLowerCase().includes(query))) : timeFilteredRuns;
+  const selectedRun = runs.find(run => run.run_id === activeRunId) ?? runs[0];
+  const runId = selectedRun?.run_id ?? "";
+  const artifactQuery = useQuery({
+    queryKey: ["experiment-artifacts", experimentId, runId],
+    queryFn: () => fetchExperimentArtifacts(experimentId, runId),
+    enabled: Boolean(selectedRun),
+    retry: false,
+  });
+  const artifacts = artifactQuery.data ?? [];
+  const modelName = selectedRun?.params?.model_name ?? selectedRun?.params?.model ?? selectedRun?.tags?.model_name;
+  const mlflowBase = import.meta.env.VITE_MLFLOW_URL?.replace(/\/+$/, "");
+  const mlflowLink = mlflowBase && selectedRun ? `${mlflowBase}/#/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}` : null;
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteExperiment,
+    onSuccess: async (_, id) => {
+      if (id === activeExperimentId) setActiveExperimentId("");
+      if (id === experimentFilter) setExperimentFilter("");
+      await client.invalidateQueries({ queryKey: ["experiments-dashboard"] });
+      showSuccess("Experiment deleted.");
+    },
+  });
+
+  async function removeExperiment(experiment: Experiment) {
+    if (await confirmAction("Delete experiment?", `Delete “${experiment.name}” (ID: ${experiment.experiment_id})?`, "Delete experiment")) {
+      deleteMutation.mutate(experiment.experiment_id);
     }
-  };
+  }
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newExpName.trim()) return;
-    setCreating(true);
-    setCreateError(null);
+  function chooseExperiment(id: string) {
+    setActiveExperimentId(id);
+    setActiveRunId("");
+    setPage(1);
+  }
+
+  function openView(next: View) {
+    setView(next);
+    runPanel.current?.scrollIntoView({ block: "nearest" });
+  }
+
+  function inspectRun(id: string) {
+    setActiveRunId(id);
+    detailsPanel.current?.scrollIntoView({ block: "nearest" });
+  }
+
+  async function copyRunId() {
     try {
-      const tags: Record<string, string> = {};
-      if (newExpTagKey.trim() && newExpTagVal.trim()) {
-        tags[newExpTagKey.trim()] = newExpTagVal.trim();
-      }
-      const created = await createExperiment({ name: newExpName.trim(), tags });
-      await loadData();
-      setIsCreateOpen(false);
-      setNewExpName("");
-      setNewExpTagKey("");
-      setNewExpTagVal("");
-      setToastMessage(`Experiment "${created.name}" created in MLflow!`);
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch (err: any) {
-      setCreateError(
-        err?.response?.data?.detail || err?.message || "Failed to create experiment."
-      );
-    } finally {
-      setCreating(false);
+      await navigator.clipboard.writeText(runId);
+      setCopyStatus(runId);
+    } catch {
+      setCopyStatus("failed");
     }
-  };
+  }
 
-  const handleDelete = async (expId: string, expName: string) => {
-    if (!(await confirmAction("Delete experiment?", `Delete “${expName}” (ID: ${expId})?`, "Delete experiment"))) return;
-    try {
-      await deleteExperiment(expId);
-      await loadData();
-      setToastMessage(`Experiment "${expName}" deleted.`);
-      setTimeout(() => setToastMessage(null), 3000);
-      if (selectedExperiment?.experiment_id === expId) {
-        setSelectedExperiment(null);
+  const chronologicalRuns = [...runs].reverse();
+  const accuracy = chronologicalRuns.flatMap(run => metricValue(run, metrics[0]) ?? []);
+  const bestAccuracy = accuracy.length ? Math.max(...accuracy) : null;
+  const bestAccuracyTrend: number[] = [];
+  for (const score of accuracy) bestAccuracyTrend.push(Math.max(bestAccuracyTrend[bestAccuracyTrend.length - 1] ?? score, score));
+  let elapsed = 0;
+  const durationTrend = chronologicalRuns.flatMap(run => runDuration(run) ?? []).map((duration, index) => {
+    elapsed += duration;
+    return elapsed / (index + 1);
+  });
+  const successful = runs.filter(run => run.status === "FINISHED").length;
+  const statItems = [
+    [FlaskConical, "Total Experiments", experimentCount ?? "—", countHistory.map(snapshot => snapshot.experiments)],
+    [Layers, "Total Runs", totalRuns ?? "—", countHistory.flatMap(snapshot => snapshot.runs ?? [])],
+    [Trophy, "Best Accuracy", bestAccuracy?.toFixed(4) ?? "—", bestAccuracyTrend],
+    [Clock, "Avg. Run Time", formatDuration(durationTrend[durationTrend.length - 1] ?? null), durationTrend],
+    [CheckCircle2, "Successful Runs", runs.length ? successful : "—", []],
+  ] as const;
+  const metric = metrics.find(item => item.key === metricKey) ?? metrics[0];
+  const ordinal = new Map(allRuns.map((run, index) => [run.run_id, allRuns.length - index]));
+  const comparisonIds = comparison?.experimentId === experimentId ? comparison.ids : undefined;
+  const comparedRuns = runs.filter(run => comparisonIds?.has(run.run_id));
+  const chartRuns = comparedRuns.length ? comparedRuns : runs.slice(0, chartLimit);
+  const chart = [...chartRuns].reverse()
+    .map(run => ({ number: ordinal.get(run.run_id), value: metricValue(run, metric) }));
+  const historyRuns = chartRuns.flatMap(run => {
+    const key = metric.aliases.find(alias => Number.isFinite(run.metrics?.[alias]));
+    return key ? [{ id: run.run_id, key }] : [];
+  }).slice(0, 3);
+  const historyQuery = useQuery({
+    queryKey: ["experiment-metric-history", experimentId, historyRuns],
+    queryFn: ({ signal }) => Promise.all(historyRuns.map(async ({ id, key }) => ({
+      id, points: await fetchRunMetricHistory(experimentId, id, key, signal),
+    }))),
+    enabled: Boolean(experimentId && historyRuns.length && comparedRuns.length <= 3),
+    retry: false,
+  });
+  const histories = (historyQuery.data ?? []).filter(history => history.points.length > 0);
+  const showHistory = comparedRuns.length <= 3 && histories.some(history => history.points.length > 1);
+  const historyByStep = new Map<number, Record<string, number>>();
+  if (showHistory) {
+    for (const history of histories) {
+      for (const { step, value } of history.points) {
+        const point = historyByStep.get(step) ?? { number: step };
+        point[history.id] = value;
+        historyByStep.set(step, point);
       }
-    } catch (err: any) {
-      setLoadError(err?.response?.data?.detail || err?.message || "Failed to delete experiment.");
     }
-  };
+  }
+  const chartData = showHistory ? [...historyByStep.values()].sort((a, b) => a.number - b.number) : chart;
+  const sortedMetric = metrics.find(item => item.key === sort?.key);
+  const sortedRuns = sortedMetric && sort ? [...runs].sort((left, right) => {
+    const a = metricValue(left, sortedMetric);
+    const b = metricValue(right, sortedMetric);
+    if (a === null) return b === null ? 0 : 1;
+    if (b === null) return -1;
+    return sort.ascending ? a - b : b - a;
+  }) : runs;
+  const pageCount = Math.max(1, Math.ceil(sortedRuns.length / rowsPerPage));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * rowsPerPage;
+  const pageRuns = sortedRuns.slice(pageStart, pageStart + rowsPerPage);
+  const checkedOnPage = pageRuns.filter(run => comparisonIds?.has(run.run_id)).length;
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(text);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const filteredExperiments = useMemo(() => {
-    return experiments.filter((e) => {
-      const matchesQuery =
-        e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.experiment_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (e.tags &&
-          Object.values(e.tags).some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
-      return matchesQuery;
+  function setComparedRuns(runIds: string[], checked: boolean) {
+    setComparison(previous => {
+      const ids = new Set(previous?.experimentId === experimentId ? previous.ids : undefined);
+      for (const id of runIds) {
+        if (checked) ids.add(id);
+        else ids.delete(id);
+      }
+      return { experimentId, ids };
     });
-  }, [experiments, searchQuery]);
+  }
+  const experimentRows = searchRuns && runs.length && selectedExperiment ? [selectedExperiment] : matchingExperiments;
+  const params = Object.entries(selectedRun?.params ?? {});
+  const runMessage = !selectedExperiment ? "Select an experiment." : runQuery.isPending
+    ? "Loading runs…" : runQuery.isError ? errorMessage(runQuery.error, "Could not load runs from MLflow.") : "No runs match these filters.";
+  const showRuns = view === "Runs";
+  const displayedArtifacts = (summary: boolean) => artifactQuery.isError
+    ? <p className="experiments-empty" role="alert">{errorMessage(artifactQuery.error, "Artifacts could not be loaded.")}</p>
+    : artifacts.length ? <ul className="experiments-artifacts">{(summary ? artifacts.slice(0, 3) : artifacts).map(item => {
+      const Icon = item.is_dir ? Folder : File;
+      return <li key={item.path}><Icon size={18} aria-hidden="true" /><span>{item.path}{item.is_dir ? "/" : ""}</span>
+        {item.size !== null && <small>{new Intl.NumberFormat("en", { style: "unit", unit: item.size >= 1_000_000 ? "megabyte" : "kilobyte", maximumFractionDigits: 1 })
+          .format(item.size / (item.size >= 1_000_000 ? 1_000_000 : 1_000))}</small>}</li>;
+    })}</ul> : <p className="experiments-empty">{selectedRun && artifactQuery.isPending ? "Loading artifacts…" : "No artifacts recorded."}</p>;
 
-  const totalRuns = useMemo(() => {
-    return experiments.reduce((acc, curr) => acc + (curr.runs_count || 0), 0);
-  }, [experiments]);
+  return <div className="experiments-dashboard">
+    <header className="overview-hero experiments-hero">
+      <div><h1>Experiments</h1><p>Track, compare, and analyze your machine learning experiments with MLflow integration.</p></div>
+      <div className="experiments-lifecycle" aria-hidden="true">{lifecycle.map(([Icon, label], index) =>
+        <div key={label}><Icon size={42} strokeWidth={1.6} /><b>{label}</b>{index < lifecycle.length - 1 && <ArrowRight className="experiments-stage-arrow" size={24} />}</div>
+      )}</div>
+    </header>
 
-  // Real runs aggregation for dynamic charts if runs exist
-  const runsWithMetrics = useMemo(() => {
-    return experimentRuns.filter((r) => r.metrics && Object.keys(r.metrics).length > 0);
-  }, [experimentRuns]);
-
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white text-xs font-mono px-4 py-2.5 rounded shadow-lg flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-2">
-          <CheckCircle2 className="w-4 h-4 text-[#3BB48C]" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-            Experiment Tracking
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real MLflow tracking server connected to S3 artifact store
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Time Range Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 transition"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeRange}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {isTimeRangeOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded shadow-lg z-30 py-1 text-xs">
-                {["Last 30 days", "Last 6 months", "Last 1 year", "All time"].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => {
-                      setTimeRange(range);
-                      setIsTimeRangeOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs transition ${
-                      timeRange === range
-                        ? "bg-slate-100 text-slate-900 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={loadData}
-            className="p-1.5 bg-white border border-slate-200 rounded text-slate-600 hover:text-slate-900 hover:border-slate-300 transition shadow-2xs"
-            title="Refresh experiments"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#3BB48C]" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => {
-              setCreateError(null);
-              setIsCreateOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-semibold shadow-2xs transition border border-[#329F7B]"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Experiment
-          </button>
-        </div>
-      </div>
-
-      {/* Backend Error Banner */}
-      {loadError && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700 flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold block mb-0.5">MLflow Backend Error</span>
-            <span>{loadError}</span>
-          </div>
-          <button
-            onClick={loadData}
-            className="px-2 py-1 bg-white border border-rose-300 rounded font-medium hover:bg-rose-100 text-rose-800 transition"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Top Stat Cards (Real live counts from MLflow) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <StatCard
-          title="Experiments Loaded"
-          value={loading ? "..." : `${experiments.length} Experiments`}
-          subtitle="Registered in MLflow server"
-          icon={FlaskConical}
-          color="brand"
-          trend={experiments.length > 0 ? "Tracking" : "Empty"}
-        />
-        <StatCard
-          title="Recorded Runs"
-          value={loading || loadError || experiments.some(exp => exp.runs_count == null) ? "—" : `${totalRuns} Runs`}
-          subtitle="Total for the loaded experiments when all counts are available"
-          icon={Layers}
-          color="brand"
-        />
-      </div>
-
-      {/* ── Search & Filter Toolbar ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-md p-3 shadow-2xs">
-        <div className="relative flex-1 w-full">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search experiments by name, ID, or framework tag..."
-            className="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50/50 border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] focus:bg-white transition"
-          />
-        </div>
-        <div className="text-xs text-slate-500 font-mono shrink-0">
-          {filteredExperiments.length} experiment{filteredExperiments.length === 1 ? "" : "s"}
-        </div>
-      </div>
-
-      {/* ── Experiments Table ── */}
-      <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-            MLflow Experiments ({filteredExperiments.length})
-          </h3>
-          <span className="text-[11px] font-mono text-slate-400">Source: MLflow Server</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
-            <thead className="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-semibold uppercase text-slate-500 tracking-wider">
-              <tr>
-                <th className="px-4 py-2.5">Experiment Name</th>
-                <th className="px-3 py-2.5">ID</th>
-                <th className="px-3 py-2.5">Runs</th>
-                <th className="px-3 py-2.5">Tags / Metadata</th>
-                <th className="px-3 py-2.5">Artifact Location</th>
-                <th className="px-3 py-2.5">Created</th>
-                <th className="px-4 py-2.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-sans">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#3BB48C]" />
-                    Loading experiments from MLflow...
-                  </td>
-                </tr>
-              ) : filteredExperiments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                    <FlaskConical className="w-8 h-8 stroke-1 text-slate-300 mx-auto mb-2" />
-                    <p className="font-medium text-slate-700 text-xs">No experiments found</p>
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      {searchQuery
-                        ? "No experiment matches your search criteria."
-                        : "Create an experiment above or log runs from your Python MLflow script."}
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                filteredExperiments.map((exp) => (
-                  <tr key={exp.experiment_id} className="hover:bg-slate-50/80 transition-colors">
-                    {/* Experiment Name */}
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 rounded bg-slate-100 text-slate-600 shrink-0">
-                          <FlaskConical className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="font-semibold text-slate-900">{exp.name}</span>
-                      </div>
-                    </td>
-
-                    {/* ID */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-[11px] text-slate-500">{exp.experiment_id}</span>
-                    </td>
-
-                    {/* Runs */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-[11px] font-medium text-slate-800">
-                        {exp.runs_count == null ? "Run count unavailable" : `${exp.runs_count} run${exp.runs_count === 1 ? "" : "s"}`}
-                      </span>
-                    </td>
-
-                    {/* Tags */}
-                    <td className="px-3 py-2.5">
-                      {exp.tags && Object.keys(exp.tags).length > 0 ? (
-                        <div className="flex flex-wrap gap-1 font-mono text-[11px] text-slate-600">
-                          {Object.entries(exp.tags).map(([k, v], idx) => (
-                            <span key={k}>
-                              <span className="text-slate-400">{k}:</span>
-                              <span>{v}</span>
-                              {idx < Object.keys(exp.tags || {}).length - 1 && (
-                                <span className="text-slate-300 mr-1">,</span>
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-mono">—</span>
-                      )}
-                    </td>
-
-                    {/* Artifact Location */}
-                    <td className="px-3 py-2.5">
-                      <span className="font-mono text-[11px] text-slate-500 truncate block max-w-xs">
-                        {exp.artifact_location || "—"}
-                      </span>
-                    </td>
-
-                    {/* Created Date */}
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-500">
-                      {exp.created_at ? new Date(exp.created_at).toLocaleDateString() : "—"}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenRuns(exp)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition shadow-2xs hover:border-[#3BB48C]"
-                          title="Inspect MLflow runs"
-                        >
-                          <span>Inspect Runs</span>
-                          <ChevronRight className="w-3 h-3 text-slate-400" />
-                        </button>
-
-                        {exp.experiment_id !== "0" && (
-                          <button
-                            onClick={() => handleDelete(exp.experiment_id, exp.name)}
-                            className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-200 text-[11px] transition"
-                            title="Delete experiment"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── MODAL: RUNS & METRICS INSPECTOR ── */}
-      {selectedExperiment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-md w-full max-w-5xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-5 py-3.5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded bg-slate-100 text-slate-700 shrink-0">
-                  <FlaskConical className="w-5 h-5 stroke-[1.8]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      {selectedExperiment.name}
-                    </h3>
-                    <span className="font-mono text-slate-500 text-[11px]">
-                      (ID: {selectedExperiment.experiment_id})
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-mono">
-                    <span>Artifact Store: {selectedExperiment.artifact_location}</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelectedExperiment(null)}
-                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Error in modal if any */}
-            {runsError && (
-              <div className="p-3 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{runsError}</span>
-              </div>
-            )}
-
-            {/* Modal Body: Left Runs List & Right Details */}
-            <div className="max-h-52 shrink-0 overflow-y-auto border-b border-slate-200 p-3">
-              <MetricDistribution
-                title="Runs by status"
-                description="Runs returned for this MLflow experiment"
-                rows={countBy(experimentRuns, run => run.status)}
-                loading={loadingRuns}
-                unavailable={Boolean(runsError)}
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-              {/* Left Column: Runs List */}
-              <div className="p-3 space-y-1.5 max-h-[60vh] overflow-y-auto bg-slate-50/40">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-1 mb-2">
-                  Recorded Runs ({experimentRuns.length})
-                </div>
-
-                {loadingRuns ? (
-                  <div className="p-8 text-center text-slate-400 text-xs">
-                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-[#3BB48C]" />
-                    Fetching MLflow runs...
-                  </div>
-                ) : experimentRuns.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-xs">
-                    <p className="font-medium text-slate-600">No runs logged yet</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Log runs using MLflow Python SDK:
-                    </p>
-                    <div className="mt-2 p-2 bg-slate-100 rounded text-[10px] font-mono text-left text-slate-700">
-                      mlflow.set_experiment("{selectedExperiment.name}")<br />
-                      with mlflow.start_run():<br />
-                      &nbsp;&nbsp;mlflow.log_metric("loss", 0.1)
-                    </div>
-                  </div>
-                ) : (
-                  experimentRuns.map((run) => (
-                    <div
-                      key={run.run_id}
-                      onClick={() => { setSelectedRun(run); setRegisterMessage(null); }}
-                      className={`p-2.5 rounded border cursor-pointer transition text-left ${
-                        selectedRun?.run_id === run.run_id
-                          ? "bg-white border-[#3BB48C] shadow-2xs"
-                          : "bg-white border-slate-200/80 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-medium text-xs text-slate-900 truncate">
-                          {run.run_name || run.run_id.slice(0, 12)}
-                        </span>
-                        <span className="inline-flex items-center gap-1 font-mono text-[10px] text-slate-600">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              run.status === "FINISHED"
-                                ? "bg-[#3BB48C]"
-                                : run.status === "RUNNING"
-                                ? "bg-amber-500 animate-pulse"
-                                : "bg-rose-500"
-                            }`}
-                          />
-                          <span className="capitalize">{run.status.toLowerCase()}</span>
-                        </span>
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-400 truncate">
-                        {run.run_id}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Right Column: Run Details & Metrics */}
-              <div className="p-5 md:col-span-2 space-y-4 max-h-[60vh] overflow-y-auto bg-white">
-                {selectedRun ? (
-                  <>
-                    {selectedRun.status === "FINISHED" && (
-                      <form onSubmit={registerRun} className="rounded-md border border-slate-200 p-3">
-                        <label className="block text-xs font-medium text-slate-700">
-                          Model name
-                          <input value={registerName} onChange={(event) => { setRegisterName(event.target.value); setRegisterMessage(null); }}
-                            maxLength={200} className="mt-1 block w-full rounded border border-slate-200 px-2 py-1.5" />
-                        </label>
-                        <button type="submit" disabled={registeringRun || !registerName.trim()}
-                          className="mt-2 rounded bg-emerald-700 px-3 py-1.5 text-xs text-white disabled:opacity-50">
-                          {registeringRun ? "Registering…" : "Register Model"}
-                        </button>
-                        {registerMessage && (
-                          <p role={registerMessage.error ? "alert" : "status"} className={`mt-2 text-xs ${registerMessage.error ? "text-rose-700" : "text-emerald-700"}`}>
-                            {registerMessage.text}
-                          </p>
-                        )}
-                      </form>
-                    )}
-                    {/* Run Header */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                      <div>
-                        <h4 className="font-semibold text-sm text-slate-900">
-                          {selectedRun.run_name || "Run Inspection"}
-                        </h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[11px] font-mono text-slate-500">
-                            ID: {selectedRun.run_id}
-                          </span>
-                          <button
-                            onClick={() => handleCopy(selectedRun.run_id)}
-                            className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition"
-                            title="Copy Run ID"
-                          >
-                            {copiedId === selectedRun.run_id ? (
-                              <Check className="w-3 h-3 text-[#3BB48C]" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            selectedRun.status === "FINISHED"
-                              ? "bg-[#3BB48C]"
-                              : selectedRun.status === "RUNNING"
-                              ? "bg-amber-500 animate-pulse"
-                              : "bg-rose-500"
-                          }`}
-                        />
-                        <span className="font-medium capitalize">{selectedRun.status.toLowerCase()}</span>
-                      </div>
-                    </div>
-
-                    {/* Metrics Grid */}
-                    <div>
-                      <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                        Evaluation Metrics ({Object.keys(selectedRun.metrics || {}).length})
-                      </h5>
-                      {selectedRun.metrics && Object.keys(selectedRun.metrics).length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {Object.entries(selectedRun.metrics).map(([k, v]) => (
-                            <div key={k} className="p-2.5 bg-slate-50/70 border border-slate-200 rounded">
-                              <span className="text-[10px] font-mono text-slate-500 block truncate">{k}</span>
-                              <span className="text-sm font-mono font-semibold text-slate-900 mt-0.5 block">
-                                {typeof v === "number"
-                                  ? v < 1 && v > 0
-                                    ? v.toFixed(4)
-                                    : v.toLocaleString()
-                                  : v}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 italic">No metrics reported for this run.</p>
-                      )}
-                    </div>
-
-                    {/* Hyperparameters Grid */}
-                    <div>
-                      <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                        Hyperparameters &amp; Params ({Object.keys(selectedRun.params || {}).length})
-                      </h5>
-                      {selectedRun.params && Object.keys(selectedRun.params).length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {Object.entries(selectedRun.params).map(([k, v]) => (
-                            <div
-                              key={k}
-                              className="p-2 bg-white border border-slate-200 rounded flex items-center justify-between gap-2"
-                            >
-                              <span className="text-[11px] font-mono text-slate-500 truncate">{k}</span>
-                              <span className="text-[11px] font-mono font-medium text-slate-900">
-                                {String(v)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 italic">No parameters recorded.</p>
-                      )}
-                    </div>
-
-                    {/* Tags */}
-                    {selectedRun.tags && Object.keys(selectedRun.tags).length > 0 && (
-                      <div>
-                        <h5 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                          Tags
-                        </h5>
-                        <div className="flex flex-wrap gap-2 text-[11px] font-mono text-slate-600">
-                          {Object.entries(selectedRun.tags).map(([k, v]) => (
-                            <span key={k} className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                              <span className="text-slate-400">{k}:</span> {v}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="p-10 text-center text-xs text-slate-400">
-                    Select a run on the left to inspect its parameters and metrics.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: CREATE EXPERIMENT ── */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-5 shadow-xl">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-[#3BB48C]" />
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Create MLflow Experiment
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsCreateOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {createError && (
-              <div className="p-2.5 mb-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
-                {createError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreate} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Experiment Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newExpName}
-                  onChange={(e) => setNewExpName(e.target.value)}
-                  placeholder="e.g. churn-prediction-xgboost"
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Tag / Metadata (Optional)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={newExpTagKey}
-                    onChange={(e) => setNewExpTagKey(e.target.value)}
-                    placeholder="Key (e.g. framework)"
-                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
-                  />
-                  <input
-                    type="text"
-                    value={newExpTagVal}
-                    onChange={(e) => setNewExpTagVal(e.target.value)}
-                    placeholder="Value (e.g. xgboost)"
-                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#3BB48C] font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating || !newExpName.trim()}
-                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-[#3BB48C] hover:bg-[#329F7B] disabled:opacity-50 rounded border border-[#329F7B] transition cursor-pointer shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>{creating ? "Creating..." : "Create Experiment"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+    <div className="experiments-toolbar" role="group" aria-label="Experiment filters">
+      <label><Search size={15} /><input aria-label="Search experiments or runs" placeholder="Search experiments or runs…" value={search}
+        onChange={event => { setSearch(event.target.value); setPage(1); }} /></label>
+      <label><FolderGit2 size={15} /><select aria-label="Project" value={project} onChange={event => { setProject(event.target.value); setExperimentFilter(""); setPage(1); }}>
+        <option value="">All Projects</option>{experimentProjects.map(key => <option key={key} value={key}>{projectLabels.get(key) ?? key}</option>)}
+      </select></label>
+      <label><FlaskConical size={15} /><select aria-label="Experiment" value={experimentFilter}
+        onChange={event => { setExperimentFilter(event.target.value); chooseExperiment(event.target.value); }}>
+        <option value="">All Experiments</option>{eligibleExperiments.map(experiment => <option key={experiment.experiment_id} value={experiment.experiment_id}>{experiment.name}</option>)}
+      </select></label>
+      <label><Tag size={15} /><select aria-label="Tag" value={tag} onChange={event => { setTag(event.target.value); setExperimentFilter(""); setPage(1); }}>
+        <option value="">All Tags</option>{tags.map(item => <option key={item}>{item}</option>)}
+      </select></label>
+      <label><Calendar size={15} /><select aria-label="Run date range" value={timeRange} onChange={event => { setTimeRange(event.target.value as TimeRange); setPage(1); }}>
+        {Object.keys(timeRanges).map(item => <option key={item}>{item}</option>)}
+      </select></label>
+      <button className="secondary-action" type="button" disabled={experimentQuery.isFetching || runQuery.isFetching}
+        onClick={() => { void Promise.all([experimentQuery.refetch(), projects.refetch(), ...(experimentId ? [runQuery.refetch()] : []), ...(runId ? [artifactQuery.refetch()] : []), ...(historyRuns.length && comparedRuns.length <= 3 ? [historyQuery.refetch()] : [])]); }}><RefreshCw size={15} />Refresh</button>
+      <button className="primary-action" type="button" onClick={() => setCreateOpen(true)}><Plus size={16} />New Experiment</button>
     </div>
-  );
-};
+    {(experimentQuery.isError || deleteMutation.isError) && <p className="experiments-notice" role="alert">
+      {experimentQuery.isError ? errorMessage(experimentQuery.error, "Could not load experiments from MLflow.") : errorMessage(deleteMutation.error, "Could not delete this experiment.")}
+    </p>}
+
+    <div className="experiments-kpis">
+      {statItems.map(([Icon, label, value, trend], index) => <div key={label} className="overview-card experiments-kpi"
+        title={index > 1 ? "Based on the runs shown for the selected experiment" : undefined}>
+        <Icon size={28} aria-hidden="true" /><div className="experiments-kpi-content"><strong>{label}</strong>
+          <div className="experiments-kpi-reading"><b>{value}</b>
+            <KpiTrend values={trend} showLine={index !== 3} lowerIsBetter={index === 3} />
+            {index === 4 && runs.length > 0 && <><small>({(successful / runs.length * 100).toFixed(1)}%)</small>
+              <progress aria-label="Successful runs" value={successful} max={runs.length} /></>}
+          </div>
+        </div>
+      </div>)}
+    </div>
+
+    <div className="experiments-grid">
+      <div className="experiments-main">
+        <div className="experiments-top">
+          <Panel title={`Experiments (${experimentRows.length})`} action={<button type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />New</button>}>
+            <div className="experiments-scroll"><table className="overview-table experiments-list">
+              <thead><tr><th scope="col">Experiment</th><th scope="col">Project</th><th scope="col">Runs</th></tr></thead>
+              <tbody>{(expanded ? experimentRows : experimentRows.slice(0, 5)).map(experiment =>
+                <tr key={experiment.experiment_id} data-active={experiment.experiment_id === experimentId}>
+                  <td><button type="button" aria-pressed={experiment.experiment_id === experimentId} onClick={() => chooseExperiment(experiment.experiment_id)}>
+                    <FlaskConical size={14} aria-hidden="true" /><span>{experiment.name}</span>
+                  </button></td><td>{projectName(experiment)}</td><td>{experiment.runs_count ?? "—"}</td>
+                </tr>
+              )}</tbody>
+            </table></div>
+            {!experimentRows.length && <p className="experiments-empty">{experimentQuery.isPending ? "Loading experiments…" : searchRuns && runQuery.isFetching ? "Searching runs…" : "No experiments found."}</p>}
+            {experimentRows.length > 5 && <button className="experiments-panel-link" type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
+              {expanded ? "Show Fewer Experiments" : "View All Experiments"}<ArrowRight size={14} />
+            </button>}
+          </Panel>
+
+          <Panel title="Run Comparison">
+            <div className="experiments-chart-controls">
+              <div className="experiments-segments" role="group" aria-label="Comparison metric">
+                {metrics.map(item => <button key={item.key} type="button" aria-pressed={metricKey === item.key} onClick={() => setMetricKey(item.key)}>{item.label}</button>)}
+              </div>
+              {comparedRuns.length > 0 ? <button className="experiments-compare-reset" type="button" onClick={() => setComparison(undefined)}>
+                {comparedRuns.length} selected <X size={13} aria-hidden="true" />
+              </button> : <select aria-label="Number of runs to compare" value={chartLimit} onChange={event => setChartLimit(Number(event.target.value))}>
+                {[10, 20, 50].map(limit => <option key={limit} value={limit}>Last {limit} Runs</option>)}
+              </select>}
+            </div>
+            {chart.some(point => point.value !== null) ? <div className="experiments-chart-layout">
+              <div className="experiments-chart" role="group" aria-label={`${metric.label} by ${showHistory ? "training step" : "run"}`}>
+                <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} accessibilityLayer margin={{ top: 12, right: 11, bottom: 19, left: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#e9edf1" />
+                  <XAxis dataKey="number" type={showHistory ? "number" : "category"} domain={["dataMin", "dataMax"]}
+                    allowDecimals={false} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }} minTickGap={10}
+                    label={{ value: showHistory ? "Training step" : "Run #", position: "insideBottom", offset: -11, ...axisTick }} />
+                  <YAxis width={49} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }} domain={["auto", "auto"]} />
+                  <Tooltip labelFormatter={number => showHistory ? `Step ${number}` : `Run #${number}`}
+                    formatter={(value: number, name: string) => [value.toFixed(4), name]} />
+                  {showHistory ? histories.map((history, index) =>
+                    <Line key={history.id} dataKey={point => point[history.id]} name={`Run #${ordinal.get(history.id)}`}
+                      stroke={comparisonColors[index]} strokeWidth={2} dot={history.points.length <= 30 ? { r: 2.5, fill: "#fff" } : false}
+                      activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+                  ) : <Line dataKey="value" name={metric.label} stroke={comparisonColors[0]} strokeWidth={2}
+                    dot={{ r: 2.5, fill: "#fff" }} activeDot={{ r: 4 }} isAnimationActive={false} />}
+                </LineChart></ResponsiveContainer>
+              </div>
+              {showHistory && <ul className="experiments-chart-legend" aria-label="Latest recorded scores">
+                {histories.map((history, index) => <li key={history.id}>
+                  <span style={{ backgroundColor: comparisonColors[index] }} aria-hidden="true" />
+                  Run #{ordinal.get(history.id)} ({history.points[history.points.length - 1].value.toFixed(4)})
+                </li>)}
+              </ul>}
+              {historyQuery.isError && comparedRuns.length <= 3 &&
+                <p className="experiments-chart-note">Metric history unavailable. Showing the latest score per run.</p>}
+            </div> : <p className="experiments-empty experiments-chart-empty">{runs.length ? `No ${metric.label} values recorded.` : runMessage}</p>}
+          </Panel>
+        </div>
+
+        <section className="experiments-run-area" ref={runPanel} aria-label="Run data">
+          <nav className="overview-card experiments-tabs" aria-label="Run views">
+            {views.map(([Icon, label]) => <button key={label} type="button" aria-pressed={view === label} onClick={() => setView(label)}>
+              <Icon size={16} aria-hidden="true" />{label}{label === "Runs" && ` (${runs.length})`}
+            </button>)}
+          </nav>
+
+          {showRuns ? <div className="overview-card experiments-runs">
+            <div className="experiments-scroll"><table className="overview-table">
+              <thead><tr><th scope="col"><input type="checkbox" aria-label="Compare all runs on this page" disabled={!pageRuns.length}
+                checked={pageRuns.length > 0 && checkedOnPage === pageRuns.length}
+                ref={input => { if (input) input.indeterminate = checkedOnPage > 0 && checkedOnPage < pageRuns.length; }}
+                onChange={event => setComparedRuns(pageRuns.map(run => run.run_id), event.target.checked)} /></th><th scope="col">Run #</th><th scope="col">Status</th>
+                {metrics.map(item => <th key={item.key} scope="col" className="experiments-run-metric"
+                  aria-sort={sort?.key === item.key ? (sort.ascending ? "ascending" : "descending") : undefined}>
+                  <button type="button" onClick={() => { setSort({ key: item.key, ascending: sort?.key === item.key && !sort.ascending }); setPage(1); }}>
+                    {item.label}<ArrowDownUp size={11} aria-hidden="true" />
+                  </button>
+                </th>)}
+                <th scope="col">Duration</th><th scope="col">Started At</th><th scope="col">Actions</th>
+              </tr></thead>
+              <tbody>{pageRuns.map(run => <tr key={run.run_id} data-active={run.run_id === runId}>
+                <td><input type="checkbox" aria-label={`Compare run #${ordinal.get(run.run_id)}`} checked={comparisonIds?.has(run.run_id) ?? false}
+                  onChange={event => setComparedRuns([run.run_id], event.target.checked)} /></td>
+                <td><button type="button" className="experiments-run-number" aria-pressed={run.run_id === runId}
+                  title={run.run_name ?? run.run_id} onClick={() => setActiveRunId(run.run_id)}>#{ordinal.get(run.run_id)}</button></td>
+                <td><RunStatus status={run.status} /></td>
+                {metrics.map(item => {
+                  const value = metricValue(run, item);
+                  const best = item.key === "accuracy" && value !== null && value === bestAccuracy;
+                  return <td key={item.key} className="experiments-run-metric">
+                    <span className={best ? "experiments-best" : undefined}>{value?.toFixed(4) ?? "—"}</span>
+                  </td>;
+                })}
+                <td>{formatDuration(runDuration(run))}</td>
+                <td>{run.start_time != null ? <time dateTime={new Date(run.start_time).toISOString()}
+                  title={dateTime.format(run.start_time)}>{runTableDate.format(run.start_time)}</time> : "—"}</td>
+                <td><span className="experiments-run-actions">
+                  <button type="button" aria-label={`Inspect run #${ordinal.get(run.run_id)}`} onClick={() => inspectRun(run.run_id)}><Eye size={16} /></button>
+                  <button type="button" aria-label={`Show metrics for run #${ordinal.get(run.run_id)}`} onClick={() => { setActiveRunId(run.run_id); setView("Metrics"); }}><EllipsisVertical size={15} /></button>
+                </span></td>
+              </tr>)}</tbody>
+            </table></div>
+            {!runs.length && <p className="experiments-empty">{runMessage}</p>}
+            {runs.length > 0 && <footer className="experiments-pagination">
+              <label>Rows per page <select value={rowsPerPage} onChange={event => { setRowsPerPage(Number(event.target.value)); setPage(1); }}>
+                {[5, 10, 20].map(count => <option key={count}>{count}</option>)}
+              </select></label>
+              <span>Showing {pageStart + 1}–{Math.min(pageStart + rowsPerPage, runs.length)} of {runs.length} runs</span>
+              <div role="group" aria-label="Run pagination">
+                <button type="button" aria-label="First page" disabled={currentPage === 1} onClick={() => setPage(1)}><ChevronsLeft size={15} /></button>
+                <button type="button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={15} /></button>
+                {Array.from({ length: pageCount }, (_, index) => index + 1).map(number =>
+                  <button type="button" key={number} aria-current={number === currentPage ? "page" : undefined} onClick={() => setPage(number)}>{number}</button>)}
+                <button type="button" aria-label="Next page" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}><ChevronRight size={15} /></button>
+              </div>
+            </footer>}
+          </div> : <Panel title={view}>
+            {view === "Metrics" && <Values entries={Object.entries(selectedRun?.metrics ?? {})} />}
+            {view === "Parameters" && <>
+              <Values entries={params} />
+              {selectedRun?.tags && Object.keys(selectedRun.tags).length > 0 && <>
+                <h3 className="experiments-subheading">Run Tags</h3>
+                <Values entries={Object.entries(selectedRun.tags)} />
+              </>}
+            </>}
+            {view === "Artifacts" && displayedArtifacts(false)}
+            {view === "Models (Registry)" && <>
+              {selectedRun?.status === "FINISHED" && <RegisterModel key={runId} run={selectedRun} />}
+              <Link className="experiments-panel-link" to="/app/models">Open Model Registry<ArrowUpRight size={14} /></Link>
+            </>}
+          </Panel>}
+        </section>
+      </div>
+
+      <aside className="experiments-sidebar" aria-label="Selected run details" ref={detailsPanel}>
+        <Panel title="Run Details" action={mlflowLink && <a href={mlflowLink} target="_blank" rel="noreferrer">Open in MLflow<ArrowUpRight size={14} /></a>}>
+          {selectedRun && selectedExperiment ? <dl className="experiments-values">
+            <div><dt>Run ID</dt><dd><span title={runId}>{runId.slice(0, 8)}…</span>
+              <button type="button" aria-label="Copy run ID" onClick={() => void copyRunId()}>{copyStatus === runId ? <Check size={13} /> : <Copy size={13} />}</button>
+            </dd></div>
+            <div><dt>Experiment</dt><dd>{selectedExperiment.name}</dd></div>
+            <div><dt>Project</dt><dd>{projectName(selectedExperiment)}</dd></div>
+            <div><dt>Status</dt><dd><RunStatus status={selectedRun.status} /></dd></div>
+            <div><dt>Start Time</dt><dd>{selectedRun.start_time ? dateTime.format(selectedRun.start_time) : "—"}</dd></div>
+            <div><dt>Duration</dt><dd>{formatDuration(runDuration(selectedRun))}</dd></div>
+            <div><dt>Model</dt><dd>{modelName ?? "—"}</dd></div>
+          </dl> : <p className="experiments-empty">{runMessage}</p>}
+          {copyStatus === "failed" && <p className="experiments-notice" role="status">Clipboard access is unavailable.</p>}
+          {selectedExperiment && <details className="experiments-metadata">
+            <summary>Experiment metadata</summary>
+            <Values entries={[["Experiment ID", experimentId], ["Artifact location", selectedExperiment.artifact_location ?? "—"],
+              ["Created", selectedExperiment.created_at ?? "—"], ...Object.entries(selectedExperiment.tags ?? {})]} />
+            {experimentId !== "0" && <button type="button" disabled={deleteMutation.isPending} onClick={() => void removeExperiment(selectedExperiment)}>Delete Experiment</button>}
+          </details>}
+        </Panel>
+        <Panel title={<><Settings className="experiments-section-icon" size={18} />Parameters</>}
+          action={params.length > 0 && <button type="button" onClick={() => openView("Parameters")}>View All<ChevronRight size={15} /></button>}>
+          <Values entries={params.slice(0, 5)} />
+        </Panel>
+        <Panel title={<><Box className="experiments-section-icon" size={18} />Artifacts{artifactQuery.isSuccess ? ` (${artifacts.length})` : ""}</>}
+          action={artifacts.length > 0 && <button type="button" onClick={() => openView("Artifacts")}>View All<ChevronRight size={15} /></button>}>
+          {displayedArtifacts(true)}
+        </Panel>
+      </aside>
+    </div>
+    {createOpen && <ExperimentForm onClose={() => setCreateOpen(false)} onCreated={id => {
+      setCreateOpen(false);
+      setSearch("");
+      setProject("");
+      setTag("");
+      setExperimentFilter("");
+      chooseExperiment(id);
+      void client.invalidateQueries({ queryKey: ["experiments-dashboard"] });
+      showSuccess("Experiment created.");
+    }} />}
+  </div>;
+}

@@ -1,7 +1,9 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, Award, CalendarDays, Check, ChevronRight, CloudUpload, Database, FileSpreadsheet, FolderGit2, GitBranch, HardDrive, Info, Layers, Plus, Search, TriangleAlert } from "lucide-react";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { ArrowRight, ArrowUpRight, Award, CalendarDays, Check, ChevronRight, CloudUpload, Copy, Database, FileSpreadsheet, FolderGit2, GitBranch, HardDrive, Info, Layers, Plus, Search, TriangleAlert } from "lucide-react";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { Dataset, Project } from "../api/types";
+import { fetchDatasetVersions, fetchMonitoringSummary } from "../api/client";
+import type { Dataset, DatasetColumn, DatasetVersion, Project } from "../api/types";
 
 type Props = {
   datasets: Dataset[];
@@ -33,6 +35,22 @@ function age(value: string) {
   return elapsed >= 60000 ? `${Math.floor(elapsed / 60000)} min ago` : "Just now";
 }
 
+function schemaChanges(versions: DatasetVersion[] | undefined) {
+  if (!versions || versions.length < 2) return "—";
+  const [latest, previous] = [...versions].sort((a, b) => b.version_num - a.version_num);
+  const currentColumns = latest.schema_json?.columns as DatasetColumn[] | undefined;
+  const previousColumns = previous.schema_json?.columns as DatasetColumn[] | undefined;
+  if (!Array.isArray(currentColumns) || !currentColumns.length ||
+      !Array.isArray(previousColumns) || !previousColumns.length) return "—";
+  const currentNames = new Set(currentColumns.map(column => column.name));
+  const previousNames = new Set(previousColumns.map(column => column.name));
+  const added = [...currentNames].filter(name => !previousNames.has(name)).length;
+  const removed = [...previousNames].filter(name => !currentNames.has(name)).length;
+  return `+${added} / −${removed}`;
+}
+
+const validationLabels = { PASS: "Healthy", WARN: "Warning", FAIL: "Failed" } as const;
+
 function Panel({ title, action, children, id }: { title: string; action?: ReactNode; children: ReactNode; id?: string }) {
   return <section className="overview-card dataset-panel" id={id}>
     <h3>{title}<Info aria-hidden="true" />{action}</h3>
@@ -61,17 +79,38 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
       (!qualityFilter || (qualityFilter === "scored" ? score !== null : score === null)) &&
       (!days || Date.now() - Date.parse(timestamp(item)) <= days * dayMs);
   }).sort((a, b) => Date.parse(timestamp(b)) - Date.parse(timestamp(a)));
-  const recentActivity = filtered.map(item => {
+  const schemaRows = allSchema ? filtered : filtered.slice(0, 4);
+  const schemaHistories = useQueries({
+    queries: schemaRows.map(item => ({
+      queryKey: ["dataset-schema-history", item.id, item.latest_version?.id],
+      queryFn: () => fetchDatasetVersions(item.id),
+      enabled: (item.versions_count ?? version(item) ?? 0) > 1,
+    })),
+  });
+  const { data: monitoring } = useQuery({
+    queryKey: ["monitoring-summary"],
+    queryFn: () => fetchMonitoringSummary(),
+    enabled: filtered.length > 0,
+  });
+  const validation = monitoring?.latest_quality;
+  const recentActivity = filtered.flatMap(item => {
     const latest = item.latest_version;
-    const uploaded = latest?.created_at && Date.parse(latest.created_at) >= Date.parse(timestamp(item));
-    return {
-      item,
-      date: uploaded ? latest.created_at : timestamp(item),
-      label: uploaded ? `Version added (v${latest.version_num ?? version(item)})`
-        : item.updated_at && item.updated_at !== item.created_at ? "Dataset updated" : "Dataset created",
-      uploaded,
-    };
-  }).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    const events = [{
+      item, date: timestamp(item), id: `${item.id}-metadata`, icon: Database,
+      label: item.updated_at && item.updated_at !== item.created_at ? "Dataset updated" : "Dataset created",
+    }];
+    if (latest?.created_at) {
+      events.push({ item, date: latest.created_at, id: latest.id, icon: CloudUpload,
+        label: `Version added (v${latest.version_num})` });
+    }
+    if (validation?.dataset_id === item.id) {
+      events.push({ item, date: validation.created_at, id: validation.id,
+        icon: validation.status === "PASS" ? Check : TriangleAlert,
+        label: `Quality check ${{ PASS: "passed", WARN: "reported warnings", FAIL: "failed" }[validation.status]}` });
+    }
+    return events;
+  }).filter(event => !days || Date.now() - Date.parse(event.date) <= days * dayMs)
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
   const catalog = allRows ? filtered : filtered.slice(0, 4);
   const allChecked = catalog.length > 0 && catalog.every(item => selected.includes(item.id));
   const scored = filtered.filter(item => quality(item) !== null).sort((a, b) => quality(b)! - quality(a)!);
@@ -207,33 +246,43 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
         })}</div> : empty}
       </Panel>
       <Panel title="Freshness & Validation Status">
-        <div className="dataset-freshness"><div className="dataset-donut" style={{ background: `conic-gradient(#00843c ${filtered.length ? scored.length / filtered.length * 100 : 0}%, #9ae5a0 0)` }}><div><strong>{filtered.length}</strong><small>Datasets</small></div></div>
+        <div className="dataset-freshness"><div className="dataset-donut" style={{ background: "#e4e8ec" }}><div><strong>{filtered.length}</strong><small>Datasets</small></div></div>
           <dl>
-            <div><dt><i className="freshness-dot" />Scored ({scored.length})</dt><dd>{filtered.length ? `${(scored.length / filtered.length * 100).toFixed(1)}%` : "—"}</dd></div>
-            <div><dt><i className="freshness-dot is-light" />Unscored ({filtered.length - scored.length})</dt><dd>{filtered.length ? `${((filtered.length - scored.length) / filtered.length * 100).toFixed(1)}%` : "—"}</dd></div>
-            <div><dt><CalendarDays size={13} />Latest update</dt><dd>{filtered.length ? age(timestamp(filtered[0])) : "—"}</dd></div>
+            <div><dt><i className="freshness-dot" />On-time</dt><dd>—</dd></div>
+            <div><dt><i className="freshness-dot is-light" />Late</dt><dd>—</dd></div>
+            <div><dt><CalendarDays size={13} />Last refresh (avg)</dt><dd>—</dd></div>
             <div><dt><CalendarDays size={13} />Next scheduled refresh</dt><dd>—</dd></div>
           </dl>
         </div>
       </Panel>
       <Panel title="Schema & Null Monitoring" action={<button className="dataset-panel-action" onClick={() => setAllSchema(value => !value)}>{allSchema ? "Show Fewer" : "View Schema Details"} <ChevronRight size={13} /></button>}>
         {filtered.length ? <div className="dataset-scroll"><table className="overview-table dataset-table"><thead><tr><th>Dataset</th><th>Missing %</th><th>Duplicate %</th><th>Schema Changes</th><th>Status</th></tr></thead><tbody>
-          {(allSchema ? filtered : filtered.slice(0, 4)).map(item => {
+          {schemaRows.map((item, index) => {
             const rows = item.row_count ?? item.latest_version?.row_count;
             const columns = item.columns ?? item.latest_version?.schema_json?.columns;
-            const missing = rows && Array.isArray(columns) && columns.length && columns.every(column => Number.isFinite(column.null_count))
+            const report = validation?.dataset_id === item.id &&
+              Date.parse(validation.created_at) >= Date.parse(item.latest_version?.created_at ?? item.created_at)
+              ? validation : null;
+            const profiledMissing = rows && Array.isArray(columns) && columns.length && columns.every(column => Number.isFinite(column.null_count))
               ? columns.reduce((total, column) => total + column.null_count, 0) / (rows * columns.length) * 100
               : null;
-            return <tr key={item.id}><td><button onClick={() => onOpen(item, "profiling")}>{item.name}</button></td><td>{missing == null ? "—" : `${missing.toFixed(2)}%`}</td><td>—</td><td>—</td><td>{columns?.length ? <span className="health-pill">Profiled</span> : "—"}</td></tr>;
+            const missing = report?.null_percentage ?? profiledMissing;
+            const status = report ? validationLabels[report.status] : columns?.length ? "Profiled" : null;
+            return <tr key={item.id}><td><button onClick={() => onOpen(item, "profiling")}>{item.name}</button></td>
+              <td>{missing == null ? "—" : `${missing.toFixed(2)}%`}</td>
+              <td>{report ? `${report.duplicate_percentage.toFixed(2)}%` : "—"}</td>
+              <td>{schemaChanges(schemaHistories[index].data)}</td>
+              <td>{status ? <span className={report && report.status !== "PASS" ? undefined : "health-pill"}>{status}</span> : "—"}</td>
+            </tr>;
           })}
         </tbody></table></div> : empty}
       </Panel>
       <Panel title="Recent Dataset Activity" action={<button className="dataset-panel-action" onClick={() => setAllActivity(value => !value)}>{allActivity ? "Show Fewer" : "View All Activity"} <ChevronRight size={13} /></button>}>
-        {filtered.length ? <div className="dataset-scroll"><table className="overview-table dataset-table"><thead><tr><th>Time</th><th>Event</th><th>Dataset</th><th>Project</th></tr></thead><tbody>
-          {(allActivity ? recentActivity : recentActivity.slice(0, 4)).map(({ item, date, label, uploaded }) => (
-            <tr key={item.id}>
+        {recentActivity.length ? <div className="dataset-scroll"><table className="overview-table dataset-table"><thead><tr><th>Time</th><th>Event</th><th>Dataset</th><th>Project</th></tr></thead><tbody>
+          {(allActivity ? recentActivity : recentActivity.slice(0, 4)).map(({ item, date, label, icon: Icon, id }) => (
+            <tr key={id}>
               <td title={new Date(date).toLocaleString()}>{age(date)}</td>
-              <td><span className="dataset-inline">{uploaded ? <CloudUpload size={15} /> : <Database size={14} />}{label}</span></td>
+              <td><span className="dataset-inline"><Icon size={15} />{label}</span></td>
               <td><button onClick={() => onOpen(item)}>{item.name}</button></td>
               <td><span className="health-pill">{projectName(item)}</span></td>
             </tr>
@@ -243,17 +292,28 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
     </div>
     <div className="dataset-grid dataset-health">
       <Panel id="dataset-integrations" title="DVC / MinIO Integration Health" action={onDvc && <button className="dataset-panel-action" onClick={onDvc}>DVC Settings <ChevronRight size={13} /></button>}>
-        {filtered.length ? <div className="dataset-scroll"><table className="overview-table dataset-table"><thead><tr><th>Dataset</th><th>Git Tracked</th><th>DVC Hash</th><th>MinIO Sync</th><th>SHA-256</th></tr></thead><tbody>
+        {filtered.length ? <div className="dataset-scroll"><table className="overview-table dataset-table"><thead><tr><th>Dataset</th><th>Git Tracked</th><th>DVC Hash</th><th>MinIO Sync</th><th>Checksum Validation</th></tr></thead><tbody>
           {filtered.slice(0, 4).map(item => {
             const hash = hashFor(item);
-            return <tr key={item.id}><td><button onClick={() => onOpen(item, "dvc")}>{item.name}</button></td><td>—</td><td>—</td><td>{minio(item) ? <span className="project-check" aria-label="Object key recorded">✓</span> : "—"}</td><td>{hash ? <button className="dataset-hash" title="Copy SHA-256 checksum" onClick={() => onCopy(hash)}>{copiedHash === hash ? "Copied" : `${hash.slice(0, 8)}…`}</button> : "—"}</td></tr>;
+            return <tr key={item.id}>
+              <td><button onClick={() => onOpen(item, "dvc")}>{item.name}</button></td>
+              <td title="Git tracking status unavailable">—</td>
+              <td title="DVC hash unavailable">—</td>
+              <td title="MinIO synchronization status unavailable">{minio(item) ? "Key recorded" : "—"}</td>
+              <td>{hash && !/^0+$/.test(hash) ? <span className="dataset-inline">
+                <button className="dataset-hash dataset-inline" title="Copy recorded SHA-256 checksum" aria-label={`Copy SHA-256 checksum for ${item.name}`} onClick={() => onCopy(hash)}>
+                  {copiedHash === hash ? "Copied" : `${hash.slice(0, 8)}…`} <Copy size={11} aria-hidden="true" />
+                </button>
+                <span title="Artifact checksum validation result unavailable">Unverified</span>
+              </span> : "—"}</td>
+            </tr>;
           })}
         </tbody></table></div> : empty}
       </Panel>
       <Panel title="Dataset Consumers">
         {filtered.some(item => item.downstream_models?.length) ? <div className="dataset-consumers-list">{filtered.filter(item => item.downstream_models?.length).map(item => (
           <button key={item.id} onClick={() => onOpen(item)}>{item.name}<span>{item.downstream_models!.join(", ")}</span></button>
-        ))}</div> : <div className="dataset-consumers-empty"><span><Layers size={29} /></span><strong>{filtered.some(item => item.downstream_models) ? "No linked models" : "Consumer data unavailable"}</strong><small>Downstream model links appear here when recorded.</small></div>}
+        ))}</div> : <div className="dataset-consumers-empty"><span><Layers size={29} /></span><strong>Downstream status unavailable</strong><small>Dataset availability for training, experiments, and deployments is unknown.</small></div>}
       </Panel>
     </div>
   </>;

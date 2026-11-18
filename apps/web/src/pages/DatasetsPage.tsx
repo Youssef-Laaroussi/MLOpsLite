@@ -336,7 +336,7 @@ export const DatasetsPage: React.FC = () => {
                   ) : (
                     <div className="border border-slate-200 rounded overflow-hidden">
                       <table className="w-full text-left text-xs text-slate-800 border-collapse">
-                        <thead className="bg-[#F8FAFC] border-b border-slate-200 font-semibold text-[11px] text-slate-500 uppercase">
+                        <thead className="bg-[#F9FAFB] border-b border-slate-200 font-semibold text-[11px] text-slate-500 uppercase">
                           <tr>
                             <th className="px-3 py-2">Version</th>
                             <th className="px-3 py-2">SHA-256 Hash</th>

@@ -1,37 +1,21 @@
-import { countBy, MetricDistribution } from "../components/charts/MetricDistribution";
-import { StatCard } from "../components/StatCard";
 import { useActionFeedback } from "../components/ActionFeedback";
-import React, { useEffect, useState, useTransition } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
-  Webhook,
-  ShieldAlert,
-  AlertTriangle,
-  AlertOctagon,
-  CheckCircle2,
-  Activity,
-  Gauge,
-  ServerCrash,
-  Send,
-  Plus,
-  ArrowUpRight,
-  BellRing,
-  Trash2,
-  RefreshCw,
-  AlertCircle,
-  Play,
-  Check,
+  Activity, AlertCircle, AlertTriangle, ArrowRight, Bell, Box, Boxes, CalendarDays, CheckCircle2,
+  ChevronRight, Database, FolderGit2, Gauge, Hash, Info, Layers, Mail, Play, Plus, RefreshCw,
+  Rocket, Search, ServerCrash, Settings, ShieldAlert, Trash2, Webhook, X,
 } from "lucide-react";
 import {
   Alert,
   AlertRule,
   NotificationChannel,
-  AlertSummary,
+  Project,
   AlertSeverity,
 } from "../api/types";
 import {
   fetchAlerts,
-  fetchAlertsSummary,
+  fetchProjects,
   acknowledgeAlert,
   resolveAlert,
   fetchAlertRules,
@@ -45,20 +29,79 @@ import {
   testNotificationChannel,
 } from "../api/client";
 
-function formatTimeAgo(dateStr: string): string {
-  try {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    if (isNaN(diff)) return "--";
-    const min = Math.floor(diff / 60000);
-    if (min < 1) return "Just now";
-    if (min < 60) return `${min}m ago`;
-    const hours = Math.floor(min / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  } catch {
-    return "--";
-  }
+import "./AlertsPage.css";
+
+const severities = {
+  CRITICAL: {label: "Critical", color: "#e52d27", tone: "danger", Icon: AlertTriangle},
+  HIGH: {label: "High", color: "#ae2988", tone: "danger", Icon: AlertTriangle},
+  WARNING: {label: "Warning", color: "#f59e0b", tone: "warning", Icon: AlertTriangle},
+  INFO: {label: "Info", color: "#15ae35", tone: "good", Icon: Info},
+} as const;
+const statuses = {
+  OPEN: {label: "Open", tone: "danger"},
+  ACKNOWLEDGED: {label: "In Progress", tone: "info"},
+  RESOLVED: {label: "Resolved", tone: "good"},
+} as const;
+const sources = {
+  Model: {Icon: Box, color: "#13ad34"},
+  Deployment: {Icon: Rocket, color: "#90d992"},
+  Dataset: {Icon: Database, color: "#ffc14e"},
+  Service: {Icon: Layers, color: "#b9c0cb"},
+} as const;
+type AlertSource = keyof typeof sources;
+
+function alertSource(alert: Alert): AlertSource {
+  const event = alert.event_type.toUpperCase();
+  if (alert.deployment_id || /DEPLOYMENT|LATENCY/.test(event)) return "Deployment";
+  if (/DATASET|QUALITY|FRESHNESS|SCHEMA/.test(event)) return "Dataset";
+  if (alert.model_name || event.includes("DRIFT")) return "Model";
+  return "Service";
+}
+
+function AlertsPanel({title, action, children}: {title: string; action?: React.ReactNode; children: React.ReactNode}) {
+  return <section className="overview-card alerts-panel">
+    <h2>{title}<Info size={14} aria-hidden="true" />{action}</h2>
+    {children}
+  </section>;
+}
+
+function AlertPill({label, tone}: {label: string; tone: string}) {
+  return <span className={`alerts-pill alerts-pill-${tone}`}><i aria-hidden="true" />{label}</span>;
+}
+
+function AlertBreakdown({title, rows}: {title: string; rows: {label: string; count: number; color: string}[]}) {
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  let offset = 0;
+  const slices = rows.filter(row => row.count).map(row => {
+    const start = offset;
+    offset += row.count / total * 100;
+    return `${row.color} ${start}% ${offset}%`;
+  });
+  return <AlertsPanel title={title}>
+    <div className="alerts-breakdown">
+      <div className="alerts-ring" style={{backgroundImage: total ? `conic-gradient(${slices.join(", ")})` : undefined}}>
+        <span><strong>{total}</strong>Alerts</span>
+      </div>
+      <dl>{rows.map(row => <div key={row.label}>
+        <dt><i style={{backgroundColor: row.color}} aria-hidden="true" />{row.label}</dt>
+        <dd>{row.count}{total > 0 && ` (${(row.count / total * 100).toFixed(1)}%)`}</dd>
+      </div>)}</dl>
+    </div>
+  </AlertsPanel>;
+}
+
+function AlertTrend({values}: {values: number[]}) {
+  const max = Math.max(1, ...values);
+  const points = values.map((value, index) => `${index * 70 / (values.length - 1)},${20 - value * 17 / max}`).join(" ");
+  return <svg className="alerts-sparkline" viewBox="0 0 70 23" aria-hidden="true">
+    <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.6" />
+  </svg>;
+}
+
+function localDay(date: Date) {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime();
 }
 
 export const AlertsPage: React.FC = () => {
@@ -66,14 +109,23 @@ export const AlertsPage: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
-  const [summary, setSummary] = useState<AlertSummary | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
   const [evalResult, setEvalResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [filter, setFilter] = useState<"all" | "critical" | "warning" | "resolved">("all");
+  const [search, setSearch] = useState("");
+  const [project, setProject] = useState("");
+  const [source, setSource] = useState("");
+  const [severity, setSeverity] = useState("");
+  const [days, setDays] = useState(7);
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const [showAllRules, setShowAllRules] = useState(false);
+  const [showChannels, setShowChannels] = useState(false);
+  const [selectedAlertId, setSelectedAlertId] = useState<string>();
+  const [pendingAlertAction, setPendingAlertAction] = useState(false);
   const [channelTesting, setChannelTesting] = useState<string | null>(null);
   const [channelTestResult, setChannelTestResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
 
@@ -96,14 +148,14 @@ export const AlertsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [alertsData, summaryData, rulesData, channelsData] = await Promise.all([
-        fetchAlerts(),
-        fetchAlertsSummary(),
+      const [alertsData, rulesData, channelsData, projectsData] = await Promise.all([
+        fetchAlerts({limit: 200}),
         fetchAlertRules(),
         fetchNotificationChannels(),
+        fetchProjects().catch(() => []),
       ]);
       setAlerts(alertsData);
-      setSummary(summaryData);
+      setProjects(projectsData);
       setRules(rulesData);
       setChannels(channelsData);
     } catch (err: any) {
@@ -121,8 +173,6 @@ export const AlertsPage: React.FC = () => {
     try {
       const updated = await acknowledgeAlert(id);
       setAlerts((prev) => prev.map((a) => (a.id === id ? updated : a)));
-      const s = await fetchAlertsSummary();
-      setSummary(s);
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to acknowledge alert");
     }
@@ -132,8 +182,6 @@ export const AlertsPage: React.FC = () => {
     try {
       const updated = await resolveAlert(id);
       setAlerts((prev) => prev.map((a) => (a.id === id ? updated : a)));
-      const s = await fetchAlertsSummary();
-      setSummary(s);
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Failed to resolve alert");
     }
@@ -245,13 +293,7 @@ export const AlertsPage: React.FC = () => {
     try {
       const res = await evaluateAlertRules();
       setEvalResult(`Evaluated ${res.evaluated} rule(s) — ${res.triggered.length} alert(s) triggered.`);
-      // Reload alerts and summary
-      const [alertsData, summaryData] = await Promise.all([
-        fetchAlerts(),
-        fetchAlertsSummary(),
-      ]);
-      setAlerts(alertsData);
-      setSummary(summaryData);
+      setAlerts(await fetchAlerts({limit: 200}));
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Rule evaluation failed");
     } finally {
@@ -259,444 +301,207 @@ export const AlertsPage: React.FC = () => {
     }
   };
 
-  // Filter incidents list
-  const filteredAlerts = alerts.filter((a) => {
-    if (filter === "all") return true;
-    if (filter === "resolved") return a.status === "RESOLVED";
-    if (filter === "critical") return (a.severity === "CRITICAL" || a.severity === "HIGH") && a.status !== "RESOLVED";
-    if (filter === "warning") return a.severity === "WARNING" && a.status !== "RESOLVED";
-    return true;
-  });
-
-  const getSeverityBadge = (a: Alert) => {
-    if (a.status === "RESOLVED") {
-      return {
-        pill: "bg-[#10b981] text-white",
-        icon: CheckCircle2,
-        label: "Resolved",
-      };
-    }
-    if (a.status === "ACKNOWLEDGED") {
-      return {
-        pill: "bg-slate-700 text-white",
-        icon: Activity,
-        label: "Acknowledged",
-      };
-    }
-    if (a.severity === "CRITICAL" || a.severity === "HIGH") {
-      return {
-        pill: "bg-[#ef4444] text-white",
-        icon: AlertOctagon,
-        label: a.severity === "CRITICAL" ? "Critical" : "High",
-      };
-    }
-    if (a.severity === "WARNING") {
-      return {
-        pill: "bg-[#f59e0b] text-white",
-        icon: AlertTriangle,
-        label: "Warning",
-      };
-    }
+  const projectNames = new Map(projects.map(item => [item.id, item.name]));
+  const projectOptions = [...new Set([...projectNames.keys(), ...alerts.flatMap(alert => alert.project_id ? [alert.project_id] : [])])];
+  const query = search.trim().toLowerCase();
+  const matching = alerts.filter(alert =>
+    (!project || alert.project_id === project) &&
+    (!source || alertSource(alert) === source) &&
+    (!severity || alert.severity === severity) &&
+    (!query || [alert.title, alert.message, alert.model_name, alert.deployment_id, projectNames.get(alert.project_id ?? "")]
+      .some(value => value?.toLowerCase().includes(query))));
+  const today = new Date();
+  const timeline = Array.from({length: days * 2}, (_, index) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() - days * 2 + index + 1);
+    const key = localDay(date);
     return {
-      pill: "bg-[#3b82f6] text-white",
-      icon: ShieldAlert,
-      label: "Info",
+      key, date: date.toLocaleDateString("en-US", {month: "short", day: "numeric"}),
+      ...(Object.fromEntries(Object.keys(severities).map(level => [
+        level, matching.filter(alert => alert.severity === level && localDay(new Date(alert.created_at)) === key).length,
+      ])) as Record<AlertSeverity, number>),
+      resolved: matching.filter(alert => alert.resolved_at && localDay(new Date(alert.resolved_at)) === key).length,
     };
-  };
-
-  const getMetricIcon = (metric: string) => {
-    if (metric === "drift_share") return Activity;
-    if (metric === "latency_p95_ms") return Gauge;
-    return ServerCrash;
-  };
-
-  const formatMetricLabel = (metric: string, op: string, threshold: number) => {
-    if (metric === "drift_share") return `Drift share ${op} ${(threshold * 100).toFixed(0)}%`;
-    if (metric === "latency_p95_ms") return `P95 Latency ${op} ${threshold} ms`;
-    return `Failed containers ${op} ${threshold}`;
+  });
+  const period = timeline.slice(days);
+  const filteredAlerts = matching.filter(alert => Date.parse(alert.created_at) >= period[0].key)
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  const selectedAlert = alerts.find(alert => alert.id === selectedAlertId);
+  const severityRows = (Object.keys(severities) as AlertSeverity[]).filter(level => level !== "HIGH" || filteredAlerts.some(alert => alert.severity === level));
+  const selectedPeriod = new Intl.DateTimeFormat("en-US", {dateStyle: "medium", timeStyle: "short"});
+  const cards = [
+    {title: "Total Alerts", Icon: Bell, color: "#008713", value: (day: typeof period[number]) => day.CRITICAL + day.HIGH + day.WARNING + day.INFO},
+    {title: "Critical / High", Icon: AlertTriangle, color: "#d32925", value: (day: typeof period[number]) => day.CRITICAL + day.HIGH},
+    {title: "Warning", Icon: AlertTriangle, color: "#b76502", value: (day: typeof period[number]) => day.WARNING},
+    {title: "Info", Icon: Info, color: "#008713", value: (day: typeof period[number]) => day.INFO},
+    {title: "Resolved", Icon: CheckCircle2, color: "#008713", value: (day: typeof period[number]) => day.resolved},
+  ];
+  const integrations = [
+    {kind: "SLACK", label: "Slack", Icon: Hash},
+    {kind: "EMAIL", label: "Email", Icon: Mail},
+    {kind: "WEBHOOK", label: "Webhook", Icon: Webhook},
+    ...(channels.some(channel => channel.kind === "DISCORD") ? [{kind: "DISCORD", label: "Discord", Icon: Hash}] : []),
+  ];
+  const formatCondition = (rule: AlertRule) => {
+    if (rule.metric === "drift_share") return `Drift share ${rule.operator} ${Number((rule.threshold * 100).toFixed(2))}%`;
+    if (rule.metric === "latency_p95_ms") return `p95 ${rule.operator} ${rule.threshold} ms`;
+    return `Failed containers ${rule.operator} ${rule.threshold}`;
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* ── Error Banner ── */}
-      {error && (
-        <div className="p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 flex items-start justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-rose-600 font-bold hover:underline cursor-pointer"
-          >
-            Dismiss
-          </button>
+    <div className="alerts-dashboard">
+      <header className="overview-hero alerts-hero">
+        <div><h1>Alerts</h1><p>Detect, track, and respond to issues across your models, deployments, and data pipelines.</p></div>
+        <div className="alerts-lifecycle" aria-hidden="true">
+          {([[Boxes, "Detect"], [ShieldAlert, "Alert"], [Settings, "Investigate"], [CheckCircle2, "Resolve"]] as const).map(([Icon, label], index) => (
+            <div key={label}><span><Icon size={38} strokeWidth={1.55} /></span><strong>{label}</strong>
+              {index < 3 && <ArrowRight className="alerts-stage-arrow" size={22} />}
+            </div>
+          ))}
         </div>
-      )}
+      </header>
 
-      {/* ── Evaluation Notice ── */}
-      {evalResult && (
-        <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{evalResult}</span>
-          </div>
-          <button
-            onClick={() => setEvalResult(null)}
-            className="text-emerald-700 font-bold hover:underline cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight font-sans flex items-center gap-2">
-            <span>Alerts &amp; Incidents</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Real-time threshold evaluation, incident tracking, and outbound webhooks for serving infrastructure
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            id="alerts-evaluate-rules"
-            onClick={handleEvaluateRules}
-            disabled={evaluating}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition active:translate-y-0.5 cursor-pointer disabled:opacity-50"
-          >
-            <Play className={`w-3.5 h-3.5 text-[#3BB48C] ${evaluating ? "animate-spin" : ""}`} />
-            {evaluating ? "Evaluating..." : "Evaluate Rules"}
-          </button>
-          <button
-            id="alerts-refresh"
-            onClick={loadData}
-            disabled={loading}
-            className="p-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 text-xs shadow-2xs transition active:translate-y-0.5 cursor-pointer"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-          <button
-            id="alerts-new-rule"
-            onClick={() => setIsRuleModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:translate-y-0.5 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> New Alert Rule
-          </button>
-        </div>
+      <div className="alerts-toolbar" role="group" aria-label="Alert filters">
+        <label><Search size={15} /><input aria-label="Search alerts" placeholder="Search alerts (e.g., drift, latency, error)…" value={search} onChange={event => setSearch(event.target.value)} /></label>
+        <label><FolderGit2 size={15} /><select aria-label="Project" value={project} onChange={event => setProject(event.target.value)}>
+          <option value="">All Projects</option>{projectOptions.map(id => <option key={id} value={id}>{projectNames.get(id) ?? id}</option>)}
+        </select></label>
+        <label><Layers size={15} /><select aria-label="Source" value={source} onChange={event => setSource(event.target.value)}>
+          <option value="">All Sources</option>{Object.keys(sources).map(name => <option key={name}>{name}</option>)}
+        </select></label>
+        <label><AlertTriangle size={15} /><select aria-label="Severity" value={severity} onChange={event => setSeverity(event.target.value)}>
+          <option value="">All Severities</option>{Object.entries(severities).map(([key, level]) => <option key={key} value={key}>{level.label}</option>)}
+        </select></label>
+        <label><CalendarDays size={15} /><select aria-label="Time range" value={days} onChange={event => setDays(Number(event.target.value))}>
+          {[7, 14, 30, 90].map(value => <option key={value} value={value}>Last {value} days</option>)}
+        </select></label>
+        <button className="primary-action" id="alerts-new-rule" onClick={() => setIsRuleModalOpen(true)}><Plus size={16} />New Alert Rule</button>
       </div>
 
-      <MetricDistribution
-        title="Alerts by severity"
-        description="Alerts in the current list filter"
-        rows={countBy(filteredAlerts, alert => alert.severity)}
-        loading={loading}
-        unavailable={Boolean(error) && alerts.length === 0}
-      />
+      {error && <div className="alerts-notice alerts-notice-error" role="alert"><AlertCircle size={15} />{error}<button onClick={() => setError(null)}>Dismiss</button></div>}
+      {evalResult && <div className="alerts-notice" role="status"><CheckCircle2 size={15} />{evalResult}<button onClick={() => setEvalResult(null)}>Dismiss</button></div>}
 
-      {/* ── Metrics Summary Cards (Real Backend Metrics) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Criticals" value={summary?.open_critical ?? "—"} icon={AlertOctagon} color="rose" />
-        <StatCard title="Active Warnings" value={summary?.open_warning ?? "—"} icon={AlertTriangle} color="amber" />
-        <StatCard title="Resolved (7d)" value={summary?.resolved_7d ?? "—"} icon={CheckCircle2} />
-        <StatCard
-          title="Mean Time to Resolve"
-          value={summary?.mttr_minutes != null ? `${summary.mttr_minutes.toFixed(0)} min` : "No data"}
-          icon={BellRing}
-          subtitle={summary?.mttr_minutes != null ? "Calculated from resolved incidents" : "No resolved incidents yet"}
-        />
+      <div className="overview-kpis alerts-kpis">
+        {cards.map(({title, Icon, color, value}) => {
+          const values = period.map(value);
+          const total = values.reduce((sum, count) => sum + count, 0);
+          const previous = timeline.slice(0, days).reduce((sum, day) => sum + value(day), 0);
+          const change = previous && alerts.length < 200 ? Math.round((total - previous) / previous * 100) : null;
+          return <div className="overview-card alerts-kpi" key={title} style={{color}}>
+            <Icon size={23} aria-hidden="true" /><div><strong>{title}</strong><b>{loading && !alerts.length ? "—" : total}
+              {change !== null && <small title="Change from the previous period">{change > 0 ? "+" : ""}{change}%</small>}</b></div>
+            {total > 0 && <AlertTrend values={values} />}
+          </div>;
+        })}
       </div>
 
-      {/* ── Incidents & Channels ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Incidents Section */}
-        <section className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Incident History</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Real-time alerts log from DB</p>
-            </div>
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-              {(["all", "critical", "warning", "resolved"] as const).map((f) => (
-                <button
-                  key={f}
-                  id={`alerts-filter-${f}`}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg capitalize transition cursor-pointer ${
-                    filter === f ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {f === "all" ? "All" : f}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                <tr>
-                  <th className="px-6 py-3">Severity / State</th>
-                  <th className="px-6 py-3">Incident &amp; Detail</th>
-                  <th className="px-6 py-3">Target</th>
-                  <th className="px-6 py-3 text-right">Time</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredAlerts.map((alert) => {
-                  const S = getSeverityBadge(alert);
-                  const targetLabel = alert.model_name
-                    ? alert.model_name
-                    : alert.deployment_id
-                    ? alert.deployment_id
-                    : "System";
-                  const targetLink = alert.model_name ? "/app/monitoring" : "/app/deployments";
-
-                  return (
-                    <tr
-                      key={alert.id}
-                      className="hover:bg-slate-50/80 transition-colors group"
-                    >
-                      {/* Severity Pill */}
-                      <td className="px-6 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${S.pill}`}>
-                          <S.icon className="w-3 h-3" />
-                          {S.label}
-                        </span>
-                      </td>
-
-                      {/* Title & Detail */}
-                      <td className="px-6 py-3.5">
-                        <div className="font-semibold text-sm text-slate-900 group-hover:text-[#3BB48C] transition-colors">
-                          {alert.title}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-0.5 font-normal">
-                          {alert.message}
-                        </div>
-                        {alert.acknowledged_by && alert.status !== "RESOLVED" && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            Acknowledged by {alert.acknowledged_by}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Target & ID */}
-                      <td className="px-6 py-3.5 whitespace-nowrap">
-                        <Link
-                          to={targetLink}
-                          className="text-xs font-mono font-medium text-slate-700 hover:text-[#3BB48C] flex items-center gap-1"
-                        >
-                          <span>{targetLabel}</span>
-                          <ArrowUpRight className="w-3 h-3 text-slate-300 group-hover:text-[#3BB48C]" />
-                        </Link>
-                        <div className="text-[10px] font-mono text-slate-400 mt-0.5 truncate max-w-[120px]" title={alert.id}>
-                          {alert.id.substring(0, 12)}...
-                        </div>
-                      </td>
-
-                      {/* Timestamp */}
-                      <td className="px-6 py-3.5 text-right whitespace-nowrap text-xs text-slate-500 font-mono">
-                        {formatTimeAgo(alert.created_at)}
-                      </td>
-
-                      {/* Incident Action Buttons */}
-                      <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {alert.status === "OPEN" && (
-                            <button
-                              onClick={() => handleAcknowledge(alert.id)}
-                              className="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shadow-2xs"
-                              title="Acknowledge alert"
-                            >
-                              Ack
-                            </button>
-                          )}
-                          {alert.status !== "RESOLVED" && (
-                            <button
-                              onClick={() => handleResolve(alert.id)}
-                              className="px-2.5 py-1 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer shadow-2xs"
-                              title="Mark as resolved"
-                            >
-                              Resolve
-                            </button>
-                          )}
-                          {alert.status === "RESOLVED" && (
-                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" /> Done
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filteredAlerts.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-400">
-                      {loading ? "Loading incidents..." : "No incidents found for the selected filter."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Notification Webhooks */}
-        <section className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4 h-fit">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Webhook className="w-4 h-4 text-[#3BB48C]" /> Notification Channels
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Outbound dispatch webhooks</p>
-            </div>
-            <button
-              onClick={() => setIsChannelModalOpen(true)}
-              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#3BB48C] hover:bg-[#329F7B] text-white flex items-center gap-1 shadow-2xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {channels.map((c) => (
-              <div key={c.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition relative group">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-slate-900">{c.name}</span>
-                  <div className="flex items-center gap-1.5">
-                    {c.last_test_ok === true && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        <CheckCircle2 className="w-3 h-3" /> Tested ✓
-                      </span>
-                    )}
-                    {c.last_test_ok === false && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
-                        Failed
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleDeleteChannel(c.id)}
-                      className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer transition"
-                      title="Delete webhook"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded bg-white border border-slate-200/80 font-mono text-[11px] text-slate-600 truncate">
-                  {c.url}
-                </div>
-
-                {channelTestResult && channelTestResult.id === c.id && (
-                  <div className={`mt-2 text-[11px] p-2 rounded-lg ${channelTestResult.ok ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"}`}>
-                    {channelTestResult.msg}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => handleTestChannel(c)}
-                  disabled={channelTesting === c.id}
-                  className="mt-3 w-full py-1.5 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs active:translate-y-0.5 disabled:opacity-50"
-                >
-                  <Send className={`w-3.5 h-3.5 text-[#3BB48C] ${channelTesting === c.id ? "animate-spin" : ""}`} />
-                  <span>{channelTesting === c.id ? "Dispatching test..." : "Send Test Event"}</span>
-                </button>
-              </div>
-            ))}
-
-            {channels.length === 0 && (
-              <div className="text-center py-8 text-slate-400 text-xs">
-                No outbound webhook channels configured.
-              </div>
-            )}
-          </div>
-        </section>
+      <div className="alerts-charts">
+        <AlertsPanel title="Alerts Over Time">
+          <div className="alerts-chart-key">{severityRows.map(level => <span key={level}><i style={{backgroundColor: severities[level].color}} />{severities[level].label}</span>)}</div>
+          <div className="alerts-bar-chart"><ResponsiveContainer width="100%" height="100%">
+            <BarChart data={period} margin={{top: 4, left: 0, right: 8, bottom: 0}}>
+              <CartesianGrid vertical={false} stroke="#edf0f3" />
+              <XAxis dataKey="date" height={23} tickLine={false} axisLine={{stroke: "#e2e8f0"}} tick={{fontSize: 10}} minTickGap={6} />
+              <YAxis width={30} allowDecimals={false} tickLine={false} axisLine={false} tick={{fontSize: 10}} />
+              <Tooltip cursor={{fill: "#f0f7f1"}} />
+              {severityRows.map(level => <Bar key={level} dataKey={level} name={severities[level].label} stackId="alerts" fill={severities[level].color} maxBarSize={34} isAnimationActive={false} />)}
+            </BarChart>
+          </ResponsiveContainer></div>
+        </AlertsPanel>
+        <AlertBreakdown title="Alerts by Source" rows={(Object.keys(sources) as AlertSource[]).map(label => ({
+          label, color: sources[label].color, count: filteredAlerts.filter(alert => alertSource(alert) === label).length,
+        }))} />
+        <AlertBreakdown title="Alerts by Severity" rows={severityRows.map(level => ({
+          label: severities[level].label, color: severities[level].color, count: filteredAlerts.filter(alert => alert.severity === level).length,
+        }))} />
       </div>
 
-      {/* ── Alert Rules Section ── */}
-      <section className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Alert Rules</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Automated threshold triggers evaluated against live data</p>
+      <AlertsPanel title="Recent Alerts" action={<>
+        <button className="alerts-refresh" id="alerts-refresh" onClick={loadData} disabled={loading} aria-label="Refresh alerts"><RefreshCw size={14} /></button>
+        {filteredAlerts.length > 5 && <button onClick={() => setShowAllAlerts(!showAllAlerts)} aria-expanded={showAllAlerts}>
+          {showAllAlerts ? "Show Less" : "View All Alerts"}<ChevronRight size={14} />
+        </button>}
+      </>}>
+        <div className="alerts-scroll"><table className="overview-table alerts-table">
+          <thead><tr>{["Alert", "Source", "Project", "Severity", "Status", "Triggered At", "Description", "Action"].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
+          <tbody>{(showAllAlerts ? filteredAlerts : filteredAlerts.slice(0, 5)).map(alert => {
+            const level = severities[alert.severity];
+            const status = statuses[alert.status];
+            const source = alertSource(alert);
+            const SourceIcon = sources[source].Icon;
+            return <tr key={alert.id}>
+              <td><span className={`alerts-inline alerts-level-${level.tone}`}><level.Icon size={16} aria-hidden="true" /><strong>{alert.title}</strong></span></td>
+              <td><span className="alerts-inline"><SourceIcon size={15} aria-hidden="true" />{source}</span></td>
+              <td>{alert.project_id ? projectNames.get(alert.project_id) ?? alert.project_id : "—"}</td>
+              <td><AlertPill {...level} /></td><td><AlertPill {...status} /></td>
+              <td><time dateTime={alert.created_at}>{selectedPeriod.format(new Date(alert.created_at))}</time></td>
+              <td className="alerts-description" title={alert.message}>{alert.message}</td>
+              <td><button className="alerts-row-action" onClick={() => setSelectedAlertId(alert.id)}>{alert.status === "RESOLVED" ? "View Details" : "Investigate"}<ArrowRight size={13} /></button></td>
+            </tr>;
+          })}{!filteredAlerts.length && <tr><td colSpan={8} className="alerts-empty">{loading ? "Loading alerts…" : "No alerts match these filters."}</td></tr>}</tbody>
+        </table></div>
+        {alerts.length === 200 && <p className="alerts-data-note">Based on the 200 most recent alerts.</p>}
+      </AlertsPanel>
+
+      <div className="alerts-bottom">
+        <AlertsPanel title={`Alert Rules (${rules.length})`} action={<>
+          <button id="alerts-evaluate-rules" disabled={evaluating} onClick={handleEvaluateRules}><Play size={13} />{evaluating ? "Evaluating…" : "Evaluate Rules"}</button>
+          {rules.length > 5 && <button onClick={() => setShowAllRules(!showAllRules)} aria-expanded={showAllRules}>{showAllRules ? "Show Less" : "View All Rules"}<ChevronRight size={14} /></button>}
+        </>}>
+          <div className="alerts-scroll"><table className="overview-table alerts-table">
+            <thead><tr>{["Rule Name", "Source", "Condition", "Severity", "Status", "Actions"].map(title => <th scope="col" key={title}>{title}</th>)}</tr></thead>
+            <tbody>{(showAllRules ? rules : rules.slice(0, 5)).map(rule => {
+              const RuleIcon = rule.metric === "drift_share" ? Box : rule.metric === "latency_p95_ms" ? Gauge : ServerCrash;
+              return <tr key={rule.id}>
+                <td><strong>{rule.name}</strong></td><td><span className="alerts-inline"><RuleIcon size={15} aria-hidden="true" />{rule.metric === "drift_share" ? "Model" : "Deployment"}</span></td>
+                <td>{formatCondition(rule)}{rule.model_name && <small className="alerts-rule-target">{rule.model_name}</small>}</td>
+                <td><AlertPill {...severities[rule.severity]} /></td>
+                <td><button type="button" role="switch" aria-checked={rule.enabled} aria-label={`Enable ${rule.name}`} id={`rule-toggle-${rule.id}`} className="alerts-switch" onClick={() => handleToggleRule(rule)}><span /></button></td>
+                <td><button type="button" className="alerts-icon-button" onClick={() => handleDeleteRule(rule.id)} aria-label={`Delete ${rule.name}`}><Trash2 size={14} /></button></td>
+              </tr>;
+            })}{!rules.length && <tr><td colSpan={6} className="alerts-empty">{loading ? "Loading rules…" : "No alert rules configured."}</td></tr>}</tbody>
+          </table></div>
+        </AlertsPanel>
+
+        <AlertsPanel title="Notifications & Integrations" action={<button onClick={() => setShowChannels(!showChannels)} aria-expanded={showChannels}>Configure<ChevronRight size={14} /></button>}>
+          <div className="alerts-integrations">
+            {integrations.map(({kind, label, Icon}) => {
+              const matchingChannels = channels.filter(channel => channel.kind === kind);
+              const enabled = matchingChannels.some(channel => channel.enabled);
+              return <div key={kind}><Icon size={26} aria-hidden="true" /><span><strong>{label}</strong><small>{enabled ? "Enabled" : kind === "EMAIL" ? "Unavailable" : matchingChannels.length ? "Disabled" : "Not configured"}</small></span>{enabled && <CheckCircle2 size={16} aria-hidden="true" />}</div>;
+            })}
           </div>
-          <span className="text-xs text-slate-500 font-mono">
-            {rules.filter((r) => r.enabled).length}/{rules.length} active
-          </span>
-        </div>
+          <p className="alerts-notice"><Info size={18} />Route alerts to configured channels when a rule triggers.</p>
+          {showChannels && <div className="alerts-channels">
+            <button className="secondary-action" onClick={() => setIsChannelModalOpen(true)}><Plus size={14} />Add Channel</button>
+            {channels.map(channel => <div key={channel.id} className="alerts-channel">
+              <strong>{channel.name}</strong>
+              <span>{channel.last_test_ok === true ? "Passed last test" : channel.last_test_ok === false ? "Last test failed" : ""}</span>
+              <button className="secondary-action" disabled={channelTesting === channel.id} onClick={() => handleTestChannel(channel)}>{channelTesting === channel.id ? "Testing…" : "Send Test Event"}</button>
+              <button className="alerts-icon-button" onClick={() => handleDeleteChannel(channel.id)} aria-label={`Delete ${channel.name}`}><Trash2 size={15} /></button>
+              {channelTestResult?.id === channel.id && <p role="status">{channelTestResult.msg}</p>}
+            </div>)}
+          </div>}
+        </AlertsPanel>
+      </div>
 
-        <div className="divide-y divide-slate-100">
-          {rules.map((r) => {
-            const Icon = getMetricIcon(r.metric);
-            const conditionStr = formatMetricLabel(r.metric, r.operator, r.threshold);
-
-            return (
-              <div key={r.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className={`w-4 h-4 shrink-0 ${r.enabled ? "text-[#3BB48C]" : "text-slate-400"}`} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-900">{r.name}</span>
-                      <span className="text-xs text-slate-400 hidden md:inline">—</span>
-                      <span className="text-xs font-mono text-slate-600 hidden md:inline">{conditionStr}</span>
-                      {r.model_name && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {r.model_name}
-                        </span>
-                      )}
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${r.severity === "CRITICAL" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
-                        {r.severity}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-400 md:hidden mt-0.5 font-mono">
-                      {conditionStr}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* Minimal Clean Switch Toggle */}
-                  <button
-                    role="switch"
-                    aria-checked={r.enabled}
-                    id={`rule-toggle-${r.id}`}
-                    onClick={() => handleToggleRule(r)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                      r.enabled ? "bg-[#10b981]" : "bg-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                        r.enabled ? "translate-x-4 mt-0.5" : "translate-x-0.5 mt-0.5"
-                      }`}
-                    />
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteRule(r.id)}
-                    className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer transition"
-                    title="Delete rule"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {rules.length === 0 && (
-            <div className="px-6 py-12 text-center text-sm text-slate-400">
-              No alert rules created yet. Click "New Alert Rule" to define one.
-            </div>
-          )}
-        </div>
-      </section>
+      {selectedAlert && <div className="alerts-overlay"><section className="overview-card alerts-detail" role="dialog" aria-modal="true" aria-labelledby="alert-detail-title">
+        <header><h2 id="alert-detail-title">{selectedAlert.title}</h2><button onClick={() => setSelectedAlertId(undefined)} aria-label="Close alert details"><X size={18} /></button></header>
+        <div className="alerts-inline"><AlertPill {...severities[selectedAlert.severity]} /><AlertPill {...statuses[selectedAlert.status]} /></div>
+        <p>{selectedAlert.message}</p>
+        {selectedAlert.model_name && <p>Model · {selectedAlert.model_name}</p>}
+        {selectedAlert.deployment_id && <p>Deployment · {selectedAlert.deployment_id}</p>}
+        {selectedAlert.acknowledged_by && <p>Acknowledged by {selectedAlert.acknowledged_by}</p>}
+        {error && <p role="alert">{error}</p>}
+        <footer>{selectedAlert.status === "OPEN" && <button className="secondary-action" disabled={pendingAlertAction} onClick={async () => {
+          setPendingAlertAction(true);
+          try { await handleAcknowledge(selectedAlert.id); } finally { setPendingAlertAction(false); }
+        }}>Acknowledge</button>}
+        {selectedAlert.status !== "RESOLVED" && <button className="primary-action" disabled={pendingAlertAction} onClick={async () => {
+          setPendingAlertAction(true);
+          try { await handleResolve(selectedAlert.id); } finally { setPendingAlertAction(false); }
+        }}>Resolve</button>}</footer>
+      </section></div>}
 
       {/* ── Modal: New Alert Rule ── */}
       {isRuleModalOpen && (

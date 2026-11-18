@@ -4,6 +4,7 @@ import {
   RegisteredModel,
   Deployment,
   Dataset,
+  DatasetVersion,
   SystemStats,
   SubsystemService,
   User,
@@ -264,9 +265,8 @@ export const stopDeployment = async (id: string): Promise<Deployment> => {
 
 // ── Rollback ───────────────────────────────────────────────────────
 
-export const rollbackDeployment = async (modelName: string, targetVersion: number): Promise<any> => {
-  const res = await api.post("/rollback/trigger", {
-    model_name: modelName,
+export const rollbackDeployment = async (deploymentId: string, targetVersion: number): Promise<{ status: string; error_message?: string | null }> => {
+  const res = await api.post(`/deployments/${encodeURIComponent(deploymentId)}/rollback`, {
     target_version: targetVersion,
   });
   return res.data;
@@ -318,7 +318,7 @@ export const uploadDatasetFile = async (datasetId: string, file: File, descripti
   return res.data;
 };
 
-export const fetchDatasetVersions = async (datasetId: string): Promise<any[]> => {
+export const fetchDatasetVersions = async (datasetId: string): Promise<DatasetVersion[]> => {
   const res = await api.get(`/datasets/${datasetId}/versions`);
   return res.data || [];
 };
@@ -494,6 +494,9 @@ export const sendContactMessage = async (submission: {
   await api.post("/contact", submission, { timeout: 30000 });
 };
 
-export async function syncModelMetrics(name: string, version: number): Promise<void> {
-  await api.post(`/models/${encodeURIComponent(name)}/versions/${version}/sync-metrics`);
+export async function syncModelMetrics(name: string, version: number): Promise<Record<string, number>> {
+  const { data } = await api.post<{ metrics: Record<string, number> }>(
+    `/models/${encodeURIComponent(name)}/versions/${version}/sync-metrics`,
+  );
+  return data.metrics;
 }

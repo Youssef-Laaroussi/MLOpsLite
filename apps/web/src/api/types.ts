@@ -73,6 +73,9 @@ export interface ModelVersion {
 
 export interface RegisteredModel {
   framework?: string;
+  description?: string;
+  owner?: string;
+  updated_at?: string;
   name: string;
   version: number;
   stage: string;
@@ -83,6 +86,7 @@ export interface RegisteredModel {
 
 export interface Deployment {
   id: string;
+  project_id?: string | null;
   model_name: string;
   model_version: number;
   container_id?: string;
@@ -91,6 +95,16 @@ export interface Deployment {
   status: "PENDING" | "RUNNING" | "STOPPED" | "FAILED";
   error_message?: string;
   created_at: string;
+  updated_at?: string;
+  config?: Record<string, unknown> | null;
+}
+
+export interface DeploymentMetric {
+  timestamp: string;
+  requests_count: number;
+  error_count: number;
+  latency_p50_ms: number | null;
+  latency_p95_ms: number | null;
 }
 
 export interface DatasetColumn {

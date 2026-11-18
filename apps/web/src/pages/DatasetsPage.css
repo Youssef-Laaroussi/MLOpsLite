@@ -15,7 +15,7 @@
 .dataset-scroll { overflow-x:auto; }
 .datasets-dashboard .dataset-table { width:100%; font-size:10px; }
 .dataset-table :is(th,td) { padding:5px 6px; white-space:nowrap; }
-.dataset-table th { color:#141d31; background:#f2f4f7; }
+.dataset-table th { color:#141d31; }
 .dataset-table input { accent-color:#087d3b; vertical-align:middle; }
 .dataset-table .health-pill { padding:2px 7px; font-size:10px; }
 .dataset-row-selected { background:#eef9f0; }
@@ -55,7 +55,7 @@
 @media(max-width:720px) { .dataset-grid { grid-template-columns:minmax(0,1fr); } .dataset-toolbar .projects-actions { flex-wrap:wrap; } }
 .datasets-dashboard .dataset-panel { padding:8px 10px 10px; }
 .datasets-dashboard .dataset-table :is(th,td) { padding:5px 6px; }
-.datasets-dashboard .dataset-table th { background:#f2f4f7; }
+.datasets-dashboard .dataset-table thead th { background:#f9fafb; }
 .dataset-chart-key span::before { content:""; display:inline-block; width:7px; height:7px; background:#b9ebc2; border-radius:2px; margin-right:5px; }
 .dataset-metrics .dataset-table tbody button:hover,.dataset-health .dataset-table tbody button:hover { color:#007a35; text-decoration:underline; }
 
@@ -100,7 +100,7 @@
 #dataset-catalog h3 { font-size:17px; margin-bottom:6px; }
 #dataset-catalog .dataset-panel-action { font-size:11px; padding-right:2px; }
 .datasets-dashboard .dataset-catalog-table { min-width:1040px; font-size:11px; font-variant-numeric:tabular-nums; }
-.datasets-dashboard .dataset-catalog-table th { font-size:10px; font-weight:700; padding-block:5px; background:#f5f7f9; }
+.datasets-dashboard .dataset-catalog-table th { font-size:10px; font-weight:700; padding-block:5px; }
 .datasets-dashboard .dataset-catalog-table td { padding-block:5px; height:39px; }
 .dataset-catalog-table :is(th,td):first-child { width:4.2%; padding-left:12px; }
 .dataset-catalog-table :is(th,td):nth-child(2) { width:22%; }

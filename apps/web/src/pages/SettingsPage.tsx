@@ -1,3 +1,6 @@
+import { AboutSettings } from "../components/AboutSettings";
+import { PreferencesIcon, PreferencesSettings } from "../components/PreferencesSettings";
+import { ApiKeysSettings } from "../components/ApiKeysSettings";
 import { Link } from "react-router-dom";
 import { NotificationsSettings } from "../components/NotificationsSettings";
 import { StorageSettings } from "../components/StorageSettings";
@@ -11,21 +14,15 @@ import React, { useState, useEffect } from "react";
 import {
   Settings,
   Puzzle,
-  Key,
+  Code2,
   Server,
   Database,
   Shield,
-  Check,
-  Copy,
-  Plus,
-  Trash2,
   RefreshCw,
   User as UserIcon,
   CheckCircle2,
   ShieldCheck,
-  Layers,
   Users,
-  Sliders,
   Bell,
   Eye,
   EyeOff,
@@ -35,19 +32,15 @@ import {
   Search,
   AlertTriangle,
   Info,
-  Save,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
   fetchSystemServices,
-  fetchApiKeys,
-  createApiKey,
-  revokeApiKey,
   fetchUsers,
   createUser,
   updateUser,
 } from "../api/client";
-import { ApiKey, SubsystemService, User, UserRole } from "../api/types";
+import { SubsystemService, User, UserRole } from "../api/types";
 
 export const SettingsPage: React.FC = () => {
   const { confirmAction } = useActionFeedback();
@@ -58,19 +51,6 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     "profile" | "users" | "apikeys" | "preferences" | "system" | "general" | "security" | "about" | "integrations" | "storage" | "notifications"
   >("profile");
-
-  // Preferences state (stored in localStorage)
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(
-    () => Number(localStorage.getItem("mlite_pref_refresh")) || 15
-  );
-  const [prefSaved, setPrefSaved] = useState(false);
-
-  // API Keys state
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [keyName, setKeyName] = useState("");
-  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState(false);
-  const [loadingKeys, setLoadingKeys] = useState(false);
 
   // Team / User Management state (Admin)
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
@@ -103,18 +83,6 @@ export const SettingsPage: React.FC = () => {
     setTimeout(() => setActionSuccess(null), 3500);
   };
 
-  const loadKeys = async () => {
-    setLoadingKeys(true);
-    try {
-      setApiKeys(await fetchApiKeys());
-    } catch (err) {
-      setApiKeys([]);
-      setSettingsError(errMsg(err, "Unable to load API keys."));
-    } finally {
-      setLoadingKeys(false);
-    }
-  };
-
   const loadTeam = async () => {
     if (!isAdmin) return;
     setLoadingUsers(true);
@@ -130,55 +98,10 @@ export const SettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadKeys();
     if (isAdmin) {
       loadTeam();
     }
   }, [user, isAdmin]);
-
-  // Save Preferences
-  const handleSavePreferences = () => {
-    localStorage.setItem("mlite_pref_refresh", String(autoRefreshInterval));
-    setPrefSaved(true);
-    setTimeout(() => setPrefSaved(false), 2500);
-    showSuccessBanner("Preferences saved successfully!");
-  };
-
-  // API Key handlers
-  const handleCreateKey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!keyName.trim()) return;
-    try {
-      const created = await createApiKey(keyName.trim());
-      if (!created.full_key) throw new Error("Server did not return a key.");
-      setNewlyCreatedKey(created.full_key);
-      setKeyName("");
-      await loadKeys();
-      showSuccessBanner("API key generated successfully.");
-    } catch (err) {
-      setSettingsError(errMsg(err, "Failed to create API key."));
-    }
-  };
-
-  const handleRevokeKey = async (id: string) => {
-    try {
-      await revokeApiKey(id);
-      await loadKeys();
-      showSuccessBanner("API key revoked.");
-    } catch (err) {
-      setSettingsError(errMsg(err, "Failed to revoke API key."));
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2000);
-    } catch {
-      setSettingsError("Clipboard unavailable — copy the key manually.");
-    }
-  };
 
   // Admin User Management handlers
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -284,17 +207,17 @@ export const SettingsPage: React.FC = () => {
           <button type="button" aria-current={activeTab === "integrations" ? "page" : undefined} onClick={() => setActiveTab("integrations")}><Puzzle size={21}/>Integrations</button>
           <button type="button" aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => setActiveTab("storage")}><Database size={21}/>Storage</button>
           <button type="button" aria-current={activeTab === "notifications" ? "page" : undefined} onClick={() => setActiveTab("notifications")}><Bell size={21}/>Notifications</button>
-          {([["apikeys", Key, "API Keys"], ["preferences", Sliders, "Preferences"], ["about", Info, "About"]] as const).map(([tab, Icon, label]) => <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}><Icon size={21}/>{label}</button>)}
+          {([["apikeys", Code2, "API Keys"], ["preferences", PreferencesIcon, "Preferences"], ["about", Info, "About"]] as const).map(([tab, Icon, label]) => <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}><Icon size={21}/>{label}</button>)}
           {isAdmin && <><button type="button" aria-current={activeTab === "users" ? "page" : undefined} onClick={() => setActiveTab("users")}><Users size={21}/>User Management</button><button type="button" aria-current={activeTab === "system" ? "page" : undefined} onClick={() => setActiveTab("system")}><ShieldCheck size={21}/>System Health</button></>}
         </nav>
       </aside>
       <div className="settings-content">
-        <header className={`settings-breadcrumb${(activeTab === "general" || activeTab === "security" || activeTab === "integrations" || activeTab === "storage" || activeTab === "notifications") ? " settings-breadcrumb-general" : ""}`}><span>Settings</span><span aria-hidden="true">›</span><h1>{{profile:"Profile", users:"User Management", apikeys:"API Keys", preferences:"Preferences", system:"System Health", general:"General", security:"Security", about:"About", integrations:"Integrations", storage:"Storage", notifications:"Notifications"}[activeTab]}</h1></header>
+        <header className={`settings-breadcrumb${(activeTab === "about" || activeTab === "preferences" || activeTab === "apikeys" || activeTab === "general" || activeTab === "security" || activeTab === "integrations" || activeTab === "storage" || activeTab === "notifications") ? " settings-breadcrumb-general" : ""}`}><span>Settings</span><span aria-hidden="true">›</span><h1>{{profile:"Profile", users:"User Management", apikeys:"API Keys", preferences:"Preferences", system:"System Health", general:"General", security:"Security", about:"About", integrations:"Integrations", storage:"Storage", notifications:"Notifications"}[activeTab]}</h1></header>
       {/* Notifications / Alerts */}
       {settingsError && (
         <div
           role="alert"
-          className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs sm:text-sm font-semibold text-rose-700 flex items-center justify-between"
+          className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-[13px] sm:text-[15px] font-semibold text-rose-700 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -302,7 +225,7 @@ export const SettingsPage: React.FC = () => {
           </div>
           <button
             onClick={() => setSettingsError(null)}
-            className="text-rose-500 hover:text-rose-700 text-xs font-bold underline"
+            className="text-rose-500 hover:text-rose-700 text-[13px] font-bold underline"
           >
             Dismiss
           </button>
@@ -312,7 +235,7 @@ export const SettingsPage: React.FC = () => {
       {actionSuccess && (
         <div
           role="status"
-          className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs sm:text-sm font-semibold text-emerald-800 flex items-center gap-2"
+          className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-[13px] sm:text-[15px] font-semibold text-emerald-800 flex items-center gap-2"
         >
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{actionSuccess}</span>
@@ -325,7 +248,7 @@ export const SettingsPage: React.FC = () => {
       {activeTab === "integrations" && <IntegrationsSettings />}
       {activeTab === "storage" && <StorageSettings />}
       {activeTab === "notifications" && <NotificationsSettings />}
-      {activeTab === "about" && <section className="profile-card settings-info"><h2><Info size={24}/>About MLite</h2><p>Open-source MLOps for real-world AI.</p><p>Web application version: 0.1.0</p></section>}
+      {activeTab === "about" && <AboutSettings />}
 
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* ── TAB 2: USER MANAGEMENT & RBAC (ADMIN) ── */}
@@ -336,11 +259,11 @@ export const SettingsPage: React.FC = () => {
             {/* Header with Search and Create button */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-[17px] font-bold text-slate-900 flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#3BB48C]" />
                   Workspace Users &amp; Access Control
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-[13px] text-slate-500 mt-0.5">
                   View, provision accounts, and manage RBAC roles for your organization ({teamUsers.length} total)
                 </p>
               </div>
@@ -356,7 +279,7 @@ export const SettingsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setShowAddUserModal(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs shadow-sm shadow-[#3BB48C]/30 transition"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-[13px] shadow-sm shadow-[#3BB48C]/30 transition"
                 >
                   <UserPlus className="w-4 h-4" />
                   Add New User
@@ -373,16 +296,16 @@ export const SettingsPage: React.FC = () => {
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Filter by name, username or email..."
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C]"
+                  className="w-full pl-9 pr-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C]"
                 />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-medium">Role:</span>
+                <span className="text-[13px] text-slate-500 font-medium">Role:</span>
                 <select
                   value={userRoleFilter}
                   onChange={(e) => setUserRoleFilter(e.target.value)}
-                  className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-semibold"
+                  className="px-3 py-1.5 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-semibold"
                 >
                   <option value="ALL">All Roles</option>
                   <option value="ADMIN">ADMIN</option>
@@ -397,7 +320,7 @@ export const SettingsPage: React.FC = () => {
             {/* Users Table */}
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-[13px]">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                     <tr>
                       <th className="py-3 px-4">User</th>
@@ -422,7 +345,7 @@ export const SettingsPage: React.FC = () => {
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-3">
                                 <div
-                                  className={`w-9 h-9 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 ${
+                                  className={`w-9 h-9 rounded-xl font-bold text-[13px] flex items-center justify-center shrink-0 ${
                                     u.role === "ADMIN"
                                       ? "bg-rose-100 text-rose-700 font-black"
                                       : "bg-emerald-50 text-emerald-700"
@@ -434,12 +357,12 @@ export const SettingsPage: React.FC = () => {
                                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
                                     {u.full_name || u.username}
                                     {isSelf && (
-                                      <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-normal">
+                                      <span className="text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-normal">
                                         You
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-[11px] text-slate-400 font-mono">
+                                  <div className="text-[12px] text-slate-400 font-mono">
                                     @{u.username} • {u.email}
                                   </div>
                                 </div>
@@ -448,7 +371,7 @@ export const SettingsPage: React.FC = () => {
 
                             <td className="py-3.5 px-4">
                               <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[12px] ${
                                   u.is_active !== false
                                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                     : "bg-slate-100 text-slate-500 border border-slate-200"
@@ -470,7 +393,7 @@ export const SettingsPage: React.FC = () => {
                                 onChange={(e) =>
                                   handleRoleChange(u, e.target.value as UserRole)
                                 }
-                                className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg border focus:outline-none transition ${
+                                className={`px-2.5 py-1 text-[13px] font-mono font-bold rounded-lg border focus:outline-none transition ${
                                   u.role === "ADMIN"
                                     ? "bg-rose-50 text-rose-700 border-rose-200"
                                     : "bg-white text-slate-700 border-slate-300"
@@ -488,7 +411,7 @@ export const SettingsPage: React.FC = () => {
                               <button
                                 onClick={() => handleToggleActive(u)}
                                 disabled={isUpdating || isSelf}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 ${
+                                className={`px-3 py-1.5 rounded-xl text-[13px] font-bold transition inline-flex items-center gap-1.5 ${
                                   u.is_active !== false
                                     ? "text-rose-600 hover:bg-rose-50 border border-rose-200 disabled:opacity-40"
                                     : "text-emerald-700 hover:bg-emerald-50 border border-emerald-200"
@@ -529,156 +452,12 @@ export const SettingsPage: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* ── TAB 3: API & CLI KEYS ── */}
       {/* ═════════════════════════════════════════════════════════════════ */}
-      {activeTab === "apikeys" && (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-            <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
-              <Key className="w-4 h-4 text-[#3BB48C]" />
-              Generate a New API Key
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              API keys securely authenticate the{" "}
-              <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">mlite</code> CLI and
-              automated CI/CD pipelines without exposing user passwords.
-            </p>
-
-            <form onSubmit={handleCreateKey} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={keyName}
-                onChange={(e) => setKeyName(e.target.value)}
-                placeholder="e.g. Workstation CLI Token or CI Runner"
-                className="flex-1 px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C]"
-              />
-              <button
-                type="submit"
-                disabled={!keyName.trim()}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#3BB48C] hover:bg-[#329F7B] text-white font-bold text-xs transition shadow-sm disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                Generate Key
-              </button>
-            </form>
-
-            {newlyCreatedKey && (
-              <div className="mt-4 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
-                  <span>New API key created (Copy it now, it will not be displayed again):</span>
-                  <button
-                    onClick={() => copyToClipboard(newlyCreatedKey)}
-                    className="flex items-center gap-1 text-xs font-mono font-semibold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs hover:bg-slate-50"
-                  >
-                    {copiedKey ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                    {copiedKey ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-emerald-200 break-all select-all">
-                  {newlyCreatedKey}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Active API Keys ({apiKeys.length})
-              </span>
-              <button
-                onClick={loadKeys}
-                className="text-xs text-[#1A7456] hover:underline font-semibold flex items-center gap-1"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingKeys ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {apiKeys.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-sm">
-                  {loadingKeys ? "Loading keys..." : "No active API keys found."}
-                </div>
-              ) : (
-                apiKeys.map((k) => (
-                  <div
-                    key={k.id}
-                    className="p-4 px-6 flex items-center justify-between hover:bg-slate-50 transition"
-                  >
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">{k.name}</div>
-                      <div className="text-xs text-slate-400 font-mono mt-0.5">
-                        {k.key_prefix}... • Created on {k.created_at?.slice(0, 10)}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleRevokeKey(k.id)}
-                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition"
-                      title="Revoke this key"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === "apikeys" && <ApiKeysSettings />}
 
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* ── TAB 4: PREFERENCES & DEFAULTS ── */}
       {/* ═════════════════════════════════════════════════════════════════ */}
-      {activeTab === "preferences" && (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
-              <Sliders className="w-4 h-4 text-[#3BB48C]" />
-              Platform Workspace Preferences
-            </h3>
-            <p className="text-xs text-slate-500 mb-6">
-              Set how often Overview refreshes its metrics.
-            </p>
-
-            <div className="space-y-6 max-w-2xl">
-              {/* Auto-refresh interval */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Dashboard Metrics Refresh Rate</h4>
-                  <p className="text-[11px] text-slate-500">
-                    Frequency for live telemetry and inference throughput polling.
-                  </p>
-                </div>
-                <select
-                  value={autoRefreshInterval}
-                  onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
-                  className="px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
-                >
-                  <option value={5}>Every 5 seconds</option>
-                  <option value={15}>Every 15 seconds (Recommended)</option>
-                  <option value={30}>Every 30 seconds</option>
-                  <option value={60}>Every 1 minute</option>
-                </select>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={handleSavePreferences}
-                  className="flex items-center gap-1.5 px-5 py-2.5 bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold rounded-xl transition shadow-sm"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  {prefSaved ? "Saved!" : "Save Preferences"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === "preferences" && <PreferencesSettings />}
 
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* ── TAB 5: SYSTEM HEALTH & INTEGRITY (ADMIN) ── */}
@@ -688,11 +467,11 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <h3 className="text-[15px] font-semibold text-slate-900 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#3BB48C]" />
                   Internal Microservices Health
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-[13px] text-slate-500 mt-0.5">
                   {serviceChecks && lastCheckTime ? `Last checked at ${lastCheckTime}` : "Run a connectivity check to get service status."}
                 </p>
               </div>
@@ -700,7 +479,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 onClick={handleRefreshInfra}
                 disabled={checkingInfra}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition shadow-2xs"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[13px] transition shadow-2xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#3BB48C] ${checkingInfra ? "animate-spin" : ""}`} />
                 {checkingInfra ? "Checking..." : "Verify Connectivity"}
@@ -708,25 +487,25 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {checkingInfra ? (
-              <p role="status" className="text-sm text-slate-600">Checking service connectivity…</p>
+              <p role="status" className="text-[15px] text-slate-600">Checking service connectivity…</p>
             ) : serviceChecks?.length ? (
               <ul className="grid gap-3 sm:grid-cols-2">
                 {serviceChecks.map((service) => (
                   <li key={service.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-semibold text-slate-900">{service.name}</span>
-                      <span className={service.status === "online" ? "text-xs text-emerald-700" : "text-xs text-rose-700"}>
+                      <span className="text-[15px] font-semibold text-slate-900">{service.name}</span>
+                      <span className={service.status === "online" ? "text-[13px] text-emerald-700" : "text-[13px] text-rose-700"}>
                         {service.status === "online" ? "Reachable" : "Unreachable"}
                       </span>
                     </div>
-                    <p className="mt-2 text-xs text-slate-600">
+                    <p className="mt-2 text-[13px] text-slate-600">
                       {service.status === "online" ? `Probe duration: ${service.latency}` : "The latest probe failed."}
                     </p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p role="status" className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              <p role="status" className="rounded-xl bg-slate-50 p-4 text-[15px] text-slate-600">
                 {lastCheckTime ? "No current service status available." : "No service check results yet."}
               </p>
             )}
@@ -737,15 +516,15 @@ export const SettingsPage: React.FC = () => {
       {/* ── MODAL: ADD USER (ADMIN ONLY) ── */}
       {showAddUserModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl">
+          <div className="creation-dialog bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <h3 className="text-[17px] font-bold text-slate-900 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-[#3BB48C]" />
                 Provision New User
               </h3>
               <button
                 onClick={() => setShowAddUserModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1"
+                className="text-slate-400 hover:text-slate-700 text-[15px] font-bold p-1"
               >
                 ✕
               </button>
@@ -753,7 +532,7 @@ export const SettingsPage: React.FC = () => {
 
             <form onSubmit={handleCreateUser} className="pt-4 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Username <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -762,12 +541,12 @@ export const SettingsPage: React.FC = () => {
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="e.g. jdoe"
-                  className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-mono"
+                  className="w-full px-3.5 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Email Address <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -776,12 +555,12 @@ export const SettingsPage: React.FC = () => {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="jdoe@organization.com"
-                  className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-mono"
+                  className="w-full px-3.5 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Full Name (Optional)
                 </label>
                 <input
@@ -789,12 +568,12 @@ export const SettingsPage: React.FC = () => {
                   value={newFullName}
                   onChange={(e) => setNewFullName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
+                  className="w-full px-3.5 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Initial Password <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -805,7 +584,7 @@ export const SettingsPage: React.FC = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min 8 characters"
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 pr-10"
+                    className="w-full px-3.5 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 pr-10"
                   />
                   <button
                     type="button"
@@ -818,13 +597,13 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Assigned RBAC Role
                 </label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
-                  className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-semibold"
+                  className="w-full px-3.5 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 font-semibold"
                 >
                   <option value="USER">USER (Standard Engineer)</option>
                   <option value="DEVELOPER">DEVELOPER (Model Developer)</option>
@@ -838,14 +617,14 @@ export const SettingsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                  className="px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingUser}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[#3BB48C] hover:bg-[#329F7B] text-white text-[13px] font-bold rounded-xl transition shadow-sm disabled:opacity-50"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   {creatingUser ? "Creating..." : "Create Account"}

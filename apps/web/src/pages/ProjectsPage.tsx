@@ -505,10 +505,9 @@ export const ProjectsPage: React.FC = () => {
       {/* ── Modal: Create New Project ── */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div role="dialog" aria-modal="true" aria-labelledby="create-workspace-title" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-[10px] border border-slate-200 bg-white p-5 shadow-xl sm:p-6">
-            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div role="dialog" aria-modal="true" aria-labelledby="create-workspace-title" className="creation-dialog">
+            <div className="creation-dialog-header">
               <h3 id="create-workspace-title" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-slate-900">
-                <FolderGit2 className="h-4 w-4 shrink-0 text-emerald-600" />
                 {importRepo ? "Import Git Repository" : "Create New Project"}
               </h3>
               <button
@@ -531,14 +530,15 @@ export const ProjectsPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleCreate} className="mt-4 space-y-3">
+            <form onSubmit={handleCreate} className="creation-dialog-form">
               <div>
                 <label htmlFor="create-workspace-name" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
-                  Project Name
+                  Project name
                 </label>
                 <input
                   type="text"
                   required
+                  autoFocus
                   id="create-workspace-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -549,7 +549,7 @@ export const ProjectsPage: React.FC = () => {
 
               <div>
                 <label htmlFor="create-workspace-slug" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
-                  Slug (optional — auto-generated from name)
+                  Slug (optional, generated from name)
                 </label>
                 <input
                   type="text"
@@ -563,7 +563,7 @@ export const ProjectsPage: React.FC = () => {
 
               <div>
                 <label htmlFor="create-workspace-gitUrl" className="mb-1.5 block text-xs font-medium uppercase text-slate-600">
-                  Git Repository URL (optional)
+                  Git repository URL (optional)
                 </label>
                 <input
                   type="url"
@@ -590,21 +590,21 @@ export const ProjectsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3 !mt-4">
+              <div className="creation-dialog-actions">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setCreateError(null);
                   }}
-                  className="rounded-md bg-slate-100 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 transition"
+                  className="secondary-action"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !name.trim()}
-                  className="rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="primary-action disabled:cursor-not-allowed"
                 >
                   {creating ? "Creating..." : importRepo ? "Import Repository" : "Create Project"}
                 </button>

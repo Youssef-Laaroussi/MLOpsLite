@@ -124,7 +124,7 @@ export const DeploymentsPage: React.FC = () => {
       {/* Deploy Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+          <div className="creation-dialog bg-white border border-slate-200 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#3BB48C]"></span>

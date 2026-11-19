@@ -131,12 +131,12 @@ export const apiGetMe = async (): Promise<User> => {
 
 export const fetchApiKeys = async (): Promise<ApiKey[]> => {
   const res = await api.get("/auth/api-keys");
-  return res.data.keys || [];
+  return res.data.api_keys || res.data.keys || [];
 };
 
 export const createApiKey = async (name: string, expires_days?: number): Promise<ApiKey> => {
-  const res = await api.post("/auth/api-keys", { name, expires_days });
-  return res.data;
+  const res = await api.post("/auth/api-keys", { name, expires_at: expires_days ? new Date(Date.now() + expires_days * 86400000).toISOString() : null });
+  return { ...res.data, full_key: res.data.key ?? res.data.full_key };
 };
 
 export const revokeApiKey = async (keyId: string): Promise<void> => {

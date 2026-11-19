@@ -537,12 +537,11 @@
 .lineage-dialog dd { font-size:13px; margin-top:6px; overflow-wrap:anywhere; }
 @media(max-width:1100px) { .project-portfolio { grid-template-columns:1fr; } .projects-actions { margin-left:0; } }
 @media(max-width:650px) { .projects-toolbar > label { width:100%; } .project-tile-heading { flex-wrap:wrap; } .project-tile-heading .secondary-action { margin-left:0; } .project-detail-hero h1 { font-size:24px; } .project-detail-hero > svg { display:none; } .project-meta { gap:12px; flex-wrap:wrap; } }
-.project-bottom-panels { display:grid; grid-template-columns:1.35fr 1.1fr 1fr; gap:12px; }
+.project-bottom-panels { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .project-bottom-panels .overview-card h3 { font-size:14px; }
 .project-bottom-panels .overview-table { font-size:10px; }
 .project-bottom-panels td:first-child { color:#007637; font-weight:600; }
 .ownership-note { margin:12px 0 0; }
-@media(max-width:1200px) { .project-bottom-panels { grid-template-columns:1fr 1fr; } .project-bottom-panels > :last-child { grid-column:1/-1; } }
 @media(max-width:650px) { .project-bottom-panels { grid-template-columns:1fr; } }
 
 .projects-dashboard .projects-hero { min-height:70px; isolation:isolate; }
@@ -634,3 +633,129 @@
 .project-charts > section > :last-child { grid-column:1/-1; }
 .project-charts .project-legend { align-self:start; padding-top:3px; }
 @media (max-width:1400px) { .project-charts > section { display:block; } }
+
+/* Shared appearance for creation dialogs, based on Register Model. */
+.creation-dialog.creation-dialog {
+  --creation-navy:#17213a;
+  --creation-green:#008536;
+  --creation-placeholder:#78b88d;
+  width:min(100%,510px);
+  padding:17px;
+  color:var(--creation-navy);
+  background:#fff;
+  border:1px solid #dce2e9;
+  border-radius:14px;
+  max-height:calc(100dvh - 32px);
+  overflow-y:auto;
+  box-shadow:0 18px 50px #17213a26;
+}
+.creation-dialog.creation-dialog :is(h2,h3) {
+  color:var(--creation-navy);
+  font-family:theme('fontFamily.display');
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:-.025em;
+}
+.creation-dialog.creation-dialog label {
+  color:var(--creation-navy);
+  font-size:11px;
+  font-weight:650;
+  text-transform:none;
+  letter-spacing:normal;
+}
+.creation-dialog.creation-dialog :is(input:where(:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color])),select,textarea) {
+  width:100%;
+  min-width:0;
+  color:var(--creation-navy);
+  background:#fafbfc;
+  border:1px solid #d8e0ec;
+  border-radius:6px;
+  padding:7px 8px;
+  font-size:12px;
+  font-family:theme('fontFamily.sans');
+  caret-color:var(--creation-navy);
+}
+.creation-dialog.creation-dialog :is(input,textarea)::placeholder { color:var(--creation-placeholder); opacity:1; }
+.creation-dialog.creation-dialog :is(input,select,textarea):focus {
+  border-color:var(--creation-navy);
+  outline:2px solid var(--creation-navy);
+  outline-offset:-1px;
+  --tw-ring-color:transparent;
+  box-shadow:none;
+}
+.creation-dialog.creation-dialog :is(button[type=submit],button.primary-action) {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  color:#fff;
+  background:var(--creation-green);
+  border:1px solid var(--creation-green);
+  border-radius:8px;
+  padding:7px 11px;
+  font-size:12px;
+  font-weight:650;
+  box-shadow:none;
+}
+.creation-dialog.creation-dialog :is(button[type=submit],button.primary-action):hover:not(:disabled) { background:#006e2d; border-color:#006e2d; }
+.creation-dialog.creation-dialog :is(button[type=submit],button.primary-action):disabled { opacity:.55; cursor:not-allowed; }
+.creation-dialog.creation-dialog .secondary-action { color:var(--creation-navy); border:1px solid #d8e0ec; background:#fff; border-radius:8px; }
+
+.creation-dialog.creation-dialog input[type=password],.creation-dialog.creation-dialog input.pr-10 { padding-right:36px; }
+
+.creation-dialog.creation-dialog > :is(header,div:first-child):has(h2,h3),
+.creation-dialog.creation-dialog .creation-dialog-header {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:0; margin:0 0 13px; border:0;
+}
+.creation-dialog.creation-dialog :is(h2,h3) { margin:0; }
+.creation-dialog.creation-dialog > :is(header,div:first-child) :is(h2,h3) > :is(svg,span:empty) { display:none; }
+.creation-dialog.creation-dialog > :is(header,div:first-child) > button { color:var(--creation-navy); padding:2px; background:transparent; border:0; border-radius:4px; }
+.creation-dialog.creation-dialog > form { margin:0; padding:0; display:grid; gap:10px; }
+.creation-dialog.creation-dialog > form > :where(div,label) { margin-top:0; }
+.creation-dialog.creation-dialog label { line-height:1.5; }
+.creation-dialog.creation-dialog :is(.creation-dialog-actions,form > div:last-child:has(> button[type=submit]),form > footer) {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px;
+  border:0; padding:0; margin-top:1px;
+}
+.creation-dialog.creation-dialog :is(.creation-dialog-actions,form > div:last-child:has(> button[type=submit]),form > footer) > button[type=button] {
+  color:var(--creation-navy); background:#fff; border:1px solid #d8e0ec;
+  border-radius:8px; padding:7px 11px; font-size:12px; font-weight:650;
+}
+
+/* Rounded dropdown menus keep native keyboard and form behavior. */
+@supports (appearance:base-select) {
+  :root select:not([multiple]):not([size]),
+  :root select:not([multiple]):not([size])::picker(select) { appearance:base-select; }
+  :root select:not([multiple]):not([size]) { cursor:pointer; }
+  :root select:not([multiple]):not([size])::picker(select) {
+    color:#17213a;
+    background:#fff;
+    border:1px solid #d8e4dc;
+    border-radius:12px;
+    padding:5px;
+    margin-block:6px;
+    max-height:280px;
+    overflow-y:auto;
+    box-shadow:0 10px 28px #17213a24;
+    font-family:theme('fontFamily.sans');
+    font-size:12px;
+  }
+  :root select:not([multiple]):not([size]) option {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:32px;
+    padding:7px 10px;
+    border-radius:7px;
+    color:#17213a;
+    background:#fff;
+    cursor:pointer;
+  }
+  :root select:not([multiple]):not([size]) option:checked { color:#006e36; background:#e6f6eb; font-weight:650; }
+  :root select:not([multiple]):not([size]) option:is(:hover,:focus-visible) { color:#005d2d; background:#edf8f0; outline:none; }
+  :root select:not([multiple]):not([size]) option:disabled { color:#96a29c; cursor:not-allowed; }
+  :root select:not([multiple]):not([size]) option::checkmark { color:#087d3b; }
+  :root select::picker-icon { color:#17213a; }
+  :root :is(.project-filter,.experiments-toolbar,.alerts-toolbar,.services-toolbar) select::picker-icon { display:none; }
+}

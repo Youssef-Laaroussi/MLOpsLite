@@ -90,9 +90,9 @@ function StagePill({ stage }: { stage: string }) {
   </span>;
 }
 
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function Dialog({ title, onClose, children, creation = false }: { title: string; onClose: () => void; children: ReactNode; creation?: boolean }) {
   return <div className="models-dialog-backdrop" onKeyDown={event => { if (event.key === "Escape") onClose(); }}>
-    <section className="overview-card models-dialog" role="dialog" aria-modal="true" aria-label={title}>
+    <section className={`overview-card models-dialog${creation ? " creation-dialog" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
       <div className="models-dialog-header"><h2>{title}</h2><button type="button" aria-label="Close" onClick={onClose}><X size={19} /></button></div>
       {children}
     </section>
@@ -534,7 +534,7 @@ export function ModelsPage() {
       </Panel>
     </div>
 
-    {registering && <Dialog title="Register Model" onClose={() => { if (!busy) setRegistering(false); }}>
+    {registering && <Dialog creation title="Register Model" onClose={() => { if (!busy) setRegistering(false); }}>
       <form className="models-form" onSubmit={submitRegistration}>
         <label>Model name<input name="name" required maxLength={200} autoFocus /></label>
         <label>Project<select name="project" defaultValue={project}>
@@ -545,7 +545,7 @@ export function ModelsPage() {
         <label>MLflow run ID<input name="run" /></label><label>Artifact path<input name="artifact" /></label>
         <label>Description<textarea name="description" rows={2} /></label>
         {formError && <p className="models-error" role="alert">{formError}</p>}
-        <button className="primary-action" disabled={busy}>{busy ? "Registering…" : "Register Model"}</button>
+        <button type="submit" className="primary-action" disabled={busy}>{busy ? "Registering…" : "Register Model"}</button>
       </form>
     </Dialog>}
 

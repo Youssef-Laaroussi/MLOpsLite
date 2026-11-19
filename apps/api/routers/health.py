@@ -394,3 +394,36 @@ async def app_info(
         "redoc_url": "/redoc",
     }
 
+
+
+@router.get("/settings/about")
+async def get_about_information(
+    settings: Settings = Depends(get_app_settings),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Report installed API runtime versions without exposing connection details."""
+    import platform
+    from importlib.metadata import PackageNotFoundError, version
+
+    def installed(distribution: str) -> str | None:
+        try:
+            return version(distribution)
+        except PackageNotFoundError:
+            return None
+
+    dialect = db.bind.dialect if db.bind is not None else None
+    name = getattr(dialect, "name", None)
+    database = {"postgresql": "PostgreSQL", "sqlite": "SQLite"}.get(name, name)
+    server_version = getattr(dialect, "server_version_info", None)
+    if database and server_version:
+        database += " " + ".".join(map(str, server_version))
+    return {
+        "version": settings.app_version,
+        "python": platform.python_version(),
+        "fastapi": installed("fastapi"),
+        "database": database,
+        "mlflow": installed("mlflow"),
+        "dvc": installed("dvc"),
+        "runtime": "Docker" if Path("/.dockerenv").exists() else platform.system(),
+    }

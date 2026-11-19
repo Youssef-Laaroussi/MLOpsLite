@@ -25,6 +25,8 @@ export interface ApiKey {
   name: string;
   key_prefix: string;
   full_key?: string;
+  key?: string;
+  scopes?: Record<string, unknown> | null;
   created_at: string;
   expires_at?: string | null;
   last_used_at?: string | null;

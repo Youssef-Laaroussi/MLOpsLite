@@ -170,3 +170,46 @@
 .dataset-metrics .dataset-table td { font-size:11px; }
 .dataset-metrics .dataset-table :is(th,td):first-child { padding-left:7px; }
 .dataset-metrics > section:nth-child(5) .dataset-table :is(th,td):nth-child(n+2):nth-child(-n+4) { text-align:center; }
+
+/* New / Upload Dataset uses the Register Model dialog treatment. */
+.dataset-create-backdrop { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:16px; background:#101b2e66; }
+.dataset-create-dialog { width:min(100%,510px); padding:17px; }
+.dataset-create-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:13px; }
+.dataset-create-header button { display:grid; place-items:center; color:#17213a; padding:2px; border-radius:4px; }
+.dataset-create-header button:focus-visible { outline:2px solid #17213a; outline-offset:2px; }
+.dataset-create-form { display:grid; gap:10px; }
+.dataset-create-form label { display:block; margin-bottom:4px; }
+.dataset-create-form .dataset-create-file { display:inline-flex; align-items:center; gap:6px; margin:0; padding:7px 10px; border:1px solid #d8e0ec; border-radius:6px; background:#fafbfc; color:#17213a; cursor:pointer; }
+.dataset-create-file:hover { background:#eef2f8; border-color:#17213a; }
+.dataset-create-file:focus-within { outline:2px solid #17213a; outline-offset:2px; }
+.dataset-create-actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:1px; }
+.dataset-create-actions .secondary-action { padding:7px 11px; font-size:12px; font-weight:650; }
+
+/* Dataset details follows the same white, navy and green dialog palette. */
+.dataset-inspector-dialog { width:min(100%,896px); max-height:calc(100dvh - 32px); display:flex; flex-direction:column; overflow:hidden; color:#17213a; background:#fff; border:1px solid #dce2e9; border-radius:14px; box-shadow:0 18px 50px #17213a26; }
+.dataset-inspector-header { display:flex; align-items:flex-start; gap:12px; padding:17px; border-bottom:1px solid #e5eae7; background:#fff; }
+.dataset-inspector-header > div:first-child { min-width:0; flex:1; }
+.dataset-inspector-header > div:first-child > div:first-child { background:#e6f6eb; color:#087d3b; border-radius:9px; }
+.dataset-inspector-header > div:first-child > div:last-child { min-width:0; }
+.dataset-inspector-header > div:first-child > div:last-child > div { flex-wrap:wrap; }
+.dataset-inspector-dialog #dataset-inspector-title { font-size:17px; font-weight:700; color:#17213a; overflow-wrap:anywhere; }
+.dataset-inspector-header p { color:#526079; }
+.dataset-inspector-header span { border-radius:6px; }
+.dataset-inspector-header span:last-child { background:#e6f6eb; border-color:#c5e7cf; color:#087d3b; }
+.dataset-inspector-dialog .dataset-inspector-actions { margin-left:auto; padding:0; flex-wrap:wrap; }
+.dataset-inspector-dialog .secondary-action { border:1px solid #d8e0ec; border-radius:8px; background:#fff; color:#17213a; font-size:12px; padding:7px 11px; }
+.dataset-inspector-dialog .secondary-action:hover { background:#edf8f0; border-color:#9bd7ae; color:#006e36; }
+.dataset-inspector-header > button { color:#17213a; }
+.dataset-inspector-tabs { padding:0 17px; border-bottom:1px solid #e5eae7; background:#fff; overflow-x:auto; flex-shrink:0; }
+.dataset-inspector-tabs button { white-space:nowrap; font-weight:650; color:#526079; }
+.dataset-inspector-tabs button[aria-pressed=true] { border-color:#087d3b; color:#087d3b; }
+.dataset-inspector-body { padding:17px; overflow-y:auto; min-height:0; display:grid; gap:16px; }
+.dataset-inspector-table { overflow-x:auto; border:1px solid #dce2e9; border-radius:9px; }
+.dataset-inspector-table table { min-width:650px; background:#fff; }
+.dataset-inspector-table thead { background:#f8faf9; color:#17213a; text-transform:none; }
+.dataset-inspector-table :is(th,td) { padding:9px 12px; }
+.dataset-inspector-table td { color:#28344e; }
+.dataset-inspector-table td:first-child { color:#087d3b; }
+.dataset-inspector-table tbody tr:hover { background:#f3faf5; }
+.dataset-inspector-dialog :is(button,input,select,textarea):focus-visible { outline:2px solid #17213a; outline-offset:2px; }
+@media(max-width:600px) { .dataset-inspector-header { flex-wrap:wrap; } .dataset-inspector-header > div:first-child { flex-basis:calc(100% - 40px); } .dataset-inspector-header .dataset-inspector-actions { order:1; width:100%; margin-left:0; } }

@@ -122,7 +122,7 @@ function ExperimentForm({ onClose, onCreated }: { onClose: () => void; onCreated
 
   useEffect(() => { if (dialog.current && !dialog.current.open) dialog.current.showModal(); }, []);
 
-  return <dialog ref={dialog} className="overview-card experiments-dialog" aria-labelledby={titleId}
+  return <dialog ref={dialog} className="overview-card experiments-dialog creation-dialog" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); if (!create.isPending) onClose(); }}>
     <form onSubmit={event => { event.preventDefault(); if (name.trim() && !create.isPending) create.mutate(); }}>
       <header><h2 id={titleId}>New Experiment</h2><button type="button" aria-label="Close" disabled={create.isPending} onClick={onClose}><X size={18} /></button></header>

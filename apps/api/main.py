@@ -36,6 +36,7 @@ from apps.api.routers import (
     monitoring,
     projects,
     rollback,
+    settings_storage,
 )
 from packages.core.models.user import UserRole
 from packages.core.security.dependencies import get_current_user, require_role
@@ -172,6 +173,7 @@ def create_app() -> FastAPI:
     # Public: health probes + auth (login/register). Audit and rollback have granular RBAC dependencies.
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(settings_storage.router)
     app.include_router(contact.router)
     app.include_router(audit.router)
     app.include_router(rollback.router)

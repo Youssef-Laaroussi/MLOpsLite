@@ -11,20 +11,22 @@ Provides:
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import get_settings
 from apps.api.dependencies import get_db
 from apps.api.errors import ConflictError, NotFoundError
-from packages.core.models.audit import AuditAction
+from packages.core.models.audit import AuditAction, AuditLog
 from packages.core.models.user import ApiKey, User, UserRole
 from packages.core.schemas.security import (
     ApiKeyCreate,
     ApiKeyListResponse,
     ApiKeyResponse,
     LoginRequest,
+    PasswordChangeRequest,
     RefreshRequest,
+    SelfProfileUpdate,
     TokenResponse,
     UserCreate,
     UserListResponse,
@@ -218,7 +220,100 @@ async def get_me(
         "full_name": current_user.full_name,
         "role": current_user.role,
         "permissions": sorted(perms),
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at,
+        "updated_at": current_user.updated_at,
     }
+
+
+@router.patch("/auth/me", response_model=UserMeResponse)
+async def update_my_profile(
+    payload: SelfProfileUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """Allow every authenticated user to edit their own display name."""
+    from packages.core.security.audit import AuditService
+
+    previous_name = current_user.full_name
+    current_user.full_name = payload.full_name
+    await db.flush()
+    await db.refresh(current_user)
+    if previous_name != payload.full_name:
+        await AuditService(session=db).log(
+            action=AuditAction.USER_UPDATE, resource_type="user", resource_id=current_user.id,
+            resource_name=current_user.username, user_id=current_user.id,
+            user_email=current_user.email,
+            ip_address=request.client.host if request.client else None,
+            changes={"full_name": {"from": previous_name, "to": payload.full_name}},
+        )
+    return await get_me(current_user)
+
+
+@router.post("/auth/password")
+async def change_my_password(
+    payload: PasswordChangeRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Change only the authenticated user's password after reauthentication."""
+    from packages.core.security.audit import AuditService
+
+    if not verify_password(payload.current_password.get_secret_value(), current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    replacement = payload.new_password.get_secret_value()
+    if verify_password(replacement, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Choose a password different from your current password.")
+    current_user.hashed_password = hash_password(replacement)
+    await db.flush()
+    await AuditService(session=db).log(
+        action=AuditAction.USER_UPDATE, resource_type="user", resource_id=current_user.id,
+        resource_name=current_user.username, user_id=current_user.id, user_email=current_user.email,
+        ip_address=request.client.host if request.client else None,
+        changes={"password_changed": True},
+    )
+    return {"message": "Password updated.", "other_sessions_revoked": False}
+
+
+@router.get("/auth/security/activity")
+async def get_my_security_activity(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Expose only this user's security events without credentials or audit diffs."""
+    result = await db.execute(
+        select(AuditLog).where(or_(
+            and_(
+                AuditLog.resource_type == "user",
+                AuditLog.resource_id == current_user.id,
+                AuditLog.action == AuditAction.USER_UPDATE,
+            ),
+            and_(
+                AuditLog.user_id == current_user.id,
+                AuditLog.action.in_([
+                    AuditAction.USER_LOGIN, AuditAction.API_KEY_CREATE, AuditAction.API_KEY_REVOKE,
+                ]),
+            ),
+        )).order_by(AuditLog.timestamp.desc()).limit(3)
+    )
+    events = []
+    labels = {
+        AuditAction.USER_LOGIN: ("New sign-in", "sign-in"),
+        AuditAction.USER_UPDATE: ("Account updated", "account"),
+        AuditAction.API_KEY_CREATE: ("API key created", "api-key"),
+        AuditAction.API_KEY_REVOKE: ("API key revoked", "api-key"),
+    }
+    for event in result.scalars().all():
+        label, category = labels[event.action]
+        if event.action == AuditAction.USER_UPDATE and (event.changes_json or {}).get("password_changed"):
+            label, category = "Password changed", "password"
+        events.append({
+            "id": event.id, "label": label, "category": category,
+            "timestamp": event.timestamp, "ip_address": event.ip_address,
+        })
+    return {"events": events}
 
 
 # ── API Key Management ──────────────────────────────────────────

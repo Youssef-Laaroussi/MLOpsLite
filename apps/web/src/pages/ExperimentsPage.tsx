@@ -2,12 +2,12 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
-  Activity, ArrowDown, ArrowDownUp, ArrowRight, ArrowUp, ArrowUpRight, BarChart3, Box, Calendar, Check, CheckCircle2,
-  ChevronLeft, ChevronRight, ChevronsLeft, Clock, Copy, Database, EllipsisVertical, Eye, File, FlaskConical,
-  Folder, FolderGit2, Info, Layers, Play, Plus, RefreshCw, Rocket, Search, Settings, Tag, Trophy, X,
+  Activity, ArrowDown, ArrowDownUp, ArrowRight, ArrowUp, ArrowUpRight, BarChart3, Box, Building2, Calendar, Check, CheckCircle2,
+  ChevronLeft, ChevronRight, ChevronsLeft, Clock, Copy, Database, Download, EllipsisVertical, ExternalLink, Eye, File, FlaskConical,
+  Folder, Info, Layers, Play, Plus, RefreshCw, Rocket, Search, Settings, Tag, Trophy, X,
 } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, createExperiment, deleteExperiment, fetchExperimentArtifacts, fetchExperimentRuns, fetchExperiments, fetchProjects, fetchRunMetricHistory } from "../api/client";
+import { api, createExperiment, deleteExperiment, downloadExperimentArtifact, fetchExperimentArtifacts, fetchExperimentRuns, fetchExperiments, fetchProjects, fetchRunMetricHistory } from "../api/client";
 import type { Experiment, ExperimentRun } from "../api/types";
 import { useActionFeedback } from "../components/ActionFeedback";
 import "./ExperimentsPage.css";
@@ -30,7 +30,7 @@ const runTableDate = new Intl.DateTimeFormat("en-US", {
   month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
 });
 const axisTick = { fill: "#35425a", fontSize: 11 };
-const comparisonColors = ["#168b23", "#064d32", "#69798b"];
+const comparisonColors = ["#20d500", "#145923", "#c5cbd1"];
 type CountSnapshot = { observedAt: number; experiments: number; runs: number | null };
 
 function KpiTrend({ values, showLine = true, lowerIsBetter = false }: { values: readonly number[]; showLine?: boolean; lowerIsBetter?: boolean }) {
@@ -49,7 +49,8 @@ function KpiTrend({ values, showLine = true, lowerIsBetter = false }: { values: 
       <Direction size={13} aria-hidden="true" />{delta > 0 ? "+" : ""}{Number(delta.toFixed(1))}%
     </small>}
     {showLine && <svg className="experiments-sparkline" viewBox="0 0 80 24" role="img" aria-label="Recent trend">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={78} cy={spread ? 22 - 20 * (last - min) / spread : 12} r={1.8} fill="currentColor" />
     </svg>}
   </>;
 }
@@ -86,8 +87,8 @@ function errorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function Panel({ title, action, children }: { title: ReactNode; action?: ReactNode; children: ReactNode }) {
-  return <section className="overview-card experiments-panel">
+function Panel({ title, action, children, className = "" }: { title: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) {
+  return <section className={`overview-card experiments-panel ${className}`}>
     <h2>{title}<Info size={14} aria-hidden="true" />{action}</h2>{children}
   </section>;
 }
@@ -185,6 +186,8 @@ export function ExperimentsPage() {
   const [sort, setSort] = useState<{ key: MetricKey; ascending: boolean }>();
   const [comparison, setComparison] = useState<{ experimentId: string; ids: Set<string> }>();
   const [copyStatus, setCopyStatus] = useState("");
+  const [downloadingArtifact, setDownloadingArtifact] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const runPanel = useRef<HTMLElement>(null);
   const detailsPanel = useRef<HTMLElement>(null);
 
@@ -243,6 +246,7 @@ export function ExperimentsPage() {
   });
   const artifacts = artifactQuery.data ?? [];
   const modelName = selectedRun?.params?.model_name ?? selectedRun?.params?.model ?? selectedRun?.tags?.model_name;
+  const modelVersion = selectedRun?.params?.model_version ?? selectedRun?.tags?.model_version;
   const mlflowBase = import.meta.env.VITE_MLFLOW_URL?.replace(/\/+$/, "");
   const mlflowLink = mlflowBase && selectedRun ? `${mlflowBase}/#/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}` : null;
 
@@ -284,6 +288,27 @@ export function ExperimentsPage() {
       setCopyStatus(runId);
     } catch {
       setCopyStatus("failed");
+    }
+  }
+
+  async function downloadArtifact(path: string, isDirectory: boolean) {
+    if (downloadingArtifact) return;
+    setDownloadingArtifact(path);
+    setDownloadError("");
+    try {
+      const blob = await downloadExperimentArtifact(experimentId, runId, path);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${path.split("/").pop() || "artifact"}${isDirectory ? ".zip" : ""}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setDownloadError("Could not download this artifact. Please try again.");
+    } finally {
+      setDownloadingArtifact("");
     }
   }
 
@@ -366,19 +391,38 @@ export function ExperimentsPage() {
   const runMessage = !selectedExperiment ? "Select an experiment." : runQuery.isPending
     ? "Loading runs…" : runQuery.isError ? errorMessage(runQuery.error, "Could not load runs from MLflow.") : "No runs match these filters.";
   const showRuns = view === "Runs";
+  const artifactDescription = (path: string, isDirectory: boolean) => {
+    const name = path.split("/").pop()?.toLowerCase();
+    if (isDirectory && name === "model") return "Model artifacts";
+    if (isDirectory && name === "plots") return "Training & evaluation plots";
+    if (isDirectory && name === "reports") return "Metrics and evaluation reports";
+    return isDirectory ? "Artifact folder" : "Run artifact";
+  };
   const displayedArtifacts = (summary: boolean) => artifactQuery.isError
     ? <p className="experiments-empty" role="alert">{errorMessage(artifactQuery.error, "Artifacts could not be loaded.")}</p>
     : artifacts.length ? <ul className="experiments-artifacts">{(summary ? artifacts.slice(0, 3) : artifacts).map(item => {
       const Icon = item.is_dir ? Folder : File;
-      return <li key={item.path}><Icon size={18} aria-hidden="true" /><span>{item.path}{item.is_dir ? "/" : ""}</span>
-        {item.size !== null && <small>{new Intl.NumberFormat("en", { style: "unit", unit: item.size >= 1_000_000 ? "megabyte" : "kilobyte", maximumFractionDigits: 1 })
-          .format(item.size / (item.size >= 1_000_000 ? 1_000_000 : 1_000))}</small>}</li>;
+      return <li key={item.path}><Icon size={22} aria-hidden="true" />
+        <div className="experiments-artifact-name"><strong>{item.path}{item.is_dir ? "/" : ""}</strong>
+          <span>{artifactDescription(item.path, item.is_dir)}</span></div>
+        <small>{item.size !== null ? new Intl.NumberFormat("en", { style: "unit", unit: item.size >= 1_000_000 ? "megabyte" : "kilobyte", maximumFractionDigits: 1 })
+          .format(item.size / (item.size >= 1_000_000 ? 1_000_000 : 1_000)) : "—"}</small>
+        <button type="button" aria-label={`Download ${item.path}${item.is_dir ? " as ZIP" : ""}`}
+          disabled={Boolean(downloadingArtifact)} onClick={() => void downloadArtifact(item.path, item.is_dir)}>
+          {downloadingArtifact === item.path ? <RefreshCw className="animate-spin" size={18} /> : <Download size={18} />}
+        </button>
+      </li>;
     })}</ul> : <p className="experiments-empty">{selectedRun && artifactQuery.isPending ? "Loading artifacts…" : "No artifacts recorded."}</p>;
 
   return <div className="experiments-dashboard">
     <header className="overview-hero experiments-hero">
       <div><h1>Experiments</h1><p>Track, compare, and analyze your machine learning experiments with MLflow integration.</p></div>
-      <div className="experiments-lifecycle" aria-hidden="true">{lifecycle.map(([Icon, label], index) =>
+      <div className="experiments-lifecycle" aria-hidden="true">
+        <svg className="experiments-lifecycle-landscape" viewBox="0 0 640 90" preserveAspectRatio="none">
+          <path fill="#dff5e5" d="M0 90 73 40Q100 20 122 34L232 90 298 46Q322 30 344 44L434 90 542 37Q568 20 592 34L640 57V90Z" />
+          <path fill="#ebf9ee" d="m53 90 92-50q22-12 44 1l99 49 98-47q24-12 47 2l85 45 74-41q24-14 48-1v42Z" />
+        </svg>
+        {lifecycle.map(([Icon, label], index) =>
         <div key={label}><Icon size={42} strokeWidth={1.6} /><b>{label}</b>{index < lifecycle.length - 1 && <ArrowRight className="experiments-stage-arrow" size={24} />}</div>
       )}</div>
     </header>
@@ -386,7 +430,7 @@ export function ExperimentsPage() {
     <div className="experiments-toolbar" role="group" aria-label="Experiment filters">
       <label><Search size={15} /><input aria-label="Search experiments or runs" placeholder="Search experiments or runs…" value={search}
         onChange={event => { setSearch(event.target.value); setPage(1); }} /></label>
-      <label><FolderGit2 size={15} /><select aria-label="Project" value={project} onChange={event => { setProject(event.target.value); setExperimentFilter(""); setPage(1); }}>
+      <label><Building2 size={15} /><select aria-label="Project" value={project} onChange={event => { setProject(event.target.value); setExperimentFilter(""); setPage(1); }}>
         <option value="">All Projects</option>{experimentProjects.map(key => <option key={key} value={key}>{projectLabels.get(key) ?? key}</option>)}
       </select></label>
       <label><FlaskConical size={15} /><select aria-label="Experiment" value={experimentFilter}
@@ -423,13 +467,13 @@ export function ExperimentsPage() {
     <div className="experiments-grid">
       <div className="experiments-main">
         <div className="experiments-top">
-          <Panel title={`Experiments (${experimentRows.length})`} action={<button type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />New</button>}>
+          <Panel className="experiments-list-panel" title={`Experiments (${experimentRows.length})`} action={<button type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />New</button>}>
             <div className="experiments-scroll"><table className="overview-table experiments-list">
               <thead><tr><th scope="col">Experiment</th><th scope="col">Project</th><th scope="col">Runs</th></tr></thead>
               <tbody>{(expanded ? experimentRows : experimentRows.slice(0, 5)).map(experiment =>
                 <tr key={experiment.experiment_id} data-active={experiment.experiment_id === experimentId}>
                   <td><button type="button" aria-pressed={experiment.experiment_id === experimentId} onClick={() => chooseExperiment(experiment.experiment_id)}>
-                    <FlaskConical size={14} aria-hidden="true" /><span>{experiment.name}</span>
+                    <FlaskConical size={18} aria-hidden="true" /><span>{experiment.name}</span>
                   </button></td><td>{projectName(experiment)}</td><td>{experiment.runs_count ?? "—"}</td>
                 </tr>
               )}</tbody>
@@ -440,7 +484,7 @@ export function ExperimentsPage() {
             </button>}
           </Panel>
 
-          <Panel title="Run Comparison">
+          <Panel className="experiments-comparison-panel" title="Run Comparison">
             <div className="experiments-chart-controls">
               <div className="experiments-segments" role="group" aria-label="Comparison metric">
                 {metrics.map(item => <button key={item.key} type="button" aria-pressed={metricKey === item.key} onClick={() => setMetricKey(item.key)}>{item.label}</button>)}
@@ -456,17 +500,18 @@ export function ExperimentsPage() {
                 <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} accessibilityLayer margin={{ top: 12, right: 11, bottom: 19, left: 0 }}>
                   <CartesianGrid vertical={false} stroke="#e9edf1" />
                   <XAxis dataKey="number" type={showHistory ? "number" : "category"} domain={["dataMin", "dataMax"]}
-                    allowDecimals={false} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }} minTickGap={10}
+                    allowDecimals={false} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }} minTickGap={5}
                     label={{ value: showHistory ? "Training step" : "Run #", position: "insideBottom", offset: -11, ...axisTick }} />
-                  <YAxis width={49} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }} domain={["auto", "auto"]} />
+                  <YAxis width={44} tick={axisTick} tickLine={false} axisLine={{ stroke: "#bfc9d3" }}
+                    tickFormatter={value => Number(value).toFixed(2)} domain={["auto", "auto"]} />
                   <Tooltip labelFormatter={number => showHistory ? `Step ${number}` : `Run #${number}`}
                     formatter={(value: number, name: string) => [value.toFixed(4), name]} />
                   {showHistory ? histories.map((history, index) =>
                     <Line key={history.id} dataKey={point => point[history.id]} name={`Run #${ordinal.get(history.id)}`}
-                      stroke={comparisonColors[index]} strokeWidth={2} dot={history.points.length <= 30 ? { r: 2.5, fill: "#fff" } : false}
+                      stroke={comparisonColors[index]} strokeWidth={2} dot={history.points.length <= 30 ? { r: 2.8, fill: "#fff", strokeWidth: 1.8 } : false}
                       activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
                   ) : <Line dataKey="value" name={metric.label} stroke={comparisonColors[0]} strokeWidth={2}
-                    dot={{ r: 2.5, fill: "#fff" }} activeDot={{ r: 4 }} isAnimationActive={false} />}
+                    dot={{ r: 2.8, fill: "#fff", strokeWidth: 1.8 }} activeDot={{ r: 4 }} isAnimationActive={false} />}
                 </LineChart></ResponsiveContainer>
               </div>
               {showHistory && <ul className="experiments-chart-legend" aria-label="Latest recorded scores">
@@ -542,12 +587,18 @@ export function ExperimentsPage() {
             {view === "Metrics" && <Values entries={Object.entries(selectedRun?.metrics ?? {})} />}
             {view === "Parameters" && <>
               <Values entries={params} />
+              {selectedExperiment && <details className="experiments-metadata">
+                <summary>Experiment metadata</summary>
+                <Values entries={[["Experiment ID", experimentId], ["Artifact location", selectedExperiment.artifact_location ?? "—"],
+                  ["Created", selectedExperiment.created_at ?? "—"], ...Object.entries(selectedExperiment.tags ?? {})]} />
+                {experimentId !== "0" && <button type="button" disabled={deleteMutation.isPending} onClick={() => void removeExperiment(selectedExperiment)}>Delete Experiment</button>}
+              </details>}
               {selectedRun?.tags && Object.keys(selectedRun.tags).length > 0 && <>
                 <h3 className="experiments-subheading">Run Tags</h3>
                 <Values entries={Object.entries(selectedRun.tags)} />
               </>}
             </>}
-            {view === "Artifacts" && displayedArtifacts(false)}
+            {view === "Artifacts" && <>{displayedArtifacts(false)}{downloadError && <p className="experiments-notice" role="alert">{downloadError}</p>}</>}
             {view === "Models (Registry)" && <>
               {selectedRun?.status === "FINISHED" && <RegisterModel key={runId} run={selectedRun} />}
               <Link className="experiments-panel-link" to="/app/models">Open Model Registry<ArrowUpRight size={14} /></Link>
@@ -557,7 +608,7 @@ export function ExperimentsPage() {
       </div>
 
       <aside className="experiments-sidebar" aria-label="Selected run details" ref={detailsPanel}>
-        <Panel title="Run Details" action={mlflowLink && <a href={mlflowLink} target="_blank" rel="noreferrer">Open in MLflow<ArrowUpRight size={14} /></a>}>
+        <Panel className="experiments-run-details" title="Run Details" action={mlflowLink && <a href={mlflowLink} target="_blank" rel="noreferrer">Open in MLflow<ExternalLink size={14} /></a>}>
           {selectedRun && selectedExperiment ? <dl className="experiments-values">
             <div><dt>Run ID</dt><dd><span title={runId}>{runId.slice(0, 8)}…</span>
               <button type="button" aria-label="Copy run ID" onClick={() => void copyRunId()}>{copyStatus === runId ? <Check size={13} /> : <Copy size={13} />}</button>
@@ -567,23 +618,21 @@ export function ExperimentsPage() {
             <div><dt>Status</dt><dd><RunStatus status={selectedRun.status} /></dd></div>
             <div><dt>Start Time</dt><dd>{selectedRun.start_time ? dateTime.format(selectedRun.start_time) : "—"}</dd></div>
             <div><dt>Duration</dt><dd>{formatDuration(runDuration(selectedRun))}</dd></div>
-            <div><dt>Model</dt><dd>{modelName ?? "—"}</dd></div>
+            <div><dt>Model</dt><dd className="experiments-model-badges">
+              {modelName ? <span>{modelName}</span> : "—"}
+              {modelVersion && <span>{/^v/i.test(modelVersion) ? modelVersion : `v${modelVersion}`}</span>}
+            </dd></div>
           </dl> : <p className="experiments-empty">{runMessage}</p>}
           {copyStatus === "failed" && <p className="experiments-notice" role="status">Clipboard access is unavailable.</p>}
-          {selectedExperiment && <details className="experiments-metadata">
-            <summary>Experiment metadata</summary>
-            <Values entries={[["Experiment ID", experimentId], ["Artifact location", selectedExperiment.artifact_location ?? "—"],
-              ["Created", selectedExperiment.created_at ?? "—"], ...Object.entries(selectedExperiment.tags ?? {})]} />
-            {experimentId !== "0" && <button type="button" disabled={deleteMutation.isPending} onClick={() => void removeExperiment(selectedExperiment)}>Delete Experiment</button>}
-          </details>}
         </Panel>
-        <Panel title={<><Settings className="experiments-section-icon" size={18} />Parameters</>}
+        <Panel className="experiments-parameters-panel" title={<><Settings className="experiments-section-icon" size={18} />Parameters</>}
           action={params.length > 0 && <button type="button" onClick={() => openView("Parameters")}>View All<ChevronRight size={15} /></button>}>
           <Values entries={params.slice(0, 5)} />
         </Panel>
         <Panel title={<><Box className="experiments-section-icon" size={18} />Artifacts{artifactQuery.isSuccess ? ` (${artifacts.length})` : ""}</>}
           action={artifacts.length > 0 && <button type="button" onClick={() => openView("Artifacts")}>View All<ChevronRight size={15} /></button>}>
           {displayedArtifacts(true)}
+          {downloadError && <p className="experiments-notice" role="alert">{downloadError}</p>}
         </Panel>
       </aside>
     </div>

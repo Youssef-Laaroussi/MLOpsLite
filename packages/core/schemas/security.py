@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr, model_validator
 
 from packages.core.models.audit import AuditAction
 from packages.core.models.user import UserRole
@@ -67,6 +67,31 @@ class UserUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class SelfProfileUpdate(BaseModel):
+    """Editable profile fields; account roles remain administrator-managed."""
+
+    full_name: str = Field(min_length=1, max_length=200)
+    model_config = {"extra": "forbid", "str_strip_whitespace": True}
+
+
+class PasswordChangeRequest(BaseModel):
+    """Require the existing password before accepting a matching replacement."""
+
+    current_password: SecretStr = Field(min_length=1, max_length=200)
+    new_password: SecretStr = Field(min_length=8, max_length=72)
+    confirm_password: SecretStr = Field(min_length=8, max_length=72)
+    model_config = {"extra": "forbid"}
+
+    @model_validator(mode="after")
+    def validate_replacement(self):
+        password = self.new_password.get_secret_value()
+        if password != self.confirm_password.get_secret_value():
+            raise ValueError("New passwords do not match.")
+        if len(password.encode("utf-8")) > 72:
+            raise ValueError("New password must fit within 72 UTF-8 bytes.")
+        return self
+
+
 class UserResponse(BaseModel):
     """User account response (never includes password)."""
 
@@ -98,6 +123,10 @@ class UserMeResponse(BaseModel):
     full_name: str | None
     role: UserRole
     permissions: list[str]
+
+    is_active: bool = True
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

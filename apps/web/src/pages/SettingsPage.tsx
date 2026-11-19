@@ -1,7 +1,16 @@
+import { Link } from "react-router-dom";
+import { NotificationsSettings } from "../components/NotificationsSettings";
+import { StorageSettings } from "../components/StorageSettings";
+import { IntegrationsSettings } from "../components/IntegrationsSettings";
+import { SecuritySettings } from "../components/SecuritySettings";
+import { GeneralSettings } from "../components/GeneralSettings";
+import { ProfileSettings } from "../components/ProfileSettings";
+import "./SettingsPage.css";
 import { useActionFeedback } from "../components/ActionFeedback";
 import React, { useState, useEffect } from "react";
 import {
   Settings,
+  Puzzle,
   Key,
   Server,
   Database,
@@ -11,19 +20,13 @@ import {
   Plus,
   Trash2,
   RefreshCw,
-  Cpu,
   User as UserIcon,
   CheckCircle2,
-  Lock,
   ShieldCheck,
   Layers,
-  Mail,
-  Calendar,
-  Sparkles,
   Users,
   Sliders,
   Bell,
-  Palette,
   Eye,
   EyeOff,
   UserPlus,
@@ -32,11 +35,7 @@ import {
   Search,
   AlertTriangle,
   Info,
-  Terminal,
   Save,
-  CheckCheck,
-  Camera,
-  Upload,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -57,57 +56,8 @@ export const SettingsPage: React.FC = () => {
 
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    "profile" | "users" | "apikeys" | "preferences" | "system"
+    "profile" | "users" | "apikeys" | "preferences" | "system" | "general" | "security" | "about" | "integrations" | "storage" | "notifications"
   >("profile");
-
-  // Profile editing state
-  const [fullName, setFullName] = useState(user?.full_name || "");
-  const [avatarUrl, setAvatarUrl] = useState<string>(() => user?.avatar_url || localStorage.getItem("mlite_avatar") || "");
-  const [emailNotification, setEmailNotification] = useState(true);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
-
-  // Sync profile when user changes
-  useEffect(() => {
-    if (user?.full_name) {
-      setFullName(user.full_name);
-    }
-    if (user?.avatar_url) {
-      setAvatarUrl(user.avatar_url);
-    }
-  }, [user]);
-
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setSettingsError("Please upload a valid image file (PNG, JPG, SVG, WebP).");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      setSettingsError("Image size must be less than 2MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setAvatarUrl(base64);
-      localStorage.setItem("mlite_avatar", base64);
-      updateProfile({ avatar_url: base64 });
-      showSuccessBanner("Profile photo updated successfully!");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveAvatar = () => {
-    setAvatarUrl("");
-    localStorage.removeItem("mlite_avatar");
-    updateProfile({ avatar_url: "" });
-    showSuccessBanner("Profile photo removed.");
-  };
 
   // Preferences state (stored in localStorage)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(
@@ -185,30 +135,6 @@ export const SettingsPage: React.FC = () => {
       loadTeam();
     }
   }, [user, isAdmin]);
-
-  // Save personal profile
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingProfile(true);
-    setSettingsError(null);
-    try {
-      if (user?.id) {
-        // If user is Admin or has API support, call backend
-        try {
-          await updateUser(user.id, { full_name: fullName });
-        } catch {
-          // Fallback if not admin in backend
-        }
-      }
-      updateProfile({ full_name: fullName });
-      setProfileSuccess("Profile successfully updated!");
-      setTimeout(() => setProfileSuccess(null), 3000);
-    } catch (err) {
-      setSettingsError(errMsg(err, "Failed to update profile."));
-    } finally {
-      setSavingProfile(false);
-    }
-  };
 
   // Save Preferences
   const handleSavePreferences = () => {
@@ -351,7 +277,19 @@ export const SettingsPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="settings-dashboard" data-settings-tab={activeTab}>
+      <aside className="settings-navigation"><h1>Settings</h1><p>Manage your workspace, security, integrations, and preferences.</p>
+        <nav aria-label="Settings sections">
+          {([["general", Settings, "General"], ["profile", UserIcon, "Profile"], ["security", Shield, "Security"]] as const).map(([tab, Icon, label]) => <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}><Icon size={21}/>{label}</button>)}
+          <button type="button" aria-current={activeTab === "integrations" ? "page" : undefined} onClick={() => setActiveTab("integrations")}><Puzzle size={21}/>Integrations</button>
+          <button type="button" aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => setActiveTab("storage")}><Database size={21}/>Storage</button>
+          <button type="button" aria-current={activeTab === "notifications" ? "page" : undefined} onClick={() => setActiveTab("notifications")}><Bell size={21}/>Notifications</button>
+          {([["apikeys", Key, "API Keys"], ["preferences", Sliders, "Preferences"], ["about", Info, "About"]] as const).map(([tab, Icon, label]) => <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}><Icon size={21}/>{label}</button>)}
+          {isAdmin && <><button type="button" aria-current={activeTab === "users" ? "page" : undefined} onClick={() => setActiveTab("users")}><Users size={21}/>User Management</button><button type="button" aria-current={activeTab === "system" ? "page" : undefined} onClick={() => setActiveTab("system")}><ShieldCheck size={21}/>System Health</button></>}
+        </nav>
+      </aside>
+      <div className="settings-content">
+        <header className={`settings-breadcrumb${(activeTab === "general" || activeTab === "security" || activeTab === "integrations" || activeTab === "storage" || activeTab === "notifications") ? " settings-breadcrumb-general" : ""}`}><span>Settings</span><span aria-hidden="true">›</span><h1>{{profile:"Profile", users:"User Management", apikeys:"API Keys", preferences:"Preferences", system:"System Health", general:"General", security:"Security", about:"About", integrations:"Integrations", storage:"Storage", notifications:"Notifications"}[activeTab]}</h1></header>
       {/* Notifications / Alerts */}
       {settingsError && (
         <div
@@ -381,327 +319,13 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight font-sans flex items-center gap-2">
-            <Settings className="w-5 h-5 text-[#3BB48C]" />
-            Settings &amp; Workspace Management
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Configure your personal profile, team members, CLI API tokens, and operational preferences.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Top Tabs Navigation ── */}
-      <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto pb-px">
-        <button
-          onClick={() => setActiveTab("profile")}
-          className={`px-4 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-2 ${
-            activeTab === "profile"
-              ? "border-[#3BB48C] text-[#1A7456] bg-emerald-50/30 rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <UserIcon className="w-4 h-4" />
-          My Profile &amp; Account
-        </button>
-
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`px-4 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-2 ${
-              activeTab === "users"
-                ? "border-[#3BB48C] text-[#1A7456] bg-emerald-50/30 rounded-t-lg"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            User Management &amp; RBAC
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono">
-              {teamUsers.length}
-            </span>
-          </button>
-        )}
-
-        <button
-          onClick={() => setActiveTab("apikeys")}
-          className={`px-4 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-2 ${
-            activeTab === "apikeys"
-              ? "border-[#3BB48C] text-[#1A7456] bg-emerald-50/30 rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Key className="w-4 h-4" />
-          API &amp; CLI Keys
-          {apiKeys.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono">
-              {apiKeys.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab("preferences")}
-          className={`px-4 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-2 ${
-            activeTab === "preferences"
-              ? "border-[#3BB48C] text-[#1A7456] bg-emerald-50/30 rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          Preferences
-        </button>
-
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab("system")}
-            className={`px-4 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-2 ${
-              activeTab === "system"
-                ? "border-[#3BB48C] text-[#1A7456] bg-emerald-50/30 rounded-t-lg"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            System Health &amp; Services
-          </button>
-        )}
-      </div>
-
-      {/* ═════════════════════════════════════════════════════════════════ */}
-      {/* ── TAB 1: PROFILE & PERSONAL ACCOUNT ── */}
-      {/* ═════════════════════════════════════════════════════════════════ */}
-      {activeTab === "profile" && (
-        <div className="space-y-6">
-          {/* Main Account Banner */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-              <div className="flex items-center gap-4">
-                <div className="relative group">
-                  <div
-                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm overflow-hidden border border-slate-200/80 ${
-                      isAdmin
-                        ? "bg-slate-900 shadow-slate-900/10"
-                        : "bg-[#3BB48C] shadow-[#3BB48C]/15"
-                    }`}
-                  >
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt="Profile avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user?.username?.charAt(0).toUpperCase() || "U"
-                    )}
-                  </div>
-
-                  {/* Hidden file input */}
-                  <input
-                    id="avatar-file-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarFileChange}
-                    className="hidden"
-                  />
-
-                  {/* Camera overlay button to change avatar */}
-                  <label
-                    htmlFor="avatar-file-input"
-                    className="absolute inset-0 rounded-2xl bg-slate-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]"
-                    title="Change profile picture"
-                  >
-                    <Camera className="w-5 h-5 mb-0.5" />
-                    <span className="text-[10px] font-bold">Change</span>
-                  </label>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                      {user?.full_name || user?.username}
-                    </h3>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border ${
-                        isAdmin
-                          ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-[#475569] text-white border-[#334155] shadow-2xs"
-                      }`}
-                    >
-                      {user?.role || (isAdmin ? "ADMIN" : "USER")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                    <span className="flex items-center gap-1 font-mono">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      {user?.email || "user@organization.local"}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-slate-500">ID: {user?.id?.slice(0, 8) || "usr_active"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2.5">
-                    <label
-                      htmlFor="avatar-file-input"
-                      className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer transition flex items-center gap-1.5"
-                    >
-                      <Upload className="w-3 h-3 text-slate-500" />
-                      Upload photo
-                    </label>
-                    {avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveAvatar}
-                        className="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white border border-slate-900 text-xs font-semibold flex items-center gap-2 shadow-2xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Account Active &amp; Verified</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Edit Form */}
-            <form onSubmit={handleSaveProfile} className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Personal Details */}
-              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <UserIcon className="w-4 h-4 text-[#3BB48C]" />
-                  Personal Information
-                </h4>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Display Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Marie Curie"
-                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3BB48C]/40 focus:border-[#3BB48C]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Username
-                    </label>
-                    <input
-                      type="text"
-                      disabled
-                      value={user?.username || ""}
-                      className="w-full px-3.5 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Role
-                    </label>
-                    <input
-                      type="text"
-                      disabled
-                      value={user?.role || "USER"}
-                      className="w-full px-3.5 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    disabled
-                    value={user?.email || ""}
-                    className="w-full px-3.5 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed font-mono"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    To modify username or email, contact your organization's administrator.
-                  </p>
-                </div>
-
-                <div className="pt-2 flex items-center justify-between">
-                  {profileSuccess ? (
-                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
-                      <CheckCheck className="w-4 h-4" />
-                      {profileSuccess}
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#3BB48C] hover:bg-[#329F7B] text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    {savingProfile ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Developer CLI & Quick Credentials */}
-              <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 flex flex-col justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-[#3BB48C]" />
-                    CLI &amp; SDK Quickstart
-                  </h4>
-                  <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                    Authenticate your local terminal or Jupyter notebooks to push experiments,
-                    register models, and stream metrics straight to this cluster.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>export MLITE_API_KEY="&lt;YOUR_API_KEY&gt;"</code>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard('export MLITE_API_KEY="<YOUR_API_KEY>"')}
-                        className="text-slate-400 hover:text-white transition p-1"
-                        title="Copy command"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] flex items-center justify-between">
-                      <code>{`export MLITE_API_URL="${window.location.origin}"`}</code>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(`export MLITE_API_URL="${window.location.origin}"`)}
-                        className="text-slate-400 hover:text-white transition p-1"
-                        title="Copy command"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Need a dedicated token?</span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("apikeys")}
-                    className="text-xs font-bold text-[#1A7456] hover:text-[#145a43] transition flex items-center gap-1"
-                  >
-                    Manage API Keys →
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {activeTab === "profile" && <ProfileSettings />}
+      {activeTab === "general" && <GeneralSettings />}
+      {activeTab === "security" && <SecuritySettings />}
+      {activeTab === "integrations" && <IntegrationsSettings />}
+      {activeTab === "storage" && <StorageSettings />}
+      {activeTab === "notifications" && <NotificationsSettings />}
+      {activeTab === "about" && <section className="profile-card settings-info"><h2><Info size={24}/>About MLite</h2><p>Open-source MLOps for real-world AI.</p><p>Web application version: 0.1.0</p></section>}
 
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* ── TAB 2: USER MANAGEMENT & RBAC (ADMIN) ── */}
@@ -1231,6 +855,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

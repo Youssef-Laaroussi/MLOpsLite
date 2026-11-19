@@ -173,6 +173,66 @@ async def list_run_artifacts(
     ]}
 
 
+@router.get("/{experiment_id}/runs/{run_id}/artifacts/download")
+def download_run_artifact(
+    experiment_id: str,
+    run_id: str,
+    path: str = Query(min_length=1),
+    settings: Settings = Depends(get_app_settings),
+):
+    """Download a run artifact, packaging directories as ZIP files."""
+    import shutil
+    import tempfile
+    from pathlib import Path, PurePosixPath
+
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+    from mlflow.exceptions import MlflowException
+    from starlette.background import BackgroundTask
+
+    from packages.tracking.mlflow_client import MLiteMLflowManager
+
+    artifact_path = PurePosixPath(path)
+    if (
+        artifact_path.is_absolute() or ".." in artifact_path.parts
+        or "\\" in path or artifact_path == PurePosixPath(".")
+    ):
+        raise HTTPException(status_code=400, detail="Invalid artifact path.")
+
+    workspace = tempfile.mkdtemp(prefix="mlite-artifact-")
+    try:
+        client = MLiteMLflowManager(tracking_uri=settings.mlflow_tracking_uri).client
+        run = client.get_run(run_id)
+        if run.info.experiment_id != experiment_id:
+            raise HTTPException(status_code=404, detail="Run not found in this experiment.")
+        downloaded = Path(client.download_artifacts(run_id, path, workspace)).resolve()
+        if (
+            downloaded == Path(workspace).resolve()
+            or not downloaded.is_relative_to(Path(workspace).resolve())
+        ):
+            raise HTTPException(status_code=502, detail="Invalid artifact download location.")
+        filename = artifact_path.name
+        if downloaded.is_dir():
+            # Keep the archive outside the downloaded folder to avoid including itself.
+            archive = shutil.make_archive(
+                str(Path(workspace) / "download"), "zip",
+                root_dir=downloaded.parent, base_dir=downloaded.name,
+            )
+            downloaded = Path(archive)
+            filename += ".zip"
+        return FileResponse(
+            downloaded, filename=filename,
+            background=BackgroundTask(shutil.rmtree, workspace, ignore_errors=True),
+        )
+    except Exception as exc:
+        shutil.rmtree(workspace, ignore_errors=True)
+        if isinstance(exc, HTTPException):
+            raise
+        if isinstance(exc, MlflowException) and exc.error_code == "RESOURCE_DOES_NOT_EXIST":
+            raise HTTPException(status_code=404, detail="Artifact not found.") from exc
+        raise HTTPException(status_code=502, detail="Could not download artifact from MLflow.") from exc
+
+
 @router.post("/", status_code=201)
 async def create_experiment(
     data: dict[str, Any],

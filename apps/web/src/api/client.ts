@@ -379,6 +379,12 @@ export const fetchExperimentArtifacts = async (experimentId: string, runId: stri
   return data.artifacts;
 };
 
+export const downloadExperimentArtifact = async (experimentId: string, runId: string, path: string) => {
+  const endpoint = `/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}/artifacts/download`;
+  const { data } = await api.get<Blob>(endpoint, { params: { path }, responseType: "blob", timeout: 120000 });
+  return data;
+};
+
 export const createExperiment = async (data: { name: string; tags?: Record<string, string> }): Promise<any> => {
   const res = await api.post("/experiments/", data);
   return res.data;

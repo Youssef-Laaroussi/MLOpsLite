@@ -3,7 +3,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.core.models.project import Project, ProjectStatus
+from packages.core.models.project import Project, ProjectMembership, ProjectRole, ProjectStatus
 from packages.core.schemas.project import ProjectCreate, ProjectUpdate
 
 
@@ -13,7 +13,7 @@ class ProjectService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def create(self, data: ProjectCreate) -> Project:
+    async def create(self, data: ProjectCreate, owner_id: str) -> Project:
         """Create a new project, raising ConflictError on duplicate slug."""
         existing = await self.session.execute(select(Project).where(Project.slug == data.slug))
         if existing.scalar_one_or_none() is not None:
@@ -31,8 +31,21 @@ class ProjectService:
         )
         self.session.add(project)
         await self.session.flush()
+        self.session.add(ProjectMembership(
+            project_id=project.id, user_id=owner_id, project_role=ProjectRole.OWNER,
+        ))
+        await self.session.flush()
         await self.session.refresh(project)
+        project.owner_id = owner_id
         return project
+
+    async def require_owner(self, project: Project, user_id: str) -> None:
+        """An instance administrator does not automatically own unrelated projects."""
+        from apps.api.errors import NotFoundError
+
+        membership = await self.session.get(ProjectMembership, (project.id, user_id))
+        if membership is None or membership.project_role != ProjectRole.OWNER:
+            raise NotFoundError("Project", project.id)
 
     async def get_by_slug_or_id(self, slug_or_id: str) -> Project | None:
         """Retrieve a project by slug or UUID."""
@@ -41,9 +54,14 @@ class ProjectService:
         )
         project = result.scalar_one_or_none()
         if project:
-            from packages.core.models.model_registry import RegisteredModel
+            owner_id = await self.session.scalar(select(ProjectMembership.user_id).where(
+                ProjectMembership.project_id == project.id,
+                ProjectMembership.project_role == ProjectRole.OWNER,
+            ))
+            project.owner_id = owner_id
             from packages.core.models.dataset import Dataset
             from packages.core.models.deployment import Deployment
+            from packages.core.models.model_registry import RegisteredModel
 
             m_count = (
                 await self.session.execute(
@@ -61,9 +79,9 @@ class ProjectService:
                 )
             ).scalar() or 0
 
-            setattr(project, "models_count", m_count)
-            setattr(project, "datasets_count", d_count)
-            setattr(project, "deployments_count", dep_count)
+            project.models_count = m_count
+            project.datasets_count = d_count
+            project.deployments_count = dep_count
 
         return project
 
@@ -72,10 +90,19 @@ class ProjectService:
         page: int = 1,
         page_size: int = 20,
         status: str | None = None,
+        user_id: str | None = None,
     ) -> tuple[list[Project], int]:
         """Return paginated list of projects and total count."""
         query = select(Project)
         count_query = select(func.count()).select_from(Project)
+
+        if user_id is not None:
+            owned = select(ProjectMembership.project_id).where(
+                ProjectMembership.user_id == user_id,
+                ProjectMembership.project_role == ProjectRole.OWNER,
+            )
+            query = query.where(Project.id.in_(owned))
+            count_query = count_query.where(Project.id.in_(owned))
 
         if status:
             query = query.where(Project.status == status)
@@ -93,10 +120,18 @@ class ProjectService:
         # Populate real resource counts for each project
         if projects:
             project_ids = [p.id for p in projects]
+            owners = dict((await self.session.execute(select(
+                ProjectMembership.project_id, ProjectMembership.user_id,
+            ).where(
+                ProjectMembership.project_id.in_(project_ids),
+                ProjectMembership.project_role == ProjectRole.OWNER,
+            ))).all())
+            for project in projects:
+                project.owner_id = owners.get(project.id)
 
-            from packages.core.models.model_registry import RegisteredModel
             from packages.core.models.dataset import Dataset
             from packages.core.models.deployment import Deployment
+            from packages.core.models.model_registry import RegisteredModel
 
             models_stmt = (
                 select(RegisteredModel.project_id, func.count(RegisteredModel.id))
@@ -123,9 +158,9 @@ class ProjectService:
             deployment_counts = dict(deployments_res.all())
 
             for p in projects:
-                setattr(p, "models_count", model_counts.get(p.id, 0))
-                setattr(p, "datasets_count", dataset_counts.get(p.id, 0))
-                setattr(p, "deployments_count", deployment_counts.get(p.id, 0))
+                p.models_count = model_counts.get(p.id, 0)
+                p.datasets_count = dataset_counts.get(p.id, 0)
+                p.deployments_count = deployment_counts.get(p.id, 0)
 
         return projects, total
 
@@ -166,6 +201,9 @@ class ProjectService:
         if project is None:
             return False
 
+        # Explicit cleanup also works with SQLite installations without FK pragmas enabled.
+        from sqlalchemy import delete
+        await self.session.execute(delete(ProjectMembership).where(ProjectMembership.project_id == project.id))
         await self.session.delete(project)
         await self.session.flush()
         return True

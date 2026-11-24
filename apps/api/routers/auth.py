@@ -120,9 +120,14 @@ async def register(
     - Elevated administrative roles (ADMIN, MAINTAINER) cannot be self-assigned;
       they must be granted explicitly by an administrator.
     """
-    from sqlalchemy import func
-
     from packages.core.security.audit import AuditService
+    from packages.core.services.instance_service import get_instance_state
+
+    instance = await get_instance_state(db)
+    if instance.completed_at is None:
+        raise HTTPException(409, "Complete installation setup before registering accounts.")
+    if not get_settings().allow_registration:
+        raise HTTPException(403, "Self-registration is disabled. Contact this installation's administrator.")
 
     # Check for existing email or username
     existing = await db.execute(
@@ -131,10 +136,8 @@ async def register(
     if existing.scalar_one_or_none():
         raise ConflictError("User with this email or username already exists")
 
-    # If first user on a cold system, make admin; otherwise strictly USER
-    count_res = await db.execute(select(func.count(User.id)))
-    user_count = count_res.scalar() or 0
-    assigned_role = UserRole.ADMIN if user_count == 0 else UserRole.USER
+    # Public registration never grants instance administration.
+    assigned_role = UserRole.USER
 
     user = User(
         email=payload.email,
@@ -494,10 +497,26 @@ async def update_user(
     """Update user details (admin only)."""
     from packages.core.security.audit import AuditService
 
+    # Serialize all role/activation changes before reading the target or counting admins.
+    if payload.role is not None or payload.is_active is not None:
+        from sqlalchemy import update
+
+        from packages.core.models.instance import InstanceState
+
+        await db.execute(update(InstanceState).where(InstanceState.id == 1).values(id=1))
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise NotFoundError("User", user_id)
+
+    removing_admin = (payload.role is not None and payload.role != UserRole.ADMIN) or payload.is_active is False
+    if user.role == UserRole.ADMIN and user.is_active and removing_admin:
+        another_admin = await db.scalar(select(User.id).where(
+            User.id != user.id, User.role == UserRole.ADMIN, User.is_active.is_(True),
+        ).limit(1))
+        if another_admin is None:
+            raise HTTPException(409, "The installation must retain at least one active administrator.")
 
     changes: dict[str, Any] = {}
     if payload.full_name is not None:

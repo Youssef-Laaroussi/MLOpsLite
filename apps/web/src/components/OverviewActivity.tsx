@@ -104,9 +104,9 @@ export function OverviewActivity({ deployments, experiments, models, deployments
       {runs.length === 0 && <p className="activity-empty">{experimentsUnavailable || runsUnavailable ? "Experiment runs unavailable" : "No experiment runs recorded"}</p>}
     </section>
     <section className="overview-card">
-      <h3><Award />Recent Promotions / Approvals<Link to={auditUnavailable ? "/app/models" : "/app/audit"}>View All →</Link></h3>
+      <h3><Award />Recent Model Promotions<Link to="/app/models">View All →</Link></h3>
       <div className="overflow-x-auto"><table className="overview-table">
-        <thead><tr><th>Model</th><th>From → To</th><th>Approved By</th><th>When</th></tr></thead>
+        <thead><tr><th>Model</th><th>From → To</th><th>Changed By</th><th>When</th></tr></thead>
         <tbody>{promotions.map(item => {
           const changes = item.changes_json ?? item.details;
           return <tr key={item.id}>

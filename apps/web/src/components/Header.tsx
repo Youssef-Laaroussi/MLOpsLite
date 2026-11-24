@@ -41,7 +41,7 @@ interface HeaderProps {
 
 const NAV_TARGETS = [
   { label: "Overview", href: "/app", icon: LayoutDashboard, hint: "Platform summary" },
-  { label: "Projects", href: "/app/projects", icon: FolderGit2, hint: "Workspaces & teams" },
+  { label: "Projects", href: "/app/projects", icon: FolderGit2, hint: "Repositories & ML projects" },
   { label: "Datasets", href: "/app/datasets", icon: Database, hint: "Versions & lineage" },
   { label: "Experiments", href: "/app/experiments", icon: FlaskConical, hint: "Runs & metrics" },
   { label: "Model Registry", href: "/app/models", icon: Box, hint: "Versions & stages" },
@@ -49,7 +49,6 @@ const NAV_TARGETS = [
   { label: "Monitoring", href: "/app/monitoring", icon: LineChart, hint: "Drift & latency" },
   { label: "Alerts", href: "/app/alerts", icon: Bell, hint: "Rules & incidents" },
   { label: "Services", href: "/app/services", icon: Layers, hint: "Platform and deployment health" },
-  { label: "Audit Logs", href: "/app/audit", icon: ShieldCheck, hint: "Governance trail" },
   { label: "Settings", href: "/app/settings", icon: Settings, hint: "Profile & API keys" },
 ];
 
@@ -126,7 +125,13 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
     }
   }, [paletteOpen]);
 
-  const results = NAV_TARGETS.filter(
+  const adminTargets = user?.role === "ADMIN" ? [
+    { label: "Administration", href: "/admin", icon: ShieldCheck, hint: "Instance administration" },
+    { label: "Accounts", href: "/admin/accounts", icon: ShieldCheck, hint: "Instance accounts" },
+    { label: "Storage", href: "/admin/storage", icon: Database, hint: "Global buckets and storage" },
+    { label: "Audit Logs", href: "/admin/audit", icon: ShieldCheck, hint: "Administrative audit journal" },
+  ] : [];
+  const results = [...NAV_TARGETS, ...adminTargets].filter(
     (t) =>
       t.label.toLowerCase().includes(query.toLowerCase()) ||
       t.hint.toLowerCase().includes(query.toLowerCase())
@@ -153,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
       <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-2 border-b border-[#dce5dd] bg-white/95 px-3 backdrop-blur sm:gap-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-5">
           <Link to="/app" className="flex shrink-0 items-center gap-2 text-xl font-bold"><img src="/logo.png" alt="" className="h-7 w-7 object-contain" />MLite</Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-2 xl:flex">
+          <nav aria-label="Main navigation" className={`${location.pathname.startsWith("/admin") ? "hidden" : "hidden xl:flex"} items-center gap-2`}>
             {NAV_TARGETS.filter(item => !["Experiments", "Audit Logs"].includes(item.label)).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Models" : item.label}</Link>)}
           </nav>
         </div>
@@ -270,6 +275,10 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     </div>
                   </div>
                   <div className="py-1">
+                    {user.role === "ADMIN" && <Link
+                      to="/admin" onClick={() => setOpenMenu(null)}
+                      className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5"
+                    ><ShieldCheck className="w-3.5 h-3.5 text-slate-400" />Administration</Link>}
                     <Link
                       to="/app/settings"
                       onClick={() => setOpenMenu(null)}

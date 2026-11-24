@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { InstallationGate } from "./components/InstallationGate";
 
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview").then((page) => ({ default: page.DashboardOverview })));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage").then((page) => ({ default: page.ProjectsPage })));
@@ -20,6 +21,10 @@ const SignInPage = lazy(() => import("./pages/SignInPage").then((page) => ({ def
 const SignUpPage = lazy(() => import("./pages/SignUpPage").then((page) => ({ default: page.SignUpPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((page) => ({ default: page.SettingsPage })));
 const ExperimentsPage = lazy(() => import("./pages/ExperimentsPage").then((page) => ({ default: page.ExperimentsPage })));
+const AdministrationLayout = lazy(() => import("./components/AdministrationLayout").then((page) => ({ default: page.AdministrationLayout })));
+const AccountsSettings = lazy(() => import("./components/AccountsSettings").then((page) => ({ default: page.AccountsSettings })));
+const StorageSettings = lazy(() => import("./components/StorageSettings").then((page) => ({ default: page.StorageSettings })));
+const SetupPage = lazy(() => import("./pages/SetupPage").then((page) => ({ default: page.SetupPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,8 +41,10 @@ export const App: React.FC = () => {
       <AuthProvider>
         <ActionFeedbackProvider>
           <BrowserRouter>
+            <InstallationGate>
             <Suspense fallback={<p role="status" className="p-6 text-slate-600">Loading page…</p>}>
               <Routes>
+                <Route path="/setup" element={<SetupPage />} />
                 {/* ── Public Routes ── */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/welcome" element={<LandingPage />} />
@@ -68,7 +75,7 @@ export const App: React.FC = () => {
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
                   <Route path="services" element={<ServicesPage />} />
-                  <Route path="audit" element={<AuditLogsPage />} />
+                  <Route path="audit" element={<Navigate to="/admin/audit" replace />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
@@ -89,14 +96,23 @@ export const App: React.FC = () => {
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
                   <Route path="services" element={<ServicesPage />} />
-                  <Route path="audit" element={<AuditLogsPage />} />
+                  <Route path="audit" element={<Navigate to="/admin/audit" replace />} />
                   <Route path="settings" element={<SettingsPage />} />
+                </Route>
+
+                <Route path="/admin" element={<ProtectedRoute adminOnly><AdministrationLayout /></ProtectedRoute>}>
+                  <Route index element={<Navigate to="accounts" replace />} />
+                  <Route path="accounts" element={<AccountsSettings />} />
+                  <Route path="storage" element={<StorageSettings />} />
+                  <Route path="audit" element={<AuditLogsPage />} />
+                  <Route path="system" element={<Navigate to="/app/services" replace />} />
                 </Route>
 
                 {/* ── Catch-all ── */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
+            </InstallationGate>
 
           </BrowserRouter>
         </ActionFeedbackProvider>

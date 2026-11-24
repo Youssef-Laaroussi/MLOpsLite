@@ -11,15 +11,11 @@ import {
   Layers,
   LineChart,
   Bell,
-  Home,
-  ShieldCheck,
   Settings,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { hasPermission } = useAuth();
 
   const navigation = [
     { name: "Overview", href: "/app", icon: LayoutDashboard },
@@ -31,9 +27,6 @@ export const Sidebar: React.FC = () => {
     { name: "Monitoring", href: "/app/monitoring", icon: LineChart },
     { name: "Alerts", href: "/app/alerts", icon: Bell },
     { name: "Services", href: "/app/services", icon: Layers },
-    ...(hasPermission("audit:view")
-      ? [{ name: "Audit Logs", href: "/app/audit", icon: ShieldCheck }]
-      : []),
     { name: "Settings", href: "/app/settings", icon: Settings },
   ];
 

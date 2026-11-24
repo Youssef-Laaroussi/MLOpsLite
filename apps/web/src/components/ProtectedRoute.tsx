@@ -7,8 +7,8 @@ import { useAuth } from "../context/AuthContext";
  * If user is not authenticated → redirects to /signin with a return URL.
  * Shows a loading spinner while auth state is being resolved.
  */
-export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   // Show a subtle loading state while auth is being resolved
@@ -31,6 +31,14 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   // Not authenticated → redirect to sign in
   if (!isAuthenticated) {
     return <Navigate to="/signin" state={{ from: location.pathname }} replace />;
+  }
+
+  if (adminOnly && user?.role !== "ADMIN") {
+    return <div className="p-6 text-slate-700" role="alert">
+      <h1 className="text-xl font-semibold">Administrator access required</h1>
+      <p className="mt-2">Administration is available to instance administrators.</p>
+      <a className="mt-4 inline-block text-emerald-700 underline" href="/app">Back to Workspace</a>
+    </div>;
   }
 
   return <>{children}</>;

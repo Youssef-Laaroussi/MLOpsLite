@@ -56,7 +56,7 @@ async def create_project(
     user: User = Depends(get_current_user),
 ) -> Any:
     """Create a new ML project with a unique slug."""
-    project = await service.create(data)
+    project = await service.create(data, owner_id=user.id)
     await _audit_project(service, project, AuditAction.PROJECT_CREATE, user, request)
     return ProjectResponse.model_validate(project)
 
@@ -67,10 +67,11 @@ async def list_projects(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status_filter: str | None = Query(None, alias="status", description="Filter by status"),
     service: ProjectService = Depends(_get_service),
+    user: User = Depends(get_current_user),
 ) -> Any:
     """List all ML projects with pagination."""
     projects, total = await service.list_projects(
-        page=page, page_size=page_size, status=status_filter
+        page=page, page_size=page_size, status=status_filter, user_id=user.id,
     )
     return ProjectListResponse(
         projects=[ProjectResponse.model_validate(p) for p in projects],
@@ -84,11 +85,13 @@ async def list_projects(
 async def get_project(
     slug_or_id: str,
     service: ProjectService = Depends(_get_service),
+    user: User = Depends(get_current_user),
 ) -> Any:
     """Retrieve a project by slug or UUID."""
     project = await service.get_by_slug_or_id(slug_or_id)
     if project is None:
         raise NotFoundError("Project", slug_or_id)
+    await service.require_owner(project, user.id)
     return ProjectResponse.model_validate(project)
 
 
@@ -101,9 +104,11 @@ async def update_project(
     user: User = Depends(get_current_user),
 ) -> Any:
     """Partially update a project's metadata."""
-    project = await service.update(slug_or_id, data)
+    project = await service.get_by_slug_or_id(slug_or_id)
     if project is None:
         raise NotFoundError("Project", slug_or_id)
+    await service.require_owner(project, user.id)
+    project = await service.update(slug_or_id, data)
     await _audit_project(service, project, AuditAction.PROJECT_UPDATE, user, request)
     return ProjectResponse.model_validate(project)
 
@@ -117,6 +122,10 @@ async def delete_project(
     user: User = Depends(get_current_user),
 ) -> Any:
     """Archive (soft-delete) or permanently delete a project."""
+    project = await service.get_by_slug_or_id(slug_or_id)
+    if project is None:
+        raise NotFoundError("Project", slug_or_id)
+    await service.require_owner(project, user.id)
     if permanent:
         project = await service.get_by_slug_or_id(slug_or_id)
         if project is None or not await service.hard_delete(project.id):

@@ -54,6 +54,15 @@ def main() -> None:
             "username": os.environ.get("ADMIN_USER", "admin"),
             "password": os.environ.get("ADMIN_PASSWORD", "admin123456"),
         }
+        status = checked(client.get("/setup/status"))
+        if status["setup_required"]:
+            setup_code = os.environ.get("MLITE_SETUP_TOKEN")
+            if not setup_code:
+                raise RuntimeError("Configure MLite in /setup first, or supply MLITE_SETUP_TOKEN for this disposable acceptance installation.")
+            checked(client.post("/setup/", json={
+                "setup_code": setup_code, "username": credentials["username"],
+                "email": f"{credentials['username']}@iris-ci.test", "password": credentials["password"],
+            }))
         token = checked(client.post("/auth/login", json=credentials))["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
         project = checked(client.post("/projects/", json={"name": model_name, "slug": model_name}))

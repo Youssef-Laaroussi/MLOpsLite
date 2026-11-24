@@ -37,6 +37,8 @@ import {
 } from "../api/client";
 import { Project, Experiment, Dataset } from "../api/types";
 import { Link, useSearchParams } from "react-router-dom";
+import { workspaceFeatures } from "../config/workspace";
+import { useAuth } from "../context/AuthContext";
 
 function projectUpdatedLabel(timestamp: string) {
   const elapsed = Date.now() - Date.parse(timestamp);
@@ -47,6 +49,7 @@ function projectUpdatedLabel(timestamp: string) {
 }
 
 export const ProjectsPage: React.FC = () => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,7 +308,7 @@ export const ProjectsPage: React.FC = () => {
   const [importRepo, setImportRepo] = useState(false);
 
   return (
-    <div className="lifecycle-dashboard projects-dashboard">
+    <div className="lifecycle-dashboard projects-dashboard" data-collaboration={workspaceFeatures.projectCollaboration}>
       {selected ? <>
         <ProjectResources key={selected.id} project={selected} />
         <div className="project-card-actions">
@@ -355,6 +358,7 @@ export const ProjectsPage: React.FC = () => {
         {toastMessage && <p role="status" className="health-pill">{toastMessage.text}</p>}
         <div className="overview-kpis">
           {totals.map(([label, count, Icon], index) => {
+            if (label === "Team Owners" && !workspaceFeatures.projectCollaboration) return null;
             const targets = ["#project-portfolio", "datasets", "models", "experiments", "deployments", "#project-ownership"];
             const flourish = [
               "M1 19 C9 9 14 28 23 17 S30 21 38 12 S48 9 55 15 S66 7 77 6",
@@ -404,10 +408,10 @@ export const ProjectsPage: React.FC = () => {
                       <span><GitBranch size={13} aria-hidden="true" />{project.default_branch || "—"}</span>
                     </div>
                   </div>
-                  <div className="project-owner" title="Project owner unavailable">
+                  {workspaceFeatures.projectCollaboration && <div className="project-owner" title="Project owner unavailable">
                     <span className="project-owner-avatar"><Users size={15} aria-hidden="true" /></span>
                     <span><strong>—</strong><small>Owner</small></span>
-                  </div>
+                  </div>}
                   <Link className="secondary-action" to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>
                     {archived ? <>View Details <ChevronRight size={13} /></> : <>Open Project <ArrowUpRight size={13} /></>}
                   </Link>
@@ -470,12 +474,12 @@ export const ProjectsPage: React.FC = () => {
         </div>
         <div className="project-bottom-panels">
           <section className="overview-card">
-            <h3>Recent Project Activity <Info /><Link to="/app/audit">View All Activity ›</Link></h3>
-            <table className="overview-table"><thead><tr><th>Event</th><th>Project</th><th>Owner</th><th>Time</th><th>Status</th></tr></thead><tbody>
+            <h3>Recent Project Activity <Info />{user?.role === "ADMIN" && <Link to="/admin/audit">View All Activity ›</Link>}</h3>
+            <table className="overview-table"><thead><tr><th>Event</th><th>Project</th>{workspaceFeatures.projectCollaboration && <th>Owner</th>}<th>Time</th><th>Status</th></tr></thead><tbody>
               {projectEvents.slice(0, 5).map(({ key, project, label, date, icon: Icon }) => (
                 <tr key={key}><td><span className="project-event"><Icon size={13} />{label}</span></td>
                   <td><Link to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>{project.name}</Link></td>
-                  <td>—</td><td title={new Date(date).toLocaleString()}>{projectUpdatedLabel(date).replace(/^Last updated /, "").replace("Updated just now", "Just now")}</td>
+                  {workspaceFeatures.projectCollaboration && <td>—</td>}<td title={new Date(date).toLocaleString()}>{projectUpdatedLabel(date).replace(/^Last updated /, "").replace("Updated just now", "Just now")}</td>
                   <td><span className="health-pill">✓ Recorded</span></td>
                 </tr>
               ))}
@@ -493,13 +497,13 @@ export const ProjectsPage: React.FC = () => {
               </tr>)}
             </tbody></table>
           </section>
-          <section className="overview-card" id="project-ownership">
+          {workspaceFeatures.projectCollaboration && <section className="overview-card" id="project-ownership">
             <h3>Project Ownership &amp; Access <Info /></h3>
             <table className="overview-table"><thead><tr><th>Project</th><th>Owner</th><th>Collaborators</th></tr></thead><tbody>
               {filteredProjects.map(project => <tr key={project.id}><td><Link to={{ search: new URLSearchParams({ project: project.slug }).toString() }}>{project.name}</Link></td><td>—</td><td>—</td></tr>)}
             </tbody></table>
             <p className="chart-caption ownership-note">Ownership information is not available.</p>
-          </section>
+          </section>}
         </div>
       </>}
       {/* ── Modal: Create New Project ── */}

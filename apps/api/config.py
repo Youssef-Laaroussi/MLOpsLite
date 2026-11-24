@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     admin_password: str = os.getenv(
         "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456")
     )
+    # Legacy ADMIN_* values are accepted for compatibility but never create or reset accounts.
+    setup_token: SecretStr | None = None
+    allow_registration: bool = True
 
     evaluation_interval_seconds: int = 0
 
@@ -94,8 +97,6 @@ class Settings(BaseSettings):
         problems = []
         if len(self.jwt_secret_key) < 32 or "dev" in self.jwt_secret_key.lower():
             problems.append("SECRET_KEY must be a random value >= 32 chars (openssl rand -hex 32)")
-        if self.admin_password == "admin123456" or len(self.admin_password) < 12:
-            problems.append("ADMIN_PASSWORD must be set and >= 12 chars")
         if self.database_url.startswith("sqlite"):
             problems.append("DATABASE_URL must point to PostgreSQL (SQLite is not production-safe)")
         if "*" in self.allowed_origins:
@@ -104,6 +105,12 @@ class Settings(BaseSettings):
             problems.append("DEBUG must be false")
         if problems:
             raise ValueError("Insecure production configuration:\n - " + "\n - ".join(problems))
+        return self
+
+    @model_validator(mode="after")
+    def validate_setup_token(self) -> "Settings":
+        if self.setup_token and self.setup_token.get_secret_value() and len(self.setup_token.get_secret_value()) < 32:
+            raise ValueError("MLITE_SETUP_TOKEN must contain at least 32 characters or be left empty.")
         return self
 
 

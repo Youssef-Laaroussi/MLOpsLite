@@ -10,9 +10,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useInstallation } from "../hooks/useInstallation";
 
 export const SignInPage: React.FC = () => {
   const { login } = useAuth();
+  const installation = useInstallation();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
@@ -30,6 +32,7 @@ export const SignInPage: React.FC = () => {
 
     try {
       await login(username.trim(), password);
+      await installation.refetch();
       setSuccess(true);
       setTimeout(() => navigate("/app", { replace: true }), 600);
     } catch (err: any) {
@@ -329,7 +332,7 @@ export const SignInPage: React.FC = () => {
         </div>
 
         {/* Lien Inscription */}
-        <div className="mt-5 text-center">
+        {installation.data?.registration_enabled && <div className="mt-5 text-center">
           <p className="text-xs text-slate-500">
             Don't have an account?{" "}
             <Link
@@ -339,7 +342,7 @@ export const SignInPage: React.FC = () => {
               Sign up
             </Link>
           </p>
-        </div>
+        </div>}
       </main>
 
       {/* ── Footer Discret ── */}

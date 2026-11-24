@@ -66,6 +66,7 @@ class ProjectResponse(BaseModel):
     id: str
     name: str
     slug: str
+    owner_id: str | None = None
     description: str | None = None
     git_url: str | None = None
     default_branch: str

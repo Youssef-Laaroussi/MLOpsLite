@@ -1,4 +1,5 @@
 .settings-dashboard { display:grid; grid-template-columns:160px minmax(0,1fr); gap:14px; font-size:13px; color:#101626; font-family:Arial,Helvetica,sans-serif; }
+.administration-dashboard { grid-template-columns:190px minmax(0,1fr); }
 .settings-navigation { min-width:0; padding:4px 10px 12px 0; border-right:1px solid #e8edf2; }
 .settings-navigation h1 { margin:0 8px 5px; font-family:inherit; font-size:21px; font-weight:800; letter-spacing:-.8px; }
 .settings-navigation > p { margin:0 8px 14px; color:#3b4b66; font-size:12px; line-height:1.45; }

@@ -33,12 +33,14 @@
 .monitoring-sparkline { justify-self:end; width:100%; max-width:76px; height:20px; pointer-events:none; }
 .monitoring-message { font-size:11px; color:#52617a; }
 
-.monitoring-panels { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.monitoring-panels { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:10px; }
 .monitoring-dashboard .monitoring-panel { padding:7px 12px 9px; border-radius:10px; background:linear-gradient(138deg,#fff,#f8fafb); }
 .monitoring-panel h2 { display:flex; align-items:center; gap:7px; margin:0 0 7px; font-family:inherit; font-size:15px; font-weight:750; line-height:1.25; }
 .monitoring-panel h2 > svg { flex:none; color:#56647d; }
 .monitoring-panel h2 > :is(button,a,label) { margin-left:auto; display:inline-flex; align-items:center; gap:4px; color:#087435; font-size:10px; font-weight:650; white-space:nowrap; }
-.monitoring-panels > .monitoring-panel { min-height:155px; }
+.monitoring-panels > .monitoring-panel { grid-column:span 6; min-height:155px; }
+.monitoring-panels > #monitoring-resources { grid-column:span 4; }
+.monitoring-panels > #monitoring-models { grid-column:span 8; }
 .monitoring-panels > .monitoring-panel:last-child:nth-child(odd) { grid-column:1/-1; }
 .monitoring-scroll { min-width:0; overflow-x:auto; }
 .monitoring-dashboard .monitoring-table { width:100%; font-size:11px; }
@@ -115,7 +117,11 @@ button.monitoring-cell:hover,button.monitoring-cell:focus-visible { outline:2px 
 .monitoring-resources strong { display:block; color:#087327; font-size:18px; line-height:1.15; font-variant-numeric:tabular-nums; }
 .monitoring-resource-track { grid-column:1/-1; height:9px; margin-top:4px; border-radius:8px; background:#e1e8eb; overflow:hidden; }
 .monitoring-resource-track i { display:block; height:100%; background:linear-gradient(#24cc43,#08a72e); border-radius:inherit; }
-#monitoring-models .monitoring-table :is(th,td) { padding:4px 8px; }
+#monitoring-models .monitoring-table { table-layout:fixed; }
+#monitoring-models .monitoring-table :is(th,td) { padding:4px 6px; white-space:normal; overflow-wrap:anywhere; }
+#monitoring-models .monitoring-table :is(th,td):first-child { width:23%; }
+#monitoring-models .monitoring-inline { gap:5px; }
+#monitoring-models .monitoring-badge { max-width:100%; }
 #monitoring-models .monitoring-table td:nth-child(n+3) { font-variant-numeric:tabular-nums; }
 #monitoring-models .monitoring-badge { padding:2px 8px; }
 #monitoring-activity h2 { flex-wrap:wrap; font-size:16px; }
@@ -136,6 +142,9 @@ button.monitoring-cell:hover,button.monitoring-cell:focus-visible { outline:2px 
 .monitoring-dialog select { width:100%; border:1px solid #e2e7ee; border-radius:7px; padding:7px; font-size:12px; }
 .monitoring-dialog .primary-action,.monitoring-dialog .secondary-action { justify-self:end; }
 .monitoring-dialog p { font-size:11px; }
+@container (max-width:1100px) {
+  .monitoring-panels > :is(#monitoring-resources,#monitoring-models) { grid-column:1/-1; }
+}
 @container (max-width:850px) {
   .monitoring-lifecycle { display:none; }
   .monitoring-toolbar { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -146,6 +155,7 @@ button.monitoring-cell:hover,button.monitoring-cell:focus-visible { outline:2px 
   .monitoring-dashboard .monitoring-hero { min-height:65px; }
   .monitoring-dashboard .monitoring-hero h1 { font-size:27px; }
   .monitoring-panels { grid-template-columns:minmax(0,1fr); }
+  .monitoring-panels > .monitoring-panel { grid-column:1/-1; }
   .monitoring-dashboard .monitoring-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .monitoring-kpis .kpi { padding-inline:9px; }
 }
@@ -155,7 +165,4 @@ button.monitoring-cell:hover,button.monitoring-cell:focus-visible { outline:2px 
   .monitoring-panel h2 { flex-wrap:wrap; }
   .monitoring-health { padding-inline:0; }
   .monitoring-health dl { font-size:11px; }
-}
-@container (600px < width <= 800px) {
-  .monitoring-resources { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }

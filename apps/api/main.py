@@ -37,6 +37,7 @@ from apps.api.routers import (
     projects,
     rollback,
     settings_storage,
+    setup,
 )
 from packages.core.models.user import UserRole
 from packages.core.security.dependencies import get_current_user, require_role
@@ -60,56 +61,16 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         settings.debug,
     )
 
-    # Ensure database schema is created
-    try:
-        import packages.core.models  # noqa: F401
-        from packages.core.db.base import Base
-        from packages.core.db.session import engine
+    from packages.core.db.session import engine
+    from packages.core.services.instance_service import initialize_instance
 
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info(" Database schema tables verified/created successfully.")
-    except Exception as exc:
-        logger.error("❌ Database schema auto-creation failed: %s", exc, exc_info=True)
-
-    # Bootstrap / synchronize administrator account (Issue #26)
-    try:
-        from sqlalchemy import select
-
-        from packages.core.db.session import async_session_factory
-        from packages.core.models.user import User, UserRole
-        from packages.core.security.auth import hash_password, verify_password
-
-        async with async_session_factory() as session:
-            result = await session.execute(
-                select(User).where(
-                    (User.username == settings.admin_user) | (User.email == settings.admin_email)
-                )
-            )
-            admin = result.scalar_one_or_none()
-            if admin is None:
-                new_admin = User(
-                    username=settings.admin_user,
-                    email=settings.admin_email,
-                    hashed_password=hash_password(settings.admin_password),
-                    full_name="Administrator",
-                    role=UserRole.ADMIN,
-                    is_active=True,
-                )
-                session.add(new_admin)
-                await session.commit()
-                logger.info("🔑 Initialized administrator account '%s'", settings.admin_user)
-            else:
-                # If custom admin password in environment differs, synchronize it
-                if not verify_password(settings.admin_password, admin.hashed_password):
-                    admin.hashed_password = hash_password(settings.admin_password)
-                    admin.role = UserRole.ADMIN
-                    await session.commit()
-                    logger.info(
-                        "🔐 Synchronized administrator credentials for '%s'", admin.username
-                    )
-    except Exception as exc:
-        logger.warning("⚠️ Admin bootstrap skipped or deferred: %s", exc)
+    configured_code = settings.setup_token.get_secret_value() if settings.setup_token else ""
+    code = await initialize_instance(engine, configured_code)
+    if code:
+        logger.warning(
+            "MLite is not configured. Open /setup and use this installation-local code: %s "
+            "(one use; recover with 'mlite instance setup-code').", code,
+        )
 
     from packages.deployment.supervisor import collect_inference_telemetry
 
@@ -170,13 +131,14 @@ def create_app() -> FastAPI:
     # ── Exception handlers ──────────────────────────────────
     register_exception_handlers(app)
 
-    # Public: health probes + auth (login/register). Audit and rollback have granular RBAC dependencies.
+    # Setup is locally authorized. Operational routers require an authenticated account.
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(setup.router)
     app.include_router(settings_storage.router)
     app.include_router(contact.router)
     app.include_router(audit.router)
-    app.include_router(rollback.router)
+    app.include_router(rollback.router, dependencies=[Depends(get_current_user)])
     protected = [Depends(get_current_user)]
     for r in (projects, datasets, experiments, models, deployments, monitoring, alerts):
         app.include_router(r.router, dependencies=protected)

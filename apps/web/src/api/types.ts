@@ -52,6 +52,7 @@ export interface Project {
   id: string;
   name: string;
   slug: string;
+  owner_id?: string | null;
   description?: string;
   git_url?: string;
   default_branch?: string;

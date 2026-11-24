@@ -569,6 +569,7 @@
 .projects-dashboard .kpi > b { gap:7px; font-size:23px; }
 .project-kpi-accent { position:absolute; right:9%; bottom:9px; width:32%; height:22px; color:#24a947!important; background:radial-gradient(ellipse at 60% 78%,#8be09b55,transparent 67%); }
 @media (min-width:1200px) { .projects-dashboard .overview-kpis { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+@media (min-width:1200px) { .projects-dashboard[data-collaboration="false"] .overview-kpis { grid-template-columns:repeat(5,minmax(0,1fr)); } }
 @media (max-width:1550px) { .projects-art { opacity:.85; } .projects-hero > div:first-child { max-width:53%; } }
 @media (max-width:1050px) { .projects-art { display:none; } .projects-hero > div:first-child { max-width:none; } }
 @media (max-width:650px) { .projects-toolbar > label { width:100%; } }

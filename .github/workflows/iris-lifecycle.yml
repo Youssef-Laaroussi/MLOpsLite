@@ -9,6 +9,11 @@ jobs:
   iris-lifecycle:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      # Disposable CI installation only: exercise the same one-time setup as users.
+      MLITE_SETUP_TOKEN: ci-iris-installation-code-for-isolated-run-only
+      ADMIN_USER: iris-ci-owner
+      ADMIN_PASSWORD: iris-ci-personal-password
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

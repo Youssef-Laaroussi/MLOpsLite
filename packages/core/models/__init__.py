@@ -10,6 +10,7 @@ from packages.core.models.alert import (
 from packages.core.models.audit import AuditAction, AuditLog
 from packages.core.models.dataset import Dataset, DatasetFormat, DatasetVersion
 from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
+from packages.core.models.instance import InstanceState
 from packages.core.models.model_registry import ModelStage, ModelVersion, RegisteredModel
 from packages.core.models.monitoring import (
     DataQualityReport,
@@ -19,7 +20,7 @@ from packages.core.models.monitoring import (
     ModelPerformanceHistory,
     PredictionFeedback,
 )
-from packages.core.models.project import Project, ProjectStatus
+from packages.core.models.project import Project, ProjectMembership, ProjectRole, ProjectStatus
 from packages.core.models.rollback import (
     RollbackPolicy,
     RollbackRecord,
@@ -31,6 +32,9 @@ from packages.core.models.user import ApiKey, User, UserRole
 __all__ = [
     "Project",
     "ProjectStatus",
+    "ProjectMembership",
+    "ProjectRole",
+    "InstanceState",
     "RegisteredModel",
     "ModelVersion",
     "ModelStage",

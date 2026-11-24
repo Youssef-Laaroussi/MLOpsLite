@@ -25,6 +25,7 @@ from apps.cli.commands import (
     deploy_cmd,
     experiment_cmd,
     init_cmd,
+    instance_cmd,
     model_cmd,
     monitor_cmd,
     rollback_cmd,
@@ -42,6 +43,7 @@ app = typer.Typer(
 
 # ── Register sub-commands ───────────────────────────────────
 app.command("init")(init_cmd.init)
+app.add_typer(instance_cmd.app, name="instance", help="Initialize or migrate this local MLite installation")
 app.command("status")(status_cmd.status)
 app.command("login", help="Log in to MLite and store credentials locally")(auth_cmd.login)
 app.command("logout", help="Log out and clear stored credentials")(auth_cmd.logout)

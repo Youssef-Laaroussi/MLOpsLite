@@ -70,7 +70,15 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Open the [dashboard](http://localhost:3000) and sign in or create an account.
+Open the [dashboard](http://localhost:3000). On a fresh installation, MLite opens
+the setup screen. Read the single-use installation code with
+`docker compose logs mlite-api`, then create your personal account. It becomes
+administrator of this installation; the same account owns the projects you create.
+Open **profile menu → Administration** (or `/admin`) to manage the instance.
+
+Existing installations keep their accounts and data. Follow the
+[Solo setup and migration guide](docs/getting-started/solo-setup.md) to explicitly
+select the personal administrator and assign projects without an owner.
 To train and serve your first model, follow the [Iris walkthrough](examples/iris/README.md).
 It covers building the serving image, configuring artifact storage, and testing a
 prediction and a drift report.

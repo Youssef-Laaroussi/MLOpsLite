@@ -112,6 +112,10 @@ export const apiLogin = async (username: string, password: string): Promise<Auth
   return res.data;
 };
 
+export const apiSetup = async (data: { setup_code: string; username: string; email: string; password: string; full_name?: string }): Promise<AuthTokens> => {
+  return (await api.post<AuthTokens>("/setup/", data)).data;
+};
+
 export const apiRegister = async (data: {
   email: string;
   username: string;

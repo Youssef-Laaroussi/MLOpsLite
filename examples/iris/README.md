@@ -31,12 +31,14 @@ source examples/iris/.venv/bin/activate
 python -m pip install -r examples/iris/requirements.txt
 ```
 
-For the default local Compose credentials, run the same acceptance test as CI:
+Complete [installation setup](../../docs/getting-started/solo-setup.md) first.
+Use your actual personal account credentials for the acceptance scenario:
 
 ```bash
 MLFLOW_S3_ENDPOINT_URL=http://localhost:9000 \
 AWS_ACCESS_KEY_ID=mlite_minio_admin \
 AWS_SECRET_ACCESS_KEY=mlite_minio_password \
+ADMIN_USER=YOUR_USERNAME ADMIN_PASSWORD=YOUR_PASSWORD \
 python scripts/test_iris_lifecycle.py
 ```
 
@@ -44,6 +46,10 @@ With custom credentials or ports, supply the matching local MinIO endpoint and
 credentials, plus `ADMIN_USER`, `ADMIN_PASSWORD`, and `MLITE_API_URL` as needed.
 The test creates uniquely named resources and stops the inference container after
 verification. The run and catalog records remain available for inspection.
+
+On a disposable CI installation, `MLITE_SETUP_TOKEN` allows this script to perform
+the one-time setup with the supplied account credentials (password at least 12
+characters). This does not recreate an administrator on configured installations.
 
 ## Step-by-Step Walkthrough
 

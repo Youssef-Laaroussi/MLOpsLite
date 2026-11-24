@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole, AuthTokens } from "../api/types";
-import { apiLogin, apiRegister, apiGetMe } from "../api/client";
+import { apiLogin, apiRegister, apiGetMe, apiSetup } from "../api/client";
 
 interface AuthContextType {
   user: User | null;
@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  setup: (data: { setup_code: string; username: string; email: string; password: string; full_name?: string }) => Promise<void>;
   register: (data: {
     email: string;
     username: string;
@@ -26,8 +27,8 @@ const ROLE_LEVEL: Record<UserRole, number> = {
   VIEWER: 0,
   DEVELOPER: 1,
   USER: 1,
-  MAINTAINER: 1,
-  ADMIN: 2,
+  MAINTAINER: 2,
+  ADMIN: 3,
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -81,6 +82,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
   }, []);
+
+  const establishSession = async (authData: AuthTokens): Promise<void> => {
+    localStorage.setItem("mlite_token", authData.access_token);
+    localStorage.setItem("mlite_refresh_token", authData.refresh_token);
+    const me = await apiGetMe();
+    setTokens(authData);
+    setUser(me);
+    localStorage.setItem("mlite_user", JSON.stringify(me));
+  };
+
+  const setup: AuthContextType["setup"] = async (data) => {
+    // Keep the setup form mounted while submitting; InstallationGate refreshes after success.
+    await establishSession(await apiSetup(data));
+  };
 
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
@@ -146,12 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     if (user.role === "ADMIN") return true;
-    if (user.role === "USER" || user.role === "DEVELOPER" || user.role === "MAINTAINER") {
-      // Standard users have full operational MLOps lifecycle access
-      if (!permission.startsWith("user:") && !permission.startsWith("audit:") && permission !== "project:delete") {
-        return true;
-      }
-    }
     if (!user.permissions) return false;
     return user.permissions.includes(permission) || user.permissions.includes("*");
   };
@@ -164,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user && !!tokens,
         isLoading,
         login,
+        setup,
         register,
         logout,
         updateProfile,

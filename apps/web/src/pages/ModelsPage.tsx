@@ -494,7 +494,7 @@ export function ModelsPage() {
           })}
         </RegistryTable> : empty}
       </Panel>
-      <Panel id="model-activity" title="Recent Model Activity" action={canViewAudit && <Link to="/app/audit">View Audit Logs <ChevronRight size={14} /></Link>}>
+      <Panel id="model-activity" title="Recent Model Activity" action={user?.role === "ADMIN" && <Link to="/admin/audit">View Audit Logs <ChevronRight size={14} /></Link>}>
         {activity.length ? <RegistryTable headings={["Time", "Activity", "Model", "Details"]}>
           {activity.map(({ icon: Icon, ...event }) => <tr key={event.id}><td title={new Date(event.date).toLocaleString()}>{relativeTime(event.date)}</td><td><span className="models-inline"><Icon size={14} aria-hidden="true" />{event.label}</span></td>
             <td><strong>{event.name}</strong></td><td>{event.detail} {event.stage && <>→ <StagePill stage={event.stage} /></>}</td>

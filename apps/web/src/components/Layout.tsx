@@ -22,22 +22,23 @@ export const Layout: React.FC = () => {
   const installation = useInstallation();
 
   const segment = location.pathname.replace(/^\/app/, "").split("/").filter(Boolean)[0];
+  const isSettings = segment === "settings";
   const meta: RouteMeta =
     segment && ROUTES[segment]
       ? { ...ROUTES[segment], href: location.pathname }
       : { group: "Workspace", label: "Overview", href: "/app" };
 
   return (
-    <div className="min-h-screen bg-[#fcfdfc] text-slate-900">
+    <div className={`${isSettings ? "workspace-settings-layout" : "min-h-screen"} bg-[#fcfdfc] text-slate-900`}>
       <Header meta={meta} />
-      <div className="mx-auto flex w-[calc(100%-2rem)] max-w-[1920px] flex-col gap-5 py-5 sm:w-[calc(100%-3rem)] lg:w-[calc(100%-3rem)] lg:flex-row">
+      <div className={`mx-auto flex w-[calc(100%-2rem)] max-w-[1920px] flex-col gap-5 py-5 sm:w-[calc(100%-3rem)] lg:w-[calc(100%-3rem)] lg:flex-row${isSettings ? " workspace-settings-frame" : ""}`}>
         <Sidebar />
-        <main className="min-w-0 flex-1">
+        <main className={`min-w-0 flex-1${isSettings ? " workspace-settings-main" : ""}`}>
           {installation.data?.migration_required && <aside role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
             <strong>Complete the Solo migration for this existing installation.</strong>
             <p className="mt-1">The local installer must select the personal administrator account and assign projects that have no Owner. Existing accounts and data are preserved.</p>
             <code className="mt-2 block break-all rounded bg-white/70 p-2 text-xs">docker compose exec mlite-api mlite instance adopt-solo --username YOUR_USERNAME --claim-unowned-projects</code>
-            <p className="mt-2 text-xs">Replace YOUR_USERNAME with the chosen existing account. Then sign in again; Administration is in the profile menu.</p>
+            <p className="mt-2 text-xs">Replace YOUR_USERNAME with the chosen existing account. Then sign in again; installation options are in Settings.</p>
           </aside>}
           <Outlet />
         </main>

@@ -35,6 +35,27 @@ apps/web/.vite/
 *.sqlite3
 mlite.db
 
+# Private local configuration must never be copied into an image.
+.env
+.env.*
+**/.env
+**/.env.*
+.mlite/
+.aws/
+secrets/
+backups/
+*.dump
+*.sql.gz
+*.sql.bz2
+*.sql.xz
+*.sql.zst
+*.pem
+*.key
+secrets.yaml
+credentials.json
+credentials.local.json
+admin.local.json
+
 # Documentation & temporary assets
 docs/
 mkdocs.yml

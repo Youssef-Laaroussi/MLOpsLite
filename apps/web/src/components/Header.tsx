@@ -28,6 +28,7 @@ import { useAuth } from "../context/AuthContext";
 import { ApiKeysModal } from "./ApiKeysModal";
 import { UserRole, Alert } from "../api/types";
 import { fetchAlerts } from "../api/client";
+import { workspaceFeatures, workspaceSettingsPaths } from "../config/workspace";
 
 export interface RouteMeta {
   group: string;
@@ -125,13 +126,13 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
     }
   }, [paletteOpen]);
 
-  const adminTargets = user?.role === "ADMIN" ? [
-    { label: "Administration", href: "/admin", icon: ShieldCheck, hint: "Instance administration" },
-    { label: "Accounts", href: "/admin/accounts", icon: ShieldCheck, hint: "Instance accounts" },
-    { label: "Storage", href: "/admin/storage", icon: Database, hint: "Global buckets and storage" },
-    { label: "Audit Logs", href: "/admin/audit", icon: ShieldCheck, hint: "Administrative audit journal" },
-  ] : [];
-  const results = [...NAV_TARGETS, ...adminTargets].filter(
+  const installationTargets = user?.role === "ADMIN" ? [
+    { label: "Accounts", href: workspaceSettingsPaths.accounts, icon: ShieldCheck, hint: "Instance accounts" },
+    { label: "Storage", href: workspaceSettingsPaths.storage, icon: Database, hint: "Settings · Buckets and storage" },
+  ].filter(target => target.href !== workspaceSettingsPaths.accounts || workspaceFeatures.accountManagement) : [];
+  const results = [...NAV_TARGETS,
+    { label: "Activity & Logs", href: workspaceSettingsPaths.activity, icon: ShieldCheck, hint: "Settings · Your personal activity" },
+    ...installationTargets].filter(
     (t) =>
       t.label.toLowerCase().includes(query.toLowerCase()) ||
       t.hint.toLowerCase().includes(query.toLowerCase())
@@ -158,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
       <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-2 border-b border-[#dce5dd] bg-white/95 px-3 backdrop-blur sm:gap-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-5">
           <Link to="/app" className="flex shrink-0 items-center gap-2 text-xl font-bold"><img src="/logo.png" alt="" className="h-7 w-7 object-contain" />MLite</Link>
-          <nav aria-label="Main navigation" className={`${location.pathname.startsWith("/admin") ? "hidden" : "hidden xl:flex"} items-center gap-2`}>
+          <nav aria-label="Main navigation" className="hidden items-center gap-2 xl:flex">
             {NAV_TARGETS.filter(item => !["Experiments", "Audit Logs"].includes(item.label)).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Models" : item.label}</Link>)}
           </nav>
         </div>
@@ -169,11 +170,11 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
             id="header-search"
             aria-label="Search or jump to a page"
             onClick={() => setPaletteOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-[#dce5dd] bg-white p-2 text-xs text-slate-600 transition hover:border-emerald-300 lg:w-64 lg:px-3 2xl:w-80"
+            className="flex h-8 min-w-0 items-center gap-1.5 rounded-full border border-[#dce5dd] bg-white px-2 text-[11px] text-slate-600 transition hover:border-emerald-300 lg:w-52 2xl:w-64"
           >
-            <Search className="w-4 h-4" />
-            <span className="hidden flex-1 text-left lg:block">Search projects, datasets, models…</span>
-            <kbd className="hidden rounded border border-[#dce5dd] bg-[#f4f7f5] px-1.5 py-0.5 font-mono text-[10px] text-slate-500 lg:inline">
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden min-w-0 flex-1 truncate text-left lg:block">Search projects, datasets, models…</span>
+            <kbd className="hidden shrink-0 rounded border border-[#dce5dd] bg-[#f4f7f5] px-1 py-0.5 font-mono text-[9px] text-slate-500 lg:inline">
               Ctrl K
             </kbd>
           </button>
@@ -186,10 +187,10 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                 toggle("notif");
                 setUnread(0);
               }}
-              className="relative p-2 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:border-slate-300 transition"
+              className="relative grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:border-slate-300 transition"
               aria-label="Notifications"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-3.5 h-3.5" />
               {unread > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
                   {unread}
@@ -241,10 +242,10 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
               <button
                 id="header-user"
                 onClick={() => toggle("user")}
-                className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition"
+                className="flex h-8 items-center gap-1.5 px-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition"
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden ${user.role === "ADMIN"
+                  className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-white font-black text-[10px] overflow-hidden ${user.role === "ADMIN"
                     ? "bg-[#00823d]"
                     : "bg-[#117b40]"
                     }`}
@@ -255,8 +256,8 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     user.username.charAt(0).toUpperCase()
                   )}
                 </div>
-                <span className="hidden text-left sm:block"><span className="block text-xs font-semibold">{user.full_name || user.username}</span><span className="block text-[10px] capitalize text-slate-400">{user.role.toLowerCase()}</span></span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden text-left sm:block"><span className="block max-w-28 truncate text-[11px] font-semibold">{user.full_name || user.username}</span>{workspaceFeatures.accountManagement && <span className="block text-[10px] capitalize text-slate-400">{user.role.toLowerCase()}</span>}</span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
               {openMenu === "user" && (
@@ -265,9 +266,9 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     <p className="text-xs font-bold text-slate-900">{user.full_name || user.username}</p>
                     <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
+                      {workspaceFeatures.accountManagement && <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleBadge(user.role)}`}>
                         {user.role}
-                      </span>
+                      </span>}
                       <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Online
@@ -275,10 +276,6 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     </div>
                   </div>
                   <div className="py-1">
-                    {user.role === "ADMIN" && <Link
-                      to="/admin" onClick={() => setOpenMenu(null)}
-                      className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5"
-                    ><ShieldCheck className="w-3.5 h-3.5 text-slate-400" />Administration</Link>}
                     <Link
                       to="/app/settings"
                       onClick={() => setOpenMenu(null)}

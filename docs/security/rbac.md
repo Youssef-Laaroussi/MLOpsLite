@@ -116,18 +116,17 @@ When an unauthorized user attempts an operation:
 
 ---
 
-## Default Bootstrap Admin Account
+## Personal Installation Administrator
 
-On first boot, the application automatically ensures at least one `ADMIN` account exists. The credentials are configurable via environment variables:
+MLite does not create a shared account or ship administrator credentials. The local
+installer creates a personal account through the one-time setup flow. Existing
+installations explicitly select their administrator through the Solo migration.
+See [Solo setup and migration](../getting-started/solo-setup.md).
 
-```bash
-# In .env or Docker Compose
-MLITE_ADMIN_USER="admin"
-MLITE_ADMIN_EMAIL="admin@mlite.local"
-MLITE_ADMIN_PASSWORD="super-strong-admin-password"
-```
-
-During startup (`lifespan` hook), if no account matching `MLITE_ADMIN_USER` exists, MLite provisions the administrator account automatically with hashed credentials.
+Legacy `ADMIN_*` configuration never provisions, resets, or promotes accounts.
+Keep local secrets in the ignored `.env` file; never commit database dumps or
+credentials. Hiding a role label in the Solo interface does not grant or revoke
+permissions: the API still enforces authentication and authorization.
 
 ---
 

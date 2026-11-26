@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fetchAuditLogs, fetchExperimentRuns } from "../api/client";
 import type { AuditLog, Deployment, Experiment, ExperimentRun, RegisteredModel } from "../api/types";
+import { useAuth } from "../context/AuthContext";
 
 type RunRow = { experiment: Experiment; run: ExperimentRun };
 const day = 86_400_000;
@@ -23,6 +24,7 @@ export function OverviewActivity({ deployments, experiments, models, deployments
   experimentsUnavailable: boolean;
   infrastructure: ReactNode;
 }) {
+  const { user } = useAuth();
   const [period, setPeriod] = useState(30);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [runsUnavailable, setRunsUnavailable] = useState(false);
@@ -45,6 +47,8 @@ export function OverviewActivity({ deployments, experiments, models, deployments
 
   useEffect(() => {
     let active = true;
+    setAudit([]);
+    setAuditUnavailable(false);
     void (async () => {
       try {
         const logs = await fetchAuditLogs(100);
@@ -54,7 +58,7 @@ export function OverviewActivity({ deployments, experiments, models, deployments
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [user?.id]);
 
   const now = Date.now();
   const bucketCount = Math.ceil(period / 7);

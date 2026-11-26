@@ -15,15 +15,44 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.api.dependencies import get_db
 from apps.api.errors import NotFoundError
 from packages.core.models.audit import AuditAction
+from packages.core.models.user import User
 from packages.core.schemas.security import (
     AuditLogListResponse,
     AuditLogResponse,
 )
 from packages.core.security.audit import AuditService
-from packages.core.security.dependencies import require_permission
+from packages.core.security.dependencies import get_current_user, require_permission
 from packages.core.security.rbac import Permission
 
 router = APIRouter(prefix="/api/v1/audit", tags=["Audit Logs"])
+
+
+@router.get("/me/logs", response_model=AuditLogListResponse)
+async def list_my_audit_logs(
+    limit: int = Query(50, ge=1, le=500, description="Max personal entries to return"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """Return only the authenticated account's actions, regardless of its role.
+
+    The actor is derived from authentication, never from a client-supplied ID.
+    Installation-wide administration remains on the permission-protected /logs API.
+    """
+    logs = await AuditService(session=db).query(user_id=current_user.id, limit=limit)
+    return {"logs": logs, "total": len(logs)}
+
+
+@router.get("/me/logs/{entry_id}", response_model=AuditLogResponse)
+async def get_my_audit_log(
+    entry_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """Return a personal entry without revealing whether another account's ID exists."""
+    entry = await AuditService(session=db).get_entry(entry_id, user_id=current_user.id)
+    if entry is None:
+        raise NotFoundError("AuditLog", entry_id)
+    return entry
 
 
 @router.get(

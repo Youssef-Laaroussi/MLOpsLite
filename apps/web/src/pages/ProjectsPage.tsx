@@ -38,7 +38,6 @@ import {
 import { Project, Experiment, Dataset } from "../api/types";
 import { Link, useSearchParams } from "react-router-dom";
 import { workspaceFeatures } from "../config/workspace";
-import { useAuth } from "../context/AuthContext";
 
 function projectUpdatedLabel(timestamp: string) {
   const elapsed = Date.now() - Date.parse(timestamp);
@@ -49,7 +48,6 @@ function projectUpdatedLabel(timestamp: string) {
 }
 
 export const ProjectsPage: React.FC = () => {
-  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -474,7 +472,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
         <div className="project-bottom-panels">
           <section className="overview-card">
-            <h3>Recent Project Activity <Info />{user?.role === "ADMIN" && <Link to="/admin/audit">View All Activity ›</Link>}</h3>
+            <h3>Recent Project Activity <Info /><Link to="/app/settings?tab=activity">View My Activity ›</Link></h3>
             <table className="overview-table"><thead><tr><th>Event</th><th>Project</th>{workspaceFeatures.projectCollaboration && <th>Owner</th>}<th>Time</th><th>Status</th></tr></thead><tbody>
               {projectEvents.slice(0, 5).map(({ key, project, label, date, icon: Icon }) => (
                 <tr key={key}><td><span className="project-event"><Icon size={13} />{label}</span></td>

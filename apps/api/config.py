@@ -70,10 +70,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     jwt_access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     jwt_refresh_token_expire_days: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-    admin_user: str = os.getenv("ADMIN_USER", os.getenv("MLITE_ADMIN_USER", "admin"))
-    admin_email: str = os.getenv("ADMIN_EMAIL", os.getenv("MLITE_ADMIN_EMAIL", "admin@mlite.local"))
+    admin_user: str = os.getenv("ADMIN_USER", os.getenv("MLITE_ADMIN_USER", ""))
+    admin_email: str = os.getenv("ADMIN_EMAIL", os.getenv("MLITE_ADMIN_EMAIL", ""))
     admin_password: str = os.getenv(
-        "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "admin123456")
+        "ADMIN_PASSWORD", os.getenv("MLITE_ADMIN_PASSWORD", "")
     )
     # Legacy ADMIN_* values are accepted for compatibility but never create or reset accounts.
     setup_token: SecretStr | None = None

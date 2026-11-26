@@ -180,7 +180,7 @@ export const updateUser = async (
 // ── Audit Logs ─────────────────────────────────────────────────────
 
 export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> => {
-  const res = await api.get("/audit/logs", { params: { limit } });
+  const res = await api.get("/audit/me/logs", { params: { limit } });
   return res.data.logs || [];
 };
 

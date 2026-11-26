@@ -30,7 +30,7 @@ curl http://localhost:8000/health
 Open the dashboard and complete [Solo installation setup](solo-setup.md).
 The single-use code is printed in `docker compose logs mlite-api`; create your
 personal account there. Use that same account for the workspace and
-**profile → Administration**. Existing installations follow the migration section
+**Settings → Storage / Activity & Logs**. Existing installations follow the migration section
 of that guide instead of creating a second account.
 
 ---

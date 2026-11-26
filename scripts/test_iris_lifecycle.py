@@ -46,14 +46,16 @@ def upload(client: httpx.Client, project_id: str, name: str, path: Path) -> str:
 
 
 def main() -> None:
+    credentials = {
+        "username": os.environ.get("ADMIN_USER", ""),
+        "password": os.environ.get("ADMIN_PASSWORD", ""),
+    }
+    if not all(credentials.values()):
+        raise RuntimeError("Set ADMIN_USER and ADMIN_PASSWORD to your own account credentials before running this scenario.")
     suffix = str(time.time_ns())
     model_name = f"iris-ci-{suffix}"
     with httpx.Client(base_url=f"{API}/api/v1", timeout=90) as client:
         wait_ready(client, f"{API}/health")
-        credentials = {
-            "username": os.environ.get("ADMIN_USER", "admin"),
-            "password": os.environ.get("ADMIN_PASSWORD", "admin123456"),
-        }
         status = checked(client.get("/setup/status"))
         if status["setup_required"]:
             setup_code = os.environ.get("MLITE_SETUP_TOKEN")

@@ -43,7 +43,7 @@ export interface AuditLog {
   user_id?: string | null;
   user_email?: string | null;
   ip_address?: string | null;
-  status: string;
+  status?: string;
   changes_json?: Record<string, string | number | boolean | null> | null;
   details?: Record<string, any>;
 }

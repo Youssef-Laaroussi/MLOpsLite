@@ -3,6 +3,7 @@
 import json
 import logging
 import tempfile
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +19,17 @@ try:
 
     _EVIDENTLY_AVAILABLE = True
 except ImportError:
-    Report = None  # type: ignore
-    DataDriftPreset = None  # type: ignore
-    DataQualityPreset = None  # type: ignore
-    _EVIDENTLY_AVAILABLE = False
+    try:
+        # Evidently 0.7+ keeps the report/preset API under its legacy namespace.
+        from evidently.legacy.metric_preset import DataDriftPreset, DataQualityPreset
+        from evidently.legacy.report import Report
+
+        _EVIDENTLY_AVAILABLE = True
+    except ImportError:
+        Report = None  # type: ignore
+        DataDriftPreset = None  # type: ignore
+        DataQualityPreset = None  # type: ignore
+        _EVIDENTLY_AVAILABLE = False
 
 
 class EvidentlyEngine:
@@ -65,13 +73,18 @@ class EvidentlyEngine:
                     json.dump(metrics_dict, f, indent=2)
 
                 # Extract key summary figures
-                drift_metrics = metrics_dict.get("metrics", [{}])[0].get("result", {})
-                drift_share = drift_metrics.get("drift_share", 0.0)
+                results = [metric.get("result", {}) for metric in metrics_dict.get("metrics", [])]
+                drift_metrics = next((result for result in results if "share_of_drifted_columns" in result), {})
+                # Evidently's drift_share field is a decision threshold. The
+                # measured fraction is share_of_drifted_columns.
+                drift_share = drift_metrics.get("share_of_drifted_columns", 0.0)
+                drift_table = next((result["drift_by_columns"] for result in results if "drift_by_columns" in result), {})
                 drifted_features = [
                     feat
-                    for feat, data in drift_metrics.get("drift_by_columns", {}).items()
+                    for feat, data in drift_table.items()
                     if data.get("drift_detected")
                 ]
+                metrics_dict["mlite_engine"] = "evidently"
 
                 # Upload to MinIO
                 s3_html_key = f"{project_name}/v{model_version}/{run_id}/report.html"
@@ -145,7 +158,7 @@ class EvidentlyEngine:
         # Generate genuine HTML report
         rows_html = "".join([
             f"<tr style='border-bottom:1px solid #334155;'>"
-            f"<td style='padding:8px 12px;font-family:monospace;'>{c['column_name']}</td>"
+            f"<td style='padding:8px 12px;font-family:monospace;'>{escape(c['column_name'])}</td>"
             f"<td style='padding:8px 12px;'>{c['stat_test']}</td>"
             f"<td style='padding:8px 12px;font-family:monospace;'>{c['p_value']}</td>"
             f"<td style='padding:8px 12px;font-family:monospace;'>{c['reference_mean']}</td>"
@@ -160,14 +173,14 @@ class EvidentlyEngine:
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MLite Statistical Drift Report - {run_id}</title>
+  <title>MLite Statistical Drift Report - {escape(run_id)}</title>
 </head>
 <body style="font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 32px; line-height: 1.5;">
   <div style="max-width: 960px; margin: 0 auto; background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 24px;">
     <h2 style="margin-top: 0; color: #38bdf8;">MLite Statistical Feature Drift Report</h2>
     <div style="display: flex; gap: 24px; font-size: 14px; color: #94a3b8; margin-bottom: 24px;">
-      <div>Target Model: <strong style="color:#fff;">{project_name}</strong></div>
-      <div>Run ID: <strong style="color:#fff;">{run_id}</strong></div>
+      <div>Target Model: <strong style="color:#fff;">{escape(project_name)}</strong></div>
+      <div>Run ID: <strong style="color:#fff;">{escape(run_id)}</strong></div>
       <div>Drift Share: <strong style="color:#fff;">{drift_share:.1%}</strong> ({len(drifted)}/{len(common_cols)} features)</div>
     </div>
     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
@@ -203,6 +216,7 @@ class EvidentlyEngine:
                     },
                 }
             ],
+            "mlite_engine": "statistical",
             "drift_share": drift_share,
             "drifted_features": drifted,
         }

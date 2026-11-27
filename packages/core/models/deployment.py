@@ -18,6 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from packages.core.db.base import Base, TimestampMixin, UUIDMixin
+from packages.core.models.workspace import ResourceOwnerMixin
 
 
 class DeploymentStatus(str, enum.Enum):
@@ -29,7 +30,7 @@ class DeploymentStatus(str, enum.Enum):
     FAILED = "FAILED"
 
 
-class Deployment(Base, UUIDMixin, TimestampMixin):
+class Deployment(ResourceOwnerMixin, Base, UUIDMixin, TimestampMixin):
     """An active or historical model inference container deployment."""
 
     __tablename__ = "deployments"

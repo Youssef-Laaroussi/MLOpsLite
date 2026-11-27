@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from packages.core.db.base import Base, TimestampMixin, UUIDMixin
+from packages.core.models.workspace import ResourceOwnerMixin
 
 
 class DatasetFormat(str, enum.Enum):
@@ -28,7 +29,7 @@ class DatasetFormat(str, enum.Enum):
     OTHER = "OTHER"
 
 
-class Dataset(Base, UUIDMixin, TimestampMixin):
+class Dataset(ResourceOwnerMixin, Base, UUIDMixin, TimestampMixin):
     """Logical dataset container tracking lineage and versions."""
 
     __tablename__ = "datasets"

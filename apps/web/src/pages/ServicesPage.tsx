@@ -39,6 +39,7 @@ type Service = {
 };
 type Snapshot = { observedAt: number; services: Service[] };
 const platformServices: Record<string, [string, ServiceType]> = {
+  PostgreSQL: ["PostgreSQL", "Database"], SQLite: ["SQLite", "Database"],
   Database: ["Database", "Database"], MLflow: ["MLflow", "Experiment"],
   MinIO: ["MinIO", "Storage"], Model: ["Docker", "Runtime"],
 };

@@ -14,11 +14,12 @@ import { fetchAuditLogs } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "./AuditLogsPage.css";
 
-export const AuditLogsPage: React.FC = () => {
+export const AuditLogsPage: React.FC<{ scope?: "personal" | "instance" }> = ({ scope = "personal" }) => {
+  const instance = scope === "instance";
   const { user } = useAuth();
   const { data: logs = [], isError: loadError, isFetching: loading, refetch: loadLogs } = useQuery({
-    queryKey: ["personal-audit", user?.id],
-    queryFn: () => fetchAuditLogs(100),
+    queryKey: [instance ? "instance-audit" : "personal-audit", user?.id],
+    queryFn: () => fetchAuditLogs(100, scope),
     enabled: Boolean(user?.id),
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,9 +55,9 @@ export const AuditLogsPage: React.FC = () => {
       <header className="audit-banner">
         <span className="audit-banner-icon" aria-hidden="true"><ShieldCheck /></span>
         <div className="audit-banner-copy">
-          <h2>Activity &amp; Logs</h2>
+          <h2>{instance ? "Instance Audit Logs" : "Activity & Logs"}</h2>
           <p>
-            Your recorded account, project, model, deployment, and dataset activity
+            {instance ? "Administrative journal across this MLite installation" : "Your recorded account, project, model, deployment, and dataset activity"}
           </p>
         </div>
         <button
@@ -99,8 +100,8 @@ export const AuditLogsPage: React.FC = () => {
 
       <div className="audit-distribution">
         <MetricDistribution
-          title="Your activity by resource"
-          description="Matching events within your latest 100 recorded entries"
+          title={instance ? "Instance activity by resource" : "Your activity by resource"}
+          description={instance ? "Matching events within the latest 100 installation entries" : "Matching events within your latest 100 recorded entries"}
           rows={countBy(filteredLogs, log => log.resource_type)}
           loading={loading}
           unavailable={Boolean(loadError)}
@@ -109,7 +110,7 @@ export const AuditLogsPage: React.FC = () => {
 
       <section className="overview-card audit-journal" aria-labelledby="audit-journal-title">
         <header className="audit-journal-heading">
-          <h3 id="audit-journal-title"><Activity aria-hidden="true" />Your event journal</h3>
+          <h3 id="audit-journal-title"><Activity aria-hidden="true" />{instance ? "Instance event journal" : "Your event journal"}</h3>
           <span>{loading ? "Loading…" : loadError ? "Unavailable" : `${filteredLogs.length} of ${logs.length} recent events`}</span>
         </header>
         <div className="audit-table-scroll" role="region" aria-label="Audit event journal" tabIndex={0}>
@@ -119,13 +120,14 @@ export const AuditLogsPage: React.FC = () => {
                 <th scope="col">Timestamp</th>
                 <th scope="col">Action</th>
                 <th scope="col">Resource</th>
+                {instance && <th scope="col">Actor / User</th>}
                 <th scope="col">IP Address</th>
               </tr>
             </thead>
             <tbody>
               {loading || loadError || filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="audit-empty">
+                  <td colSpan={instance ? 5 : 4} className="audit-empty">
                     <div role={loadError ? "alert" : "status"}>
                       {loadError ? <AlertTriangle aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
                       {loading ? "Loading audit logs…" : loadError ? "Could not load audit logs. Use Refresh to try again." : "No matching audit log entries found."}
@@ -153,6 +155,7 @@ export const AuditLogsPage: React.FC = () => {
                     <td className="audit-resource">
                       {log.resource_name || log.resource_type}
                     </td>
+                    {instance && <td>{log.user_email || "System"}</td>}
                     <td className="audit-ip">
                       {log.ip_address || "—"}
                     </td>

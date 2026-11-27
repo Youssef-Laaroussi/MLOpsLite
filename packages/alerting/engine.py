@@ -69,8 +69,23 @@ class AlertEngine:
             logger.info("Alert suppressed by cooldown: %s for model=%s", event_type, model_name)
             return None
 
+        # Background workers use an unscoped session; resolve the destination
+        # owner from the resource instead of broadcasting across accounts.
+        from packages.core.models.deployment import Deployment
+        from packages.core.models.model_registry import RegisteredModel
+
+        owner_id = self.session.info.get("workspace_user_id")
+        if not isinstance(owner_id, str):
+            owner_id = None
+        if owner_id is None and model_name:
+            owner_id = await self.session.scalar(select(RegisteredModel.owner_id).where(RegisteredModel.name == model_name))
+        if owner_id is None and deployment_id:
+            owner_id = await self.session.scalar(select(Deployment.owner_id).where(Deployment.id == deployment_id))
+        if not isinstance(owner_id, str):
+            owner_id = None
         # 2. Persist to DB
         alert = Alert(
+            owner_id=owner_id,
             project_id=project_id,
             model_name=model_name,
             deployment_id=deployment_id,

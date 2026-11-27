@@ -12,7 +12,7 @@ and formatted terminal outputs across:
 - mlite audit
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from typer.testing import CliRunner
 
@@ -133,7 +133,7 @@ class TestCliRollbackCommand:
             "policies": [],
             "total": 0,
         }
-        with patch("httpx.get", return_value=mock_response):
+        with patch("packages.rollback.policies.AutoRollbackEvaluator.list_policies", new_callable=AsyncMock, return_value=[]):
             res = runner.invoke(app, ["rollback-policy", "list"])
             assert res.exit_code == 0
             assert "No auto-rollback policies" in res.output

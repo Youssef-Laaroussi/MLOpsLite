@@ -23,6 +23,7 @@ from packages.core.models.monitoring import DriftEvaluation
 from packages.core.models.project import Project
 from packages.core.models.user import User
 from packages.core.security.dependencies import get_current_user
+from packages.core.security.workspace_dependencies import get_workspace_db
 
 router = APIRouter(prefix="/api/v1", tags=["System"])
 
@@ -86,7 +87,7 @@ async def health_check(
 async def get_system_stats(
     time_range: str = Query("all", description="all | 30d | 7d"),
     settings: Settings = Depends(get_app_settings),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_workspace_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Return current inventory; time_range applies only to scores and observations."""
@@ -136,7 +137,8 @@ async def get_system_stats(
         try:
             from packages.tracking.mlflow_client import MLiteMLflowManager
             manager = MLiteMLflowManager(tracking_uri=settings.mlflow_tracking_uri)
-            exps = manager.client.search_experiments()
+            from packages.tracking.workspace import visible_experiments
+            exps = await visible_experiments(manager.client, db, current_user.id)
             experiments_count = len(exps)
         except Exception:
             experiments_count = 0
@@ -272,8 +274,9 @@ async def check_services(
     except Exception:
         pass
     db_lat = round((time.perf_counter() - t0) * 1000, 1)
+    database_backend = settings.database_url.split(":", 1)[0].split("+", 1)[0]
     services.append({
-        "name": "Database (PostgreSQL/SQLite)",
+        "name": {"postgresql": "PostgreSQL Database", "sqlite": "SQLite Database"}.get(database_backend, "Database"),
         "status": "online" if db_ok else "offline",
         "latency": f"{db_lat}ms",
         "uptime": "Operational" if db_ok else "Offline",

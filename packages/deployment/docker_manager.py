@@ -24,12 +24,14 @@ except ImportError:
     _DOCKER_AVAILABLE = False
 
 
-def serving_environment(model_version) -> dict[str, str]:
+def serving_environment(model_version, token: str | None = None) -> dict[str, str]:
     """Pass the registered artifact and storage configuration to a serving container."""
     uri = model_version.mlflow_model_uri or model_version.artifact_path
     if not uri:
         raise ValueError("The registered version has no model artifact.")
     env = {"MODEL_ARTIFACT_PATH": uri}
+    if token:
+        env["MLITE_SERVING_TOKEN"] = token
     for key in ("MLFLOW_TRACKING_URI", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"):
         if os.getenv(key):
             env[key] = os.environ[key]
@@ -98,6 +100,8 @@ class DockerManager:
             )
 
         try:
+            if self.client.images.get(image).labels.get("org.mlite.serving-auth") != "1":
+                raise RuntimeError("Rebuild mlite-serving before deploying: authenticated inference is required.")
             # Clean up existing container with same name if any
             try:
                 old_c = self.client.containers.get(container_name)
@@ -120,7 +124,7 @@ class DockerManager:
                 image=image,
                 name=container_name,
                 detach=True,
-                ports={"8000/tcp": host_port},
+                ports={"8000/tcp": ("127.0.0.1", host_port)},
                 environment=env,
                 mem_limit=memory_limit,
                 nano_cpus=int(cpu_limit * 1e9),
@@ -148,6 +152,8 @@ class DockerManager:
             container = self.client.containers.get(container_id)
             container.stop(timeout=5)
             container.remove()
+            return True
+        except NotFound:
             return True
         except Exception as e:
             logger.warning("Error stopping container %s: %s", container_id, e)

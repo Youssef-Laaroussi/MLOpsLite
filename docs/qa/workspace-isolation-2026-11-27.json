@@ -1,0 +1,302 @@
+{
+  "date": "2026-11-27",
+  "scope": "MLite authenticated workspaces; separate instance administration",
+  "live_checks": [
+    {
+      "name": "empty_private_projects",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_private_datasets",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_private_models",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_private_deployments",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_private_experiments",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/projects/e3514ece-0cb1-44e3-ba84-b775e4da7f43",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/datasets/ebb4d494-81cd-45bd-bd76-c259c621c78f",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/datasets/ebb4d494-81cd-45bd-bd76-c259c621c78f/versions",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_POST_/datasets/ebb4d494-81cd-45bd-bd76-c259c621c78f/validate",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_DELETE_/datasets/ebb4d494-81cd-45bd-bd76-c259c621c78f",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/models/qa-solo-111054-e75d-iris-final/versions",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/models/qa-solo-111054-e75d-iris-final/versions/1/lineage",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_POST_/models/qa-solo-111054-e75d-iris-final/versions/1/promote",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_POST_/models/register",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/deployments/614aef1f-a7af-4120-a4c3-5b93397bf838",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_POST_/deployments/614aef1f-a7af-4120-a4c3-5b93397bf838/stop",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/deployments/614aef1f-a7af-4120-a4c3-5b93397bf838/metadata",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_POST_/deployments/614aef1f-a7af-4120-a4c3-5b93397bf838/predict",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/experiments/20/runs",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/experiments/20/runs/2c0387cdc6e4472da0ac7661c6f09571/artifacts",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_GET_/experiments/20/runs/2c0387cdc6e4472da0ac7661c6f09571/artifacts/download?path=model",
+      "result": "PASS"
+    },
+    {
+      "name": "foreign_DELETE_/experiments/20",
+      "result": "PASS"
+    },
+    {
+      "name": "own_uploaded_dataset_quality",
+      "result": "PASS"
+    },
+    {
+      "name": "same_display_name_different_remote_ids",
+      "result": "PASS"
+    },
+    {
+      "name": "same_display_name_no_cross_access",
+      "result": "PASS"
+    },
+    {
+      "name": "cannot_register_another_users_run",
+      "result": "PASS"
+    },
+    {
+      "name": "cannot_append_version_to_foreign_model",
+      "result": "PASS"
+    },
+    {
+      "name": "private_internal_tokens_not_serialized",
+      "result": "PASS"
+    },
+    {
+      "name": "direct_container_metadata_denied",
+      "result": "PASS"
+    },
+    {
+      "name": "direct_container_telemetry_denied",
+      "result": "PASS"
+    },
+    {
+      "name": "direct_container_predict_denied",
+      "result": "PASS"
+    },
+    {
+      "name": "owner_authenticated_metadata",
+      "result": "PASS"
+    },
+    {
+      "name": "owner_authenticated_prediction",
+      "result": "PASS"
+    },
+    {
+      "name": "a_cannot_read_b_/datasets/119b2572-519e-4a30-9b7d-e8ea824ec8ac",
+      "result": "PASS"
+    },
+    {
+      "name": "a_cannot_read_b_/models/qa-private-fc90cbbf69-iris/versions",
+      "result": "PASS"
+    },
+    {
+      "name": "a_cannot_read_b_/deployments/f1116110-e1ea-41ed-b429-83230812b839/metadata",
+      "result": "PASS"
+    },
+    {
+      "name": "admin_cannot_read_b_/datasets/119b2572-519e-4a30-9b7d-e8ea824ec8ac",
+      "result": "PASS"
+    },
+    {
+      "name": "admin_cannot_read_b_/models/qa-private-fc90cbbf69-iris/versions",
+      "result": "PASS"
+    },
+    {
+      "name": "admin_cannot_read_b_/deployments/f1116110-e1ea-41ed-b429-83230812b839/metadata",
+      "result": "PASS"
+    },
+    {
+      "name": "a_cannot_stop_b",
+      "result": "PASS"
+    },
+    {
+      "name": "b_still_running_after_foreign_stop_attempt",
+      "result": "PASS"
+    },
+    {
+      "name": "b_dashboard_private_inventory",
+      "result": "PASS"
+    },
+    {
+      "name": "admin_accounts_retained",
+      "result": "PASS"
+    },
+    {
+      "name": "normal_user_administration_denied",
+      "result": "PASS"
+    },
+    {
+      "name": "stop_only_own_qa_deployment",
+      "result": "PASS"
+    }
+  ],
+  "browser_checks": [
+    {
+      "name": "B_catalog_private_after_account_switch",
+      "passed": true
+    },
+    {
+      "name": "B_models_private",
+      "passed": true
+    },
+    {
+      "name": "normal_user_has_no_admin_menu",
+      "passed": true
+    },
+    {
+      "name": "A_catalog_private_after_B_logout",
+      "passed": true
+    },
+    {
+      "name": "admin_profile_separate_administration",
+      "passed": true
+    },
+    {
+      "name": "admin_accounts_management_preserved",
+      "passed": true
+    },
+    {
+      "name": "admin_legacy_recovery_available",
+      "passed": true
+    },
+    {
+      "name": "normal_user_admin_URL_denied",
+      "passed": true
+    },
+    {
+      "name": "B_private_catalog_after_admin_logout",
+      "passed": true
+    }
+  ],
+  "preservation": {
+    "alert_rules": {
+      "before": 6,
+      "missing_after_migration": 0
+    },
+    "alerts": {
+      "before": 6,
+      "missing_after_migration": 0
+    },
+    "audit_logs": {
+      "before": 168,
+      "missing_after_migration": 0
+    },
+    "dataset_versions": {
+      "before": 22,
+      "missing_after_migration": 0
+    },
+    "datasets": {
+      "before": 18,
+      "missing_after_migration": 0
+    },
+    "deployments": {
+      "before": 11,
+      "missing_after_migration": 0
+    },
+    "drift_evaluations": {
+      "before": 17,
+      "missing_after_migration": 0
+    },
+    "model_performance_history": {
+      "before": 125,
+      "missing_after_migration": 0
+    },
+    "model_versions": {
+      "before": 9,
+      "missing_after_migration": 0
+    },
+    "notification_channels": {
+      "before": 0,
+      "missing_after_migration": 0
+    },
+    "prediction_feedback": {
+      "before": 141,
+      "missing_after_migration": 0
+    },
+    "projects": {
+      "before": 8,
+      "missing_after_migration": 0
+    },
+    "registered_models": {
+      "before": 6,
+      "missing_after_migration": 0
+    },
+    "rollback_records": {
+      "before": 2,
+      "missing_after_migration": 0
+    },
+    "users": {
+      "before": 5,
+      "missing_after_migration": 0
+    }
+  },
+  "legacy_inference_ports": {
+    "8100": "closed",
+    "8101": 401
+  },
+  "validation": {
+    "backend_tests_passed": 325,
+    "backend_warnings": 21,
+    "frontend_tests_passed": 49,
+    "frontend_test_files": 13,
+    "typescript": "PASS",
+    "vite_build": "PASS",
+    "cli_tests_passed": 20,
+    "existing_demo_checks_rerun": 3,
+    "ruff_new_issues": 0,
+    "ruff_preexisting_B010": 38
+  }
+}

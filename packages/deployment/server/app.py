@@ -5,6 +5,7 @@ strict Pydantic input validation, latency metrics, and audit logging.
 """
 
 import os
+import secrets
 import time
 from collections import deque
 from collections.abc import AsyncGenerator
@@ -12,8 +13,9 @@ from contextlib import asynccontextmanager
 from statistics import median
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from packages.deployment.server.logger import InferencePayloadLogger
 from packages.deployment.server.predictor import BasePredictor
@@ -37,6 +39,7 @@ predictor = BasePredictor(
 payload_logger = InferencePayloadLogger()
 latency_samples: deque[float] = deque(maxlen=10000)
 request_count = 0
+error_count = 0
 
 
 @asynccontextmanager
@@ -61,6 +64,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def count_failed_predictions(request: Request, call_next):
+    if request.url.path in ("/predict", "/metadata", "/telemetry", "/docs", "/redoc", "/openapi.json"):
+        expected = os.getenv("MLITE_SERVING_TOKEN", "")
+        supplied = request.headers.get("X-MLite-Serving-Token", "")
+        if not expected or not secrets.compare_digest(expected, supplied):
+            return JSONResponse({"detail": "Use the authenticated MLite deployment API."}, status_code=401)
+    response = await call_next(request)
+    if request.method == "POST" and request.url.path == "/predict" and response.status_code >= 400:
+        global request_count, error_count
+        request_count += 1
+        error_count += 1
+    return response
 
 
 @app.post(
@@ -127,6 +145,7 @@ async def telemetry() -> dict[str, Any]:
     return {
         "started_at": START_TIME,
         "requests": request_count,
+        "errors": error_count,
         "p50": median(samples) if samples else None,
         "p95": samples[(95 * len(samples) - 1) // 100] if samples else None,
     }

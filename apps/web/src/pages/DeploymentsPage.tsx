@@ -12,10 +12,10 @@ import "./DeploymentsPage.css";
 export const DeploymentsPage: React.FC = () => {
   const { confirmAction, showSuccess } = useActionFeedback();
   const queryClient = useQueryClient();
-  const { hasRole, user } = useAuth();
-  const isAdmin = user?.role === "ADMIN" || hasRole("ADMIN");
-  const canDeploy = isAdmin || user?.role === "USER" || user?.role === "MAINTAINER";
-  const canRollback = canDeploy;
+  const { hasPermission } = useAuth();
+  const canDeploy = hasPermission("deployment:create");
+  const canRollback = hasPermission("deployment:rollback");
+  const canStop = hasPermission("deployment:stop");
   const [params] = useSearchParams();
   const registryModel = params.get("model") ?? "";
   const registryVersion = Number(params.get("version"));
@@ -110,8 +110,8 @@ export const DeploymentsPage: React.FC = () => {
   return (
     <div className="deployment-dashboard">
       <DeploymentDashboard deployments={deployments} loading={loading} error={error}
-        canDeploy={canDeploy} canViewAudit={user?.role === "MAINTAINER" || isAdmin}
-        canRollback={canRollback} canStop={isAdmin} onReload={loadDeployments}
+        canDeploy={canDeploy} canViewAudit={hasPermission("audit:view")}
+        canRollback={canRollback} canStop={canStop} onReload={loadDeployments}
         onCreate={() => { setDeployError(null); setShowModal(true); }}
         onStop={handleStop}
         onRollback={deployment => {

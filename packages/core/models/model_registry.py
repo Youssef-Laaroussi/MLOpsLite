@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from packages.core.db.base import Base, TimestampMixin, UUIDMixin
+from packages.core.models.workspace import ResourceOwnerMixin
 
 
 class ModelStage(str, enum.Enum):
@@ -27,7 +28,7 @@ class ModelStage(str, enum.Enum):
     ARCHIVED = "ARCHIVED"
 
 
-class RegisteredModel(Base, UUIDMixin, TimestampMixin):
+class RegisteredModel(ResourceOwnerMixin, Base, UUIDMixin, TimestampMixin):
     """A registered ML model with multiple versions."""
 
     __tablename__ = "registered_models"

@@ -150,7 +150,9 @@ export interface Dataset {
   size_bytes?: number;
   hash_sha256?: string;
   s3_key?: string;
+  has_storage_reference?: boolean;
   quality_score?: number;
+  quality_report?: DataQualitySummary | null;
   downstream_models?: string[];
   columns?: DatasetColumn[];
   sample_records?: Record<string, any>[];

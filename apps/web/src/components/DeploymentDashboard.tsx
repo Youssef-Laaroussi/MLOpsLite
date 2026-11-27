@@ -7,7 +7,7 @@ import {
   Search, ShieldCheck, StopCircle, Timer, TrendingUp, X,
 } from "lucide-react";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, fetchProjects, fetchSystemServices, pingDeployment } from "../api/client";
+import { api, deploymentPredictionUrl, fetchProjects, fetchSystemServices, pingDeployment } from "../api/client";
 import type { Deployment, DeploymentMetric } from "../api/types";
 
 type Props = {
@@ -472,7 +472,7 @@ export function DeploymentDashboard({
           const errors = samples.reduce((total, sample) => total + sample.error_count, 0);
           const latestP95 = latencies(samples, "latency_p95_ms")[0];
           const trafficShare = traffic(deployment);
-          const endpoint = textConfig(deployment, "endpoint_path") || (deployment.endpoint_url ? "/predict" : "");
+          const endpoint = deploymentPredictionUrl(deployment.id);
           const environmentName = environment(deployment);
           const description = textConfig(deployment, "description");
           const live = deployment.status === "RUNNING";
@@ -486,7 +486,7 @@ export function DeploymentDashboard({
             </button></td>
             <td><span className="health-pill">v{deployment.model_version}</span></td>
             <td>{environmentName ? <Status value={stageLabel(environmentName)} /> : "—"}</td>
-            <td>{endpoint ? <span className="deployment-inline" title={deployment.endpoint_url}><Code2 size={13} />{endpoint}</span> : "—"}</td>
+            <td><span className="deployment-inline" title={endpoint}><Code2 size={13} />/predict</span></td>
             <td>{deployment.status === "RUNNING" && deployment.container_id ? 1 : deployment.status === "STOPPED" ? 0 : "—"}</td>
             <td>{trafficShare === null ? "—" : `${trafficShare}%`}</td>
             <td>{deployment.status === "STOPPED" ? "No live traffic" : ms(latestP95)}</td><td>{live && requests > 0 ? `${(errors / requests * 100).toFixed(2)}%` : "—"}</td>
@@ -591,7 +591,8 @@ export function DeploymentDashboard({
         <header><h2>{detail.model_name} <span className="health-pill">v{detail.model_version}</span></h2><button aria-label="Close" onClick={() => setDetailId(undefined)} disabled={checking} autoFocus><X size={20} /></button></header>
         <dl>
           <div><dt>Status</dt><dd><Status value={statusOf(detail, probes[detail.id])} /></dd></div>
-          <div><dt>Endpoint</dt><dd>{detail.endpoint_url || "—"}</dd></div>
+          <div><dt>Prediction endpoint</dt><dd>{deploymentPredictionUrl(detail.id)}</dd></div>
+          <div><dt>Authentication</dt><dd>Bearer token or X-API-Key header</dd></div>
           <div><dt>Port</dt><dd>{detail.port || "—"}</dd></div>
           <div><dt>Container</dt><dd>{detail.container_id || "—"}</dd></div>
           <div><dt>Health probe round-trip</dt><dd>{ms(probes[detail.id]?.latency)}</dd></div>

@@ -123,10 +123,12 @@ mlite deployment list
 
 ## Step 6: Query Predictions
 
-Send a JSON inference payload to your live model container:
+Set `DEPLOYMENT_ID` to the ID returned by deployment creation and `MLITE_TOKEN`
+to your own Bearer access token. Send predictions through the authenticated API:
 
 ```bash
-curl -X POST http://localhost:8100/predict \
+curl -X POST "http://localhost:8000/api/v1/deployments/${DEPLOYMENT_ID}/predict" \
+  -H "Authorization: Bearer ${MLITE_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"inputs": [[5.1, 3.5, 1.4, 0.2]]}'
 ```
@@ -134,10 +136,9 @@ curl -X POST http://localhost:8100/predict \
 **Response (200 OK):**
 ```json
 {
-  "prediction": [0],
-  "probabilities": [0.98, 0.01, 0.01],
-  "model_name": "iris-classifier",
-  "model_version": 1,
+  "predictions": [0],
+  "model": "iris-classifier",
+  "version": "1",
   "latency_ms": 3.8
 }
 ```

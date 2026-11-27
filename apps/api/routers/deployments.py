@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
@@ -16,6 +17,7 @@ from packages.core.models.deployment import DeploymentStatus
 from packages.core.models.user import User
 from packages.core.schemas.deployment import (
     DeploymentCreate,
+    DeploymentFeedbackCreate,
     DeploymentListResponse,
     DeploymentMetricResponse,
     DeploymentResponse,
@@ -23,7 +25,9 @@ from packages.core.schemas.deployment import (
 from packages.core.security.audit import AuditService
 from packages.core.security.dependencies import get_current_user, require_permission
 from packages.core.security.rbac import Permission
+from packages.deployment.server.schemas import PredictionRequest
 from packages.deployment.service import DeploymentService
+from packages.deployment.serving_auth import serving_headers
 
 router = APIRouter(prefix="/api/v1/deployments", tags=["Deployments"])
 
@@ -203,10 +207,45 @@ async def get_deployment_metrics(
     return metrics
 
 
+async def _proxy_inference(deployment_id, service, path, payload=None):
+    deployment = await service.get_deployment(deployment_id)
+    if deployment is None:
+        raise NotFoundError("Deployment", deployment_id)
+    if deployment.status != DeploymentStatus.RUNNING:
+        raise HTTPException(409, "This deployment is not running.")
+    name = f"mlite-{deployment.model_name}-v{deployment.model_version}-{deployment.port}"
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.request(
+                "POST" if payload is not None else "GET", f"http://{name}:8000/{path}",
+                json=payload, headers=serving_headers(deployment.config),
+            )
+        from fastapi.responses import JSONResponse
+        return JSONResponse(response.json(), status_code=response.status_code)
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(502, "The inference container could not be reached.") from exc
+
+
+@router.post("/{deployment_id}/predict")
+async def predict_owned_deployment(deployment_id: str, payload: PredictionRequest,
+                                   service: DeploymentService = Depends(_get_service)):
+    return await _proxy_inference(deployment_id, service, "predict", payload.model_dump(exclude_none=True))
+
+
+@router.get("/{deployment_id}/metadata")
+async def owned_deployment_metadata(deployment_id: str, service: DeploymentService = Depends(_get_service)):
+    return await _proxy_inference(deployment_id, service, "metadata")
+
+
+@router.get("/{deployment_id}/ready")
+async def owned_deployment_readiness(deployment_id: str, service: DeploymentService = Depends(_get_service)):
+    return await _proxy_inference(deployment_id, service, "ready")
+
+
 @router.post("/{deployment_id}/feedback", status_code=status.HTTP_201_CREATED)
 async def ingest_prediction_feedback(
     deployment_id: str,
-    payload: dict,
+    payload: DeploymentFeedbackCreate,
     db: AsyncSession = Depends(get_db),
     service: DeploymentService = Depends(_get_service),
 ) -> dict[str, Any]:
@@ -220,11 +259,35 @@ async def ingest_prediction_feedback(
     monitor = ModelPerformanceMonitor(session=db)
     feedback = await monitor.ingest_feedback(
         deployment_id=deployment_id,
-        prediction_id=payload.get("prediction_id", "pred-unknown"),
-        ground_truth=payload.get("ground_truth"),
-        predicted_value=payload.get("predicted_value"),
-        latency_ms=payload.get("latency_ms"),
+        prediction_id=payload.prediction_id,
+        ground_truth=payload.ground_truth,
+        predicted_value=payload.predicted_value,
+        latency_ms=payload.latency_ms,
     )
+    # Persist measured performance once enough real labelled predictions exist.
+    # Previously feedback was stored but never reached the dashboard's history.
+    from packages.core.models.monitoring import PredictionFeedback
+    from packages.registry.service import ModelRegistryService
+
+    history = (await db.execute(select(PredictionFeedback).where(
+        PredictionFeedback.deployment_id == deployment_id,
+    ).order_by(PredictionFeedback.created_at.desc()).limit(1000))).scalars().all()
+    pairs = [item for item in history if item.ground_truth is not None and item.predicted_value is not None]
+    if len(pairs) >= 5:
+        registered = await ModelRegistryService(db).get_version(deployment.model_name, deployment.model_version)
+        baseline = dict(registered.metrics or {}) if registered else {}
+        if "f1_score" in baseline and "f1" not in baseline:
+            baseline["f1"] = baseline["f1_score"]
+        try:
+            task_type = monitor.resolve_task_type((deployment.config or {}).get("task_type"), baseline)
+            await monitor.record_performance_snapshot(
+                model_name=deployment.model_name, deployment_id=deployment_id,
+                task_type=task_type,
+                y_true=[item.ground_truth for item in pairs],
+                y_pred=[item.predicted_value for item in pairs], baseline_metrics=baseline,
+            )
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(422, "Feedback labels are incompatible with this model's task and existing labels.") from exc
     return {
         "id": feedback.id,
         "deployment_id": deployment_id,

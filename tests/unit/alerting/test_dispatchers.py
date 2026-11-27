@@ -87,6 +87,7 @@ class TestDispatchers:
     @pytest.mark.asyncio
     async def test_notification_manager_retries_transient_failure(self, sample_alert):
         mock_disp = AsyncMock()
+        mock_disp.workspace_owner_id = sample_alert.owner_id
         # First attempt fails, second attempt succeeds
         mock_disp.dispatch.side_effect = [False, True]
 
@@ -95,3 +96,15 @@ class TestDispatchers:
 
         assert results == [True]
         assert mock_disp.dispatch.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_private_alert_is_never_sent_to_another_account(self, sample_alert):
+        sample_alert.owner_id = "account-a"
+        own, other = AsyncMock(), AsyncMock()
+        own.workspace_owner_id = "account-a"
+        other.workspace_owner_id = "account-b"
+        own.dispatch.return_value = True
+        results = await NotificationManager(dispatchers=[own, other]).broadcast_alert(sample_alert)
+        assert results == [True]
+        own.dispatch.assert_called_once()
+        other.dispatch.assert_not_called()

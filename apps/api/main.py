@@ -24,6 +24,7 @@ from apps.api.config import get_settings
 from apps.api.errors import register_exception_handlers
 from apps.api.middleware import register_middleware
 from apps.api.routers import (
+    admin_workspaces,
     alerts,
     audit,
     auth,
@@ -40,7 +41,8 @@ from apps.api.routers import (
     setup,
 )
 from packages.core.models.user import UserRole
-from packages.core.security.dependencies import get_current_user, require_role
+from packages.core.security.dependencies import require_role
+from packages.core.security.workspace_dependencies import get_workspace_db
 
 logger = logging.getLogger("mlite.api")
 
@@ -72,7 +74,11 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
             "(one use; recover with 'mlite instance setup-code').", code,
         )
 
+    from packages.core.db.session import async_session_factory
     from packages.deployment.supervisor import collect_inference_telemetry
+    from packages.deployment.upgrade_serving import secure_running_deployments
+
+    await secure_running_deployments(async_session_factory)
 
     tasks = [asyncio.create_task(collect_inference_telemetry())]
     if settings.evaluation_interval_seconds > 0:
@@ -138,8 +144,9 @@ def create_app() -> FastAPI:
     app.include_router(settings_storage.router)
     app.include_router(contact.router)
     app.include_router(audit.router)
-    app.include_router(rollback.router, dependencies=[Depends(get_current_user)])
-    protected = [Depends(get_current_user)]
+    app.include_router(admin_workspaces.router)
+    app.include_router(rollback.router, dependencies=[Depends(get_workspace_db)])
+    protected = [Depends(get_workspace_db)]
     for r in (projects, datasets, experiments, models, deployments, monitoring, alerts):
         app.include_router(r.router, dependencies=protected)
 

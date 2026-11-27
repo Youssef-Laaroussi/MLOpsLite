@@ -19,12 +19,11 @@ type Props = {
 
 const dayMs = 86400000;
 const timestamp = (dataset: Dataset) => dataset.updated_at || dataset.created_at;
-const quality = (dataset: Dataset) => dataset.quality_score == null ? null :
-  dataset.quality_score <= 1 ? dataset.quality_score * 100 : dataset.quality_score;
+const quality = (dataset: Dataset) => dataset.quality_score ?? null;
 const version = (dataset: Dataset) => dataset.version_num || dataset.latest_version?.version_num;
 const hashFor = (dataset: Dataset) => dataset.hash_sha256 || dataset.latest_version?.hash_sha256;
 const bytesFor = (dataset: Dataset) => dataset.size_bytes ?? dataset.latest_version?.size_bytes ?? 0;
-const minio = (dataset: Dataset) => Boolean(dataset.s3_key || dataset.latest_version?.s3_key);
+const minio = (dataset: Dataset) => Boolean(dataset.has_storage_reference || dataset.s3_key || dataset.latest_version?.s3_key);
 const count = (value?: number) => value?.toLocaleString("en-US") ?? "—";
 
 function age(value: string) {
@@ -95,6 +94,7 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
   const validation = monitoring?.latest_quality;
   const recentActivity = filtered.flatMap(item => {
     const latest = item.latest_version;
+    const itemValidation = item.quality_report ?? (validation?.dataset_id === item.id ? validation : null);
     const events = [{
       item, date: timestamp(item), id: `${item.id}-metadata`, icon: Database,
       label: item.updated_at && item.updated_at !== item.created_at ? "Dataset updated" : "Dataset created",
@@ -103,10 +103,10 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
       events.push({ item, date: latest.created_at, id: latest.id, icon: CloudUpload,
         label: `Version added (v${latest.version_num})` });
     }
-    if (validation?.dataset_id === item.id) {
-      events.push({ item, date: validation.created_at, id: validation.id,
-        icon: validation.status === "PASS" ? Check : TriangleAlert,
-        label: `Quality check ${{ PASS: "passed", WARN: "reported warnings", FAIL: "failed" }[validation.status]}` });
+    if (itemValidation) {
+      events.push({ item, date: itemValidation.created_at, id: itemValidation.id,
+        icon: itemValidation.status === "PASS" ? Check : TriangleAlert,
+        label: `Quality check ${{ PASS: "passed", WARN: "reported warnings", FAIL: "failed" }[itemValidation.status]}` });
     }
     return events;
   }).filter(event => !days || Date.now() - Date.parse(event.date) <= days * dayMs)
@@ -137,7 +137,7 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
     ["Dataset Versions", versions, Layers],
     ["Avg Quality Score", average === null ? "—" : `${average.toFixed(1)}%`, Award],
     ["DVC Tracked", "—", GitBranch],
-    ["Synced to MinIO", synced ? `${synced} / ${filtered.length}` : "—", Database],
+    ["Storage References", synced ? `${synced} / ${filtered.length}` : "—", Database],
     ["Storage Used", formatBytes(storage), HardDrive],
   ] as const;
   const empty = <p className="activity-empty">{loading ? "Loading datasets…" : "No recorded data for this selection."}</p>;
@@ -203,7 +203,7 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
           <td>{item.downstream_models ? <span className="dataset-inline"><Layers size={13} />{item.downstream_models.length}</span> : "—"}</td>
           <td title={new Date(timestamp(item)).toLocaleString()}>{age(timestamp(item))}</td>
           <td>
-            {minio(item) ? <span className="catalog-status"><CloudUpload size={14} />Synced</span>
+            {minio(item) ? <span className="catalog-status"><CloudUpload size={14} />Linked</span>
               : version(item) ? <span className="catalog-status"><i />Versioned</span>
               : <span className="catalog-status is-pending"><TriangleAlert size={13} />Awaiting upload</span>}
           </td>
@@ -260,9 +260,9 @@ export function DatasetDashboard({ datasets, projects, loading, formatBytes, onO
           {schemaRows.map((item, index) => {
             const rows = item.row_count ?? item.latest_version?.row_count;
             const columns = item.columns ?? item.latest_version?.schema_json?.columns;
-            const report = validation?.dataset_id === item.id &&
+            const report = item.quality_report ?? (validation?.dataset_id === item.id &&
               Date.parse(validation.created_at) >= Date.parse(item.latest_version?.created_at ?? item.created_at)
-              ? validation : null;
+              ? validation : null);
             const profiledMissing = rows && Array.isArray(columns) && columns.length && columns.every(column => Number.isFinite(column.null_count))
               ? columns.reduce((total, column) => total + column.null_count, 0) / (rows * columns.length) * 100
               : null;

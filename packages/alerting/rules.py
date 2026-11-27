@@ -15,6 +15,7 @@ from packages.alerting.dispatchers import (
 from packages.alerting.engine import AlertEngine
 from packages.core.models.alert import Alert, AlertRule, NotificationChannel
 from packages.core.models.deployment import Deployment, DeploymentMetric, DeploymentStatus
+from packages.core.models.model_registry import RegisteredModel
 from packages.core.models.monitoring import DriftEvaluation
 
 OPERATORS: dict[str, Callable[[float, float], bool]] = {
@@ -32,7 +33,9 @@ _DISPATCHERS: dict[str, type[BaseDispatcher]] = {
 
 
 def build_dispatcher(channel: NotificationChannel) -> BaseDispatcher:
-    return _DISPATCHERS[channel.kind](channel.url)
+    dispatcher = _DISPATCHERS[channel.kind](channel.url)
+    dispatcher.workspace_owner_id = channel.owner_id
+    return dispatcher
 
 
 async def load_dispatchers(session: AsyncSession) -> list[BaseDispatcher]:
@@ -92,12 +95,21 @@ async def evaluate_rules(session: AsyncSession, engine: AlertEngine) -> tuple[in
                 continue
             if not OPERATORS[rule.operator](value, rule.threshold):
                 continue
+            owner_id = await session.scalar(
+                select(RegisteredModel.owner_id).where(RegisteredModel.name == model)
+            )
+            if not owner_id or getattr(rule, "owner_id", None) != owner_id:
+                continue
+            project_id = await session.scalar(
+                select(RegisteredModel.project_id).where(RegisteredModel.name == model)
+            )
             alert = await engine.trigger_alert(
                 event_type=f"RULE_{rule.metric.upper()}",
                 title=rule.name,
                 message=f"{rule.metric} = {value:g} ({rule.operator} {rule.threshold:g}) on {model}",
                 severity=rule.severity,
                 model_name=model,
+                project_id=project_id,
                 details={"rule_id": rule.id, "observed": value, "threshold": rule.threshold},
             )
             if alert is not None:  # None => suppressed by cooldown (deduplicated)

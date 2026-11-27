@@ -127,9 +127,9 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
   }, [paletteOpen]);
 
   const installationTargets = user?.role === "ADMIN" ? [
-    { label: "Accounts", href: workspaceSettingsPaths.accounts, icon: ShieldCheck, hint: "Instance accounts" },
-    { label: "Storage", href: workspaceSettingsPaths.storage, icon: Database, hint: "Settings · Buckets and storage" },
-  ].filter(target => target.href !== workspaceSettingsPaths.accounts || workspaceFeatures.accountManagement) : [];
+    { label: "Accounts", href: "/admin/accounts", icon: ShieldCheck, hint: "Instance accounts" },
+    { label: "Storage", href: "/admin/storage", icon: Database, hint: "Settings · Buckets and storage" },
+  ] : [];
   const results = [...NAV_TARGETS,
     { label: "Activity & Logs", href: workspaceSettingsPaths.activity, icon: ShieldCheck, hint: "Settings · Your personal activity" },
     ...installationTargets].filter(
@@ -159,12 +159,12 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
       <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-2 border-b border-[#dce5dd] bg-white/95 px-3 backdrop-blur sm:gap-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-5">
           <Link to="/app" className="flex shrink-0 items-center gap-2 text-xl font-bold"><img src="/logo.png" alt="" className="h-7 w-7 object-contain" />MLite</Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-2 xl:flex">
+          <nav aria-label="Main navigation" className="hidden items-center gap-2 2xl:flex">
             {NAV_TARGETS.filter(item => !["Experiments", "Audit Logs"].includes(item.label)).map(item => <Link key={item.href} to={item.href} className={`rounded-full px-3 py-2 text-xs font-semibold transition ${location.pathname === item.href || (item.href === "/app" && location.pathname === "/app/overview") ? "bg-[#e3f5e8] text-[#007535]" : "text-slate-500 hover:bg-emerald-50"}`}>{item.label === "Model Registry" ? "Models" : item.label}</Link>)}
           </nav>
         </div>
 
-        <div ref={barRef} className="flex items-center gap-2">
+        <div ref={barRef} className="flex shrink-0 items-center gap-2">
           {/* Search trigger */}
           <button
             id="header-search"
@@ -276,6 +276,11 @@ export const Header: React.FC<HeaderProps> = ({ meta }) => {
                     </div>
                   </div>
                   <div className="py-1">
+                    {user.role === "ADMIN" && <Link to="/admin/accounts" onClick={() => setOpenMenu(null)}
+                      className="w-full px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />Administration
+                    </Link>}
+
                     <Link
                       to="/app/settings"
                       onClick={() => setOpenMenu(null)}

@@ -61,6 +61,7 @@ def target_model_version():
     return ModelVersion(
         id="mv-1",
         model_id="model-1",
+        mlflow_model_uri="runs:/unit-run/model",
         version=1,
         stage=ModelStage.ARCHIVED,
     )

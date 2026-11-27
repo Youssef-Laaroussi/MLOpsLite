@@ -20,7 +20,8 @@ export function ProfileSettings() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const photoInput = useRef<HTMLInputElement>(null);
-  useEffect(() => { const next = readDetails(storageKey); setSaved(next); setDetails(next); setName(user?.full_name ?? ""); setMessage(""); setError(""); }, [storageKey, user?.full_name]);
+  useEffect(() => { const next = readDetails(storageKey); setSaved(next); setDetails(next); setMessage(""); setError(""); }, [storageKey]);
+  useEffect(() => { setName(user?.full_name ?? ""); }, [user?.full_name]);
   const field = (key: keyof Details, value: string) => { setDetails(previous => ({ ...previous, [key]: value })); setMessage(""); };
   const initials = (user?.full_name || user?.username || "U").split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase();
   const role = ({ ADMIN: "Administrator", USER: "User", MAINTAINER: "Maintainer", DEVELOPER: "Developer", VIEWER: "Viewer" } as const)[user?.role ?? "USER"];

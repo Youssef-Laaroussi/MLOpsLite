@@ -93,9 +93,9 @@ def main() -> None:
         }))
         assert deployment["status"] == "RUNNING", deployment.get("error_message")
         try:
-            endpoint = f"http://localhost:{PORT}"
+            endpoint = f"{API}/api/v1/deployments/{deployment['id']}"
             wait_ready(client, f"{endpoint}/ready")
-            with httpx.Client() as serving:
+            with httpx.Client(headers=client.headers) as serving:
                 result = checked(serving.post(f"{endpoint}/predict", json={
                     "inputs": [[5.1, 3.5, 1.4, 0.2]],
                 }))

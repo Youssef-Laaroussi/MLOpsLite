@@ -15,6 +15,7 @@ from packages.core.models.deployment import (
 )
 from packages.deployment.docker_manager import DockerManager, serving_environment
 from packages.deployment.ports import PortAllocator
+from packages.deployment.serving_auth import TOKEN_KEY, serving_configuration
 from packages.registry.service import ModelRegistryService
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class DeploymentService:
         result = await self.session.execute(
             select(Deployment.port).where(
                 Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING])
-            )
+            ).execution_options(workspace_unscoped=True)
         )
         return set(result.scalars().all())
 
@@ -54,7 +55,11 @@ class DeploymentService:
         model = await ModelRegistryService(self.session).get_version(model_name, model_version)
         if model is None:
             raise ValueError(f"Model version {model_name} v{model_version} is not registered.")
-        environment = serving_environment(model)
+        if project_id is None:
+            registered = await ModelRegistryService(self.session).get_model_by_name(model_name)
+            project_id = registered.project_id if registered else None
+        private_config = serving_configuration(config)
+        environment = serving_environment(model, private_config[TOKEN_KEY])
         active_ports = await self._get_active_ports()
         allocated_port = self.port_allocator.allocate(
             requested_port=requested_port, active_db_ports=active_ports
@@ -69,7 +74,7 @@ class DeploymentService:
             port=allocated_port,
             endpoint_url=endpoint_url,
             status=DeploymentStatus.PENDING,
-            config=config or {},
+            config=private_config,
         )
         self.session.add(deployment)
         await self.session.flush()

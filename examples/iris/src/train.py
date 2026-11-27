@@ -28,7 +28,7 @@ def train(min_accuracy: float | None = None) -> None:
 
     df = pl.read_csv(data_path)
     feature_cols = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
-    X = df.select(feature_cols).to_numpy()
+    X = df.select(feature_cols).to_pandas()
     y = df["species"].to_numpy()
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -65,7 +65,7 @@ def train(min_accuracy: float | None = None) -> None:
         mlflow.sklearn.log_model(
             clf,
             artifact_path="model",
-            input_example=X_test[:1],
+            input_example=X_test.iloc[:1],
             signature=infer_signature(X_test, preds),
         )
 

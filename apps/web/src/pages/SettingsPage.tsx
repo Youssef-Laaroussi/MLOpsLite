@@ -1,5 +1,5 @@
 import React, { lazy, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import { Bell, Code2, Database, History, Info, Puzzle, Settings, Shield, Users, User as UserIcon } from "lucide-react";
 import { AboutSettings } from "../components/AboutSettings";
 import { ApiKeysSettings } from "../components/ApiKeysSettings";
@@ -40,7 +40,7 @@ export const SettingsPage: React.FC = () => {
   const activeSection = availableSections.find(section => section.id === searchParams.get("tab")) ?? sections[1];
   const { id: activeTab, label, Content } = activeSection;
   const requiresAdmin = "adminOnly" in activeSection && activeSection.adminOnly;
-  const navigation = availableSections.filter(section => !("adminOnly" in section) || !section.adminOnly || user?.role === "ADMIN");
+  const navigation = availableSections.filter(section => !("adminOnly" in section));
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
@@ -52,6 +52,11 @@ export const SettingsPage: React.FC = () => {
       next.set("tab", id);
       return next;
     });
+  }
+
+  const legacyAdminTab = searchParams.get("tab");
+  if (legacyAdminTab === "storage" || legacyAdminTab === "accounts") {
+    return <ProtectedRoute adminOnly><Navigate to={`/admin/${legacyAdminTab}`} replace /></ProtectedRoute>;
   }
 
   return <div className="settings-dashboard" data-settings-tab={activeTab}>

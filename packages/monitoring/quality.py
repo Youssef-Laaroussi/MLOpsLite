@@ -44,7 +44,7 @@ class DataQualityEngine:
             elif path.suffix.lower() in (".json", ".jsonl"):
                 df = pl.read_json(path)
             else:
-                df = pl.read_csv(path, ignore_errors=True)
+                df = pl.read_csv(path, ignore_errors=True, raise_if_empty=False)
 
             total_rows = len(df)
             total_cols = len(df.columns)

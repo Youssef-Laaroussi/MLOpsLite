@@ -95,12 +95,19 @@ class BasePredictor:
         if inputs is not None:
             rows = inputs
         elif dataframe_records is not None:
-            # Sort keys consistently if feature names not predefined
-            if not self._feature_names and dataframe_records:
-                self._feature_names = sorted(dataframe_records[0].keys())
-            rows = [[rec.get(k, 0) for k in self._feature_names] for rec in dataframe_records]
+            # Named signatures define training order. For unnamed models retain
+            # the supplied order, rather than silently alphabetizing features.
+            names = self._feature_names or list(dataframe_records[0])
+            if any(any(name not in record for name in names) for record in dataframe_records):
+                raise ValueError("Prediction records are missing required features.")
+            rows = [[record[name] for name in names] for record in dataframe_records]
         elif dataframe_split is not None:
             rows = dataframe_split.data
+            if self._feature_names:
+                columns = dataframe_split.columns
+                if any(name not in columns for name in self._feature_names):
+                    raise ValueError("Prediction columns are missing required features.")
+                rows = [[row[columns.index(name)] for name in self._feature_names] for row in rows]
 
         if not rows:
             return []

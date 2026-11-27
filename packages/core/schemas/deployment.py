@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from packages.core.models.deployment import DeploymentStatus
 
@@ -24,6 +24,16 @@ class DeploymentCreate(BaseModel):
     )
 
 
+class DeploymentFeedbackCreate(BaseModel):
+    """A labelled scalar prediction for classification or regression monitoring."""
+
+    prediction_id: str = Field(min_length=1, max_length=128)
+    ground_truth: int | float | str | bool
+    predicted_value: int | float | str | bool | None = None
+    latency_ms: float | None = Field(default=None, ge=0)
+    model_config = {"extra": "forbid", "strict": True, "allow_inf_nan": False}
+
+
 class DeploymentResponse(BaseModel):
     """Detailed response for a single deployment."""
 
@@ -41,6 +51,13 @@ class DeploymentResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("config", mode="before")
+    @classmethod
+    def public_config(cls, value):
+        if isinstance(value, dict):
+            return {key: item for key, item in value.items() if not key.startswith("_mlite_")}
+        return value
 
 
 class DeploymentListResponse(BaseModel):

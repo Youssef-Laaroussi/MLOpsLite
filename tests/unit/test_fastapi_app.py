@@ -6,13 +6,19 @@ external dependencies (DB, MinIO, MLflow).
 """
 
 import asyncio
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from apps.api.config import Settings, get_settings
+from apps.api.dependencies import get_db
 from apps.api.errors import ConflictError, MLiteAPIError, NotFoundError
 from apps.api.main import create_app
+from packages.core.db.base import Base
 
 # ── Helpers ─────────────────────────────────────────────────
 
@@ -58,9 +64,44 @@ async def _options(app, path, headers=None):
 
 
 @pytest.fixture
-def app():
-    """Create a fresh FastAPI instance for each test."""
-    return create_app()
+def app(monkeypatch):
+    """Exercise real SQL on an isolated schema; never touch installation services."""
+    import packages.core.models  # noqa: F401
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    application = create_app()
+    manager = MagicMock()
+    experiments = {}
+    manager.client.search_experiments.side_effect = lambda **kwargs: list(experiments.values())
+    manager.client.search_runs.return_value = []
+
+    def create_experiment(experiment_name, tags=None, **kwargs):
+        identifier = str(len(experiments) + 1)
+        experiments[identifier] = SimpleNamespace(experiment_id=identifier, name=experiment_name,
+            tags=tags or {}, artifact_location="file:///unit-artifacts", lifecycle_stage="active", creation_time=None)
+        return identifier
+
+    manager.get_or_create_experiment.side_effect = create_experiment
+    manager.client.delete_experiment.side_effect = lambda identifier: experiments.pop(identifier, None)
+    monkeypatch.setattr("packages.tracking.mlflow_client.MLiteMLflowManager", lambda **kwargs: manager)
+    with Session(engine) as session:
+        db = AsyncMock()
+        db.info = session.info
+        db.add = MagicMock(side_effect=session.add)
+        db.get.side_effect = session.get
+        db.flush.side_effect = session.flush
+        db.refresh.side_effect = session.refresh
+        db.execute.side_effect = session.execute
+        db.scalar.side_effect = session.scalar
+        db.scalars.side_effect = session.scalars
+
+        async def database():
+            return db
+
+        application.dependency_overrides[get_db] = database
+        yield application
+    engine.dispose()
 
 
 # ── Application factory tests ──────────────────────────────
@@ -196,12 +237,7 @@ class TestScaffoldRouters:
 
     def test_dvc_status(self, authed_app):
         resp = _run(_get(authed_app, "/api/v1/datasets/dvc/status"))
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "is_installed" in data
-        assert "remote_name" in data
-        assert "remote_bucket" in data
-        assert "minio_endpoint" in data
+        assert resp.status_code == 403
 
 
     def test_list_experiments(self, authed_app):
@@ -349,6 +385,28 @@ class TestCORS:
 
 class TestErrorHandling:
     """Verify exception handler wiring."""
+
+    def test_custom_validation_is_422_without_echoing_secrets(self, authed_app, caplog):
+        secret = "private-test-password-value"
+        response = _run(_post(authed_app, "/api/v1/auth/password", json={
+            "current_password": secret,
+            "new_password": "new-test-value-1",
+            "confirm_password": "new-test-value-2",
+        }))
+        assert response.status_code == 422
+        assert "do not match" in response.text
+        assert secret not in response.text
+        assert secret not in caplog.text
+        assert "new-test-value-1" not in caplog.text
+
+    @pytest.mark.parametrize("payload", [
+        {},
+        {"prediction_id": "p", "ground_truth": [1], "predicted_value": 1},
+        {"prediction_id": "p", "ground_truth": 1, "latency_ms": -1},
+    ])
+    def test_invalid_feedback_is_rejected_before_storage(self, authed_app, payload):
+        response = _run(_post(authed_app, "/api/v1/deployments/missing/feedback", json=payload))
+        assert response.status_code == 422
 
     def test_404_for_unknown_route(self, app):
         resp = _run(_get(app, "/api/v1/nonexistent"))

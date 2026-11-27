@@ -70,7 +70,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     code = await initialize_instance(engine, configured_code)
     if code:
         logger.warning(
-            "MLite is not configured. Open /setup and use this installation-local code: %s "
+            "MLite has no accounts. Normal registration is available at /signup. "
+            "Optional initial-admin API code for POST /api/v1/setup: %s "
             "(one use; recover with 'mlite instance setup-code').", code,
         )
 

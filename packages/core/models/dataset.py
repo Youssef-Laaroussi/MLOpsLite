@@ -34,6 +34,8 @@ class Dataset(ResourceOwnerMixin, Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "datasets"
 
+    storage_prefix: Mapped[str | None] = mapped_column(String(384), nullable=True, index=True, unique=True)
+
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -60,6 +62,8 @@ class DatasetVersion(Base, UUIDMixin, TimestampMixin):
     """Immutable, content-hashed version of a registered dataset."""
 
     __tablename__ = "dataset_versions"
+
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     dataset_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False, index=True

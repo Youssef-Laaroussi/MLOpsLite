@@ -56,7 +56,7 @@ async def setup_status(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     )))) if initialized else False
     return {
         "setup_required": not initialized,
-        "registration_enabled": initialized and get_settings().allow_registration,
+        "registration_enabled": get_settings().allow_registration,
         "migration_required": bool(missing_admin or unowned_projects),
     }
 

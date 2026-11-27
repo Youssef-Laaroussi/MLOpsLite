@@ -1,12 +1,16 @@
 """Feature data drift detector comparing reference datasets against production inference payloads."""
 
 import logging
+from uuid import uuid4
 
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.core.models.deployment import Deployment
+from packages.core.models.model_registry import RegisteredModel
 from packages.core.models.monitoring import DriftEvaluation, DriftSeverity
+from packages.core.storage.layout import evaluation_key, resource_prefix
 from packages.monitoring.evidently_engine import EvidentlyEngine
 
 logger = logging.getLogger(__name__)
@@ -43,13 +47,24 @@ class DataDriftDetector:
         run_id: str = "drift-eval",
     ) -> DriftEvaluation:
         """Execute drift analysis, classify severity, and persist record."""
-        # Use Evidently engine to calculate drift
+        model = await self.session.scalar(select(RegisteredModel).where(RegisteredModel.name == model_name))
+        if model is None:
+            raise ValueError("Register the model before evaluating drift.")
+        prefix = await resource_prefix(self.session, model, "models")
+        if deployment_id:
+            deployment = await self.session.get(Deployment, deployment_id)
+            if deployment is None or deployment.model_name != model_name:
+                raise ValueError("Choose a deployment of this model.")
+            prefix += f"/versions/v{deployment.model_version:06d}"
+        evaluation_id = str(uuid4())
+        # A unique evaluation key prevents repeated run labels overwriting history.
         res = self.evidently.run_drift_report(
             reference_data=reference_df,
             current_data=current_df,
             project_name=model_name,
             model_version="1",
             run_id=run_id,
+            storage_prefix=evaluation_key(prefix, "drift", evaluation_id),
         )
 
         drift_share = float(res.get("drift_share", 0.0))
@@ -57,6 +72,7 @@ class DataDriftDetector:
         severity = self.classify_severity(drift_share)
 
         evaluation = DriftEvaluation(
+            id=evaluation_id,
             model_name=model_name,
             deployment_id=deployment_id,
             drift_share=drift_share,

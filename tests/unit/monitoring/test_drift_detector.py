@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pandas as pd
 import pytest
 
+from packages.core.models.deployment import Deployment
+from packages.core.models.model_registry import RegisteredModel
 from packages.core.models.monitoring import DriftSeverity
 from packages.monitoring.drift_detector import DataDriftDetector
 from packages.monitoring.evidently_engine import EvidentlyEngine
@@ -22,6 +24,9 @@ class TestDataDriftDetector:
     @pytest.mark.asyncio
     async def test_evaluate_drift_persists_record(self):
         session = AsyncMock()
+        session.add = MagicMock()
+        session.scalar.return_value = RegisteredModel(id="model-123", name="fraud-detector", owner_id="owner-123")
+        session.get.return_value = Deployment(model_name="fraud-detector", model_version=2)
         mock_evidently = MagicMock(spec=EvidentlyEngine)
         mock_evidently.run_drift_report.return_value = {
             "success": True,
@@ -48,4 +53,6 @@ class TestDataDriftDetector:
         assert eval_record.drift_status == DriftSeverity.HIGH
         assert eval_record.drifted_features == ["col_a", "col_b"]
         session.add.assert_called_once()
-        session.flush.assert_called_once()
+        session.flush.assert_awaited()
+        prefix = mock_evidently.run_drift_report.call_args.kwargs["storage_prefix"]
+        assert prefix.startswith("users/owner-123/projects/unassigned/models/fraud-detector-model-123/versions/v000002/drift/")

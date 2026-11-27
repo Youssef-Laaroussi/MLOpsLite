@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { InstallationGate } from "./components/InstallationGate";
 import { workspaceSettingsPaths } from "./config/workspace";
 
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview").then((page) => ({ default: page.DashboardOverview })));
@@ -21,7 +20,6 @@ const SignInPage = lazy(() => import("./pages/SignInPage").then((page) => ({ def
 const SignUpPage = lazy(() => import("./pages/SignUpPage").then((page) => ({ default: page.SignUpPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((page) => ({ default: page.SettingsPage })));
 const ExperimentsPage = lazy(() => import("./pages/ExperimentsPage").then((page) => ({ default: page.ExperimentsPage })));
-const SetupPage = lazy(() => import("./pages/SetupPage").then((page) => ({ default: page.SetupPage })));
 const AdministrationLayout = lazy(() => import("./components/AdministrationLayout").then(module => ({ default: module.AdministrationLayout })));
 const AccountsSettings = lazy(() => import("./components/AccountsSettings").then(module => ({ default: module.AccountsSettings })));
 const StorageSettings = lazy(() => import("./components/StorageSettings").then(module => ({ default: module.StorageSettings })));
@@ -44,10 +42,9 @@ export const App: React.FC = () => {
       <AuthProvider>
         <ActionFeedbackProvider>
           <BrowserRouter>
-            <InstallationGate>
             <Suspense fallback={<p role="status" className="p-6 text-slate-600">Loading page…</p>}>
               <Routes>
-                <Route path="/setup" element={<SetupPage />} />
+                <Route path="/setup" element={<Navigate to="/signup" replace />} />
                 {/* ── Public Routes ── */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/welcome" element={<LandingPage />} />
@@ -116,7 +113,6 @@ export const App: React.FC = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
-            </InstallationGate>
 
           </BrowserRouter>
         </ActionFeedbackProvider>

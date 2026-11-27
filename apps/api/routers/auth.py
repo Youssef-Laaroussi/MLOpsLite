@@ -8,16 +8,18 @@ Provides:
 - /api/v1/users — User CRUD (admin only)
 """
 
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import get_settings
 from apps.api.dependencies import get_db
 from apps.api.errors import ConflictError, NotFoundError
 from packages.core.models.audit import AuditAction, AuditLog
+from packages.core.models.instance import InstanceState
 from packages.core.models.user import ApiKey, User, UserRole
 from packages.core.schemas.security import (
     ApiKeyCreate,
@@ -123,11 +125,15 @@ async def register(
     from packages.core.security.audit import AuditService
     from packages.core.services.instance_service import get_instance_state
 
-    instance = await get_instance_state(db)
-    if instance.completed_at is None:
-        raise HTTPException(409, "Complete installation setup before registering accounts.")
     if not get_settings().allow_registration:
         raise HTTPException(403, "Self-registration is disabled. Contact this installation's administrator.")
+    instance = await get_instance_state(db)
+    if instance.completed_at is None:
+        # Classic signup also works on an empty installation. Atomically close
+        # bootstrap in the same transaction, without promoting the registrant.
+        await db.execute(update(InstanceState).where(
+            InstanceState.id == 1, InstanceState.completed_at.is_(None),
+        ).values(completed_at=datetime.now(UTC), setup_token_hash=None))
 
     # Check for existing email or username
     existing = await db.execute(

@@ -32,6 +32,8 @@ async def initialize_instance(engine: AsyncEngine, configured_token: str = "") -
         await connection.run_sync(Base.metadata.create_all)
         from packages.core.services.workspace_migration import upgrade_workspace_schema
         await connection.run_sync(upgrade_workspace_schema)
+        from packages.core.services.storage_schema import upgrade_storage_schema
+        await connection.run_sync(upgrade_storage_schema)
         async with AsyncSession(bind=connection, expire_on_commit=False) as session:
             state = await session.get(InstanceState, 1)
             if state is not None:

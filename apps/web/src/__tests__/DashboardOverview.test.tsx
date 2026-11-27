@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render as renderUI, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { DashboardOverview } from "../pages/DashboardOverview";
 import { fetchExperiments, fetchDeployments, fetchModels, fetchSystemStats, pingDeployment } from "../api/client";
 import { AuthProvider } from "../context/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+function render(ui: React.ReactElement) {
+  return renderUI(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0}}})}><AuthProvider>{ui}</AuthProvider></QueryClientProvider>);
+}
 
 class MockResizeObserver {
   observe() {}

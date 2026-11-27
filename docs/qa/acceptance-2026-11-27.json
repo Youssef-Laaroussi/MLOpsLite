@@ -1,0 +1,455 @@
+{
+  "date": "2026-11-27",
+  "baseline_commit": "061419b",
+  "scope": "Local Solo acceptance with real services; changes in working tree",
+  "api_checks": {
+    "services.health": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "services.ready": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "auth.signup_standard_user": {
+      "status": "PASS",
+      "seconds": 0.54
+    },
+    "auth.login": {
+      "status": "PASS",
+      "seconds": 0.52
+    },
+    "auth.profile_update": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "projects.create_read": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "projects.update": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "projects.archive_restore_delete_disposable": {
+      "status": "PASS",
+      "seconds": 0.44
+    },
+    "datasets.upload_reference": {
+      "status": "PASS",
+      "seconds": 1.33
+    },
+    "datasets.upload_drift": {
+      "status": "PASS",
+      "seconds": 0.31
+    },
+    "datasets.upload_json": {
+      "status": "PASS",
+      "seconds": 0.17
+    },
+    "datasets.upload_parquet": {
+      "status": "PASS",
+      "seconds": 0.25
+    },
+    "datasets.versions": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "datasets.quality": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "dashboard.read_health_stats": {
+      "status": "PASS",
+      "seconds": 0.19
+    },
+    "dashboard.read_health_services": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "dashboard.read_settings_about": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "dashboard.read_experiments": {
+      "status": "PASS",
+      "seconds": 0.13
+    },
+    "dashboard.read_models": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "dashboard.read_deployments": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "dashboard.read_monitoring_summary": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "dashboard.read_alerts": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "dashboard.read_alerts_summary": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "dashboard.read_alerts_rules": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "dashboard.read_alerts_channels": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "dashboard.read_auth_security_activity": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "security.personal_audit": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.admin_denied_users": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.admin_denied_audit_logs": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.admin_denied_settings_storage_": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.api_key_create_use_revoke": {
+      "status": "PASS",
+      "seconds": 0.13
+    },
+    "admin.storage_inventory": {
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    "admin.accounts_protected_view": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.other_actor_entry_denied": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "training.real_model_v1": {
+      "status": "PASS",
+      "seconds": 11.3
+    },
+    "training.real_model_v2": {
+      "status": "PASS",
+      "seconds": 18.62
+    },
+    "models.validation_v1": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "models.lineage_v1": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "models.validation_v2": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "models.lineage_v2": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "experiments.real_runs": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "experiments.metric_history": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "experiments.artifacts": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "models.promote_staging": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "models.promote_production": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "datasets.quality_reference": {
+      "status": "PASS",
+      "seconds": 0.17
+    },
+    "datasets.quality_json": {
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    "datasets.quality_parquet": {
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    "monitoring.no_drift_reference": {
+      "status": "PASS",
+      "seconds": 1.45
+    },
+    "monitoring.strong_drift": {
+      "status": "PASS",
+      "seconds": 1.32
+    },
+    "monitoring.unique_report_objects": {
+      "status": "PASS",
+      "seconds": 0.0
+    },
+    "alerts.real_rule_trigger_acknowledge_resolve": {
+      "status": "PASS",
+      "seconds": 0.18
+    },
+    "security.server_path_denied_inspect": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.server_path_denied_validate": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "security.server_path_version_denied": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "monitoring.summary_after_drift": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "regression.real_training_and_registration": {
+      "status": "PASS",
+      "seconds": 10.15
+    },
+    "regression.real_deployment_default_task": {
+      "status": "PASS",
+      "seconds": 10.79
+    },
+    "regression.predictions_feedback_and_real_rmse": {
+      "status": "PASS",
+      "seconds": 1.24
+    },
+    "regression.invalid_feedback_rolls_back_then_recovers": {
+      "status": "PASS",
+      "seconds": 0.18
+    },
+    "regression.stop_qa_container": {
+      "status": "PASS",
+      "seconds": 1.56
+    },
+    "deployments.real_container_v1": {
+      "status": "PASS",
+      "seconds": 9.89
+    },
+    "inference.real_predictions_formats_and_feedback": {
+      "status": "PASS",
+      "seconds": 1.66
+    },
+    "monitoring.performance_from_real_feedback": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "monitoring.measured_latency_and_container_memory": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "deployments.stop_v1": {
+      "status": "PASS",
+      "seconds": 1.83
+    },
+    "models.promote_v2": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "deployments.real_container_v2": {
+      "status": "PASS",
+      "seconds": 9.9
+    },
+    "rollback.real_restore_and_prediction": {
+      "status": "PASS",
+      "seconds": 11.61
+    },
+    "validation.invalid_promotion_stage": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "validation.unregistered_deployment": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.invalid_login_denied": {
+      "status": "PASS",
+      "seconds": 0.48
+    },
+    "security.invalid_refresh_denied": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.profile_role_injection_denied": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "auth.refresh_real_token": {
+      "status": "PASS",
+      "seconds": 0.63
+    },
+    "security.anonymous_profile_denied": {
+      "status": "PASS",
+      "seconds": 0.11
+    },
+    "security.qa_password_change_login_restore": {
+      "status": "PASS",
+      "seconds": 4.33
+    },
+    "validation.feedback_rejects_invalid_0": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "validation.feedback_rejects_invalid_1": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "validation.feedback_rejects_invalid_2": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "security.validation_does_not_echo_credentials": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.storage_bucket_create_denied": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "admin.storage_live_connection": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "admin.invalid_bucket_rejected": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "admin.real_bucket_create_inventory_duplicate": {
+      "status": "PASS",
+      "seconds": 0.21
+    }
+  },
+  "ui_checks": [
+    {
+      "name": "auth.new_standard_qa_login",
+      "status": "PASS"
+    },
+    {
+      "name": "monitoring.regression_model_rmse_chart",
+      "status": "PASS"
+    }
+  ],
+  "measurements": {
+    "training.real_model_v1": {
+      "run_id": "2c0387cdc6e4472da0ac7661c6f09571",
+      "version": 1,
+      "metrics": {
+        "accuracy": 0.9666666666666667,
+        "f1_score": 0.9665831244778613,
+        "precision": 0.9696969696969696,
+        "recall": 0.9666666666666667
+      },
+      "experiment_id": "20",
+      "mlflow_version": "2.15.0",
+      "registered_id": "f07a54c7-b7de-4467-a4e8-ecd175bb02c3"
+    },
+    "monitoring.performance_from_real_feedback": {
+      "samples": 30,
+      "metrics": {
+        "accuracy": 0.9667,
+        "precision": 0.9697,
+        "recall": 0.9667,
+        "f1": 0.9666
+      }
+    },
+    "monitoring.measured_latency_and_container_memory": {
+      "points": 1,
+      "requests": 1,
+      "memory_mb": 178.7,
+      "p95_ms": 25.574
+    },
+    "monitoring.no_drift_reference": {
+      "share": 0.0,
+      "status": "LOW",
+      "html_bytes": 3791799,
+      "features": []
+    },
+    "monitoring.strong_drift": {
+      "share": 0.4,
+      "status": "HIGH",
+      "html_bytes": 3791117,
+      "features": [
+        "petal_length",
+        "sepal_length"
+      ]
+    },
+    "rollback.real_restore_and_prediction": {
+      "from_version": 2,
+      "to_version": 1,
+      "endpoint": "http://localhost:8101"
+    },
+    "regression.real_training_and_registration": {
+      "run_id": "e0e6560953c547c7ac84f45b99b159aa",
+      "metrics": {
+        "rmse": 53.446111997699646,
+        "mae": 42.996932141596524,
+        "r2_score": 0.46085219464119265
+      },
+      "dataset_rows": 442,
+      "holdout_rows": 89
+    },
+    "regression.predictions_feedback_and_real_rmse": {
+      "samples": 20,
+      "task": "regression",
+      "metrics": {
+        "mae": 47.2044,
+        "rmse": 57.3946,
+        "r2": 0.5095
+      }
+    },
+    "regression.invalid_feedback_rolls_back_then_recovers": {
+      "invalid_label_status": 422,
+      "valid_after_rejection": true,
+      "samples": 21
+    }
+  },
+  "resources": {
+    "project_slug": "qa-solo-111054-e75d",
+    "model_name": "qa-solo-111054-e75d-iris-final",
+    "demo_endpoint": "http://localhost:8101",
+    "regression_model_name": "qa-solo-111054-e75d-regression",
+    "regression_container_stopped": true
+  },
+  "unit_tests": {
+    "backend": {
+      "date": "2026-11-27",
+      "passed": 305,
+      "warnings": 18
+    },
+    "frontend": {
+      "date": "2026-11-26",
+      "passed": 48,
+      "files": 12
+    }
+  },
+  "limitations": [
+    "Resource catalogs and overview totals are not fully isolated between installation accounts.",
+    "Not all visible preferences and integrations have server-side implementations.",
+    "No load, soak, backup restoration or exhaustive model-framework certification."
+  ]
+}

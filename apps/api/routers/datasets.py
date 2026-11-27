@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import get_db
 from apps.api.errors import ConflictError, NotFoundError
+from packages.core.models.monitoring import DataQualityReport
 from packages.core.models.user import User, UserRole
 from packages.core.schemas.dataset import (
     DatasetCreate,
@@ -35,8 +37,15 @@ def _get_service(session: AsyncSession = Depends(get_db)) -> DatasetService:
     return DatasetService(session)
 
 
-def _dataset_response(dataset: Any, user: User) -> DatasetResponse:
+async def _dataset_response(dataset: Any, user: User, service: DatasetService) -> DatasetResponse:
     response = DatasetResponse.model_validate(dataset)
+    response.has_storage_reference = bool(response.s3_key or (response.latest_version and response.latest_version.s3_key))
+    report = (await service.session.execute(select(DataQualityReport).where(
+        DataQualityReport.dataset_id == dataset.id,
+    ).order_by(DataQualityReport.created_at.desc()).limit(1))).scalar_one_or_none()
+    if report and (not response.latest_version or report.created_at >= response.latest_version.created_at):
+        response.quality_score = report.score
+        response.quality_report = DataQualityReportResponse.model_validate(report)
     if user.role != UserRole.ADMIN:
         response.s3_key = None
         if response.latest_version is not None:
@@ -71,7 +80,7 @@ async def create_dataset(
         if getattr(exc.orig, "sqlstate", None) != "23505":
             raise
         raise ConflictError(f'A dataset named "{payload.name}" already exists.') from exc
-    return _dataset_response(dataset, current_user)
+    return await _dataset_response(dataset, current_user, service)
 
 
 @router.get("/", response_model=DatasetListResponse)
@@ -83,12 +92,12 @@ async def list_datasets(
     """List registered datasets."""
     datasets = await service.list_datasets(project_id=project_id)
     return {
-        "datasets": [_dataset_response(dataset, current_user) for dataset in datasets],
+        "datasets": [await _dataset_response(dataset, current_user, service) for dataset in datasets],
         "total": len(datasets),
     }
 
 
-@router.get("/inspect", response_model=DatasetInspectionResponse)
+@router.get("/inspect", response_model=DatasetInspectionResponse, dependencies=[Depends(require_role(UserRole.ADMIN))])
 async def inspect_dataset(
     file_path: str = Query(..., description="Local path to CSV, Parquet, or JSON file"),
 ) -> Any:
@@ -118,7 +127,7 @@ async def get_dataset(
     dataset = await service.get_dataset(dataset_id)
     if dataset is None:
         raise NotFoundError("Dataset", dataset_id)
-    return _dataset_response(dataset, current_user)
+    return await _dataset_response(dataset, current_user, service)
 
 
 @router.post(
@@ -133,6 +142,17 @@ async def create_dataset_version(
     service: DatasetService = Depends(_get_service),
 ) -> Any:
     """Upload and register a new version for a dataset."""
+    if payload.file_path and current_user.role != UserRole.ADMIN:
+        raise HTTPException(403, "Server file paths are reserved for installation administrators. Upload your file instead.")
+    if payload.s3_key:
+        prefix = f"users/{current_user.id}/datasets/{dataset_id}/"
+        key = payload.s3_key
+        if key.startswith("s3://"):
+            bucket, _, key = key[5:].partition("/")
+            if bucket != service.storage.default_bucket:
+                raise HTTPException(422, "Choose an object in your dataset's private storage prefix.")
+        if not key.startswith(prefix) or ".." in Path(key).parts:
+            raise HTTPException(422, "Choose an object in your dataset's private storage prefix.")
     try:
         version = await service.register_version(
             dataset_id=dataset_id,
@@ -177,31 +197,43 @@ async def validate_dataset(
     max_dup_pct: float = Query(1.0, ge=0.0, le=100.0),
     service: DatasetService = Depends(_get_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Any:
     """Run automated data quality checks and persist validation report."""
     from packages.core.models.monitoring import DataQualityReport, DataQualityStatus
     from packages.monitoring.quality import DataQualityEngine
 
+    if file_path and current_user.role != UserRole.ADMIN:
+        raise HTTPException(403, "Server file paths are reserved for installation administrators.")
+
     dataset = await service.get_dataset(dataset_id)
     if dataset is None:
         raise NotFoundError("Dataset", dataset_id)
 
-    # Use specified file_path or locate latest version
-    target_file = file_path
-    if not target_file:
-        versions = await service.get_versions(dataset_id)
-        if not versions:
-            raise HTTPException(status_code=400, detail="No versions available to validate")
-        import tempfile
+    # Upload staging files are removed immediately. Validate the persisted object,
+    # preserving its suffix so CSV, JSON and Parquet are parsed correctly.
+    with tempfile.TemporaryDirectory(prefix="mlite-quality-") as directory:
+        target_file = file_path
+        if not target_file:
+            versions = await service.get_versions(dataset_id)
+            if not versions or not versions[0].s3_key:
+                raise HTTPException(status_code=400, detail="No stored dataset version available to validate")
+            location = versions[0].s3_key
+            bucket = service.storage.default_bucket
+            key = location
+            if location.startswith("s3://"):
+                bucket, _, key = location[5:].partition("/")
+            target_file = str(Path(directory) / ("dataset" + Path(key).suffix))
+            try:
+                service.storage.download_file(key, target_file, bucket_name=bucket)
+            except Exception as exc:
+                raise HTTPException(502, "Could not download the stored dataset for validation.") from exc
 
-        # In a real environment, download artifact or check s3_key
-        target_file = str(Path(tempfile.gettempdir()) / f"{dataset.name}.csv")
-
-    eval_result = DataQualityEngine.evaluate(
-        file_path=target_file,
-        max_null_pct=max_null_pct,
-        max_dup_pct=max_dup_pct,
-    )
+        eval_result = DataQualityEngine.evaluate(
+            file_path=target_file,
+            max_null_pct=max_null_pct,
+            max_dup_pct=max_dup_pct,
+        )
 
     report = DataQualityReport(
         dataset_id=dataset.id,

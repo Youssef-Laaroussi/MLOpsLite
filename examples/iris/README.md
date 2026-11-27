@@ -95,14 +95,16 @@ mlite deployment list
 ```
 
 ### 5. Query Real-Time Predictions
-Execute the provided test script:
+Set `DEPLOYMENT_ID` to the deployment ID and `MLITE_TOKEN` to your own Bearer
+Bearer access token. Execute the provided test script:
 ```bash
 chmod +x test_predict.sh
-./test_predict.sh 8100
+./test_predict.sh "$DEPLOYMENT_ID"
 ```
 Or send an ad-hoc `curl` request:
 ```bash
-curl -X POST http://localhost:8100/predict \
+curl -X POST "http://localhost:8000/api/v1/deployments/${DEPLOYMENT_ID}/predict" \
+  -H "Authorization: Bearer ${MLITE_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"inputs": [[5.1, 3.5, 1.4, 0.2]]}'
 ```

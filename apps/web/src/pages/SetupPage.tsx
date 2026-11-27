@@ -42,7 +42,7 @@ export function SetupPage() {
       <div className="mb-5 flex items-center gap-3"><img src="/logo.png" width={38} height={38} alt="MLite" /><strong className="text-xl">MLite</strong></div>
       <h1 className="text-2xl font-bold">Set up your MLite installation</h1>
       <p className="mt-2 text-sm text-slate-600">Create your personal account. It will administer this installation and own the projects you create.</p>
-      <p className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900"><ShieldCheck size={20} className="shrink-0" />One account for your ML workspace and Administration. No second account is needed.</p>
+      <p className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900"><ShieldCheck size={20} className="shrink-0" />One account to work on your models and manage this installation from Settings. No second account is needed.</p>
       <form className="mt-5 grid gap-4 text-sm" onSubmit={submit}>
         <fieldset disabled={pending} className="grid gap-4 disabled:opacity-60">
           <label>Installation code<input className={inputClass} type="password" value={code} onChange={event => setCode(event.target.value)} required minLength={32} maxLength={256} autoComplete="off" /></label>
@@ -56,7 +56,7 @@ export function SetupPage() {
         {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-rose-700">{error}</p>}
         <button type="submit" disabled={pending} className="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">{pending ? "Configuring…" : "Create my account and open MLite"}</button>
       </form>
-      <p className="mt-4 text-xs text-slate-500">After setup: profile menu → Administration, or /admin.</p>
+      <p className="mt-4 text-xs text-slate-500">After setup: Settings → Storage or Activity &amp; Logs.</p>
     </section>
   </main>;
 }

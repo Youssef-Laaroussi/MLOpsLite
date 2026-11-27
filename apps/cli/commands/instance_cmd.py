@@ -52,4 +52,4 @@ def adopt_solo(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from exc
     console.print(f"Account {username!r} is an instance administrator. Assigned {claimed} unowned project(s).", markup=False)
-    console.print("Sign in with this same account, then open Profile → Administration (/admin).")
+    console.print("Sign in with this same account, then open Settings → Storage or Activity & Logs.")

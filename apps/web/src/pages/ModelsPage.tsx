@@ -133,7 +133,7 @@ export function ModelsPage() {
   const search = params.get("search") ?? "";
   const canRegister = Boolean(user && user.role !== "VIEWER");
   const canPromote = user?.role === "USER" || user?.role === "MAINTAINER" || user?.role === "ADMIN";
-  const canViewAudit = user?.role === "MAINTAINER" || user?.role === "ADMIN";
+  const canViewAudit = Boolean(user);
   const [stageFilter, setStageFilter] = useState("");
   const [frameworkFilter, setFrameworkFilter] = useState("");
   const [days, setDays] = useState(30);
@@ -153,7 +153,7 @@ export function ModelsPage() {
   const registry = useQuery({ queryKey: ["model-registry", project], queryFn: () => fetchModels(project || undefined) });
   const projects = useQuery({ queryKey: ["model-registry-projects"], queryFn: fetchProjects });
   const deployments = useQuery({ queryKey: ["model-registry-deployments"], queryFn: fetchDeployments });
-  const audit = useQuery({ queryKey: ["model-registry-audit"], queryFn: () => fetchAuditLogs(100), enabled: canViewAudit });
+  const audit = useQuery({ queryKey: ["model-registry-audit", user?.id], queryFn: () => fetchAuditLogs(100), enabled: canViewAudit });
   const models = registry.data ?? [];
   const grouped = new Map<string, RegisteredModel[]>();
   for (const model of models) {
@@ -494,7 +494,7 @@ export function ModelsPage() {
           })}
         </RegistryTable> : empty}
       </Panel>
-      <Panel id="model-activity" title="Recent Model Activity" action={user?.role === "ADMIN" && <Link to="/admin/audit">View Audit Logs <ChevronRight size={14} /></Link>}>
+      <Panel id="model-activity" title="Recent Model Activity" action={<Link to="/app/settings?tab=activity">View Activity &amp; Logs <ChevronRight size={14} /></Link>}>
         {activity.length ? <RegistryTable headings={["Time", "Activity", "Model", "Details"]}>
           {activity.map(({ icon: Icon, ...event }) => <tr key={event.id}><td title={new Date(event.date).toLocaleString()}>{relativeTime(event.date)}</td><td><span className="models-inline"><Icon size={14} aria-hidden="true" />{event.label}</span></td>
             <td><strong>{event.name}</strong></td><td>{event.detail} {event.stage && <>→ <StagePill stage={event.stage} /></>}</td>

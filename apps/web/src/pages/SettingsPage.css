@@ -1,4 +1,14 @@
 .settings-dashboard { display:grid; grid-template-columns:160px minmax(0,1fr); gap:14px; font-size:13px; color:#101626; font-family:Arial,Helvetica,sans-serif; }
+.workspace-settings-layout { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; }
+.workspace-settings-layout > header { flex-shrink:0; }
+.workspace-settings-frame { flex:1; min-height:0; overflow:hidden; }
+.workspace-settings-frame > aside { max-height:100%; overflow-y:auto; }
+.workspace-settings-main { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+.workspace-settings-main > aside { flex-shrink:0; max-height:40%; overflow-y:auto; }
+.workspace-settings-main > .settings-dashboard { flex:1; min-height:0; grid-template-rows:minmax(0,1fr); overflow:hidden; }
+.workspace-settings-main .settings-navigation { min-height:0; overflow-y:auto; overscroll-behavior-y:contain; }
+.workspace-settings-main .settings-content { min-height:0; overflow-y:auto; overscroll-behavior-y:contain; scrollbar-gutter:stable; padding:2px 4px 4px 2px; }
+.workspace-settings-main .settings-content:focus-visible { outline:2px solid #159535; outline-offset:-2px; }
 .administration-dashboard { grid-template-columns:190px minmax(0,1fr); }
 .settings-navigation { min-width:0; padding:4px 10px 12px 0; border-right:1px solid #e8edf2; }
 .settings-navigation h1 { margin:0 8px 5px; font-family:inherit; font-size:21px; font-weight:800; letter-spacing:-.8px; }
@@ -79,6 +89,7 @@
 .profile-personal footer svg { width:16px; height:16px; }
 @media (max-width:1100px) {
   .settings-dashboard { grid-template-columns:minmax(0,1fr); }
+  .workspace-settings-main > .settings-dashboard { grid-template-rows:auto minmax(0,1fr); }
   .settings-navigation { padding:0; border-right:0; }
   .settings-navigation > p { margin-bottom:8px; }
   .settings-navigation nav { display:flex; overflow-x:auto; gap:4px; padding:0; border:0; }

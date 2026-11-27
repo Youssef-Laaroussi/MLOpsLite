@@ -26,6 +26,7 @@ from packages.core.models.rollback import (
 )
 from packages.deployment.docker_manager import DockerManager, serving_environment
 from packages.deployment.ports import PortAllocator
+from packages.deployment.serving_auth import TOKEN_KEY, serving_configuration, serving_headers
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +268,7 @@ class RollbackCoordinator:
             active_ports_result = await self.session.execute(
                 select(Deployment.port).where(
                     Deployment.status.in_([DeploymentStatus.RUNNING, DeploymentStatus.PENDING])
-                )
+                ).execution_options(workspace_unscoped=True)
             )
             raw_ports = active_ports_result.scalars().all()
             if isinstance(raw_ports, (list, tuple, set)):
@@ -278,13 +279,14 @@ class RollbackCoordinator:
 
         # Create new deployment record
         target_deployment = Deployment(
+            owner_id=current_deployment.owner_id,
             project_id=current_deployment.project_id,
             model_name=model_name,
             model_version=target_version,
             port=new_port,
             endpoint_url=f"http://localhost:{new_port}",
             status=DeploymentStatus.PENDING,
-            config=current_deployment.config,
+            config=serving_configuration(current_deployment.config),
         )
         self.session.add(target_deployment)
         await self.session.flush()
@@ -295,7 +297,7 @@ class RollbackCoordinator:
                 model_name=model_name,
                 model_version=target_version,
                 host_port=new_port,
-                environment=serving_environment(target_model_version),
+                environment=serving_environment(target_model_version, target_deployment.config[TOKEN_KEY]),
             )
             target_deployment.container_id = container_info.get("container_id")
             target_deployment.status = DeploymentStatus.RUNNING
@@ -319,7 +321,7 @@ class RollbackCoordinator:
             for attempt in range(15):
                 for url in urls:
                     try:
-                        response = await client.get(f"{url}/metadata")
+                        response = await client.get(f"{url}/metadata", headers=serving_headers(deployment.config))
                         if response.status_code != 200:
                             continue
                         metadata = response.json()

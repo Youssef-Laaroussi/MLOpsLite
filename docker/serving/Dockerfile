@@ -20,12 +20,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install inference serving dependencies
 RUN pip install --no-cache-dir \
-    fastapi>=0.111.0 \
-    uvicorn[standard]>=0.30.0 \
-    pydantic>=2.7.0 \
+    "fastapi>=0.111.0" \
+    "uvicorn[standard]>=0.30.0" \
+    "pydantic>=2.7.0" \
     numpy \
     scikit-learn \
-    mlflow \
+    "mlflow==2.15.0" \
+    "setuptools<82" \
     boto3 \
     minio \
     httpx
@@ -47,3 +48,4 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
 
 # Start Uvicorn serving
 CMD ["uvicorn", "packages.deployment.server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+LABEL org.mlite.serving-auth="1"

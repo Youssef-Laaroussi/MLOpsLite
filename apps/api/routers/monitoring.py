@@ -3,8 +3,9 @@
 import asyncio
 import io
 import logging
-from datetime import UTC, datetime
+from html import escape
 from typing import Any
+from uuid import uuid4
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -36,6 +37,11 @@ from packages.monitoring.drift_detector import DataDriftDetector
 
 router = APIRouter(prefix="/api/v1/monitoring", tags=["Monitoring"])
 logger = logging.getLogger("mlite.monitoring")
+
+
+async def _require_model(db, name):
+    if await db.scalar(select(RegisteredModel.id).where(RegisteredModel.name == name)) is None:
+        raise NotFoundError("Model", name)
 
 
 async def _load_dataframe_from_dataset(dataset_id: str, db: AsyncSession, limit: int = 5000) -> pd.DataFrame:
@@ -117,6 +123,8 @@ async def get_monitoring_summary(
     # 1. Available models in registry
     models_res = await db.execute(select(RegisteredModel.name).order_by(RegisteredModel.name))
     available_models = [name for (name,) in models_res.all()]
+    if model_name is not None and model_name not in available_models:
+        raise NotFoundError("Model", model_name)
 
     active_model = model_name or (available_models[0] if available_models else "default-model")
 
@@ -195,6 +203,9 @@ async def trigger_drift_check(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Compare the latest versions of two explicitly selected datasets."""
+    await _require_model(db, payload.model_name)
+    if payload.deployment_id and await db.scalar(select(Deployment.id).where(Deployment.id == payload.deployment_id)) is None:
+        raise NotFoundError("Deployment", payload.deployment_id)
     ref_df = await _load_dataframe_from_dataset(payload.reference_dataset_id, db, limit=payload.sample_limit)
     curr_df = (
         ref_df.copy()
@@ -210,7 +221,7 @@ async def trigger_drift_check(
         reference_df=ref_df,
         current_df=curr_df,
         deployment_id=payload.deployment_id,
-        run_id=f"eval-{int(datetime.now(UTC).timestamp())}",
+        run_id=f"eval-{uuid4().hex}",
     )
     return eval_record
 
@@ -288,7 +299,7 @@ async def get_html_report(
     html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-  <title>MLite Evidently Drift Report - {eval_rec.model_name}</title>
+  <title>MLite Evidently Drift Report - {escape(eval_rec.model_name)}</title>
   <style>
     body {{ font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }}
     .card {{ background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; max-width: 800px; margin: 0 auto; }}
@@ -299,9 +310,9 @@ async def get_html_report(
 <body>
   <div class="card">
     <div class="badge">{eval_rec.drift_status.value} DRIFT</div>
-    <h1>Data Drift Report: {eval_rec.model_name}</h1>
+    <h1>Data Drift Report: {escape(eval_rec.model_name)}</h1>
     <p>Drift Share: <strong>{eval_rec.drift_share:.2%}</strong></p>
-    <p>Drifted Features: <strong>{", ".join(eval_rec.drifted_features or ["None"])}</strong></p>
+    <p>Drifted Features: <strong>{escape(", ".join(eval_rec.drifted_features or ["None"]))}</strong></p>
     <p>Generated At: {eval_rec.created_at.isoformat()}</p>
   </div>
 </body>

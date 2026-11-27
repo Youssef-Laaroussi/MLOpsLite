@@ -80,6 +80,14 @@ async def register_model(
     service: ModelRegistryService = Depends(_get_service),
 ) -> dict[str, Any]:
     """Register a new model or create a new version from an MLflow run."""
+    if data.artifact_path:
+        raise HTTPException(422, "Register an owned MLflow run; raw server artifact paths are not accepted.")
+    if data.run_id:
+        from packages.core.security.workspace import SCOPE_KEY
+        from packages.tracking.mlflow_client import MLiteMLflowManager
+        from packages.tracking.workspace import authorize_run
+        await authorize_run(MLiteMLflowManager().client, service.session,
+                            service.session.info[SCOPE_KEY], data.run_id)
     metrics = await _tracking_metrics(data.run_id) if data.run_id else {}
     metrics.update(data.metrics or {})
     version = await service.register_model(
@@ -308,7 +316,7 @@ async def promote_version(
         target_stage = ModelStage(data.stage.upper())
     except ValueError:
         valid = [s.value for s in ModelStage]
-        return {"error": f"Invalid stage. Must be one of: {valid}"}
+        raise HTTPException(422, f"Invalid stage. Must be one of: {valid}")
 
     if target_stage == ModelStage.PRODUCTION:
         validation = await validate_registered_model(name, version, service)
@@ -373,7 +381,7 @@ async def promote_model_by_id(
         target_stage = ModelStage(data.stage.upper())
     except ValueError:
         valid = [s.value for s in ModelStage]
-        return {"error": f"Invalid stage. Must be one of: {valid}"}
+        raise HTTPException(422, f"Invalid stage. Must be one of: {valid}")
 
     if target_stage == ModelStage.PRODUCTION:
         validation = await validate_registered_model(model.name, target_version_num, service)
@@ -413,4 +421,6 @@ async def compare_models(
     service: ModelRegistryService = Depends(_get_service),
 ) -> dict[str, Any]:
     """Compare metrics between two model versions side by side."""
+    if await service.get_model_by_name(name) is None:
+        raise NotFoundError("Model", name)
     return await service.compare_versions(name, v1, v2)

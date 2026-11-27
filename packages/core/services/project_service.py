@@ -15,7 +15,7 @@ class ProjectService:
 
     async def create(self, data: ProjectCreate, owner_id: str) -> Project:
         """Create a new project, raising ConflictError on duplicate slug."""
-        existing = await self.session.execute(select(Project).where(Project.slug == data.slug))
+        existing = await self.session.execute(select(Project).where(Project.slug == data.slug).execution_options(workspace_unscoped=True))
         if existing.scalar_one_or_none() is not None:
             from apps.api.errors import ConflictError
 

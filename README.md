@@ -74,7 +74,8 @@ Open the [dashboard](http://localhost:3000). On a fresh installation, MLite open
 the setup screen. Read the single-use installation code with
 `docker compose logs mlite-api`, then create your personal account. It becomes
 administrator of this installation; the same account owns the projects you create.
-Open **profile menu → Administration** (or `/admin`) to manage the instance.
+Use **Settings → Storage** and **Settings → Activity & Logs** to manage the
+installation from the same dashboard. Service health is available in **Services**.
 
 Existing installations keep their accounts and data. Follow the
 [Solo setup and migration guide](docs/getting-started/solo-setup.md) to explicitly

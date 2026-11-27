@@ -218,7 +218,7 @@ export const SignInPage: React.FC = () => {
                 href="#forgot"
                 onClick={(e) => {
                   e.preventDefault();
-                  setError("Contact your administrator (admin@mlite.local) to reset credentials.");
+                  setError("Contact the operator of this installation for account recovery.");
                 }}
                 className="text-xs font-medium text-[#1A7456] hover:text-[#145a43] hover:underline"
               >

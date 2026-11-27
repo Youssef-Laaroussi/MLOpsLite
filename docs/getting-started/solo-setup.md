@@ -13,8 +13,9 @@ Solo is a usage pattern, not an additional role.
 3. Read the single-use code in `docker compose logs mlite-api`.
 4. Enter that code and create your personal account, using a password of at least
    12 characters (at most 72 UTF-8 bytes).
-5. MLite signs you in. Open the profile menu at the top right, then
-   **Administration**, or visit `http://localhost:3000/admin`.
+5. MLite signs you in to the dashboard. Use **Settings → Storage** for storage
+   settings and **Settings → Activity & Logs** for recorded activity. Service
+   health remains in **Services**.
 
 This account has the existing global `ADMIN` role. Creating a project inserts an
 `OWNER` membership in the same database transaction. No second account is needed.
@@ -63,7 +64,7 @@ owned by the authenticated user; unassigned legacy projects stay stored and are
 not exposed as public projects. They become available after explicit assignment.
 
 Sign out and sign back in with the selected account to refresh the frontend
-profile. Use **profile → Administration** with this same login.
+profile. Use **Settings → Storage / Activity & Logs** with this same login.
 
 For a local Python installation, use the same commands without `docker compose
 exec mlite-api`, in the environment configured with the installation's database.
@@ -77,10 +78,25 @@ backup restoration; it must not silently remove ownership or reopen setup.
 
 Self-registration is enabled by default (`MLITE_ALLOW_REGISTRATION=true`), with a
 **Sign up** link on the sign-in page. An installation operator can explicitly set
-this variable to `false` to close public registration. An administrator can also
-create accounts in **Administration → Accounts**. Registration creates `USER`
+this variable to `false` to close public registration. Registration creates `USER`
 accounts, never administrators; initial administration is granted only through
 the locally authorized setup flow.
+
+The Solo interface hides **Accounts**, **Add New User**, and role-management
+controls. Storage and **Activity & Logs** are tabs in the existing **Settings**
+page, and health remains in **Services**. There is no separate Administration
+navigation in Solo. Old `/admin`, `/admin/storage` and `/admin/accounts` links
+redirect to Settings → Storage; `/admin/audit`, `/app/audit` and `/audit` redirect
+to Settings → Activity & Logs. Activity & Logs is available to every signed-in
+account and shows only actions performed by that account, including when it has
+the Admin role. The backend enforces this scope through `/api/v1/audit/me/logs`
+and its entry-detail endpoint; other accounts' entry IDs return 404.
+The installation-wide `/api/v1/audit/logs` endpoints remain separate and require
+the existing `audit:view` administration permission. Storage still requires
+instance administrator permissions, even through a direct URL. Accounts
+is omitted from navigation and search; its component is preserved behind
+`workspaceFeatures.accountManagement` for future collaboration work. This display
+flag is not a backend security rule.
 This phase implements Solo setup and project ownership; it does not claim to
 complete the planned multi-user isolation of MLflow, storage and inference.
 

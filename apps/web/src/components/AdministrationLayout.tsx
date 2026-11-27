@@ -5,7 +5,8 @@ import "../pages/SettingsPage.css";
 
 export function AdministrationLayout() {
   const { pathname } = useLocation();
-  const section = pathname.endsWith("/storage") ? "Storage" : pathname.endsWith("/audit") ? "Audit Logs" : "Accounts";
+  const section = pathname.endsWith("/audit") ? "Audit Logs"
+    : pathname.endsWith("/accounts") ? "Accounts" : pathname.endsWith("/recovery") ? "Legacy Recovery" : "Storage";
   return <div className="min-h-screen bg-[#fcfdfc] text-slate-900">
     <Header meta={{ group: "Administration", label: "Administration", href: "/admin" }} />
     <main className="mx-auto w-[calc(100%-2rem)] max-w-[1920px] py-5 sm:w-[calc(100%-3rem)]">
@@ -18,7 +19,9 @@ export function AdministrationLayout() {
               ["accounts", "Accounts", Users],
               ["storage", "Storage", Database],
               ["audit", "Audit Logs", ShieldCheck],
-            ] as const).map(([path, label, Icon]) => <NavLink key={path} to={`/admin/${path}`}>
+              ["recovery", "Legacy Recovery", ShieldCheck],
+            ] as const)
+              .map(([path, label, Icon]) => <NavLink key={path} to={`/admin/${path}`}>
               <Icon size={21} />{label}
             </NavLink>)}
             <Link to="/app/services"><ArrowLeft size={18} />Service Health</Link>

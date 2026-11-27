@@ -1,6 +1,12 @@
-// Presentation only: keep collaboration UI available for the future project-access phase.
-// Enable it once real ownership and membership data are supplied by the backend.
+// Presentation only: preserve management screens for the future collaboration phase.
 // Authentication and authorization remain enforced independently by the API.
 export const workspaceFeatures = {
   projectCollaboration: false,
+  accountManagement: false,
+};
+
+export const workspaceSettingsPaths = {
+  storage: "/app/settings?tab=storage",
+  activity: "/app/settings?tab=activity",
+  accounts: "/app/settings?tab=accounts",
 };

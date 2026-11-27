@@ -43,7 +43,7 @@ export interface AuditLog {
   user_id?: string | null;
   user_email?: string | null;
   ip_address?: string | null;
-  status: string;
+  status?: string;
   changes_json?: Record<string, string | number | boolean | null> | null;
   details?: Record<string, any>;
 }
@@ -150,7 +150,9 @@ export interface Dataset {
   size_bytes?: number;
   hash_sha256?: string;
   s3_key?: string;
+  has_storage_reference?: boolean;
   quality_score?: number;
+  quality_report?: DataQualitySummary | null;
   downstream_models?: string[];
   columns?: DatasetColumn[];
   sample_records?: Record<string, any>[];

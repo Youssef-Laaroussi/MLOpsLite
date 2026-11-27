@@ -1,0 +1,521 @@
+{
+  "date": "2026-11-26",
+  "baseline_commit": "061419b",
+  "scope": "Local Solo acceptance; fixes applied in working tree",
+  "api_checks": {
+    "services.health": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "services.ready": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "auth.signup_standard_user": {
+      "status": "PASS",
+      "seconds": 0.48
+    },
+    "auth.login": {
+      "status": "PASS",
+      "seconds": 0.42
+    },
+    "auth.profile_update": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "projects.create_read": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "projects.update": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "projects.archive_restore_delete_disposable": {
+      "status": "PASS",
+      "seconds": 0.48
+    },
+    "datasets.upload_reference": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "datasets.upload_drift": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "datasets.upload_json": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "datasets.upload_parquet": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "datasets.versions": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "datasets.quality": {
+      "status": "PASS",
+      "seconds": 0.11
+    },
+    "dashboard.read_health_stats": {
+      "status": "PASS",
+      "seconds": 0.21
+    },
+    "dashboard.read_health_services": {
+      "status": "PASS",
+      "seconds": 0.13
+    },
+    "dashboard.read_settings_about": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "dashboard.read_experiments": {
+      "status": "PASS",
+      "seconds": 0.36
+    },
+    "dashboard.read_models": {
+      "status": "PASS",
+      "seconds": 0.09
+    },
+    "dashboard.read_deployments": {
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    "dashboard.read_monitoring_summary": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "dashboard.read_alerts": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "dashboard.read_alerts_summary": {
+      "status": "PASS",
+      "seconds": 0.09
+    },
+    "dashboard.read_alerts_rules": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "dashboard.read_alerts_channels": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "dashboard.read_auth_security_activity": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "security.personal_audit": {
+      "status": "PASS",
+      "seconds": 0.07
+    },
+    "security.admin_denied_users": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.admin_denied_audit_logs": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.admin_denied_settings_storage_": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.api_key_create_use_revoke": {
+      "status": "PASS",
+      "seconds": 0.16
+    },
+    "admin.storage_inventory": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "admin.accounts_protected_view": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.other_actor_entry_denied": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "training.real_model_v1": {
+      "status": "PASS",
+      "seconds": 0.0
+    },
+    "training.real_model_v2": {
+      "status": "PASS",
+      "seconds": 0.0
+    },
+    "models.validation_v1": {
+      "status": "PASS",
+      "seconds": 0.79
+    },
+    "models.lineage_v1": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "models.validation_v2": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "models.lineage_v2": {
+      "status": "PASS",
+      "seconds": 0.14
+    },
+    "experiments.real_runs": {
+      "status": "PASS",
+      "seconds": 0.13
+    },
+    "models.promote_staging": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "models.promote_production": {
+      "status": "PASS",
+      "seconds": 0.26
+    },
+    "experiments.metric_history": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "experiments.artifacts": {
+      "status": "PASS",
+      "seconds": 0.15
+    },
+    "datasets.quality_reference": {
+      "status": "PASS",
+      "seconds": 0.54
+    },
+    "datasets.quality_json": {
+      "status": "PASS",
+      "seconds": 0.1
+    },
+    "datasets.quality_parquet": {
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    "monitoring.no_drift_reference": {
+      "status": "PASS",
+      "seconds": 1.5
+    },
+    "monitoring.strong_drift": {
+      "status": "PASS",
+      "seconds": 1.33
+    },
+    "alerts.real_rule_trigger_acknowledge_resolve": {
+      "status": "PASS",
+      "seconds": 0.27
+    },
+    "security.server_path_denied_inspect": {
+      "status": "PASS",
+      "seconds": 0.01
+    },
+    "security.server_path_denied_validate": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "security.server_path_version_denied": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "monitoring.summary_after_drift": {
+      "status": "PASS",
+      "seconds": 0.11
+    },
+    "monitoring.unique_report_objects": {
+      "status": "PASS",
+      "seconds": 0.0
+    },
+    "deployments.real_container_v1": {
+      "status": "PASS",
+      "seconds": 19.81
+    },
+    "inference.real_predictions_formats_and_feedback": {
+      "status": "PASS",
+      "seconds": 1.72
+    },
+    "monitoring.performance_from_real_feedback": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "monitoring.measured_latency_and_container_memory": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "deployments.stop_v1": {
+      "status": "PASS",
+      "seconds": 2.94
+    },
+    "models.promote_v2": {
+      "status": "PASS",
+      "seconds": 2.68
+    },
+    "deployments.real_container_v2": {
+      "status": "PASS",
+      "seconds": 14.65
+    },
+    "rollback.real_restore_and_prediction": {
+      "status": "PASS",
+      "seconds": 14.4
+    },
+    "validation.invalid_promotion_stage": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "validation.unregistered_deployment": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "monitoring.restart_does_not_duplicate_requests": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "security.invalid_login_denied": {
+      "status": "PASS",
+      "seconds": 0.59
+    },
+    "security.invalid_refresh_denied": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "security.profile_role_injection_denied": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "auth.refresh_real_token": {
+      "status": "PASS",
+      "seconds": 0.59
+    },
+    "security.anonymous_profile_denied": {
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    "security.qa_password_change_login_restore": {
+      "status": "PASS",
+      "seconds": 4.11
+    },
+    "deployments.ui_create_stop_inherits_model_project": {
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    "security.storage_bucket_create_denied": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "admin.storage_live_connection": {
+      "status": "PASS",
+      "seconds": 0.24
+    },
+    "admin.invalid_bucket_rejected": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "admin.real_bucket_create_inventory_duplicate": {
+      "status": "PASS",
+      "seconds": 0.18
+    },
+    "validation.feedback_rejects_invalid_0": {
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    "validation.feedback_rejects_invalid_1": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "validation.feedback_rejects_invalid_2": {
+      "status": "PASS",
+      "seconds": 0.02
+    },
+    "security.validation_does_not_echo_credentials": {
+      "status": "PASS",
+      "seconds": 0.02
+    }
+  },
+  "ui_scenarios": [
+    {
+      "section": "Projects",
+      "check": "Create project from UI",
+      "status": "PASS"
+    },
+    {
+      "section": "Projects",
+      "check": "Search and list/grid view",
+      "status": "PASS"
+    },
+    {
+      "section": "Projects",
+      "check": "Edit and persist description",
+      "status": "PASS"
+    },
+    {
+      "section": "Projects",
+      "check": "Archive and restore project",
+      "status": "PASS"
+    },
+    {
+      "section": "Datasets",
+      "check": "Project and text filters on real uploaded datasets",
+      "status": "PASS"
+    },
+    {
+      "section": "Datasets",
+      "check": "Dataset inspector shows both real versions, row counts and hashes",
+      "status": "PASS"
+    },
+    {
+      "section": "Datasets",
+      "check": "Upload real 150-row CSV through UI and persist version",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/Profile",
+      "check": "Save profile name and local details, persistent success feedback",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/General",
+      "check": "Save workspace display preferences",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/Notifications",
+      "check": "Toggle and persist local preferences; preview updates; no external delivery claimed",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/API Keys",
+      "check": "Form validation and revoked keys table; real create/use/revoke tested through API",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/Preferences",
+      "check": "Save default project and dashboard refresh preference",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/Activity",
+      "check": "Personal action filter and independent content scrolling",
+      "status": "PASS"
+    },
+    {
+      "section": "Settings/Integrations",
+      "check": "Live PostgreSQL probe reports Connected with measured latency",
+      "status": "PASS"
+    },
+    {
+      "name": "experiments.compare_metrics_artifact_download",
+      "status": "PASS"
+    },
+    {
+      "name": "models.signature_validation_lineage",
+      "status": "PASS"
+    },
+    {
+      "name": "deployments.live_health_artifact_signature",
+      "status": "PASS"
+    },
+    {
+      "name": "monitoring.live_metrics_heatmap_evidently_report",
+      "status": "PASS"
+    },
+    {
+      "name": "monitoring.ui_real_drift_evaluation",
+      "status": "PASS"
+    },
+    {
+      "name": "alerts.search_project_filter_real_incident_details",
+      "status": "PASS"
+    },
+    {
+      "name": "services.sync_type_filter_postgres_detail",
+      "status": "PASS"
+    },
+    {
+      "name": "settings.security_personal_events_and_unavailable_controls",
+      "status": "PASS"
+    },
+    {
+      "name": "responsive.settings_and_overview_375_1280_1536",
+      "status": "PASS"
+    },
+    {
+      "name": "deployments.standard_user_ui_create_stop",
+      "status": "PASS"
+    },
+    {
+      "name": "header.command_palette_navigation",
+      "status": "PASS"
+    }
+  ],
+  "measurements": {
+    "training.real_model_v1": {
+      "run_id": "b19580e081304239803508eb0e1afec2",
+      "version": 1,
+      "metrics": {
+        "accuracy": 0.9666666666666667,
+        "f1_score": 0.9665831244778613,
+        "precision": 0.9696969696969696,
+        "recall": 0.9666666666666667
+      },
+      "experiment_id": "19",
+      "mlflow_version": "2.15.0",
+      "registered_id": "6763db26-cab4-4780-8a2a-d8a056c8ece1"
+    },
+    "monitoring.performance_from_real_feedback": {
+      "samples": 60,
+      "metrics": {
+        "accuracy": 0.9667,
+        "precision": 0.9697,
+        "recall": 0.9667,
+        "f1": 0.9666
+      }
+    },
+    "monitoring.measured_latency_and_container_memory": {
+      "points": 2,
+      "requests": 30,
+      "memory_mb": 199.8,
+      "p95_ms": 3.523
+    },
+    "monitoring.restart_does_not_duplicate_requests": {
+      "before": 30,
+      "after": 30
+    },
+    "monitoring.no_drift_reference": {
+      "share": 0.0,
+      "status": "LOW",
+      "html_bytes": 3791799,
+      "features": []
+    },
+    "monitoring.strong_drift": {
+      "share": 0.4,
+      "status": "HIGH",
+      "html_bytes": 3791117,
+      "features": [
+        "petal_length",
+        "sepal_length"
+      ]
+    }
+  },
+  "limitations": [
+    "Several catalogs and overview totals remain shared across installation accounts; full resource isolation is not certified.",
+    "2FA, remote session revocation and service restart are not implemented.",
+    "External Slack/email/webhook delivery, OAuth and DVC were not validated on this installation.",
+    "Most general/preferences settings persist in the browser; saving does not certify server-side application.",
+    "No long-duration soak, load, exhaustive accessibility or multi-framework certification."
+  ],
+  "regression": {
+    "backend": {
+      "passed": 298,
+      "warnings": 18
+    },
+    "frontend": {
+      "passed": 48,
+      "files": 12
+    },
+    "production_build": "PASS",
+    "typescript": "PASS",
+    "ruff": "PASS",
+    "diff_check": "PASS"
+  }
+}

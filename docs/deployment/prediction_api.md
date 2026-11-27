@@ -6,13 +6,26 @@
 
 ## Endpoints Overview
 
-Every model deployed with MLite exposes three standard HTTP endpoints:
+Use the authenticated MLite API, with a Bearer token or API key belonging to
+the deployment's owner. The prefix below is
+`/api/v1/deployments/{deployment_id}`. A different account receives `404`,
+including an administrator using their personal workspace.
+
+Set `DEPLOYMENT_ID` to your deployment ID and `MLITE_TOKEN` to your access JWT
+for the examples below. To use an API key instead, replace the Authorization
+header with `X-API-Key: <your-api-key>`.
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/predict` | Score single or batch inference samples |
 | `GET` | `/metadata` | Inspect input features, data types, and framework version |
-| `GET` | `/health` | Container liveness and model readiness probe |
+| `GET` | `/health` | Container liveness probe |
+| `GET` | `/ready` | Model readiness probe |
+
+Container ports bind to localhost and require a private service credential for
+predictions, metadata and telemetry. MLite adds that credential internally;
+clients should use their own account token through the API. Anonymous requests
+to a container's prediction endpoint return `401`.
 
 ---
 
@@ -77,8 +90,7 @@ Status: `200 OK`
 }
 ```
 
-### Response Headers
-- `X-Inference-Latency-Ms`: Pure compute execution time in milliseconds (excluding network transit).
+`latency_ms` measures model computation, excluding the API/network round trip.
 
 ---
 
@@ -87,7 +99,8 @@ Status: `200 OK`
 ### cURL
 
 ```bash
-curl -X POST http://localhost:8100/predict \
+curl -X POST "http://localhost:8000/api/v1/deployments/${DEPLOYMENT_ID}/predict" \
+  -H "Authorization: Bearer ${MLITE_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "inputs": [
@@ -101,8 +114,9 @@ curl -X POST http://localhost:8100/predict \
 
 ```python
 import httpx
+import os
 
-endpoint = "http://localhost:8100/predict"
+endpoint = f"http://localhost:8000/api/v1/deployments/{os.environ['DEPLOYMENT_ID']}/predict"
 
 payload = {
     "dataframe_records": [
@@ -111,7 +125,9 @@ payload = {
     ]
 }
 
-response = httpx.post(endpoint, json=payload)
+response = httpx.post(endpoint, json=payload,
+                      headers={"Authorization": f"Bearer {os.environ['MLITE_TOKEN']}"})
+response.raise_for_status()
 data = response.json()
 
 print(f"Predictions: {data['predictions']}")

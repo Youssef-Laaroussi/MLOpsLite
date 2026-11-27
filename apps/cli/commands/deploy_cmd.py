@@ -41,6 +41,7 @@ def deploy_model_action(
             if data.get("status") == "FAILED":
                 console.print(f"[red]Deployment failed:[/red] {data.get('error_message') or 'Container failed to start'}")
                 raise typer.Exit(code=1)
+            prediction_url = f"{api_url.rstrip('/')}/api/v1/deployments/{data.get('id')}/predict"
             console.print(
                 Panel.fit(
                     f"[green]✓ Deployment Successful![/green]\n\n"
@@ -48,8 +49,8 @@ def deploy_model_action(
                     f"[bold]Model:[/bold] {data.get('model_name')} v{data.get('model_version')}\n"
                     f"[bold]Status:[/bold] {data.get('status')}\n"
                     f"[bold]Port:[/bold] {data.get('port')}\n"
-                    f"[bold]Endpoint:[/bold] [link={data.get('endpoint_url')}]{data.get('endpoint_url')}[/link]\n\n"
-                    f"[dim]Test endpoint: curl -X POST {data.get('endpoint_url')}/predict -d '{{\"inputs\": [...]}}'[/dim]",
+                    f"[bold]Prediction endpoint:[/bold] {prediction_url}\n\n"
+                    "[dim]Authenticate with a Bearer token or X-API-Key header.[/dim]",
                     title="🚀 Container Deployed",
                     border_style="green",
                 )
@@ -106,7 +107,7 @@ def list_deployments(
                 str(d.get("model_version")),
                 str(d.get("port")),
                 f"[{color}]{st}[/{color}]",
-                d.get("endpoint_url"),
+                f"{api_url.rstrip('/')}/api/v1/deployments/{d.get('id')}/predict",
             )
 
         console.print(table)

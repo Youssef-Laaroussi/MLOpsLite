@@ -20,6 +20,21 @@ class ModelPerformanceMonitor:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    @staticmethod
+    def resolve_task_type(configured: str | None, baseline_metrics: dict[str, Any]) -> str:
+        """Prefer explicit configuration, then unambiguous registered metric families."""
+        if configured is not None:
+            task = configured.lower() if isinstance(configured, str) else None
+            if task not in ("classification", "regression"):
+                raise ValueError("Unsupported performance monitoring task type")
+            return task
+        metrics = set(baseline_metrics)
+        regression = {"rmse", "mae", "mse", "r2", "r2_score"}
+        classification = {"accuracy", "f1", "f1_score", "precision", "recall"}
+        if metrics & regression and not metrics & classification:
+            return "regression"
+        return "classification"
+
     async def ingest_feedback(
         self,
         deployment_id: str,
@@ -43,7 +58,7 @@ class ModelPerformanceMonitor:
 
     @staticmethod
     def calculate_classification_metrics(y_true: list[Any], y_pred: list[Any]) -> dict[str, float]:
-        """Compute standard classification metrics (accuracy, precision, recall, f1)."""
+        """Compute accuracy and support-weighted metrics for all observed classes."""
         if len(y_true) == 0:
             return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0}
 
@@ -52,14 +67,11 @@ class ModelPerformanceMonitor:
 
         accuracy = float(np.mean(y_t == y_p))
 
-        # Binary precision & recall
-        tp = float(np.sum((y_t == 1) & (y_p == 1)))
-        fp = float(np.sum((y_t == 0) & (y_p == 1)))
-        fn = float(np.sum((y_t == 1) & (y_p == 0)))
+        from sklearn.metrics import precision_recall_fscore_support
 
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            y_t, y_p, average="weighted", zero_division=0,
+        )
 
         return {
             "accuracy": round(accuracy, 4),

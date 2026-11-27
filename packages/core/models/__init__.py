@@ -28,8 +28,10 @@ from packages.core.models.rollback import (
     RollbackTrigger,
 )
 from packages.core.models.user import ApiKey, User, UserRole
+from packages.core.models.workspace import WorkspaceExperiment
 
 __all__ = [
+    "WorkspaceExperiment",
     "Project",
     "ProjectStatus",
     "ProjectMembership",

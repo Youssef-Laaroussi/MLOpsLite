@@ -14,6 +14,7 @@ from packages.core.models.deployment import (
     DeploymentStatus,
 )
 from packages.deployment.docker_manager import DockerManager
+from packages.deployment.serving_auth import serving_headers
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +120,10 @@ class DeploymentSupervisor:
 
 
 async def collect_inference_telemetry() -> None:
-    """Collect serving snapshots independently of dashboard traffic."""
+    """Collect real serving and Docker measurements with a durable request cursor."""
     from packages.core.db.session import async_session_factory
 
-    seen: dict[str, tuple[float, int]] = {}
+    docker_manager = DockerManager()
     async with httpx.AsyncClient(timeout=3) as client:
         while True:
             try:
@@ -131,32 +132,49 @@ async def collect_inference_telemetry() -> None:
                         select(Deployment).where(Deployment.status == DeploymentStatus.RUNNING)
                     )
                     active = list(result.scalars().all())
-                next_seen = {}
                 for deployment in active:
-                    previous = seen.get(deployment.id)
-                    if previous:
-                        next_seen[deployment.id] = previous
                     name = f"mlite-{deployment.model_name}-v{deployment.model_version}-{deployment.port}"
                     try:
-                        response = await client.get(f"http://{name}:8000/telemetry")
+                        response = await client.get(f"http://{name}:8000/telemetry", headers=serving_headers(deployment.config))
                         response.raise_for_status()
                         sample = response.json()
                         started, total = float(sample["started_at"]), int(sample["requests"])
-                        prior = previous[1] if previous and previous[0] == started else 0
-                        if total <= prior or sample["p95"] is None:
+                        errors = int(sample.get("errors", 0))
+                        cursor = (deployment.config or {}).get("_mlite_telemetry_cursor", {})
+                        if cursor.get("started_at") == started and total <= cursor.get("requests", 0):
                             continue
+                        resources = await asyncio.to_thread(
+                            docker_manager.get_container_stats, deployment.container_id,
+                        )
                         async with async_session_factory.begin() as session:
+                            # Multiple API workers and restarts must not record the
+                            # same serving counter twice. Cursor and point commit together.
+                            locked = await session.scalar(select(Deployment).where(
+                                Deployment.id == deployment.id,
+                            ).with_for_update())
+                            if locked is None or locked.status != DeploymentStatus.RUNNING:
+                                continue
+                            cursor = (locked.config or {}).get("_mlite_telemetry_cursor", {})
+                            same_process = cursor.get("started_at") == started
+                            prior = int(cursor.get("requests", 0)) if same_process else 0
+                            prior_errors = int(cursor.get("errors", 0)) if same_process else 0
+                            if total <= prior:
+                                continue
                             session.add(DeploymentMetric(
                                 deployment_id=deployment.id,
                                 requests_count=total - prior,
+                                error_count=max(0, errors - prior_errors),
+                                cpu_percent=resources["cpu_percent"],
+                                memory_mb=resources["memory_mb"],
+                                memory_limit_mb=resources["memory_limit_mb"],
                                 latency_p50_ms=sample["p50"],
                                 latency_p95_ms=sample["p95"],
                             ))
-                        next_seen[deployment.id] = (started, total)
-                        seen[deployment.id] = (started, total)
+                            locked.config = {**(locked.config or {}), "_mlite_telemetry_cursor": {
+                                "started_at": started, "requests": total, "errors": errors,
+                            }}
                     except (httpx.HTTPError, ValueError, KeyError, TypeError):
                         continue
-                seen = next_seen
             except Exception:
                 logger.exception("Could not collect inference telemetry")
             await asyncio.sleep(10)

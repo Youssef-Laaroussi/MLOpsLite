@@ -68,6 +68,13 @@ class ModelRegistryService:
         model = result.scalar_one_or_none()
 
         if model is None:
+            if isinstance(self.session.info.get("workspace_user_id"), str):
+                collision = await self.session.scalar(select(RegisteredModel.id).where(
+                    RegisteredModel.name == name,
+                ).execution_options(workspace_unscoped=True))
+                if collision is not None:
+                    from apps.api.errors import ConflictError
+                    raise ConflictError("This model name is unavailable in this installation. Choose another name.")
             model = RegisteredModel(
                 name=name,
                 project_id=project_id,

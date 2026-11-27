@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { User, UserRole, AuthTokens } from "../api/types";
 import { apiLogin, apiRegister, apiGetMe, apiSetup } from "../api/client";
 
@@ -32,6 +33,7 @@ const ROLE_LEVEL: Record<UserRole, number> = {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -84,6 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const establishSession = async (authData: AuthTokens): Promise<void> => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    setUser(null);
+    setTokens(null);
     localStorage.setItem("mlite_token", authData.access_token);
     localStorage.setItem("mlite_refresh_token", authData.refresh_token);
     const me = await apiGetMe();
@@ -100,15 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const authData = await apiLogin(username, password);
-      localStorage.setItem("mlite_token", authData.access_token);
-      localStorage.setItem("mlite_refresh_token", authData.refresh_token);
-      setTokens(authData);
-
-      // Retrieve full user profile & permissions
-      const me = await apiGetMe();
-      setUser(me);
-      localStorage.setItem("mlite_user", JSON.stringify(me));
+      await establishSession(await apiLogin(username, password));
     } finally {
       setIsLoading(false);
     }
@@ -122,27 +120,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }): Promise<void> => {
     setIsLoading(true);
     try {
-      const authData = await apiRegister(data);
-      localStorage.setItem("mlite_token", authData.access_token);
-      localStorage.setItem("mlite_refresh_token", authData.refresh_token);
-      setTokens(authData);
-
-      // Retrieve full user profile & permissions
-      const me = await apiGetMe();
-      setUser(me);
-      localStorage.setItem("mlite_user", JSON.stringify(me));
+      await establishSession(await apiRegister(data));
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
+    void queryClient.cancelQueries();
+    queryClient.clear();
     setUser(null);
     setTokens(null);
     localStorage.removeItem("mlite_token");
     localStorage.removeItem("mlite_refresh_token");
     localStorage.removeItem("mlite_user");
   };
+
+  useEffect(() => {
+    const synchronizeSession = (event: StorageEvent) => {
+      if (event.key === "mlite_token" || event.key === "mlite_user") {
+        queryClient.clear();
+        window.location.reload();
+      }
+    };
+    window.addEventListener("storage", synchronizeSession);
+    return () => window.removeEventListener("storage", synchronizeSession);
+  }, [queryClient]);
 
   const updateProfile = (updated: Partial<User>) => {
     setUser((prev) => {

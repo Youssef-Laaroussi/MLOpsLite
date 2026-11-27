@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from packages.core.models.dataset import DatasetFormat
+from packages.core.schemas.monitoring import DataQualityReportResponse
 
 
 class DatasetCreate(BaseModel):
@@ -66,6 +67,9 @@ class DatasetResponse(BaseModel):
     hash_sha256: str | None = None
     version_num: int | None = None
     s3_key: str | None = None
+    has_storage_reference: bool = False
+    quality_score: float | None = None
+    quality_report: DataQualityReportResponse | None = None
 
     model_config = {"from_attributes": True}
 

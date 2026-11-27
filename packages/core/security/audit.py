@@ -93,7 +93,10 @@ class AuditService:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_entry(self, entry_id: str) -> AuditLog | None:
-        """Fetch a specific audit log entry."""
-        result = await self.session.execute(select(AuditLog).where(AuditLog.id == entry_id))
+    async def get_entry(self, entry_id: str, *, user_id: str | None = None) -> AuditLog | None:
+        """Fetch an entry, optionally constrained to its acting account."""
+        query = select(AuditLog).where(AuditLog.id == entry_id)
+        if user_id is not None:
+            query = query.where(AuditLog.user_id == user_id)
+        result = await self.session.execute(query)
         return result.scalar_one_or_none()

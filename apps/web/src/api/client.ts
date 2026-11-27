@@ -179,8 +179,8 @@ export const updateUser = async (
 
 // ── Audit Logs ─────────────────────────────────────────────────────
 
-export const fetchAuditLogs = async (limit: number = 50): Promise<AuditLog[]> => {
-  const res = await api.get("/audit/logs", { params: { limit } });
+export const fetchAuditLogs = async (limit: number = 50, scope: "personal" | "instance" = "personal"): Promise<AuditLog[]> => {
+  const res = await api.get(scope === "instance" ? "/audit/logs" : "/audit/me/logs", { params: { limit } });
   return res.data.logs || [];
 };
 
@@ -280,14 +280,17 @@ export const rollbackDeployment = async (deploymentId: string, targetVersion: nu
 // ── Live Model Test Prediction ─────────────────────────────────────
 
 export const testModelPrediction = async (
-  endpointUrl: string,
+  deploymentId: string,
   inputs: number[][]
 ): Promise<{ prediction: any; latency_ms: number }> => {
   const start = performance.now();
   // Errors propagate to the caller: never fabricate predictions.
-  const res = await axios.post(`${endpointUrl.replace(/\/$/, "")}/predict`, { inputs }, { timeout: 10000 });
+  const res = await api.post(`/deployments/${encodeURIComponent(deploymentId)}/predict`, { inputs }, { timeout: 30000 });
   return { prediction: res.data, latency_ms: Math.round(performance.now() - start) };
 };
+
+export const deploymentPredictionUrl = (deploymentId: string): string =>
+  `${API_BASE.replace(/\/$/, "")}/deployments/${encodeURIComponent(deploymentId)}/predict`;
 
 /** Real liveness probe routed through the authenticated backend (no CORS / no container exposure). */
 export const pingDeployment = async (id: string): Promise<{ prediction: any; latency_ms: number }> => {

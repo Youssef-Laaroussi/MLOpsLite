@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { InstallationGate } from "./components/InstallationGate";
+import { workspaceSettingsPaths } from "./config/workspace";
 
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview").then((page) => ({ default: page.DashboardOverview })));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage").then((page) => ({ default: page.ProjectsPage })));
@@ -15,16 +16,18 @@ const DatasetsPage = lazy(() => import("./pages/DatasetsPage").then((page) => ({
 const MonitoringPage = lazy(() => import("./pages/MonitoringPage").then((page) => ({ default: page.MonitoringPage })));
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((page) => ({ default: page.AlertsPage })));
 const ServicesPage = lazy(() => import("./pages/ServicesPage").then((page) => ({ default: page.ServicesPage })));
-const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage").then((page) => ({ default: page.AuditLogsPage })));
 const LandingPage = lazy(() => import("./pages/LandingPage").then((page) => ({ default: page.LandingPage })));
 const SignInPage = lazy(() => import("./pages/SignInPage").then((page) => ({ default: page.SignInPage })));
 const SignUpPage = lazy(() => import("./pages/SignUpPage").then((page) => ({ default: page.SignUpPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((page) => ({ default: page.SettingsPage })));
 const ExperimentsPage = lazy(() => import("./pages/ExperimentsPage").then((page) => ({ default: page.ExperimentsPage })));
-const AdministrationLayout = lazy(() => import("./components/AdministrationLayout").then((page) => ({ default: page.AdministrationLayout })));
-const AccountsSettings = lazy(() => import("./components/AccountsSettings").then((page) => ({ default: page.AccountsSettings })));
-const StorageSettings = lazy(() => import("./components/StorageSettings").then((page) => ({ default: page.StorageSettings })));
 const SetupPage = lazy(() => import("./pages/SetupPage").then((page) => ({ default: page.SetupPage })));
+const AdministrationLayout = lazy(() => import("./components/AdministrationLayout").then(module => ({ default: module.AdministrationLayout })));
+const AccountsSettings = lazy(() => import("./components/AccountsSettings").then(module => ({ default: module.AccountsSettings })));
+const StorageSettings = lazy(() => import("./components/StorageSettings").then(module => ({ default: module.StorageSettings })));
+const WorkspaceRecovery = lazy(() => import("./components/WorkspaceRecovery").then(module => ({ default: module.WorkspaceRecovery })));
+const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage").then(module => ({ default: module.AuditLogsPage })));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,7 +78,7 @@ export const App: React.FC = () => {
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
                   <Route path="services" element={<ServicesPage />} />
-                  <Route path="audit" element={<Navigate to="/admin/audit" replace />} />
+                  <Route path="audit" element={<Navigate to={workspaceSettingsPaths.activity} replace />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
@@ -96,7 +99,7 @@ export const App: React.FC = () => {
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="alerts" element={<AlertsPage />} />
                   <Route path="services" element={<ServicesPage />} />
-                  <Route path="audit" element={<Navigate to="/admin/audit" replace />} />
+                  <Route path="audit" element={<Navigate to={workspaceSettingsPaths.activity} replace />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
@@ -104,8 +107,9 @@ export const App: React.FC = () => {
                   <Route index element={<Navigate to="accounts" replace />} />
                   <Route path="accounts" element={<AccountsSettings />} />
                   <Route path="storage" element={<StorageSettings />} />
-                  <Route path="audit" element={<AuditLogsPage />} />
-                  <Route path="system" element={<Navigate to="/app/services" replace />} />
+                  <Route path="audit" element={<AuditLogsPage scope="instance" />} />
+                  <Route path="recovery" element={<WorkspaceRecovery />} />
+                  <Route path="*" element={<Navigate to="/admin/accounts" replace />} />
                 </Route>
 
                 {/* ── Catch-all ── */}

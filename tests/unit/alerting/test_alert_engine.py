@@ -78,3 +78,26 @@ class TestAlertEngine:
         resolved = await engine.resolve_alert("al-123")
         assert resolved.status == AlertStatus.RESOLVED
         assert resolved.resolved_at is not None
+
+
+@pytest.mark.asyncio
+async def test_evaluated_rule_keeps_model_project_for_dashboard_filters():
+    from types import SimpleNamespace
+
+    from packages.alerting.rules import evaluate_rules
+
+    session = AsyncMock()
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = [SimpleNamespace(
+        id="rule-1", name="Drift warning", metric="drift_share", operator=">",
+        threshold=0.2, model_name="iris", severity=AlertSeverity.WARNING, owner_id="owner-iris",
+    )]
+    session.execute.return_value = result
+    session.scalar.side_effect = ["owner-iris", "project-iris"]
+    engine = MagicMock()
+    engine.trigger_alert = AsyncMock(return_value=Alert(id="alert-1"))
+    from unittest.mock import patch
+    with patch("packages.alerting.rules.observe", AsyncMock(return_value={"iris": 0.4})):
+        count, alerts = await evaluate_rules(session, engine)
+    assert count == 1 and len(alerts) == 1
+    assert engine.trigger_alert.call_args.kwargs["project_id"] == "project-iris"

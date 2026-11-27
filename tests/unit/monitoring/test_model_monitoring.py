@@ -4,7 +4,14 @@ from packages.monitoring.model_monitor import ModelPerformanceMonitor
 
 
 class TestModelPerformanceMonitor:
-    """Test performance metric calculation and degradation threshold logic."""
+    """Test metric calculation and degradation thresholds."""
+
+    def test_multiclass_metrics_include_the_third_class(self):
+        metrics = ModelPerformanceMonitor.calculate_classification_metrics([0, 1, 2], [0, 1, 1])
+        assert metrics["accuracy"] == 0.6667
+        assert metrics["precision"] == 0.5
+        assert metrics["recall"] == 0.6667
+        assert metrics["f1"] == 0.5556
 
     def test_calculate_classification_metrics(self):
         y_true = [1, 0, 1, 1, 0, 1, 0, 0]

@@ -3,6 +3,7 @@ import { BriefcaseBusiness, Building2, Calendar, CheckCircle2, Clock, Crown, Glo
 import { api } from "../api/client";
 import type { User } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import { workspaceFeatures } from "../config/workspace";
 
 interface Details { jobTitle: string; organization: string; location: string; bio: string; avatar: string; language: string; timezone: string }
 const defaults: Details = { jobTitle: "", organization: "", location: "", bio: "", avatar: "", language: "en", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
@@ -19,7 +20,8 @@ export function ProfileSettings() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const photoInput = useRef<HTMLInputElement>(null);
-  useEffect(() => { const next = readDetails(storageKey); setSaved(next); setDetails(next); setName(user?.full_name ?? ""); setMessage(""); setError(""); }, [storageKey, user?.full_name]);
+  useEffect(() => { const next = readDetails(storageKey); setSaved(next); setDetails(next); setMessage(""); setError(""); }, [storageKey]);
+  useEffect(() => { setName(user?.full_name ?? ""); }, [user?.full_name]);
   const field = (key: keyof Details, value: string) => { setDetails(previous => ({ ...previous, [key]: value })); setMessage(""); };
   const initials = (user?.full_name || user?.username || "U").split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase();
   const role = ({ ADMIN: "Administrator", USER: "User", MAINTAINER: "Maintainer", DEVELOPER: "Developer", VIEWER: "Viewer" } as const)[user?.role ?? "USER"];
@@ -52,7 +54,7 @@ export function ProfileSettings() {
         <input ref={photoInput} type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Profile photo" onChange={event => { void choosePhoto(event.target.files?.[0]); event.target.value = ""; }} />
         <button type="button" className="profile-photo-edit" aria-label="Change profile photo" disabled={saving} onClick={() => photoInput.current?.click()}><Pencil size={21}/></button>
       </div>
-      <div className="profile-identity"><h2>{user?.full_name || user?.username}</h2><span className="profile-badge"><Crown size={18}/>{role}</span>
+      <div className="profile-identity"><h2>{user?.full_name || user?.username}</h2>{workspaceFeatures.accountManagement && <span className="profile-badge"><Crown size={18}/>{role}</span>}
         <p><Mail size={18}/>{user?.email}</p>{saved.location && <p><MapPin size={18}/>{saved.location}</p>}
       </div>
       <div className="profile-landscape" aria-hidden="true"><svg viewBox="0 0 600 190" preserveAspectRatio="none"><path fill="#e6faeb" d="M0 190Q80 90 140 118T270 65T410 45T600 0V190Z"/><path fill="#caf5d4" d="M90 190Q180 70 270 105T420 70T600 10V190Z"/><path fill="#a1edb4" d="M220 190Q320 110 400 140T600 35V190Z"/></svg><div className="profile-brand-tile"><img src="/logo.png" alt=""/></div></div>
@@ -72,7 +74,7 @@ export function ProfileSettings() {
         <footer><button type="button" onClick={discard} disabled={!dirty || saving}>Discard</button><button type="submit" className="profile-save" disabled={!dirty || saving || !name.trim()}><Save size={19}/>{saving ? "Saving…" : "Save Changes"}</button></footer>
       </section>
       <aside className="profile-sidecards"><section className="profile-card"><h2><Layers size={24}/>Account Overview</h2><dl className="profile-account">
-        <div><dt><Crown size={19}/>Role</dt><dd><span className="profile-badge"><Crown size={16}/>{role}</span></dd></div>
+        {workspaceFeatures.accountManagement && <div><dt><Crown size={19}/>Role</dt><dd><span className="profile-badge"><Crown size={16}/>{role}</span></dd></div>}
         <div><dt><Calendar size={19}/>Member since</dt><dd>{memberSince}</dd></div>
         <div><dt><Clock size={19}/>Last login</dt><dd>—</dd></div>
         <div><dt><CheckCircle2 size={19}/>Account status</dt><dd><span className="profile-badge">{user?.is_active === false ? "Inactive" : "Active"}</span></dd></div>

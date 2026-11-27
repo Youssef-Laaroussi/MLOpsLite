@@ -75,7 +75,10 @@ class DatasetService:
             filename = Path(file_path).name
 
             # 2. Upload to MinIO with content-addressed path
-            target_key = s3_key or f"{dataset.name}/{sha256}/{filename}"
+            owner = self.session.info.get("workspace_user_id")
+            default_key = (f"users/{owner}/datasets/{dataset.id}/{sha256}/{filename}" if owner
+                           else f"{dataset.name}/{sha256}/{filename}")
+            target_key = s3_key or default_key
             try:
                 # Content deduplication: check if already exists in storage
                 if not self.storage.file_exists(target_key):

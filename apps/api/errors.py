@@ -58,12 +58,18 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_error_handler(
         _request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        logger.warning("Validation error: %s", exc.errors())
+        # Pydantic context can contain non-JSON exceptions, and input may
+        # contain passwords. Expose only safe, serializable field diagnostics.
+        errors = [
+            {key: error[key] for key in ("type", "loc", "msg") if key in error}
+            for error in exc.errors()
+        ]
+        logger.warning("Validation error: %s", errors)
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": "Validation error",
-                "detail": exc.errors(),
+                "detail": errors,
             },
         )
 

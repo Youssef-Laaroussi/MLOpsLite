@@ -30,6 +30,8 @@ class NotificationManager:
         """Deliver alert to all configured channels with exponential backoff retry."""
         results = []
         for dispatcher in self.dispatchers:
+            if getattr(dispatcher, "workspace_owner_id", None) != alert.owner_id:
+                continue
             delivered = False
             for attempt in range(1, self.max_retries + 1):
                 try:

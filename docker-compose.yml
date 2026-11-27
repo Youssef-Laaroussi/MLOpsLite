@@ -25,7 +25,7 @@ services:
       - mlite_postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     networks:
       - mlite-network
     healthcheck:
@@ -49,8 +49,8 @@ services:
     volumes:
       - mlite_minio_data:/data
     ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     networks:
       - mlite-network
     healthcheck:
@@ -109,7 +109,7 @@ services:
     volumes:
       - mlite_mlflow_data:/mlflow
     ports:
-      - "${MLFLOW_PORT:-5000}:5000"
+      - "127.0.0.1:${MLFLOW_PORT:-5000}:5000"
     networks:
       - mlite-network
     command: >

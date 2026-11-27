@@ -1,24 +1,71 @@
 """Unit tests for standardized prediction server and request validation (Issue #12)."""
 
+import joblib
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from packages.deployment.server.app import app, predictor
 
 
+class NumericModel:
+    """Serialized numeric fixture for exercising each prediction envelope."""
+
+    def predict(self, data):
+        return np.asarray(data).sum(axis=1)
+
+
 @pytest.fixture(autouse=True)
-def ensure_predictor_loaded():
-    """Ensure model is loaded before tests run."""
-    predictor.load()
+def ensure_predictor_loaded(tmp_path, monkeypatch):
+    """Load an actual artifact; production serving has no simulated model."""
+    artifact = tmp_path / "model.joblib"
+    monkeypatch.setenv("MLITE_SERVING_TOKEN", "unit-private-serving-token")
+    joblib.dump(NumericModel(), artifact)
+    monkeypatch.setattr(predictor, "artifact_path", str(artifact))
+    monkeypatch.setattr(predictor, "_feature_names", [])
+    assert predictor.load()
 
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    return TestClient(app, headers={"X-MLite-Serving-Token": "unit-private-serving-token"})
 
 
 class TestPredictionEndpoints:
     """Test /predict with various valid and invalid input envelope shapes."""
+
+    def test_container_requires_private_service_token(self):
+        anonymous = TestClient(app)
+        assert anonymous.get("/metadata").status_code == 401
+        assert anonymous.get("/telemetry").status_code == 401
+        assert anonymous.post("/predict", json={"inputs": [[1, 2]]}).status_code == 401
+        assert anonymous.get("/metadata", headers={"X-MLite-Serving-Token": "wrong"}).status_code == 401
+        assert anonymous.get("/health").status_code == 200
+
+    def test_invalid_predictions_increment_real_error_telemetry(self, client):
+        before = client.get("/telemetry").json()
+        assert client.post("/predict", json={}).status_code == 422
+        after = client.get("/telemetry").json()
+        assert after["requests"] == before["requests"] + 1
+        assert after["errors"] == before["errors"] + 1
+
+    def test_named_features_preserve_training_order_across_envelopes(self, client, monkeypatch):
+        class OrderedModel:
+            def predict(self, data):
+                values = np.asarray(data)
+                return values[:, 0] * 10 + values[:, 1]
+
+        monkeypatch.setattr(predictor, "_feature_names", ["b", "a"])
+        monkeypatch.setattr(predictor, "_model", OrderedModel())
+        for payload in (
+            {"inputs": [[2, 1]]},
+            {"dataframe_records": [{"a": 1, "b": 2}]},
+            {"dataframe_split": {"columns": ["a", "b"], "data": [[1, 2]]}},
+        ):
+            response = client.post("/predict", json=payload)
+            assert response.status_code == 200
+            assert response.json()["predictions"] == [21]
+        assert client.post("/predict", json={"dataframe_records": [{"a": 1}]}).status_code == 422
 
     def test_predict_with_2d_inputs(self, client):
         payload = {

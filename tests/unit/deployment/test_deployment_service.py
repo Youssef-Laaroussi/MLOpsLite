@@ -1,5 +1,6 @@
 """Unit tests for DeploymentService lifecycle operations (Issue #11)."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -8,6 +9,23 @@ from packages.core.models.deployment import Deployment, DeploymentStatus
 from packages.deployment.docker_manager import DockerManager
 from packages.deployment.ports import PortAllocator
 from packages.deployment.service import DeploymentService
+
+
+@pytest.fixture(autouse=True)
+def registered_model_and_ready_endpoint(monkeypatch):
+    """Keep orchestration unit tests independent of DNS and a live MLflow server."""
+    monkeypatch.setattr(PortAllocator, "is_port_free_on_host", lambda self, port: True)
+    monkeypatch.setattr("packages.deployment.service.ModelRegistryService.get_version", AsyncMock(
+        return_value=SimpleNamespace(mlflow_model_uri="runs:/unit-run/model", artifact_path=None),
+    ))
+    monkeypatch.setattr("packages.deployment.service.ModelRegistryService.get_model_by_name", AsyncMock(
+        return_value=SimpleNamespace(project_id="model-project"),
+    ))
+    client = AsyncMock()
+    client.get.return_value = SimpleNamespace(status_code=200)
+    factory = MagicMock()
+    factory.return_value.__aenter__.return_value = client
+    monkeypatch.setattr("packages.deployment.service.httpx.AsyncClient", factory)
 
 
 @pytest.fixture
@@ -84,6 +102,15 @@ class TestDeploymentService:
         assert "Docker out of memory" in deployment.error_message
         # Port should be released on failure
         assert 8100 not in port_allocator.reserved_ports
+
+    async def test_deployment_inherits_registered_model_project(self, mock_session, mock_docker):
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = []
+        mock_session.execute.return_value = result
+        service = DeploymentService(session=mock_session, docker_manager=mock_docker)
+        deployment = await service.deploy_model("iris", 1)
+        assert deployment.status == DeploymentStatus.RUNNING
+        assert deployment.project_id == "model-project"
 
     async def test_stop_deployment(self, mock_session, mock_docker):
         existing = Deployment(

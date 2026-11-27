@@ -31,7 +31,7 @@ def setup_code() -> None:
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from exc
-    console.print("Open /setup and enter this installation code (replaces any earlier code):")
+    console.print("Installation code for the optional POST /api/v1/setup endpoint (replaces any earlier code):")
     console.print(code, markup=False)
 
 
@@ -52,4 +52,4 @@ def adopt_solo(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from exc
     console.print(f"Account {username!r} is an instance administrator. Assigned {claimed} unowned project(s).", markup=False)
-    console.print("Sign in with this same account, then open Settings → Storage or Activity & Logs.")
+    console.print("Sign in with this same account, then open your profile → Administration.")

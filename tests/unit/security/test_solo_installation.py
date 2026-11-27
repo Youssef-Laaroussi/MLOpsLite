@@ -118,15 +118,32 @@ async def test_registration_cannot_claim_initial_administrator(installation, mon
         allow_registration=True, jwt_secret_key="isolated-test-signing-key-at-least-32-chars",
     ))
     payload = UserRegisterRequest(username="ordinary", email="ordinary@example.test", password="ordinary-password")
-    with pytest.raises(HTTPException) as rejected:
-        async with factory.begin() as session:
-            await register(payload, request(), session)
-    assert rejected.value.status_code == 409
-    await finish(factory, account(code))
     async with factory.begin() as session:
-        await register(payload, request(), session)
+        assert (await setup_status(session))["registration_enabled"] is True
+        tokens = await register(payload, request(), session)
+        assert tokens["access_token"]
         ordinary = await session.scalar(select(User).where(User.username == "ordinary"))
         assert ordinary.role == UserRole.USER
+        assert await session.scalar(select(func.count()).select_from(User).where(User.role == UserRole.ADMIN)) == 0
+    async with factory() as session:
+        assert (await setup_status(session))["setup_required"] is False
+    with pytest.raises(HTTPException) as rejected:
+        await finish(factory, account(code))
+    assert rejected.value.status_code == 403
+
+
+async def test_disabled_registration_does_not_consume_initialization(installation, monkeypatch):
+    from types import SimpleNamespace
+
+    _, factory, _ = installation
+    monkeypatch.setattr("apps.api.routers.auth.get_settings", lambda: SimpleNamespace(allow_registration=False))
+    with pytest.raises(HTTPException) as rejected:
+        async with factory.begin() as session:
+            await register(UserRegisterRequest(username="ordinary", email="ordinary@example.test", password="ordinary-password"), request(), session)
+    assert rejected.value.status_code == 403
+    async with factory() as session:
+        assert (await session.get(InstanceState, 1)).completed_at is None
+        assert await session.scalar(select(func.count()).select_from(User)) == 0
 
 
 @pytest.mark.parametrize("change", [{"role": UserRole.USER}, {"is_active": False}])

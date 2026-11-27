@@ -67,7 +67,7 @@ apps/web/.next/
 # MLite Runtime, Storage & Databases
 .mlite/
 mlite_data/
-storage/
+/storage/
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*

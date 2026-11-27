@@ -104,9 +104,10 @@ def test_delete_file(mock_boto_client: MagicMock) -> None:
 def test_list_files(mock_boto_client: MagicMock) -> None:
     """Verify listing objects under prefix."""
     mock_s3 = MagicMock()
-    mock_s3.list_objects_v2.return_value = {
-        "Contents": [{"Key": "data/f1.csv"}, {"Key": "data/f2.csv"}]
-    }
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "data/f1.csv"}]},
+        {"Contents": [{"Key": "data/f2.csv"}]},
+    ]
     mock_boto_client.return_value = mock_s3
 
     client = StorageClient(default_bucket="test-bucket")

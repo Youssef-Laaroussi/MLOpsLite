@@ -1,6 +1,6 @@
 # Dataset Management & Schema Tracking
 
-> Lineage, versioning, SHA-256 content addressing, and schema inference for machine learning data.
+> Lineage, immutable versions, SHA-256 integrity and schema inference for machine learning data.
 
 ---
 
@@ -20,16 +20,21 @@ MLite ensures that training data is tracked with the same rigor as model weights
 
 ---
 
-## Storage & Content Deduplication
+## Storage & Version Integrity
 
-Datasets are stored using content-addressed naming:
+Datasets are stored in stable, private version directories:
 
 ```
-s3://mlite-datasets/<dataset_name>/<sha256_hash>/<filename>
+s3://mlite-datasets/users/<user-id>/projects/<project-slug>-<project-id>/datasets/<dataset-slug>-<dataset-id>/versions/v000001/data.csv
 ```
 
-- **Zero Duplication**: Uploading the identical dataset across different training runs reuses the existing S3 key, saving storage and network bandwidth.
-- **Audit Integrity**: Any row modification or null value injection changes the SHA-256 hash, creating an explicit next sequential version (e.g. `v1` $\to$ `v2`).
+- Every registered upload gets the next version, including repeated content. Training
+  runs can reference an existing version without uploading another copy.
+- SHA-256 identifies equal content independently of the object key. Conditional
+  writes prevent existing versions from being overwritten.
+- Renaming a project or dataset leaves its stored prefix unchanged. The original
+  uploaded filename is preserved as `original_filename` in version metadata.
+- See the [storage tree and migration guide](../architecture/storage.md).
 
 ---
 
@@ -53,7 +58,7 @@ Version: v1
 SHA-256: 8f9b23c4a17e8890...
 Rows: 142,500 | Columns: 32
 Size: 18.4 MB
-Storage: s3://mlite-datasets/fraud-train/8f9b23c4.../credit_fraud_train.csv
+Storage: s3://mlite-datasets/users/<user-id>/projects/unassigned/datasets/fraud-train-<dataset-id>/versions/v000001/data.csv
 ```
 
 ### 2. Inspect File Schema Locally

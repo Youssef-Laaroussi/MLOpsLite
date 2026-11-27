@@ -49,6 +49,8 @@ class Project(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "projects"
 
+    storage_prefix: Mapped[str | None] = mapped_column(String(384), nullable=True, index=True, unique=True)
+
     name: Mapped[str] = mapped_column(
         String(100), nullable=False, doc="Human-readable project name"
     )

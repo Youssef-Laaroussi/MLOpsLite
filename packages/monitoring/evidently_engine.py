@@ -2,14 +2,17 @@
 
 import json
 import logging
+import os
 import tempfile
 from html import escape
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pandas as pd
 
 from packages.core.storage.client import StorageClient, get_storage_client
+from packages.core.storage.layout import evaluation_key, slug
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,7 @@ except ImportError:
 class EvidentlyEngine:
     """Generates standalone interactive HTML reports and JSON metrics using Evidently AI."""
 
-    DEFAULT_BUCKET = "mlite-evaluations"
+    DEFAULT_BUCKET = os.getenv("MINIO_EVALUATIONS_BUCKET", "mlite-evaluations")
 
     def __init__(self, storage_client: StorageClient | None = None) -> None:
         self.storage = storage_client or get_storage_client()
@@ -52,12 +55,17 @@ class EvidentlyEngine:
         project_name: str = "default-project",
         model_version: str = "1",
         run_id: str = "eval-run",
+        storage_prefix: str | None = None,
     ) -> dict[str, Any]:
         """Generate data drift evaluation report and upload artifacts to MinIO."""
-        output_dir = Path(tempfile.gettempdir()) / f"mlite_eval_{run_id}"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir = Path(tempfile.mkdtemp(prefix="mlite-eval-"))
         html_path = output_dir / "report.html"
         json_path = output_dir / "metrics.json"
+        report_prefix = storage_prefix or evaluation_key(
+            f"legacy/unassigned/reports/{slug(project_name)}/versions/v{slug(model_version)}", "drift", uuid4().hex,
+        )
+        s3_html_key = f"{report_prefix}/report.html"
+        s3_json_key = f"{report_prefix}/metrics.json"
 
         if self.is_available:
             try:
@@ -87,17 +95,8 @@ class EvidentlyEngine:
                 metrics_dict["mlite_engine"] = "evidently"
 
                 # Upload to MinIO
-                s3_html_key = f"{project_name}/v{model_version}/{run_id}/report.html"
-                s3_json_key = f"{project_name}/v{model_version}/{run_id}/metrics.json"
-                try:
-                    self.storage.upload_file(
-                        html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET
-                    )
-                    self.storage.upload_file(
-                        json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET
-                    )
-                except Exception as e:
-                    logger.warning("Failed to upload Evidently reports to MinIO: %s", e)
+                self.storage.upload_file(html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET, overwrite=False)
+                self.storage.upload_file(json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET, overwrite=False)
 
                 return {
                     "success": True,
@@ -223,13 +222,8 @@ class EvidentlyEngine:
         json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
         # Upload artifacts to MinIO
-        s3_html_key = f"{project_name}/v{model_version}/{run_id}/report.html"
-        s3_json_key = f"{project_name}/v{model_version}/{run_id}/metrics.json"
-        try:
-            self.storage.upload_file(html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET)
-            self.storage.upload_file(json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET)
-        except Exception as e:
-            logger.warning("Failed to upload statistical reports to MinIO: %s", e)
+        self.storage.upload_file(html_path, s3_html_key, bucket_name=self.DEFAULT_BUCKET, overwrite=False)
+        self.storage.upload_file(json_path, s3_json_key, bucket_name=self.DEFAULT_BUCKET, overwrite=False)
 
         return {
             "success": True,

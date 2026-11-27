@@ -1,111 +1,68 @@
-# Solo installation: one personal account
+# Personal workspaces and instance administration
 
-Every MLite deployment has its own database, accounts and permissions. The developer
-of the GitHub repository has no automatic access to anybody else's installation.
-The same personal account can administer its installation and own its projects.
-Solo is a usage pattern, not an additional role.
+## Normal sign-in and sign-up
 
-## Fresh installation
+Start MLite with Docker Compose and open `http://localhost:3000`.
+The existing **Sign in** (`/signin`) and **Sign up** (`/signup`) pages are used,
+including on a fresh or emptied database. No installation code is required for
+normal registration. The old frontend `/setup` address redirects to `/signup`.
 
-1. Run `docker compose up -d --build`.
-2. Open the dashboard at `http://localhost:3000`. An unconfigured installation
-   redirects to `/setup`.
-3. Read the single-use code in `docker compose logs mlite-api`.
-4. Enter that code and create your personal account, using a password of at least
-   12 characters (at most 72 UTF-8 bytes).
-5. MLite signs you in to the dashboard. Use **Settings → Storage** for storage
-   settings and **Settings → Activity & Logs** for recorded activity. Service
-   health remains in **Services**.
+Registration creates a **USER**, including for the first account. It never grants
+administration automatically. That account can create its own projects and use
+its private MLOps workspace. Signing up atomically closes the legacy bootstrap
+state in the same transaction, without changing other accounts or passwords.
 
-This account has the existing global `ADMIN` role. Creating a project inserts an
-`OWNER` membership in the same database transaction. No second account is needed.
-Team elements remain hidden while project collaboration is being implemented.
+Public registration is enabled by default (`MLITE_ALLOW_REGISTRATION=true`).
+An installation operator can explicitly set it to `false`; the API then rejects
+registration. This setting is independent of whether an initial Admin exists.
 
-The setup code is never returned by a web endpoint and only its hash is stored.
-Only an operator who can read the local API logs or execute the local CLI can
-obtain it. Log access must remain restricted to the installation operator.
-If the code is lost, generate a replacement on that installation:
+## Explicit administration
+
+An installation operator can designate an existing active account locally:
 
 ```bash
-docker compose exec mlite-api mlite instance setup-code
+docker compose exec mlite-api mlite instance adopt-solo --username YOUR_USERNAME
 ```
 
-The previous code becomes invalid. Setup closes permanently after success.
-Restarting the API neither creates another administrator nor resets a password.
-An optional `MLITE_SETUP_TOKEN` environment variable can supply a code of at least
-32 characters for the first startup; it is ignored after setup state is persisted.
-It does not reopen setup after completion or replace a previously generated code.
+Replace `YOUR_USERNAME` with the exact chosen account. When a separate Admin
+account is wanted, register that account normally first and select it explicitly
+with this command. There is no automatically created shared Admin password.
 
-## Upgrade an existing installation
+Sign out and back in with the selected account, then open **profile →
+Administration**. Accounts, global storage, instance audit logs and Legacy Recovery
+are separate from personal Settings and Activity & Logs. A normal USER does not
+see administration or technical migration instructions in their dashboard.
 
-Back up the database and object storage before upgrading. Rebuild/restart the API
-to add the setup-state and membership tables. Existing accounts close web setup,
-including installations without an active administrator. Neither first signup nor
-the number of remaining users can grant administrator privileges.
+The designation preserves passwords and existing data. Existing administrators
+are retained. For a local Python installation, run the same `mlite instance`
+command in the environment configured with that installation's database.
 
-Choose the exact username of your existing personal account, then run locally:
+## Existing projects and resources
 
-```bash
-docker compose exec mlite-api mlite instance adopt-solo \
-  --username YOUR_USERNAME --claim-unowned-projects
-```
+API startup applies additive schema migrations. Existing owners are preserved;
+resources without an established owner stay stored and hidden from personal
+workspaces. An administrator can explicitly assign them through Legacy Recovery.
 
-Replace `YOUR_USERNAME` with the chosen active account. This is an explicit local
-operator action, not a web endpoint and not an automatic promotion of every user.
-It promotes that account to `ADMIN` and assigns projects that currently have no
-`OWNER`. Existing owners, accounts, passwords, projects, artifacts and deployments
-are preserved. The changes are recorded in the audit log. Other administrators
-are retained; they are not silently deleted or demoted.
+The local command also supports `--claim-unowned-projects`, which assigns only
+projects without an OWNER to the selected account. Review ownership before using
+that option. Never use the count of remaining users to infer ownership or grant
+administration automatically.
 
-Omit `--claim-unowned-projects` to designate only the administrator. Do not use the
-claim option on a shared installation until its operator has reviewed which
-account should own those projects. The new Solo project API shows only projects
-owned by the authenticated user; unassigned legacy projects stay stored and are
-not exposed as public projects. They become available after explicit assignment.
+Project creation records an OWNER membership. Datasets, experiments, models,
+deployments, monitoring and alerts are restricted to their authenticated owner,
+including in an Admin's personal workspace. Team collaboration remains hidden.
+Personal audit activity uses `/api/v1/audit/me/logs`; the instance-wide audit API
+requires administration permissions. The last active Admin cannot be deactivated
+or demoted through the API.
 
-Sign out and sign back in with the selected account to refresh the frontend
-profile. Use **Settings → Storage / Activity & Logs** with this same login.
+## Legacy bootstrap API compatibility
 
-For a local Python installation, use the same commands without `docker compose
-exec mlite-api`, in the environment configured with the installation's database.
-The optional Alembic baseline `0001_solo_installation` adds these tables to an
-existing core schema without replacing existing ones. For a fresh database, start
-the API first to initialize the core schema. API startup performs additive schema
-creation and initializes the singleton setup state. Downgrade requires a reviewed
-backup restoration; it must not silently remove ownership or reopen setup.
+The locally authorized `POST /api/v1/setup` endpoint remains available only before
+an installation has accounts. Operators maintaining existing automation can use
+its one-use code from local API logs or `mlite instance setup-code`. It is not a
+mandatory login/signup screen. Normal registration invalidates that bootstrap
+code; later administration must be designated explicitly by a local operator.
 
-## Registration and compatibility
-
-Self-registration is enabled by default (`MLITE_ALLOW_REGISTRATION=true`), with a
-**Sign up** link on the sign-in page. An installation operator can explicitly set
-this variable to `false` to close public registration. Registration creates `USER`
-accounts, never administrators; initial administration is granted only through
-the locally authorized setup flow.
-
-The Solo interface hides **Accounts**, **Add New User**, and role-management
-controls. Storage and **Activity & Logs** are tabs in the existing **Settings**
-page, and health remains in **Services**. There is no separate Administration
-navigation in Solo. Old `/admin`, `/admin/storage` and `/admin/accounts` links
-redirect to Settings → Storage; `/admin/audit`, `/app/audit` and `/audit` redirect
-to Settings → Activity & Logs. Activity & Logs is available to every signed-in
-account and shows only actions performed by that account, including when it has
-the Admin role. The backend enforces this scope through `/api/v1/audit/me/logs`
-and its entry-detail endpoint; other accounts' entry IDs return 404.
-The installation-wide `/api/v1/audit/logs` endpoints remain separate and require
-the existing `audit:view` administration permission. Storage still requires
-instance administrator permissions, even through a direct URL. Accounts
-is omitted from navigation and search; its component is preserved behind
-`workspaceFeatures.accountManagement` for future collaboration work. This display
-flag is not a backend security rule.
-This phase implements Solo setup and project ownership; it does not claim to
-complete the planned multi-user isolation of MLflow, storage and inference.
-
-Existing global roles and API routes remain supported. `ADMIN_USER`, `ADMIN_EMAIL`
-and `ADMIN_PASSWORD` no longer bootstrap, promote, or overwrite accounts. Scripts
-must log in using an account actually configured on their installation; setting
-these old variables does not create that account.
-
-The last active administrator cannot be deactivated or demoted through the API.
-Project membership and instance administration remain distinct. Project ownership
-is enforced by FastAPI for project listing, reads and mutations, not just by
-hiding sidebar links.
+Restarting the API does not reopen completed bootstrap or reset passwords.
+`ADMIN_USER`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` do not automatically create,
+promote or overwrite accounts. Keep local codes, credentials and logs private.

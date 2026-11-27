@@ -3,10 +3,13 @@
 Provides dataset registration, schema extraction, MinIO synchronization, and versioning.
 """
 
+import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
@@ -27,6 +30,7 @@ from packages.core.schemas.dataset import (
 )
 from packages.core.schemas.monitoring import DataQualityReportResponse
 from packages.core.security.dependencies import get_current_user, require_role
+from packages.core.storage.layout import evaluation_key, resource_prefix
 from packages.data.parser import TabularDataParser
 from packages.data.service import DatasetService
 
@@ -145,7 +149,10 @@ async def create_dataset_version(
     if payload.file_path and current_user.role != UserRole.ADMIN:
         raise HTTPException(403, "Server file paths are reserved for installation administrators. Upload your file instead.")
     if payload.s3_key:
-        prefix = f"users/{current_user.id}/datasets/{dataset_id}/"
+        dataset = await service.get_dataset(dataset_id)
+        if dataset is None:
+            raise NotFoundError("Dataset", dataset_id)
+        prefix = (await resource_prefix(service.session, dataset, "datasets")) + "/"
         key = payload.s3_key
         if key.startswith("s3://"):
             bucket, _, key = key[5:].partition("/")
@@ -161,8 +168,10 @@ async def create_dataset_version(
             description=payload.description,
         )
         return _version_response(version, current_user)
-    except ValueError:
-        raise NotFoundError("Dataset", dataset_id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except NotFoundError:
+        raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -214,11 +223,13 @@ async def validate_dataset(
     # preserving its suffix so CSV, JSON and Parquet are parsed correctly.
     with tempfile.TemporaryDirectory(prefix="mlite-quality-") as directory:
         target_file = file_path
+        validated_version = None
         if not target_file:
             versions = await service.get_versions(dataset_id)
             if not versions or not versions[0].s3_key:
                 raise HTTPException(status_code=400, detail="No stored dataset version available to validate")
             location = versions[0].s3_key
+            validated_version = versions[0].version_num
             bucket = service.storage.default_bucket
             key = location
             if location.startswith("s3://"):
@@ -236,6 +247,7 @@ async def validate_dataset(
         )
 
     report = DataQualityReport(
+        id=str(uuid4()),
         dataset_id=dataset.id,
         score=eval_result["score"],
         status=DataQualityStatus(eval_result["status"]),
@@ -247,6 +259,20 @@ async def validate_dataset(
         report_json=eval_result,
     )
     db.add(report)
+    await db.flush()
+    prefix = await resource_prefix(db, dataset, "datasets")
+    if validated_version:
+        prefix += f"/versions/v{validated_version:06d}"
+    key = evaluation_key(prefix, "quality", report.id) + "/report.json"
+    bucket = os.getenv("MINIO_EVALUATIONS_BUCKET", "mlite-evaluations")
+    with tempfile.TemporaryDirectory(prefix="mlite-quality-report-") as directory:
+        path = Path(directory) / "report.json"
+        path.write_text(json.dumps(eval_result), encoding="utf-8")
+        try:
+            service.storage.upload_file(path, key, bucket_name=bucket, overwrite=False)
+        except Exception as exc:
+            raise HTTPException(502, "Could not archive the quality report.") from exc
+    report.s3_report_key = f"s3://{bucket}/{key}"
     await db.flush()
     await db.refresh(report)
     return report
@@ -277,6 +303,7 @@ async def upload_dataset_file(
             dataset_id=dataset_id,
             file_path=tmp_path,
             description=description or f"Uploaded {file.filename}",
+            original_filename=file.filename,
         )
         return _version_response(version, current_user)
     finally:

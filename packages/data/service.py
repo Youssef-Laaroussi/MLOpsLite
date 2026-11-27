@@ -1,17 +1,20 @@
 """Dataset service — business logic for dataset registry, versioning, and MinIO storage."""
 
 import logging
+import tempfile
 from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.errors import NotFoundError
 from packages.core.models.dataset import (
     Dataset,
     DatasetFormat,
     DatasetVersion,
 )
 from packages.core.storage.client import StorageClient, get_storage_client
+from packages.core.storage.layout import dataset_version_key, resource_prefix
 from packages.data.parser import TabularDataParser
 
 logger = logging.getLogger(__name__)
@@ -58,11 +61,36 @@ class DatasetService:
         file_path: str | Path | None = None,
         s3_key: str | None = None,
         description: str | None = None,
+        original_filename: str | None = None,
     ) -> DatasetVersion:
-        """Inspect schema, deduplicate via SHA-256, upload to MinIO, and create version."""
+        """Store an immutable file under the dataset's stable version namespace."""
         dataset = await self.get_dataset(dataset_id)
         if dataset is None:
-            raise ValueError(f"Dataset {dataset_id} not found")
+            raise NotFoundError("Dataset", dataset_id)
+
+        if s3_key and file_path:
+            raise ValueError("Choose a local file or an existing object, not both.")
+        prefix = await resource_prefix(self.session, dataset, "datasets")
+        if s3_key:
+            bucket, key = self.storage.default_bucket, s3_key
+            if key.startswith("s3://"):
+                bucket, _, key = key[5:].partition("/")
+            if bucket != self.storage.default_bucket or not key.startswith(prefix + "/") or ".." in Path(key).parts:
+                raise ValueError("Choose an object in this dataset's private storage prefix.")
+            with tempfile.TemporaryDirectory(prefix="mlite-version-") as directory:
+                source = Path(directory) / ("data" + Path(key).suffix)
+                self.storage.download_file(key, source, bucket_name=bucket)
+                return await self.register_version(dataset_id, file_path=source, description=description,
+                                                   original_filename=original_filename or Path(key).name)
+        if not file_path or not Path(file_path).is_file():
+            raise ValueError("An existing local file or stored dataset object is required.")
+
+        # Serialize allocation so concurrent uploads cannot overwrite one version.
+        await self.session.execute(select(Dataset.id).where(Dataset.id == dataset.id).with_for_update())
+        v_res = await self.session.execute(select(func.max(DatasetVersion.version_num)).where(
+            DatasetVersion.dataset_id == dataset.id,
+        ))
+        next_version = (v_res.scalar() or 0) + 1
 
         # 1. Parse metadata & SHA-256
         if file_path and Path(file_path).is_file():
@@ -72,44 +100,20 @@ class DatasetService:
             column_count = meta["column_count"]
             size_bytes = meta["size_bytes"]
             schema_json = {"columns": meta["columns"]}
-            filename = Path(file_path).name
+            filename = (original_filename or Path(file_path).name).replace("\\", "/").split("/")[-1][:255]
 
-            # 2. Upload to MinIO with content-addressed path
-            owner = self.session.info.get("workspace_user_id")
-            default_key = (f"users/{owner}/datasets/{dataset.id}/{sha256}/{filename}" if owner
-                           else f"{dataset.name}/{sha256}/{filename}")
-            target_key = s3_key or default_key
-            try:
-                # Content deduplication: check if already exists in storage
-                if not self.storage.file_exists(target_key):
-                    upload_res = self.storage.upload_file(file_path, target_key)
-                    final_s3_key = upload_res["s3_uri"]
-                else:
-                    final_s3_key = f"s3://{self.storage.default_bucket}/{target_key}"
-            except Exception as e:
-                logger.warning("MinIO upload failed (proceeding with local key): %s", e)
-                final_s3_key = f"s3://mlite-datasets/{target_key}"
-        else:
-            # Metadata only / remote registered file
-            sha256 = "0" * 64
-            row_count = 0
-            column_count = 0
-            size_bytes = 0
-            schema_json = {}
-            final_s3_key = s3_key or f"s3://mlite-datasets/{dataset.name}/v1"
-
-        # 3. Determine next sequential version number
-        v_res = await self.session.execute(
-            select(func.max(DatasetVersion.version_num)).where(
-                DatasetVersion.dataset_id == dataset.id
-            )
-        )
-        max_ver = v_res.scalar() or 0
-        next_version = max_ver + 1
+            target_key = dataset_version_key(prefix, next_version, filename)
+            if self.storage.file_exists(target_key):
+                if self.storage.object_sha256(target_key) != sha256:
+                    raise ValueError("This stored version already contains different bytes.")
+            else:
+                self.storage.upload_file(file_path, target_key, overwrite=False)
+            final_s3_key = f"s3://{self.storage.default_bucket}/{target_key}"
 
         version = DatasetVersion(
             dataset_id=dataset.id,
             version_num=next_version,
+            original_filename=filename,
             hash_sha256=sha256,
             row_count=row_count,
             column_count=column_count,

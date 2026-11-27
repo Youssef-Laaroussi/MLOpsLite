@@ -37,6 +37,7 @@ class DatasetVersionResponse(BaseModel):
     id: str
     dataset_id: str
     version_num: int
+    original_filename: str | None = None
     hash_sha256: str
     row_count: int
     column_count: int

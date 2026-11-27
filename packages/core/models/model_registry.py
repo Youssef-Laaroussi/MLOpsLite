@@ -33,6 +33,8 @@ class RegisteredModel(ResourceOwnerMixin, Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "registered_models"
 
+    storage_prefix: Mapped[str | None] = mapped_column(String(384), nullable=True, index=True, unique=True)
+
     name: Mapped[str] = mapped_column(
         String(200), unique=True, index=True, nullable=False, doc="Unique model name"
     )
